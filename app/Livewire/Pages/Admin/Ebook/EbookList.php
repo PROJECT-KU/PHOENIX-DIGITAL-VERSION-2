@@ -3,7 +3,9 @@
 namespace App\Livewire\Pages\Admin\Ebook;
 
 use App\Models\Ebook;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -11,11 +13,34 @@ class EbookList extends Component
 {
     use WithPagination;
 
+    #[Url(as: 'cari', except: '')]
     public string $search = '';
+
+    /** '' | active | non-active */
+    #[Url(as: 'status', except: '')]
+    public string $statusFilter = '';
+
+    /** Ebook yang sedang dibuka di jendela detail. */
+    public ?string $lihatId = null;
 
     public function updatingSearch()
     {
         $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function lihat(string $id): void
+    {
+        $this->lihatId = Ebook::whereKey($id)->value('id');
+    }
+
+    public function tutupLihat(): void
+    {
+        $this->lihatId = null;
     }
 
     public function deleteEbook($id)
@@ -39,6 +64,7 @@ class EbookList extends Component
         }
 
         $ebook->delete();
+        $this->lihatId = null;
 
         $this->dispatch('Ebook-deleted');
     }
@@ -46,16 +72,32 @@ class EbookList extends Component
     public function render()
     {
         $ebooks = Ebook::query()
+            ->withCount('orderItems')
             ->when($this->search, function ($q) {
-                $q->where('judul', 'like', "%{$this->search}%")
-                    ->orWhere('deskripsi', 'like', "%{$this->search}%")
-                    ->orWhere('status', 'like', "%{$this->search}%");
+                $q->where(fn ($s) => $s->where('judul', 'like', "%{$this->search}%")
+                    ->orWhere('deskripsi', 'like', "%{$this->search}%"));
             })
+            ->when(in_array($this->statusFilter, ['active', 'non-active'], true), fn ($q) => $q->where('status', $this->statusFilter))
             ->latest()
-            ->paginate(10);
+            ->paginate(12);
+
+        $detail = $this->lihatId ? Ebook::withCount('orderItems')->find($this->lihatId) : null;
 
         return view('livewire.pages.admin.ebook.ebook-list', [
             'ebooks' => $ebooks,
+            'ringkas' => [
+                'total' => Ebook::count(),
+                'aktif' => Ebook::where('status', 'active')->count(),
+                'nonaktif' => Ebook::where('status', '!=', 'active')->count(),
+                // Berapa kali ebook dikirim sebagai bonus (baris pivot item pesanan).
+                'dikirim' => DB::table('order_item_ebook')->count(),
+            ],
+            'detail' => $detail,
+            // Pesanan terbaru yang menerima ebook ini (untuk jendela detail).
+            'detailPesanan' => $detail
+                ? $detail->orderItems()->with('order:id,order_number,customer_id', 'order.customer:id,nama')
+                    ->latest('order_item_ebook.created_at')->limit(5)->get()
+                : collect(),
         ])->layout('livewire.layout.templateindex');
     }
 }

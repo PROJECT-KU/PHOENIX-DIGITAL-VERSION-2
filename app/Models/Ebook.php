@@ -54,6 +54,27 @@ class Ebook extends Model
         return $this->share_token ? url('/e/'.$this->share_token) : null;
     }
 
+    /** Ukuran berkas PDF dalam byte, atau null bila berkasnya tidak ada. */
+    public function ukuranFile(): ?int
+    {
+        $path = $this->file ? storage_path('app/ebooks/'.$this->file) : null;
+
+        return $path && is_file($path) ? (int) filesize($path) : null;
+    }
+
+    /** Ukuran berkas yang enak dibaca: "842 KB", "1,4 MB". */
+    public function ukuranFileLabel(): ?string
+    {
+        $b = $this->ukuranFile();
+        if ($b === null) {
+            return null;
+        }
+
+        return $b < 1048576
+            ? max(1, (int) round($b / 1024)).' KB'
+            : number_format($b / 1048576, 1, ',', '.').' MB';
+    }
+
     // URL unduh untuk ADMIN (terproteksi auth), bukan untuk pelanggan
     public function getAdminDownloadUrl(): ?string
     {

@@ -1,236 +1,293 @@
-
 @section('title')
-Data Ebook || lemon
+Ebook Bonus || lemon
 @stop
 <div>
-    <style>
-        .ebook-dl-btn {
-            padding: .4rem .9rem;
-            border-radius: 999px;
-            font-size: .82rem;
-            font-weight: 600;
-            color: #4e46e5;
-            background: #eef0ff;
-            border: 1px solid #e0e3ff;
-            text-decoration: none;
-            transition: all .2s ease;
-        }
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*). Lihat partials/dasbor-gaya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.ebook.partials.ebook-gaya')
 
-        .ebook-dl-btn:hover {
-            background: linear-gradient(135deg, #6c63ff, #4e46e5);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(78, 70, 229, 0.30);
-        }
+    @php
+        $bolehBuat = (bool) auth()->user()?->hasPermission('create_ebook');
+        $bolehUbah = (bool) auth()->user()?->hasPermission('edit_ebook');
+        $bolehHapus = (bool) auth()->user()?->hasPermission('delete_ebook');
+        $adaSaringan = $search || $statusFilter;
+        // Warna sampul bergilir supaya rak ebook tidak seragam abu-abu.
+        $palet = ['#7c3aed', '#0284c7', '#16a34a', '#ea580c', '#db2777', '#4f46e5', '#0d9488', '#d97706'];
+        $saringStatus = ['' => ['Semua', 'bi-grid-fill'], 'active' => ['Aktif', 'bi-check-circle-fill'], 'non-active' => ['Nonaktif', 'bi-pause-circle-fill']];
+    @endphp
 
-        .ebook-dl-btn i {
-            font-size: .95rem;
-            line-height: 1;
-        }
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Ebook Bonus</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">Pustaka ebook yang dibagikan sebagai bonus pesanan — pelanggan membukanya view-only lewat tautan.</span>
+                </p>
+            </div>
+            @if ($bolehBuat)
+                <div class="dsb-hero-aksi">
+                    <a wire:navigate href="{{ route('admin.ebook.create') }}" class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Tambah Ebook</span>
+                    </a>
+                </div>
+            @endif
+        </header>
 
-        /* Tombol ikon (edit/hapus) persegi & ikon benar-benar di tengah */
-        .icon-btn {
-            width: 34px;
-            height: 34px;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+        {{-- ================== RINGKASAN ================== --}}
+        <section class="eb-stat-deret" aria-label="Ringkasan ebook">
+            <article class="dsb-stat" style="--c: #7c3aed">
+                <span class="dsb-ikon"><i class="bi bi-journal-bookmark-fill"></i></span>
+                <p class="dsb-stat-label">Total Ebook</p>
+                <p class="dsb-stat-nilai">{{ $ringkas['total'] }}<span class="dsb-stat-satuan">judul</span></p>
+            </article>
+            <article class="dsb-stat" style="--c: #16a34a">
+                <span class="dsb-ikon"><i class="bi bi-check-circle-fill"></i></span>
+                <p class="dsb-stat-label">Aktif</p>
+                <p class="dsb-stat-nilai">{{ $ringkas['aktif'] }}<span class="dsb-stat-satuan">bisa dipilih</span></p>
+            </article>
+            <article class="dsb-stat" style="--c: #94a3b8">
+                <span class="dsb-ikon"><i class="bi bi-pause-circle-fill"></i></span>
+                <p class="dsb-stat-label">Nonaktif</p>
+                <p class="dsb-stat-nilai">{{ $ringkas['nonaktif'] }}<span class="dsb-stat-satuan">disembunyikan</span></p>
+            </article>
+            <article class="dsb-stat" style="--c: #ea580c">
+                <span class="dsb-ikon"><i class="bi bi-send-check-fill"></i></span>
+                <p class="dsb-stat-label">Dikirim ke Pesanan</p>
+                <p class="dsb-stat-nilai">{{ number_format($ringkas['dikirim'], 0, ',', '.') }}<span class="dsb-stat-satuan">kali</span></p>
+            </article>
+        </section>
 
-        .icon-btn i.bi {
-            line-height: 1;
-            display: block;
-        }
-    </style>
+        {{-- ================== SARINGAN ================== --}}
+        <section class="dsb-kartu eb-saring">
+            <div class="dsb-kartu-isi eb-saring-isi">
+                <div class="dsb-cari eb-cari">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="dsb-isian" wire:model.live.debounce.300ms="search" placeholder="Cari judul atau deskripsi ebook…" aria-label="Cari ebook">
+                    @if ($search)
+                        <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian"><i class="bi bi-x-lg"></i></button>
+                    @endif
+                </div>
+                <div class="eb-segmen" role="group" aria-label="Saring status">
+                    @foreach ($saringStatus as $nilai => [$label, $ikon])
+                        <button type="button" wire:click="$set('statusFilter', '{{ $nilai }}')"
+                            class="eb-segmen-btn {{ $statusFilter === $nilai ? 'is-aktif' : '' }}" aria-pressed="{{ $statusFilter === $nilai ? 'true' : 'false' }}">
+                            <i class="bi {{ $ikon }}"></i><span>{{ $label }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="search,statusFilter,gotoPage,nextPage,previousPage">
+                    <span class="dsb-putar is-kecil"></span>Memuat…
+                </span>
+            </div>
+        </section>
 
-    <div class="container-fluid">
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Ebook Bonus</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                            @php $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Ebook Bonus']]; @endphp
-                            <x-breadcrumb :items="$breadcrumbs" />
-                        </div>
-                    </div>
-
-                    <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                        <div class="form-group position-relative flex-grow-1">
-                            <div class="form-control-icon">
-                                <i class="bi bi-search"></i>
-                            </div>
-                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
-                                placeholder="Cari judul ebook...">
-                            @if ($search)
-                            <span wire:click="$set('search', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                            </span>
-                            @endif
-                        </div>
-                        @if (auth()->user()->hasPermission('create_ebook'))
-                        <a wire:navigate href="{{ route('admin.ebook.create') }}"
-                            class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                            <i class="bi bi-plus-lg"></i>
-                            <span class="ms-2">Tambah Ebook</span>
-                        </a>
+        {{-- ================== RAK EBOOK ================== --}}
+        <section wire:loading.class="dsb-sedang-muat" wire:target="search,statusFilter,gotoPage,nextPage,previousPage">
+            @if ($ebooks->isEmpty())
+                <div class="dsb-kartu">
+                    <div class="dsb-kosong">
+                        <span class="dsb-kosong-ikon"><i class="bi {{ $adaSaringan ? 'bi-funnel' : 'bi-journal-plus' }}"></i></span>
+                        <p class="dsb-kosong-judul">{{ $adaSaringan ? 'Tidak ada ebook yang cocok' : 'Belum ada ebook' }}</p>
+                        <p class="dsb-kosong-ket">{{ $adaSaringan ? 'Coba kata kunci atau status lain.' : 'Tambahkan ebook agar bisa dipilih saat memproses pesanan.' }}</p>
+                        @if ($bolehBuat && ! $adaSaringan)
+                            <a wire:navigate href="{{ route('admin.ebook.create') }}" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                <i class="bi bi-plus-lg"></i><span>Tambah Ebook</span>
+                            </a>
                         @endif
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr style="text-align: center;">
-                                <th style="width: 50px;">No</th>
-                                <th class="text-start">Judul Ebook</th>
-                                <th class="text-start">Deskripsi</th>
-                                <th>File</th>
-                                <th>Status</th>
-                                @if (auth()->user()->hasAnyPermission(['edit_ebook', 'delete_ebook']))
-                                <th>Aksi</th>
-                                @endif
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($ebooks as $item)
-                            <tr style="text-align: center;">
-                                <td>{{ $loop->iteration }}</td>
-                                <td class="text-start fw-bold">{{ $item->judul }}</td>
-                                <td class="text-start text-truncate" style="max-width: 240px;">
-                                    {{ $item->deskripsi ?: '-' }}
-                                </td>
-                                <td>
-                                    @if ($item->file)
-                                    <a href="{{ $item->getAdminDownloadUrl() }}" target="_blank" title="Unduh ebook (admin)"
-                                        class="ebook-dl-btn d-inline-flex align-items-center gap-2">
-                                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                                        <span>Unduh</span>
-                                    </a>
+            @else
+                <div class="eb-rak">
+                    @foreach ($ebooks as $item)
+                        @php
+                            $warna = $palet[(($ebooks->currentPage() - 1) * $ebooks->perPage() + $loop->index) % count($palet)];
+                            $aktif = $item->status === 'active';
+                            $ukuran = $item->ukuranFileLabel();
+                        @endphp
+                        <article class="eb-kartu {{ $aktif ? '' : 'is-nonaktif' }}" style="--c: {{ $warna }}" wire:key="ebook-{{ $item->id }}">
+                            <button type="button" class="eb-sampul" wire:click="lihat('{{ $item->id }}')" title="Lihat detail {{ $item->judul }}">
+                                <span class="eb-sampul-ikon"><i class="bi bi-book-half"></i></span>
+                                <span class="eb-sampul-pdf">PDF</span>
+                                <span class="dsb-lencana {{ $aktif ? 'is-hijau' : 'is-abu' }} eb-sampul-status">
+                                    <i class="bi {{ $aktif ? 'bi-check-circle-fill' : 'bi-pause-circle-fill' }}"></i>{{ $aktif ? 'Aktif' : 'Nonaktif' }}
+                                </span>
+                            </button>
+                            <div class="eb-kartu-isi">
+                                <h3 class="eb-judul" title="{{ $item->judul }}">{{ $item->judul }}</h3>
+                                <p class="eb-desk">{{ $item->deskripsi ?: 'Tanpa deskripsi.' }}</p>
+                                <div class="eb-meta">
+                                    {{-- Di ponsel lencana status di sampul disembunyikan; tampil di sini. --}}
+                                    <span class="eb-meta-status {{ $aktif ? 'is-aktif' : '' }}"><i class="bi {{ $aktif ? 'bi-check-circle-fill' : 'bi-pause-circle-fill' }}"></i>{{ $aktif ? 'Aktif' : 'Nonaktif' }}</span>
+                                    <span><i class="bi bi-send-check"></i>{{ $item->order_items_count }} pesanan</span>
+                                    @if ($ukuran)
+                                        <span><i class="bi bi-hdd"></i>{{ $ukuran }}</span>
                                     @else
-                                    <span class="text-muted">-</span>
+                                        <span class="is-peringatan"><i class="bi bi-exclamation-triangle"></i>Berkas tidak ditemukan</span>
                                     @endif
-                                </td>
-                                <td>
-                                    <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
-                                    </span>
-                                </td>
-                                @if (auth()->user()->hasAnyPermission(['edit_ebook', 'delete_ebook']))
-                                <td class="text-center text-nowrap">
-                                    @if (auth()->user()->hasPermission('edit_ebook'))
-                                    <a wire:navigate href="{{ route('admin.ebook.edit', $item) }}"
-                                        class="btn btn-sm btn-warning text-white p-2" title="Edit">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    @endif
-                                    @if (auth()->user()->hasPermission('delete_ebook'))
-                                    <button type="button" class="btn btn-sm btn-danger delete-ebook-btn p-2"
-                                        data-id="{{ $item->id }}" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    @endif
-                                </td>
+                                </div>
+                            </div>
+                            <div class="eb-aksi">
+                                <button type="button" class="dsb-tombol is-lembut is-mungil eb-aksi-utama" wire:click="lihat('{{ $item->id }}')">
+                                    <i class="bi bi-eye"></i><span>Detail</span>
+                                </button>
+                                @if ($ukuran)
+                                    <a href="{{ $item->getAdminDownloadUrl() }}" class="dsb-tabel-btn" title="Unduh PDF"><i class="bi bi-download"></i></a>
                                 @endif
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-book"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                            Belum Ada Ebook
-                                        </h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                            Tambahkan ebook agar bisa dipilih saat memproses pesanan.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                @if ($bolehUbah)
+                                    <a wire:navigate href="{{ route('admin.ebook.edit', $item) }}" class="dsb-tabel-btn" title="Ubah"><i class="bi bi-pencil-square"></i></a>
+                                @endif
+                                @if ($bolehHapus)
+                                    <button type="button" class="dsb-tabel-btn is-bahaya eb-hapus" data-id="{{ $item->id }}" data-judul="{{ $item->judul }}" title="Hapus"><i class="bi bi-trash3"></i></button>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
-                <div class="d-flex justify-content-center">
-                    {{ $ebooks->links('vendor.pagination') }}
-                </div>
-            </div>
-        </div>
+
+                @if ($ebooks->hasPages())
+                    <div class="eb-halaman">{{ $ebooks->links('vendor.pagination') }}</div>
+                @endif
+            @endif
+        </section>
     </div>
 
-    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    {{-- ================== JENDELA DETAIL ================== --}}
+    @if ($detail)
+        @php
+            $dAktif = $detail->status === 'active';
+            $dUkuran = $detail->ukuranFileLabel();
+            $dLink = $detail->getViewUrl();
+        @endphp
+        <div class="ts-modal-back" wire:click="tutupLihat"></div>
+        <div class="ts-modal" wire:key="ebook-detail-{{ $detail->id }}">
+            <div class="ts-modal-card dsb is-datar eb-jendela" role="dialog" aria-modal="true" aria-label="Detail ebook" tabindex="-1"
+                x-on:keydown.escape.window="$wire.tutupLihat()">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-book-half"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">{{ $detail->judul }}</h5>
+                        <span class="dsb-kartu-sub">Ebook bonus · PDF view-only</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupLihat" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi eb-detail">
+                    <div class="eb-detail-angka">
+                        <div style="--c: {{ $dAktif ? '#16a34a' : '#94a3b8' }}">
+                            <span><i class="bi {{ $dAktif ? 'bi-check-circle-fill' : 'bi-pause-circle-fill' }}"></i></span>
+                            <b>{{ $dAktif ? 'Aktif' : 'Nonaktif' }}</b><small>Status</small>
+                        </div>
+                        <div style="--c: #ea580c">
+                            <span><i class="bi bi-send-check-fill"></i></span>
+                            <b>{{ $detail->order_items_count }}</b><small>Dikirim</small>
+                        </div>
+                        <div style="--c: {{ $dUkuran ? '#0284c7' : '#dc2626' }}">
+                            <span><i class="bi {{ $dUkuran ? 'bi-file-earmark-pdf-fill' : 'bi-exclamation-triangle-fill' }}"></i></span>
+                            <b>{{ $dUkuran ?: 'Hilang' }}</b><small>Berkas</small>
+                        </div>
+                    </div>
+
+                    <div class="eb-detail-blok">
+                        <span class="eb-detail-label">Deskripsi</span>
+                        <p>{{ $detail->deskripsi ?: 'Tanpa deskripsi.' }}</p>
+                    </div>
+
+                    @if ($dLink)
+                        <div class="eb-detail-blok">
+                            <span class="eb-detail-label">Tautan untuk pelanggan (view-only)</span>
+                            <div class="eb-tautan">
+                                <code>{{ $dLink }}</code>
+                                <button type="button" class="dsb-tombol is-lembut is-mungil eb-salin" data-salin="{{ $dLink }}">
+                                    <i class="bi bi-clipboard"></i><span>Salin</span>
+                                </button>
+                                <a href="{{ $dLink }}" target="_blank" rel="noopener" class="dsb-tabel-btn" title="Buka seperti pelanggan"><i class="bi bi-box-arrow-up-right"></i></a>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="eb-detail-blok">
+                        <span class="eb-detail-label">Terakhir dikirim ke</span>
+                        @forelse ($detailPesanan as $it)
+                            @if ($it->order)
+                                <a wire:navigate href="{{ route('admin.pesanantoko.detail', $it->order) }}" class="eb-pesanan">
+                                    <span class="dsb-lencana is-abu">{{ $it->order->order_number }}</span>
+                                    <span class="eb-pesanan-nama">{{ $it->order->customer->nama ?? 'Tanpa nama' }}</span>
+                                    <span class="eb-pesanan-produk">{{ $it->product_name }}</span>
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            @endif
+                        @empty
+                            <p class="eb-kosong-kecil">Belum pernah dikirim ke pesanan.</p>
+                        @endforelse
+                    </div>
+
+                    <p class="eb-detail-waktu">
+                        Ditambahkan {{ $detail->created_at?->locale('id')->translatedFormat('d M Y') }}
+                        · diperbarui {{ $detail->updated_at?->locale('id')->translatedFormat('d M Y, H:i') }}
+                    </p>
+                </div>
+                <div class="dsb-jendela-kaki eb-detail-kaki">
+                    @if ($dUkuran)
+                        <a href="{{ $detail->getAdminDownloadUrl() }}" class="dsb-tombol is-lembut"><i class="bi bi-download"></i><span>Unduh PDF</span></a>
+                    @endif
+                    @if ($bolehUbah)
+                        <a wire:navigate href="{{ route('admin.ebook.edit', $detail) }}" class="dsb-tombol is-utama"><i class="bi bi-pencil-square"></i><span>Ubah Ebook</span></a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @include('livewire.layout.sweetalert')
-    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
-</div>
 
-<!--================== SWEET ALERT DELETE ==================-->
-<script>
-    const ebookGlossy = {
-        background: 'rgba(255, 255, 255, 0.8)',
-        backdrop: 'rgba(139, 92, 246, 0.15)',
-        customClass: {
-            popup: 'swal-glossy-popup',
-            confirmButton: 'btn-glossy-confirm',
-            cancelButton: 'btn-glossy-cancel',
-            title: 'swal-glossy-title'
-        },
-        buttonsStyling: false
-    };
-
-    document.addEventListener('livewire:navigated', function() {
-        document.body.addEventListener('click', function(event) {
-            const button = event.target.closest('.delete-ebook-btn');
-            if (button) {
-                event.preventDefault();
-                const id = button.getAttribute('data-id');
-                Swal.fire({
-                    title: 'Yakin hapus ebook?',
-                    text: "File ebook ini akan dihapus permanen!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal',
-                    ...ebookGlossy
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const component = button.closest('[wire\\:id]');
-                        if (component) {
-                            Livewire.find(component.getAttribute('wire:id')).call('deleteEbook', id);
-                        }
+    @push('scripts')
+        <script>
+            // Dipasang SEKALI di dokumen: halaman ini dibuka ulang lewat wire:navigate.
+            // (Versi lama memasang pendengar klik baru tiap navigasi.)
+            if (!window.__ebookDaftarTerpasang) {
+                window.__ebookDaftarTerpasang = true;
+                const gaya = {
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel', title: 'swal-glossy-title' },
+                    buttonsStyling: false,
+                };
+                document.addEventListener('click', (e) => {
+                    const salin = e.target.closest('.eb-salin');
+                    if (salin) {
+                        navigator.clipboard?.writeText(salin.dataset.salin).then(() => {
+                            const teks = salin.querySelector('span');
+                            teks.textContent = 'Tersalin';
+                            setTimeout(() => { teks.textContent = 'Salin'; }, 1600);
+                        });
+                        return;
                     }
+                    const hapus = e.target.closest('.eb-hapus');
+                    if (!hapus || typeof Swal === 'undefined') return;
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Hapus ebook ini?',
+                        html: '<b>' + (hapus.dataset.judul || '').replace(/[<>&]/g, '') + '</b><br>Berkas PDF-nya ikut dihapus permanen. Tautan yang sudah dikirim ke pelanggan tidak bisa dibuka lagi.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Batal',
+                        ...gaya,
+                    }).then((r) => {
+                        if (!r.isConfirmed) return;
+                        const komponen = hapus.closest('[wire\\:id]');
+                        if (komponen) Livewire.find(komponen.getAttribute('wire:id')).call('deleteEbook', hapus.dataset.id);
+                    });
+                });
+                window.addEventListener('Ebook-deleted', () => {
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Terhapus', text: 'Ebook berhasil dihapus.', icon: 'success', timer: 2000, showConfirmButton: false, ...gaya });
+                });
+                window.addEventListener('Ebook-deleteError', (e) => {
+                    const d = Array.isArray(e.detail) ? (e.detail[0] || {}) : (e.detail || {});
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Gagal', text: d.message || 'Ebook gagal dihapus.', icon: 'error', timer: 2500, showConfirmButton: false, ...gaya });
                 });
             }
-        });
-    });
-
-    window.addEventListener('Ebook-deleted', () => {
-        Swal.fire({
-            title: 'Terhapus!',
-            text: 'Ebook berhasil dihapus.',
-            icon: 'success',
-            timer: 2200,
-            showConfirmButton: false,
-            ...ebookGlossy
-        });
-    });
-    window.addEventListener('Ebook-deleteError', (e) => {
-        Swal.fire({
-            title: 'Gagal!',
-            text: e.detail.message,
-            icon: 'error',
-            timer: 2500,
-            showConfirmButton: false,
-            ...ebookGlossy
-        });
-    });
-</script>
-<!--================== END SWEET ALERT DELETE ==================-->
+        </script>
+    @endpush
+</div>

@@ -1,207 +1,111 @@
 <div>
-    <style>
-        .ebook-preview {
-            min-height: 158px;
-            height: 100%;
-            border-radius: 16px;
-            border: 1.5px dashed #d7dbf5;
-            background: linear-gradient(135deg, #fbfbff, #f5f6ff);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: .35rem;
-            padding: 1.1rem;
-            transition: all .25s ease;
-        }
+    @php
+        $edit = $mode !== 'create';
+        $fileBaru = $file && is_object($file) && ! $errors->has('file');
+        $namaBaru = $fileBaru ? $file->getClientOriginalName() : null;
+        $ukuranBaru = $fileBaru ? number_format($file->getSize() / 1048576, 2, ',', '.').' MB' : null;
+        $ukuranLama = $edit && $ebook ? $ebook->ukuranFileLabel() : null;
+        $statusOpsi = [
+            'active' => ['Aktif', 'bi-check-circle-fill', '#16a34a', 'Bisa dipilih saat memproses pesanan'],
+            'non-active' => ['Nonaktif', 'bi-pause-circle-fill', '#64748b', 'Disembunyikan dari pilihan bonus'],
+        ];
+    @endphp
 
-        .ebook-preview.is-ready {
-            border-style: solid;
-            border-color: rgba(16, 185, 129, 0.35);
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.04));
-        }
+    <form wire:submit.prevent="save" class="eb-form-tata">
+        {{-- ================== KOLOM UTAMA ================== --}}
+        <div class="dsb-kartu">
+            <div class="dsb-kartu-isi">
+                <div class="eb-form-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-journal-text"></i></span>
+                    <div>
+                        <b>Informasi Ebook</b>
+                        <span>Judul & deskripsi tampil untuk admin saat memilih bonus pesanan.</span>
+                    </div>
+                </div>
 
-        .ebook-preview.is-saved {
-            border-style: solid;
-            border-color: rgba(108, 99, 255, 0.30);
-            background: linear-gradient(135deg, rgba(108, 99, 255, 0.07), rgba(78, 70, 229, 0.04));
-        }
+                <div class="eb-medan dsb-medan">
+                    <label class="dsb-label" for="eb-judul">Judul Ebook <span class="text-danger">*</span></label>
+                    <input id="eb-judul" type="text" wire:model.defer="judul" class="dsb-isian" placeholder="Contoh: Panduan Grammarly, Panduan Scopus">
+                    @error('judul') <small class="eb-galat">{{ $message }}</small> @enderror
+                </div>
 
-        .ebook-preview-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
-            background: #fff;
-            box-shadow: 0 6px 16px rgba(78, 70, 229, 0.12);
-            color: #6c63ff;
-            margin: 0 auto;
-        }
+                <div class="eb-medan dsb-medan">
+                    <label class="dsb-label" for="eb-desk">Deskripsi</label>
+                    <textarea id="eb-desk" wire:model.defer="deskripsi" rows="4" class="dsb-isian eb-desk-isian" placeholder="Keterangan singkat tentang isi ebook (opsional)"></textarea>
+                    @error('deskripsi') <small class="eb-galat">{{ $message }}</small> @enderror
+                </div>
 
-        .ebook-preview-icon i.bi {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            width: 100%;
-            height: 100%;
-        }
-
-        .ebook-preview-icon i.bi::before {
-            display: block;
-            line-height: 1;
-        }
-
-        .ebook-preview.is-ready .ebook-preview-icon {
-            color: #059669;
-        }
-
-        .ebook-preview.is-empty .ebook-preview-icon {
-            color: #b6bcd4;
-            box-shadow: none;
-            background: #eef0f7;
-        }
-
-        .ebook-preview-name {
-            font-weight: 700;
-            font-size: .9rem;
-            color: #1e293b;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .ebook-preview-badge {
-            font-size: .8rem;
-            font-weight: 600;
-        }
-    </style>
-
-    <form wire:submit.prevent="save">
-        <div class="row g-4">
-            <div class="col-md-8">
-                <label class="form-label fw-bold text-secondary">Judul Ebook <span class="text-danger">*</span></label>
-                <input type="text" wire:model.defer="judul"
-                    class="form-control @error('judul') is-invalid @enderror"
-                    placeholder="Contoh: Ebook Panduan AI, Ebook Panduan Scopus">
-                @error('judul') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <div class="eb-medan dsb-medan">
+                    <span class="dsb-label">Status <span class="text-danger">*</span></span>
+                    <div class="eb-status-pilih" role="radiogroup" aria-label="Status ebook">
+                        @foreach ($statusOpsi as $nilai => [$label, $ikon, $warna, $ket])
+                            <label class="eb-status-opsi {{ $status === $nilai ? 'is-pilih' : '' }}" style="--c: {{ $warna }}">
+                                <input type="radio" wire:model.live="status" value="{{ $nilai }}">
+                                <span><i class="bi {{ $ikon }}"></i></span>
+                                <span><b>{{ $label }}</b><small>{{ $ket }}</small></span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('status') <small class="eb-galat">{{ $message }}</small> @enderror
+                </div>
             </div>
+        </div>
 
-            <div class="col-md-4">
-                <label class="form-label fw-bold text-secondary">Status <span class="text-danger">*</span></label>
-                <select wire:model.defer="status" class="form-control form-select @error('status') is-invalid @enderror">
-                    <option value="active">Active</option>
-                    <option value="non-active">Non-Active</option>
-                </select>
-                @error('status') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-            </div>
+        {{-- ================== KOLOM SAMPING ================== --}}
+        <aside class="eb-form-samping">
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="eb-form-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                        <div>
+                            <b>Berkas PDF @if (! $edit)<span class="text-danger">*</span>@endif</b>
+                            <span>Maks. 2 MB · dibuka view-only oleh pelanggan</span>
+                        </div>
+                    </div>
 
-            <div class="col-12">
-                <label class="form-label fw-bold text-secondary">
-                    File Ebook @if ($mode === 'create') <span class="text-danger">*</span> @endif
-                </label>
-
-                <div class="row g-4 align-items-start">
-                    <div class="{{ $mode === 'create' ? 'col-12' : 'col-md-6' }}">
-                        <div class="upload-container position-relative">
-                            <input type="file" id="ebookFileInput" wire:model.live="file"
-                                class="file-input @error('file') is-invalid @enderror"
-                                accept="application/pdf,.pdf">
-
-                            <div class="upload-overlay">
-                                @if ($file && is_object($file) && !$errors->has('file'))
-                                <i class="bi bi-file-earmark-check-fill fs-2 text-success mb-2"
-                                    id="ebookOverlayIcon"></i>
-                                <span class="fw-bold text-success" id="ebookOverlayText"
-                                    style="max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    {{ $file->getClientOriginalName() }}
-                                </span>
-                                @else
-                                <i class="bi bi-cloud-upload fs-2 text-primary mb-2" id="ebookOverlayIcon"></i>
-                                <span class="text-muted fw-bold" id="ebookOverlayText">Klik untuk unggah ebook (PDF)</span>
-                                @endif
+                    @if ($edit && $existingFile)
+                        <div class="eb-berkas" style="margin-bottom: 12px;">
+                            <span class="eb-berkas-ikon"><i class="bi bi-file-earmark-pdf-fill"></i></span>
+                            <div>
+                                <b>Berkas saat ini</b>
+                                <small>{{ $ukuranLama ?: 'Berkas tidak ditemukan di server — unggah ulang' }}</small>
                             </div>
+                            @if ($ukuranLama)
+                                <a href="{{ route('admin.ebook.download', $ebook) }}" class="dsb-tabel-btn" title="Unduh berkas saat ini"><i class="bi bi-download"></i></a>
+                            @endif
                         </div>
-                        <div wire:loading wire:target="file" class="text-primary mt-2" style="font-size:.85rem;">
-                            <span class="spinner-border spinner-border-sm"></span> Mengunggah...
-                        </div>
-                        @error('file') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        <small class="text-muted mt-2 d-block"><i class="bi bi-info-circle me-1"></i> Hanya PDF (Maks
-                            2MB) — akan dibuka view-only untuk pelanggan</small>
-                    </div>
+                    @endif
 
-                    @if ($mode !== 'create')
-                    <div class="col-md-6">
-                        @php
-                        $pExt = null;
-                        if ($file && is_object($file) && !$errors->has('file')) {
-                        $pExt = strtolower($file->getClientOriginalExtension());
-                        } elseif ($existingFile) {
-                        $pExt = strtolower(pathinfo($existingFile, PATHINFO_EXTENSION));
-                        }
-                        $iconMap = [
-                        'pdf' => ['bi-file-earmark-pdf-fill', '#dc2626'],
-                        'doc' => ['bi-file-earmark-word-fill', '#2563eb'],
-                        'docx' => ['bi-file-earmark-word-fill', '#2563eb'],
-                        'zip' => ['bi-file-earmark-zip-fill', '#d97706'],
-                        'epub' => ['bi-file-earmark-richtext-fill', '#7c3aed'],
-                        'png' => ['bi-file-earmark-image-fill', '#059669'],
-                        'jpg' => ['bi-file-earmark-image-fill', '#059669'],
-                        'jpeg' => ['bi-file-earmark-image-fill', '#059669'],
-                        ];
-                        $pIcon = $iconMap[$pExt][0] ?? 'bi-file-earmark-text-fill';
-                        $pColor = $iconMap[$pExt][1] ?? '#6c63ff';
-                        @endphp
-
-                        @if ($file && is_object($file) && !$errors->has('file'))
-                        <div class="ebook-preview is-ready text-center">
-                            <div class="ebook-preview-icon d-flex justify-content-center align-items-center"><i class="bi {{ $pIcon }}" style="color: {{ $pColor }};"></i></div>
-                            <div class="ebook-preview-name">{{ $file->getClientOriginalName() }}</div>
-                            <span class="ebook-preview-badge text-success"><i class="bi bi-check-circle-fill"></i> Siap diunggah</span>
-                        </div>
-                        @elseif ($existingFile)
-                        <div class="ebook-preview is-saved text-center">
-                            <div class="ebook-preview-icon d-flex justify-content-center align-items-center"><i class="bi {{ $pIcon }}" style="color: {{ $pColor }};"></i></div>
-                            <div class="ebook-preview-name">{{ strtoupper($pExt) }} tersimpan</div>
-                            <a href="{{ route('admin.ebook.download', $ebook) }}" target="_blank"
-                                class="btn btn-sm btn-outline-success rounded-pill px-3 mt-2 d-inline-flex align-items-center justify-content-center">
-                                <i class="bi bi-download me-2"></i> <span>Unduh file saat ini</span>
-                            </a>
-                        </div>
-                        @else
-                        <div class="ebook-preview is-empty text-center">
-                            <div class="ebook-preview-icon d-flex justify-content-center align-items-center"><i class="bi bi-file-earmark"></i></div>
-                            <div class="ebook-preview-name text-muted">Preview Ebook</div>
-                            <small class="text-muted">Belum ada file dipilih</small>
-                        </div>
-                        @endif
+                    <div id="ebookZona" class="eb-unggah {{ $fileBaru ? 'is-siap' : '' }} {{ $errors->has('file') ? 'is-galat' : '' }}">
+                        <input type="file" id="ebookFileInput" wire:model.live="file" accept="application/pdf,.pdf" aria-label="Pilih berkas PDF">
+                        <span class="eb-unggah-ikon"><i id="ebookOverlayIcon" class="bi {{ $fileBaru ? 'bi-file-earmark-check-fill' : 'bi-cloud-arrow-up-fill' }}"></i></span>
+                        <b id="ebookOverlayText">{{ $namaBaru ?: ($edit ? 'Klik untuk mengganti PDF' : 'Klik atau seret PDF ke sini') }}</b>
+                        <small>{{ $fileBaru ? $ukuranBaru.' · siap disimpan' : 'Format PDF, maksimal 2 MB' }}</small>
                     </div>
+                    <div class="eb-unggah-muat" wire:loading.flex wire:target="file">
+                        <span class="dsb-putar is-kecil"></span> Mengunggah berkas…
+                    </div>
+                    @error('file') <small class="eb-galat">{{ $message }}</small> @enderror
+                    @if ($edit)
+                        <small class="eb-bantu">Kosongkan bila tidak ingin mengganti berkas. Tautan yang sudah dikirim ke pelanggan tetap sama.</small>
                     @endif
                 </div>
             </div>
 
-            <div class="col-12">
-                <label class="form-label fw-bold text-secondary">Deskripsi</label>
-                <textarea wire:model.defer="deskripsi" rows="4"
-                    class="form-control @error('deskripsi') is-invalid @enderror"
-                    placeholder="Keterangan singkat tentang ebook ini (opsional)"></textarea>
-                @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <span class="eb-kicker">{{ $edit ? 'Simpan perubahan' : 'Simpan ebook' }}</span>
+                    <button type="submit" class="dsb-tombol is-utama eb-simpan" wire:loading.attr="disabled" wire:target="save,file">
+                        <span wire:loading.remove wire:target="save" class="eb-isi-tombol"><i class="bi bi-check2-circle"></i><span>{{ $edit ? 'Simpan Perubahan' : 'Simpan Ebook' }}</span></span>
+                        <span wire:loading.inline-flex wire:target="save" class="eb-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyimpan…</span></span>
+                    </button>
+                    <ul class="eb-tips" style="margin-top: 12px;">
+                        <li>Ebook <b>Aktif</b> muncul di pilihan bonus saat memproses pesanan.</li>
+                        <li>Pelanggan hanya bisa membaca, tidak bisa mengunduh.</li>
+                    </ul>
+                </div>
             </div>
-        </div>
-
-        <div class="mt-4 pt-3 border-top d-flex gap-2">
-            <button type="submit"
-                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-                style="height: 52px;" wire:loading.attr="disabled" wire:target="save,file">
-                <i class="bi bi-check2-circle me-2 fs-5"></i>
-                <span>{{ $this->mode === 'create' ? 'Simpan Data' : 'Update Data' }}</span>
-            </button>
-        </div>
+        </aside>
     </form>
 
     <!--================== SWEET ALERT EBOOK UPLOAD ==================-->
@@ -233,15 +137,14 @@
             const maxSize = 2 * 1024 * 1024; // 2MB (mengikuti upload_max_filesize PHP)
 
             // Tampilkan nama file langsung di area upload agar admin tahu file sudah dipilih
+            // textContent, bukan innerHTML: nama berkas tidak boleh menyisipkan markup.
             const showSelectedName = (name) => {
                 const txt = document.getElementById('ebookOverlayText');
                 const ico = document.getElementById('ebookOverlayIcon');
-                if (txt) txt.innerHTML = name ?
-                    '<span class="text-success">' + name + '</span>' :
-                    'Klik untuk unggah ebook';
-                if (ico) ico.className = name ?
-                    'bi bi-file-earmark-check-fill fs-2 text-success' :
-                    'bi bi-cloud-upload fs-2 text-primary';
+                const zona = document.getElementById('ebookZona');
+                if (txt) txt.textContent = name || 'Klik atau seret PDF ke sini';
+                if (ico) ico.className = name ? 'bi bi-file-earmark-check-fill' : 'bi bi-cloud-arrow-up-fill';
+                if (zona) zona.classList.toggle('is-siap', !!name);
             };
 
             // Validasi sebelum upload — delegasi di document (capture) khusus input ebook
