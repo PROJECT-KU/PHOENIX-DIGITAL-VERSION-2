@@ -12,7 +12,16 @@ class EbookViewerController extends Controller
     {
         $ebook = Ebook::where('share_token', $token)
             ->where('status', 'active')
-            ->firstOrFail();
+            ->first();
+
+        // Nonaktif / tautan diganti / dihapus: tautannya memang mati (keputusan
+        // pemilik 19 Sep 2026), tetapi pelanggan melihat penjelasan yang ramah,
+        // bukan halaman 404 kosong.
+        if (! $ebook) {
+            return response()->view('ebook.tidak-tersedia', [], 404);
+        }
+
+        $ebook->catatDibuka();
 
         return view('ebook.viewer', ['ebook' => $ebook]);
     }

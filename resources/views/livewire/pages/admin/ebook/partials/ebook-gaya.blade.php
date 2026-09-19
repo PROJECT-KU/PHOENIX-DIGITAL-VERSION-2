@@ -92,7 +92,8 @@
     .eb-jendela { max-width: 560px; }
     /* minmax(0,1fr): tautan panjang (nowrap) tidak boleh melebarkan jendela di ponsel. */
     .eb-detail { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-    .eb-detail-angka { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .eb-detail-angka { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 575.98px) { .eb-detail-angka { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .eb-detail-angka > div { --c: #7c3aed; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; border-radius: 14px; background: color-mix(in srgb, var(--c) 7%, #fff); border: 1px solid color-mix(in srgb, var(--c) 18%, #fff); text-align: center; }
     .eb-detail-angka span { width: 34px; height: 34px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--c); color: #fff; margin-bottom: 4px; }
     .eb-detail-angka b { font-size: .95rem; color: #1c1f26; }
@@ -109,6 +110,11 @@
     .eb-pesanan > i { color: #cbd5e1; }
     .eb-kosong-kecil { font-size: .82rem; color: #94a3b8; }
     .eb-detail-waktu { margin: 0; font-size: .74rem; color: #94a3b8; }
+    .eb-detail-peringatan { display: flex; gap: 10px; padding: 11px 13px; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .82rem; line-height: 1.5; }
+    .eb-detail-ket { display: block; margin-top: 6px; font-size: .74rem; color: #94a3b8; }
+    .eb-tautan-baru { border: 0; background: none; padding: 0; color: #dc2626; font-weight: 700; text-decoration: underline; cursor: pointer; font-size: inherit; }
+    .eb-detail-produk { display: flex; flex-wrap: wrap; gap: 6px; }
+    .eb-meta .is-bawaan { color: #c2410c; font-weight: 700; }
     .eb-detail-kaki { justify-content: flex-end; gap: 8px; }
     @media (max-width: 575.98px) {
         .eb-pesanan { flex-wrap: wrap; row-gap: 2px; }
@@ -159,5 +165,25 @@
     .eb-simpan { width: 100%; justify-content: center; min-height: 48px; }
     .eb-kicker { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #f26522; margin-bottom: 10px; }
     .eb-tips { margin: 0; padding-left: 18px; font-size: .78rem; color: #64748b; line-height: 1.6; }
+    .eb-form-utama { display: grid; gap: 20px; min-width: 0; }
+    .eb-hitung { display: inline-flex; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #fff7ed; color: #c2410c; font-size: .7rem; font-weight: 800; vertical-align: middle; }
+    .eb-saran { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; }
+    .eb-saran-judul { font-size: .76rem; font-weight: 700; color: #92400e; display: inline-flex; align-items: center; gap: 5px; }
+    .eb-saran-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; border: 1px solid #fcd34d; background: #fff; color: #92400e; font-size: .76rem; font-weight: 700; cursor: pointer; }
+    .eb-saran-btn small { color: #b45309; font-weight: 600; }
+    .eb-saran-btn:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+    .eb-saran-btn:hover small { color: #fff; }
+    .eb-produk-cari { margin-bottom: 10px; }
+    .eb-produk-daftar { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); max-height: 340px; overflow-y: auto; padding: 2px; }
+    .eb-produk { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid #e9edf3; background: #fff; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+    .eb-produk input { position: absolute; opacity: 0; pointer-events: none; }
+    .eb-produk-centang { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; color: transparent; font-size: .85rem; }
+    .eb-produk.is-pilih { border-color: #ea580c; background: #fff7ed; }
+    .eb-produk.is-pilih .eb-produk-centang { background: #ea580c; border-color: #ea580c; color: #fff; }
+    .eb-produk-teks { min-width: 0; }
+    .eb-produk-teks b { display: block; font-size: .84rem; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .eb-produk-teks small { display: block; font-size: .7rem; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .eb-produk-teks small.is-pindah { color: #c2410c; font-weight: 700; }
+    .eb-produk:focus-within { outline: 2px solid #fdba74; outline-offset: 1px; }
 </style>
 @endonce

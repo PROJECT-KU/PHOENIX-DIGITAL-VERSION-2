@@ -50,7 +50,7 @@ Ebook Bonus || lemon
             <article class="dsb-stat" style="--c: #94a3b8">
                 <span class="dsb-ikon"><i class="bi bi-pause-circle-fill"></i></span>
                 <p class="dsb-stat-label">Nonaktif</p>
-                <p class="dsb-stat-nilai">{{ $ringkas['nonaktif'] }}<span class="dsb-stat-satuan">disembunyikan</span></p>
+                <p class="dsb-stat-nilai">{{ $ringkas['nonaktif'] }}<span class="dsb-stat-satuan">tautan mati</span></p>
             </article>
             <article class="dsb-stat" style="--c: #ea580c">
                 <span class="dsb-ikon"><i class="bi bi-send-check-fill"></i></span>
@@ -121,6 +121,13 @@ Ebook Bonus || lemon
                                     {{-- Di ponsel lencana status di sampul disembunyikan; tampil di sini. --}}
                                     <span class="eb-meta-status {{ $aktif ? 'is-aktif' : '' }}"><i class="bi {{ $aktif ? 'bi-check-circle-fill' : 'bi-pause-circle-fill' }}"></i>{{ $aktif ? 'Aktif' : 'Nonaktif' }}</span>
                                     <span><i class="bi bi-send-check"></i>{{ $item->order_items_count }} pesanan</span>
+                                    <span title="Berapa kali halaman baca dibuka"><i class="bi bi-eye"></i>{{ number_format($item->dibuka_count, 0, ',', '.') }}× dibuka</span>
+                                    @if (! $aktif)
+                                        <span class="is-peringatan"><i class="bi bi-link-45deg"></i>Tautan pelanggan mati</span>
+                                    @endif
+                                    @if ($item->produk_bawaan_count)
+                                        <span class="is-bawaan"><i class="bi bi-magic"></i>Bawaan {{ $item->produk_bawaan_count }} produk</span>
+                                    @endif
                                     @if ($ukuran)
                                         <span><i class="bi bi-hdd"></i>{{ $ukuran }}</span>
                                     @else
@@ -182,11 +189,22 @@ Ebook Bonus || lemon
                             <span><i class="bi bi-send-check-fill"></i></span>
                             <b>{{ $detail->order_items_count }}</b><small>Dikirim</small>
                         </div>
+                        <div style="--c: #4f46e5">
+                            <span><i class="bi bi-eye-fill"></i></span>
+                            <b>{{ number_format($detail->dibuka_count, 0, ',', '.') }}</b><small>Dibuka</small>
+                        </div>
                         <div style="--c: {{ $dUkuran ? '#0284c7' : '#dc2626' }}">
                             <span><i class="bi {{ $dUkuran ? 'bi-file-earmark-pdf-fill' : 'bi-exclamation-triangle-fill' }}"></i></span>
                             <b>{{ $dUkuran ?: 'Hilang' }}</b><small>Berkas</small>
                         </div>
                     </div>
+
+                    @if (! $dAktif)
+                        <div class="eb-detail-peringatan">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span><b>Ebook nonaktif</b> — tautan yang sudah dikirim ke pelanggan tidak bisa dibuka (pelanggan melihat halaman "ebook tidak tersedia").</span>
+                        </div>
+                    @endif
 
                     <div class="eb-detail-blok">
                         <span class="eb-detail-label">Deskripsi</span>
@@ -203,8 +221,27 @@ Ebook Bonus || lemon
                                 </button>
                                 <a href="{{ $dLink }}" target="_blank" rel="noopener" class="dsb-tabel-btn" title="Buka seperti pelanggan"><i class="bi bi-box-arrow-up-right"></i></a>
                             </div>
+                            <small class="eb-detail-ket">
+                                Terakhir dibuka {{ $detail->terakhir_dibuka_at ? $detail->terakhir_dibuka_at->locale('id')->diffForHumans() : 'belum pernah' }}.
+                                @if ($bolehUbah)
+                                    <button type="button" class="eb-tautan-baru" data-id="{{ $detail->id }}">Buat tautan baru</button> bila tautan ini tersebar ke luar.
+                                @endif
+                            </small>
                         </div>
                     @endif
+
+                    <div class="eb-detail-blok">
+                        <span class="eb-detail-label">Bawaan untuk produk</span>
+                        @if ($detail->produkBawaan->isNotEmpty())
+                            <div class="eb-detail-produk">
+                                @foreach ($detail->produkBawaan as $pb)
+                                    <span class="dsb-lencana is-kuning"><i class="bi bi-magic"></i>{{ $pb->nama_akun }}</span>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="eb-kosong-kecil">Belum ada — atur di <b>Ubah Ebook</b> supaya tercentang otomatis saat memproses pesanan.</p>
+                        @endif
+                    </div>
 
                     <div class="eb-detail-blok">
                         <span class="eb-detail-label">Terakhir dikirim ke</span>
@@ -260,6 +297,19 @@ Ebook Bonus || lemon
                             const teks = salin.querySelector('span');
                             teks.textContent = 'Tersalin';
                             setTimeout(() => { teks.textContent = 'Salin'; }, 1600);
+                        });
+                        return;
+                    }
+                    const baru = e.target.closest('.eb-tautan-baru');
+                    if (baru && typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Buat tautan baru?',
+                            html: 'Tautan lama <b>langsung mati untuk semua pelanggan</b> yang pernah menerimanya. Pakai hanya bila tautan ini tersebar ke luar.',
+                            icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, buat baru', cancelButtonText: 'Batal', ...gaya,
+                        }).then((r) => {
+                            if (!r.isConfirmed) return;
+                            const komponen = baru.closest('[wire\\:id]');
+                            if (komponen) Livewire.find(komponen.getAttribute('wire:id')).call('buatTautanBaru', baru.dataset.id);
                         });
                         return;
                     }

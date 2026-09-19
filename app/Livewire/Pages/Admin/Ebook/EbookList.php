@@ -43,6 +43,20 @@ class EbookList extends Component
         $this->lihatId = null;
     }
 
+    /**
+     * Ganti tautan pelanggan (share_token). Tautan lama langsung mati untuk
+     * SEMUA penerima — dipakai bila tautannya tersebar ke luar.
+     */
+    public function buatTautanBaru(string $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_ebook'), 403);
+
+        $ebook = Ebook::findOrFail($id);
+        $ebook->update(['share_token' => Ebook::generateToken()]);
+
+        $this->dispatch('swal-success', message: 'Tautan baru dibuat. Tautan lama sudah tidak bisa dibuka.');
+    }
+
     public function deleteEbook($id)
     {
         if (! auth()->user()->hasPermission('delete_ebook')) {
@@ -72,7 +86,7 @@ class EbookList extends Component
     public function render()
     {
         $ebooks = Ebook::query()
-            ->withCount('orderItems')
+            ->withCount(['orderItems', 'produkBawaan'])
             ->when($this->search, function ($q) {
                 $q->where(fn ($s) => $s->where('judul', 'like', "%{$this->search}%")
                     ->orWhere('deskripsi', 'like', "%{$this->search}%"));
@@ -81,7 +95,7 @@ class EbookList extends Component
             ->latest()
             ->paginate(12);
 
-        $detail = $this->lihatId ? Ebook::withCount('orderItems')->find($this->lihatId) : null;
+        $detail = $this->lihatId ? Ebook::withCount('orderItems')->with('produkBawaan:id,nama_akun,ebook_bawaan_id')->find($this->lihatId) : null;
 
         return view('livewire.pages.admin.ebook.ebook-list', [
             'ebooks' => $ebooks,

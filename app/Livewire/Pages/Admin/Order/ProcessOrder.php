@@ -70,6 +70,13 @@ class ProcessOrder extends Component
 
     public $availableEbooks = []; // daftar ebook aktif
 
+    /** Ebook bawaan produk item ini (Product::ebook_bawaan_id), bila aktif. */
+    #[\Livewire\Attributes\Locked]
+    public ?string $ebookBawaanId = null;
+
+    /** true = ebook bawaan dicentangkan otomatis saat halaman dibuka. */
+    public bool $ebookBawaanOtomatis = false;
+
     #[Validate('required|in:baru,perpanjang,pengganti')]
     public $subscriptionStatus = 'baru';
 
@@ -127,6 +134,19 @@ class ProcessOrder extends Component
 
         // Ebook yang sudah terpilih untuk item ini
         $this->selectedEbooks = $this->orderItem->ebooks()->pluck('ebooks.id')->map(fn ($v) => (string) $v)->toArray();
+
+        // Ebook bawaan produk: dicentang otomatis HANYA untuk item yang belum
+        // pernah diproses. Item yang sudah diproses memakai pilihan tersimpan
+        // apa adanya (admin mungkin sengaja tidak memberi ebook).
+        $bawaan = $this->orderItem->product?->ebook_bawaan_id;
+        if ($bawaan && $this->availableEbooks->contains('id', $bawaan)) {
+            $this->ebookBawaanId = (string) $bawaan;
+            $belumDiproses = ! $this->orderItem->processed_at && $this->orderItem->delivery_status === 'pending';
+            if ($belumDiproses && ! $this->selectedEbooks) {
+                $this->selectedEbooks = [$this->ebookBawaanId];
+                $this->ebookBawaanOtomatis = true;
+            }
+        }
 
         if ($this->orderItem->data_akun_id) {
             $this->loadExistingData();

@@ -406,6 +406,24 @@ Proses Pesanan || lemon
         }
         .pt-proses .form-select { padding-right: 32px !important; }
         .pt-proses textarea.form-control { min-height: 84px; }
+        /* Pilihan ebook bonus: kartu bersih seragam dasbor. */
+        .pp-ebook-deret { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+        .pt-proses .ebook-pick {
+            display: flex; align-items: center; gap: 12px; height: 100%; padding: 12px 14px; margin: 0;
+            border-radius: 14px !important; border: 1.5px solid #e9edf3 !important; background: #fff !important;
+            box-shadow: none !important; transform: none !important; cursor: pointer;
+        }
+        .pt-proses .ebook-pick:hover { border-color: #c4b5fd !important; }
+        .pt-proses .ebook-pick:has(input:checked) { border-color: #7c3aed !important; background: #f5f3ff !important; }
+        .pt-proses .ebook-pick.is-bawaan { border-style: dashed !important; }
+        .pt-proses .ebook-pick.is-bawaan:has(input:checked) { border-style: solid !important; }
+        .pt-proses .ebook-pick .ep-icon { width: 38px !important; height: 38px !important; flex: 0 0 38px; border-radius: 11px !important; background: #ede9fe !important; color: #7c3aed !important; box-shadow: none !important; }
+        .pt-proses .ebook-pick:has(input:checked) .ep-icon { background: #7c3aed !important; color: #fff !important; }
+        .pt-proses .ebook-pick .ep-body { flex: 1 1 auto; min-width: 0; }
+        .pt-proses .ebook-pick .ep-title { display: block; font-size: .86rem; font-weight: 700; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pt-proses .ebook-pick .ep-desc { display: block; font-size: .74rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pt-proses .ebook-pick .ep-bawaan { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: .7rem; font-weight: 800; color: #c2410c; }
+        .pp-ebook-info { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; padding: 9px 12px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: .8rem; line-height: 1.5; }
         .pp-templat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 10px; }
         .pp-templat-judul { font-size: .74rem; font-weight: 700; color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; }
         .pp-templat-judul i { color: #f59e0b; }
@@ -748,19 +766,32 @@ Proses Pesanan || lemon
                 </div>
 
                 @if (count($availableEbooks) > 0)
-                <div class="row g-3">
-                    @foreach ($availableEbooks as $eb)
-                    <div class="col-md-6 col-xxl-4">
-                        <label class="ebook-pick">
+                @php
+                    // Ebook bawaan produk ditaruh paling depan.
+                    $ebookUrut = collect($availableEbooks)->sortBy(fn ($eb) => (string) $eb->id === $ebookBawaanId ? 0 : 1)->values();
+                @endphp
+                @if ($ebookBawaanOtomatis)
+                    <div class="pp-ebook-info">
+                        <i class="bi bi-magic"></i>
+                        <span>Ebook <b>bawaan produk</b> ini sudah tercentang otomatis. Hapus centangnya bila pelanggan ini tidak perlu ebook.</span>
+                    </div>
+                @endif
+                <div class="pp-ebook-deret">
+                    @foreach ($ebookUrut as $eb)
+                        @php $ebBawaan = (string) $eb->id === $ebookBawaanId; @endphp
+                        <label class="ebook-pick {{ $ebBawaan ? 'is-bawaan' : '' }}" wire:key="ep-{{ $eb->id }}">
                             <input type="checkbox" value="{{ $eb->id }}" wire:model="selectedEbooks">
                             <span class="ep-icon"><i class="bi bi-journal-bookmark-fill"></i></span>
                             <span class="ep-body">
                                 <span class="ep-title">{{ $eb->judul }}</span>
-                                <small class="ep-desc">{{ $eb->deskripsi ?: 'Ebook bonus' }}</small>
+                                @if ($ebBawaan)
+                                    <small class="ep-bawaan"><i class="bi bi-magic"></i> Bawaan produk</small>
+                                @else
+                                    <small class="ep-desc">{{ $eb->deskripsi ?: 'Ebook bonus' }}</small>
+                                @endif
                             </span>
                             <i class="bi bi-check-circle-fill ep-check"></i>
                         </label>
-                    </div>
                     @endforeach
                 </div>
                 @error('selectedEbooks.*') <div class="text-danger small mt-2">{{ $message }}</div> @enderror

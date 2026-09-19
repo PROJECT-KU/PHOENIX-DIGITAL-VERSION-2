@@ -102,3 +102,97 @@ it('halaman tambah & ubah memakai kerangka dasbor', function () {
     Livewire::test(\App\Livewire\Pages\Admin\Ebook\EbookEdit::class, ['ebook' => $ebook])
         ->assertSee('Ubah Ebook')->assertSee('Berkas tidak ditemukan di server');
 });
+
+it('produk bawaan disimpan dari form ebook; satu produk hanya punya satu ebook bawaan', function () {
+    Storage::fake('local');
+    $this->actingAs(adminEbook());
+    $gpt = \App\Models\Product::create(['nama_akun' => 'Chat Gpt Plus']);
+    $lama = Ebook::create(['judul' => 'Panduan Lama', 'status' => 'active', 'file' => 'a.pdf']);
+    $gpt->update(['ebook_bawaan_id' => $lama->id]);
+    $baru = Ebook::create(['judul' => 'Panduan Chat GPT', 'status' => 'active', 'file' => 'b.pdf']);
+
+    Livewire::test(EbookForm::class, ['ebook' => $baru])
+        ->assertSee('Bawaan saat ini: Panduan Lama')
+        ->set('produkBawaan', [(string) $gpt->id])
+        ->assertSee('Pindah dari: Panduan Lama')
+        ->call('save');
+
+    expect($gpt->fresh()->ebook_bawaan_id)->toBe($baru->id);
+
+    Livewire::test(EbookForm::class, ['ebook' => $baru->fresh()])->set('produkBawaan', [])->call('save');
+    expect($gpt->fresh()->ebook_bawaan_id)->toBeNull();
+});
+
+it('form ubah menyarankan produk yang sering menerima ebook ini', function () {
+    $this->actingAs(adminEbook());
+    $ebook = Ebook::create(['judul' => 'Panduan Grammarly', 'status' => 'active', 'file' => 'g.pdf']);
+    $produk = \App\Models\Product::create(['nama_akun' => 'Grammarly Premium']);
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-SARAN', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => \App\Models\Customer::create(['nama' => 'A', 'no_hp' => '081200000009'])->id,
+    ]);
+    foreach (range(1, 3) as $i) {
+        \App\Models\OrderItem::create(['order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Grammarly', 'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1])
+            ->ebooks()->attach($ebook->id);
+    }
+
+    Livewire::test(EbookForm::class, ['ebook' => $ebook])
+        ->assertSee('Sering dikirim bersama')
+        ->assertSee('3×')
+        ->call('tambahProdukBawaan', (string) $produk->id)
+        ->assertSet('produkBawaan', [(string) $produk->id])
+        ->assertDontSee('Sering dikirim bersama');
+});
+
+it('proses pesanan: ebook bawaan tercentang otomatis hanya untuk item yang belum diproses', function () {
+    $this->actingAs(adminEbook(['view_ebook', 'edit_pemesanantoko']));
+    $ebook = Ebook::create(['judul' => 'Panduan DeepL', 'status' => 'active', 'file' => 'd.pdf']);
+    $produk = \App\Models\Product::create(['nama_akun' => 'DeepL Premium', 'ebook_bawaan_id' => $ebook->id]);
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-BAWAAN', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'paid', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => \App\Models\Customer::create(['nama' => 'B', 'no_hp' => '081200000010'])->id,
+    ]);
+    $baru = \App\Models\OrderItem::create(['order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'DeepL', 'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1]);
+    $sudah = \App\Models\OrderItem::create(['order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'DeepL', 'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1, 'delivery_status' => 'delivered', 'processed_at' => now()]);
+
+    Livewire::test(\App\Livewire\Pages\Admin\Order\ProcessOrder::class, ['id' => $baru->id])
+        ->assertSet('selectedEbooks', [$ebook->id])
+        ->assertSee('Bawaan produk')
+        ->assertSee('sudah tercentang otomatis');
+
+    Livewire::test(\App\Livewire\Pages\Admin\Order\ProcessOrder::class, ['id' => $sudah->id])
+        ->assertSet('selectedEbooks', [])
+        ->assertDontSee('sudah tercentang otomatis');
+});
+
+it('halaman baca: dibuka tercatat; nonaktif/tautan lama menampilkan halaman tidak tersedia', function () {
+    $ebook = Ebook::create(['judul' => 'Panduan Scite', 'status' => 'active', 'file' => 's.pdf']);
+
+    $this->get('/e/'.$ebook->share_token)->assertOk()->assertSee('Panduan Scite');
+    $this->get('/e/'.$ebook->share_token)->assertOk();
+    expect($ebook->fresh()->dibuka_count)->toBe(2)->and($ebook->fresh()->terakhir_dibuka_at)->not->toBeNull();
+
+    $tokenLama = $ebook->share_token;
+    $this->actingAs(adminEbook());
+    Livewire::test(EbookList::class)->call('buatTautanBaru', $ebook->id);
+    $this->get('/e/'.$tokenLama)->assertNotFound()->assertSee('Ebook ini sudah tidak tersedia');
+    $this->get('/e/'.$ebook->fresh()->share_token)->assertOk();
+
+    $ebook->update(['status' => 'non-active']);
+    $this->get('/e/'.$ebook->fresh()->share_token)->assertNotFound()->assertSee('Hubungi kami');
+});
+
+it('batas unggah PDF kini 10 MB', function () {
+    Storage::fake('local');
+    $this->actingAs(adminEbook());
+
+    Livewire::test(EbookForm::class)->set('judul', 'Panduan Besar')
+        ->set('file', UploadedFile::fake()->create('besar.pdf', 6000, 'application/pdf'))
+        ->call('save')->assertHasNoErrors();
+
+    Livewire::test(EbookForm::class)->set('judul', 'Panduan Raksasa')
+        ->set('file', UploadedFile::fake()->create('raksasa.pdf', 11000, 'application/pdf'))
+        ->call('save')->assertHasErrors('file');
+});

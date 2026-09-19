@@ -145,6 +145,7 @@ class Product extends Model
         'nama_akun',
         'tipe_akun',
         'butuh_file',
+        'ebook_bawaan_id',
         'jasa_mode',
         'addon_mode',
         'pakai_exclude',
@@ -282,7 +283,13 @@ class Product extends Model
         return $this->numberFormatted($this->{$field});
     }
 
-    public function scopeLatestLimit($query, $limit = 4)
+    /** Ebook yang otomatis tercentang saat memproses item produk ini. */
+    public function ebookBawaan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Ebook::class, 'ebook_bawaan_id');
+    }
+
+        public function scopeLatestLimit($query, $limit = 4)
     {
         return $query->latest()->take($limit);
     }

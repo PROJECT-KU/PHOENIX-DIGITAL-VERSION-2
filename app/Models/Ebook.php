@@ -18,6 +18,12 @@ class Ebook extends Model
         'deskripsi',
         'file',
         'status',
+        'dibuka_count',
+        'terakhir_dibuka_at',
+    ];
+
+    protected $casts = [
+        'terakhir_dibuka_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -41,6 +47,21 @@ class Ebook extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
+    }
+
+    /** Produk yang memakai ebook ini sebagai ebook bawaan (tercentang otomatis saat diproses). */
+    public function produkBawaan(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Product::class, 'ebook_bawaan_id');
+    }
+
+    /** Catat satu kali halaman baca dibuka pelanggan (tanpa menyentuh updated_at). */
+    public function catatDibuka(): void
+    {
+        static::withoutTimestamps(fn () => $this->newQuery()->whereKey($this->id)->update([
+            'dibuka_count' => \Illuminate\Support\Facades\DB::raw('dibuka_count + 1'),
+            'terakhir_dibuka_at' => now(),
+        ]));
     }
 
     public function orderItems(): BelongsToMany
