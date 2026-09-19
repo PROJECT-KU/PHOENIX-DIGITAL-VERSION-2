@@ -124,25 +124,28 @@ Data Banner || lemon
                                     <i class="bi bi-cursor"></i>
                                     <span>{{ $item->tautan ?: 'Halaman Belanja' }}</span>
                                 </div>
+                                @if ($bolehUbah)
+                                    {{-- Saklar sungguhan berlabel — dulu ikon toggle kecil di baris tombol. --}}
+                                    <button type="button" class="bn-saklar {{ $hidup ? 'is-hidup' : '' }}" role="switch" aria-checked="{{ $hidup ? 'true' : 'false' }}"
+                                        wire:click="alihStatus('{{ $item->id }}')" wire:loading.attr="disabled" wire:target="alihStatus('{{ $item->id }}')">
+                                        <span class="bn-saklar-jalur"><span class="bn-saklar-bulat"></span></span>
+                                        <span>{{ $hidup ? 'Aktif di beranda' : 'Non-aktif' }}</span>
+                                    </button>
+                                @endif
                             </div>
                             <div class="bn-aksi">
-                                <button type="button" class="dsb-tombol is-lembut is-mungil bn-aksi-utama" wire:click="lihat('{{ $item->id }}')">
+                                <button type="button" class="bn-btn bn-btn-detail" wire:click="lihat('{{ $item->id }}')">
                                     <i class="bi bi-eye"></i><span>Detail</span>
                                 </button>
                                 @if ($bolehUbah)
-                                    <span class="bn-geser" role="group" aria-label="Ubah urutan">
-                                        <button type="button" class="dsb-tabel-btn" wire:click="geser('{{ $item->id }}', 'naik')" @disabled(! $bisaNaik) title="Tampilkan lebih dulu"><i class="bi bi-chevron-up"></i></button>
-                                        <button type="button" class="dsb-tabel-btn" wire:click="geser('{{ $item->id }}', 'turun')" @disabled(! $bisaTurun) title="Tampilkan belakangan"><i class="bi bi-chevron-down"></i></button>
+                                    <span class="bn-urut" role="group" aria-label="Ubah urutan slide">
+                                        <button type="button" wire:click="geser('{{ $item->id }}', 'naik')" @disabled(! $bisaNaik) title="Tampilkan lebih dulu" aria-label="Naikkan urutan"><i class="bi bi-arrow-up"></i></button>
+                                        <button type="button" wire:click="geser('{{ $item->id }}', 'turun')" @disabled(! $bisaTurun) title="Tampilkan belakangan" aria-label="Turunkan urutan"><i class="bi bi-arrow-down"></i></button>
                                     </span>
-                                    <button type="button" class="dsb-tabel-btn bn-saklar {{ $hidup ? 'is-hidup' : '' }}" wire:click="alihStatus('{{ $item->id }}')"
-                                        wire:loading.attr="disabled" wire:target="alihStatus('{{ $item->id }}')"
-                                        title="{{ $hidup ? 'Sembunyikan dari beranda' : 'Aktifkan' }}">
-                                        <i class="bi {{ $hidup ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
-                                    </button>
-                                    <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}" class="dsb-tabel-btn" title="Ubah"><i class="bi bi-pencil-square"></i></a>
+                                    <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}" class="bn-btn bn-btn-ikon" title="Ubah" aria-label="Ubah banner"><i class="bi bi-pencil"></i></a>
                                 @endif
                                 @if ($bolehHapus)
-                                    <button type="button" class="dsb-tabel-btn is-bahaya bn-hapus" data-id="{{ $item->id }}" data-judul="{{ $item->judul }}" title="Hapus"><i class="bi bi-trash3"></i></button>
+                                    <button type="button" class="bn-btn bn-btn-ikon is-bahaya bn-hapus" data-id="{{ $item->id }}" data-judul="{{ $item->judul }}" title="Hapus" aria-label="Hapus banner"><i class="bi bi-trash3"></i></button>
                                 @endif
                             </div>
                         </article>

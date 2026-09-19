@@ -58,16 +58,37 @@
     .bn-judul { margin: 0 0 6px; font-size: .95rem; font-weight: 800; line-height: 1.35; color: #1c1f26; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .bn-waktu { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: #64748b; }
     .bn-waktu i { color: var(--c); }
-    .bn-aksi { display: flex; align-items: center; gap: 6px; padding: 12px 16px 14px; margin-top: 8px; border-top: 1px dashed #eef2f7; }
-    .bn-aksi-utama { margin-right: auto; }
-    .bn-saklar.is-hidup { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+    /* Baris aksi: semua kontrol setinggi 36px, satu gaya. */
+    .bn-aksi { display: flex; align-items: center; gap: 8px; padding: 12px 16px 14px; margin-top: 10px; border-top: 1px solid #f1f5f9; }
+    .bn-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px;
+        border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; color: #334155; font-size: .8rem; font-weight: 700;
+        text-decoration: none; cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .bn-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #1c1f26; }
+    .bn-btn-detail { flex: 1 1 auto; }
+    .bn-btn-ikon { width: 36px; padding: 0; flex: 0 0 36px; }
+    .bn-btn.is-bahaya { color: #dc2626; }
+    .bn-btn.is-bahaya:hover { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    /* Kontrol urutan: dua tombol menyatu jadi satu pil. */
+    .bn-urut { display: inline-flex; flex: 0 0 auto; height: 36px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fff; }
+    .bn-urut button { width: 32px; border: 0; background: none; color: #475569; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .bn-urut button + button { border-left: 1px solid #e5e7eb; }
+    .bn-urut button:hover:not(:disabled) { background: #f5f3ff; color: #6d28d9; }
+    .bn-urut button:disabled { color: #d1d5db; cursor: default; }
+    /* Saklar tampil di beranda */
+    .bn-saklar { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 0; border: 0; background: none; cursor: pointer; font-size: .78rem; font-weight: 700; color: #64748b; }
+    .bn-saklar-jalur { position: relative; width: 34px; height: 20px; border-radius: 999px; background: #cbd5e1; transition: background .2s ease; flex: 0 0 34px; }
+    .bn-saklar-bulat { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .3); transition: transform .2s ease; }
+    .bn-saklar.is-hidup { color: #15803d; }
+    .bn-saklar.is-hidup .bn-saklar-jalur { background: #16a34a; }
+    .bn-saklar.is-hidup .bn-saklar-bulat { transform: translateX(14px); }
+    .bn-saklar:disabled { opacity: .6; }
     .bn-slide { position: absolute; right: 12px; top: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(15, 23, 42, .78); color: #fff; font-size: .7rem; font-weight: 800; letter-spacing: .02em; }
     .bn-tujuan { margin-top: 3px; }
     .bn-tujuan span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .bn-tujuan i { color: #94a3b8; }
-    .bn-geser { display: inline-flex; gap: 2px; }
-    .bn-geser .dsb-tabel-btn { width: 30px; }
-    .bn-geser .dsb-tabel-btn:disabled { opacity: .35; cursor: default; }
+
     .bn-halaman { margin-top: 18px; display: flex; justify-content: center; }
     .bn-halaman .pagination { margin: 0; flex-wrap: wrap; justify-content: center; }
     /* Lencana keadaan di badan kartu: hanya ponsel (di layar lebar ada di atas gambar).
