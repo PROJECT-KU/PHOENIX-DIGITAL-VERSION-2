@@ -584,10 +584,30 @@ Pesan Pelanggan || lemon
                                             @if ($bolehUbah || $bolehHapus)
                                                 {{-- Yang jarang dipakai dikumpulkan: enam ikon sebaris sudah
                                                      terlalu padat dan artinya tidak jelas tanpa hover. --}}
-                                                <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
-                                                    <button type="button" class="pp-btn pp-btn-ikon" x-on:click="buka = !buka"
+                                                <div class="pp-tunda" x-data="{
+    buka: false,
+    gaya: '',
+    /* Menu ditempatkan dengan koordinat layar supaya tidak terpotong
+       pembungkusnya yang ber-overflow:hidden. Ukurannya TIDAK diukur di sini:
+       saat dihitung, menunya masih display:none sehingga lebarnya terbaca 0
+       dan posisinya meleset ke luar layar. Yang dipakai kotak tombolnya, lalu
+       menunya digeser sendiri lewat transform. */
+    pasang() {
+        this.buka = ! this.buka;
+        if (! this.buka) return;
+
+        const pemicu = this.$refs.pemicu.getBoundingClientRect();
+        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8));
+        const muatBawah = window.innerHeight - pemicu.bottom > 300;
+
+        this.gaya = muatBawah
+            ? 'left:' + kiri + 'px; top:' + (pemicu.bottom + 6) + 'px; transform: translateX(-100%);'
+            : 'left:' + kiri + 'px; top:' + (pemicu.top - 6) + 'px; transform: translate(-100%, -100%);';
+    },
+}" x-on:click.outside="buka = false" x-on:scroll.window="buka = false" x-on:resize.window="buka = false">
+                                                    <button type="button" class="pp-btn pp-btn-ikon" x-ref="pemicu" x-on:click="pasang()"
                                                         title="Tindakan lain" aria-label="Tindakan lain"><i class="bi bi-three-dots"></i></button>
-                                                    <div class="pp-tunda-menu is-lebar" x-show="buka" x-cloak>
+                                                    <div class="pp-tunda-menu is-lebar" x-show="buka" x-ref="menu" :style="gaya" x-cloak>
                                                         @if ($bolehUbah && ! $item->belumDibaca())
                                                             <button type="button" wire:click="tandaiBelumDibaca('{{ $item->id }}')" x-on:click="buka = false">Tandai belum dibaca</button>
                                                         @endif

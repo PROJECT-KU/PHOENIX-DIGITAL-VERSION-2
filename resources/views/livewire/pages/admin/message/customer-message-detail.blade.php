@@ -42,13 +42,33 @@ Detail Pesan Pelanggan || lemon
                 @if ($bolehUbah || $bolehHapus)
                     {{-- Tindakan sekunder dikumpulkan: enam tombol sejajar
                          membungkus jadi dua baris di tablet. --}}
-                    <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
-                        <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka" :aria-expanded="buka.toString()">
+                    <div class="pp-tunda" x-data="{
+    buka: false,
+    gaya: '',
+    /* Menu ditempatkan dengan koordinat layar supaya tidak terpotong
+       pembungkusnya yang ber-overflow:hidden. Ukurannya TIDAK diukur di sini:
+       saat dihitung, menunya masih display:none sehingga lebarnya terbaca 0
+       dan posisinya meleset ke luar layar. Yang dipakai kotak tombolnya, lalu
+       menunya digeser sendiri lewat transform. */
+    pasang() {
+        this.buka = ! this.buka;
+        if (! this.buka) return;
+
+        const pemicu = this.$refs.pemicu.getBoundingClientRect();
+        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8));
+        const muatBawah = window.innerHeight - pemicu.bottom > 300;
+
+        this.gaya = muatBawah
+            ? 'left:' + kiri + 'px; top:' + (pemicu.bottom + 6) + 'px; transform: translateX(-100%);'
+            : 'left:' + kiri + 'px; top:' + (pemicu.top - 6) + 'px; transform: translate(-100%, -100%);';
+    },
+}" x-on:click.outside="buka = false" x-on:scroll.window="buka = false" x-on:resize.window="buka = false">
+                        <button type="button" class="dsb-tombol is-lembut" x-ref="pemicu" x-on:click="pasang()" :aria-expanded="buka.toString()">
                             <span class="pp-isi-tombol">
                                 <i class="bi bi-three-dots"></i><span>Tindakan lain</span>
                             </span>
                         </button>
-                        <div class="pp-tunda-menu is-bawah is-lebar" x-show="buka" x-cloak>
+                        <div class="pp-tunda-menu is-bawah is-lebar" x-show="buka" x-ref="menu" :style="gaya" x-cloak>
                             @if ($bolehUbah)
                                 <span class="pp-menu-judul">Tunda</span>
                                 @if ($message->ditunda())

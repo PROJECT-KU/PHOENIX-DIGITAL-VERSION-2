@@ -172,9 +172,13 @@
     .pp-rekap-item span { display: block; margin-top: 2px; font-size: .8rem; font-weight: 700; color: #0e7490; }
     .pp-rekap-item small { display: block; margin-top: 2px; font-size: .74rem; color: #94a3b8; }
 
-    /* ===== Menu tunda ===== */
+    /* ===== Menu tindakan (tunda & lainnya) =====
+       Posisinya FIXED, bukan absolute: pembungkusnya (.dsb-hero dan .pp-kartu)
+       memakai overflow:hidden untuk hiasan & sudut membulat, sehingga menu
+       absolute terpotong begitu keluar dari kotaknya. Koordinatnya dihitung
+       saat menu dibuka. */
     .pp-tunda { position: relative; display: inline-flex; }
-    .pp-tunda-menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 20; display: grid; min-width: 168px; padding: 5px; border-radius: 12px; background: #fff; border: 1px solid #e9edf3; box-shadow: 0 16px 34px -20px rgba(15, 23, 42, .5); }
+    .pp-tunda-menu { position: fixed; z-index: 1200; display: grid; min-width: 168px; padding: 5px; border-radius: 12px; background: #fff; border: 1px solid #e9edf3; box-shadow: 0 16px 34px -20px rgba(15, 23, 42, .5); }
     .pp-tunda-menu button { padding: 8px 11px; border: 0; border-radius: 9px; background: none; font-size: .82rem; font-weight: 600; color: #334155; text-align: left; cursor: pointer; }
     .pp-tunda-menu button:hover { background: #f5f3ff; color: #6d28d9; }
     .pp-tunda-menu.is-lebar { min-width: 208px; }
@@ -417,8 +421,6 @@
     /* Pemisah tanggal di linimasa. */
     .pp-baris-tanggal { position: relative; margin: 2px 0 12px -26px; padding: 3px 10px; border-radius: 99px; background: #f1f5f9; font-size: .73rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #64748b; display: inline-block; }
 
-    /* Menu tunda yang membuka ke BAWAH (dipakai di bilah kepala halaman detail). */
-    .pp-tunda-menu.is-bawah { top: calc(100% + 6px); bottom: auto; }
 
     /* Tombol bantuan pintasan. */
     .pp-bantuan-pemicu { border: 0; background: none; cursor: pointer; }
