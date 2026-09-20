@@ -101,3 +101,20 @@ it('elemen wire:loading di layar admin tidak membawa kelas display', function ()
 
     expect($pelanggar)->toBe([]);
 });
+
+it('poller notifikasi tidak berdetak cepat di tab latar belakang', function () {
+    // 5 detik nonstop termasuk di latar belakang berarti satu tab yang
+    // dibiarkan terbuka mengirim 12 permintaan/menit selamanya; beberapa tab
+    // sekaligus sesekali membuat hosting menjawab 503.
+    $blade = file_get_contents(resource_path('views/livewire/layout/notif-poller.blade.php'));
+
+    expect($blade)
+        // Dasar yang tetap jalan walau Alpine gagal dimuat — tapi lambat.
+        ->toContain('wire:poll.30s.keep-alive')
+        ->not->toContain('wire:poll.5s')
+        // Cepat hanya saat tabnya benar-benar dilihat.
+        ->toContain('if (! document.hidden)')
+        ->toContain('}, 5000);')
+        // Interval dibersihkan saat komponennya dilepas (wire:navigate).
+        ->toContain('destroy() { clearInterval(this.jeda); }');
+});

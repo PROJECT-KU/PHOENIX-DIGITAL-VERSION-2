@@ -1,11 +1,31 @@
-<div wire:poll.5s.keep-alive>
+<div wire:poll.30s.keep-alive x-data="{
+        jeda: null,
+        init() {
+            var diri = this;
+            this.jeda = setInterval(function () {
+                if (! document.hidden) { diri.$wire.$refresh(); }
+            }, 5000);
+        },
+        destroy() { clearInterval(this.jeda); },
+    }">
     {{-- Pembawa hitungan badge (total + per kategori), tak terlihat. Diperbarui
          tiap poll. Dipakai untuk:
          - badge di judul tab: "(N) lemon"
          - popup notifikasi OS (seperti WhatsApp) saat suatu kategori bertambah.
-         keep-alive menjaga hitungan tetap segar meski admin sedang di
-         aplikasi/tab lain, sehingga popup tetap muncul. Komponen ini SENGAJA
-         terpisah dari sidebar agar poll tak me-render ulang menu (yang membuat
+
+         DUA KECEPATAN, sengaja:
+         - Tab yang sedang DILIHAT: 5 detik (lewat Alpine) supaya notifikasi
+           terasa seketika saat admin sedang bekerja.
+         - Tab di LATAR BELAKANG: 30 detik (wire:poll.keep-alive) — popup tetap
+           muncul, cuma paling telat 30 detik.
+
+         Dulu 5 detik nonstop termasuk di latar belakang: satu tab yang
+         dibiarkan terbuka mengirim 12 permintaan/menit selamanya, dan beberapa
+         tab sekaligus sesekali membuat hosting menjawab 503.
+
+         wire:poll TETAP dipasang sebagai dasar supaya notifikasi tidak mati
+         sama sekali kalau Alpine gagal dimuat. Komponen ini SENGAJA terpisah
+         dari sidebar agar poll tak me-render ulang menu (yang membuat
          dropdown/aktif hilang). --}}
     <span id="ttl-badge" hidden aria-hidden="true"
         data-n="{{ (int) $titleBadge }}"
