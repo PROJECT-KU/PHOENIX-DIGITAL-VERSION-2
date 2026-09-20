@@ -27,7 +27,7 @@ Pesan Pelanggan || lemon
         ];
         $idHalaman = $messages->pluck('id')->map(fn ($i) => (string) $i)->all();
         $semuaTercentang = $idHalaman && ! array_diff($idHalaman, $pilih);
-        $sasaranMuat = 'search,setTab,gotoPage,nextPage,previousPage,fStatus,fPrioritas,fKategori,fPetugas,fBatas,fDari,fSampai,urut,perPage,resetFilters,setTampilan';
+        $sasaranMuat = 'search,setTab,gotoPage,nextPage,previousPage,fStatus,fPrioritas,fKategori,fPetugas,fBatas,fDari,fSampai,urut,perPage,resetFilters';
         $warnaAvatar = fn ($nama) => ['#7c3aed', '#2563eb', '#16a34a', '#d97706', '#db2777', '#0891b2'][crc32((string) $nama) % 6];
     @endphp
 
@@ -117,11 +117,17 @@ Pesan Pelanggan || lemon
                     @endif
                 </div>
 
-                <div class="pp-saklar" role="group" aria-label="Bentuk tampilan daftar">
-                    <button type="button" class="{{ $tampilan === 'kartu' ? 'is-aktif' : '' }}" wire:click="setTampilan('kartu')" aria-pressed="{{ $tampilan === 'kartu' ? 'true' : 'false' }}">
+                <div class="pp-saklar" role="group" aria-label="Bentuk tampilan daftar"
+                    x-data="{ pilihan: @js($tampilan) }" x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    <span class="pp-saklar-pil" aria-hidden="true"></span>
+                    <button type="button" x-bind:class="pilihan === 'kartu' ? 'is-aktif' : ''"
+                        x-on:click="pilihan = 'kartu'" wire:click="setTampilan('kartu')"
+                        x-bind:aria-pressed="(pilihan === 'kartu').toString()">
                         <i class="bi bi-grid"></i><span>Kartu</span>
                     </button>
-                    <button type="button" class="{{ $tampilan === 'tabel' ? 'is-aktif' : '' }}" wire:click="setTampilan('tabel')" aria-pressed="{{ $tampilan === 'tabel' ? 'true' : 'false' }}">
+                    <button type="button" x-bind:class="pilihan === 'tabel' ? 'is-aktif' : ''"
+                        x-on:click="pilihan = 'tabel'" wire:click="setTampilan('tabel')"
+                        x-bind:aria-pressed="(pilihan === 'tabel').toString()">
                         <i class="bi bi-list-ul"></i><span>Tabel</span>
                     </button>
                 </div>
@@ -293,6 +299,7 @@ Pesan Pelanggan || lemon
 
         {{-- ================== DAFTAR PESAN ================== --}}
         <section wire:loading.class="pp-sembunyi" wire:target="{{ $sasaranMuat }}">
+          <div class="pp-wadah" wire:loading.class="pp-tukar" wire:target="setTampilan">
             @if ($messages->isEmpty())
                 @php
                     [$kIkon, $kJudul, $kKet] = ($search || $this->adaSaring)
@@ -498,6 +505,7 @@ Pesan Pelanggan || lemon
                     <div class="pp-halaman">{{ $messages->links('vendor.pagination') }}</div>
                 @endif
             @endif
+          </div>
         </section>
     </div>
 

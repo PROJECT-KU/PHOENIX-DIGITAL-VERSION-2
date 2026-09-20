@@ -160,6 +160,19 @@
     .pp-halaman .page-item.active .page-link { background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important; border-color: transparent !important; color: #fff !important; }
     .pp-halaman .page-item.disabled .page-link { background: #f8fafc !important; color: #b0b7c3 !important; border-color: #f1f5f9 !important; }
 
+    /* ===== Pergantian bentuk daftar ===== */
+    /* Ganti kartu <-> tabel TIDAK lewat kerangka pemuatan: geometrinya beda
+       jauh, jadi blank-lalu-muncul terasa menyentak. Yang dipakai: wadahnya
+       meredup sebentar, lalu bentuk barunya masuk sambil naik tipis. */
+    .pp-wadah { transition: opacity .2s ease, transform .2s ease; }
+    .pp-wadah.pp-tukar { opacity: .4; transform: scale(.994); }
+    .pp-rak, .pp-tabel-bungkus { animation: pp-masuk .3s cubic-bezier(.22, .61, .36, 1) both; }
+    @keyframes pp-masuk { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) {
+        .pp-wadah, .pp-wadah.pp-tukar { transition: none; transform: none; }
+        .pp-rak, .pp-tabel-bungkus { animation: none; }
+    }
+
     /* ===== Kerangka pemuatan ===== */
     .pp-sembunyi { display: none !important; }
     .pp-kerangka { display: none; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
@@ -205,10 +218,15 @@
     .pp-teknis-pemicu > i { margin-left: auto; color: #94a3b8; }
 
     /* ===== Saklar tampilan kartu/tabel ===== */
-    .pp-saklar { display: inline-flex; padding: 3px; gap: 3px; border-radius: 12px; background: #f1f5f9; border: 1px solid #e9edf3; }
-    .pp-saklar button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 0; border-radius: 9px; background: none; font-size: .78rem; font-weight: 700; color: #64748b; cursor: pointer; }
-    .pp-saklar button.is-aktif { background: #fff; color: #7c3aed; box-shadow: 0 2px 6px -3px rgba(15, 23, 42, .3); }
+    .pp-saklar { position: relative; display: inline-flex; padding: 3px; gap: 3px; border-radius: 12px; background: #f1f5f9; border: 1px solid #e9edf3; }
+    /* Pil putihnya satu elemen yang BERGESER, bukan latar yang berpindah dari
+       satu tombol ke tombol lain — pergantiannya jadi terbaca, tidak berkedip. */
+    .pp-saklar-pil { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 4.5px); border-radius: 9px; background: #fff; box-shadow: 0 2px 6px -3px rgba(15, 23, 42, .3); transition: transform .26s cubic-bezier(.22, .61, .36, 1); }
+    .pp-saklar.is-tabel .pp-saklar-pil { transform: translateX(calc(100% + 3px)); }
+    .pp-saklar button { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 0; padding: 6px 11px; border: 0; border-radius: 9px; background: none; font-size: .78rem; font-weight: 700; color: #64748b; cursor: pointer; transition: color .2s ease; }
+    .pp-saklar button.is-aktif { color: #7c3aed; }
     @media (max-width: 767.98px) { .pp-saklar { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .pp-saklar-pil { transition: none; } }
 
     /* ===== Tampilan tabel (layar lebar) ===== */
     .pp-tabel-bungkus { overflow-x: auto; border-radius: 16px; border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff; }
