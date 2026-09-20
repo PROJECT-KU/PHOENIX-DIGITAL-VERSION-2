@@ -187,6 +187,40 @@ async function pastikanLogin(hal) {
     catat('Login submitin berhasil.');
 }
 
+/**
+ * Tutup pop-up promo submitin.
+ *
+ * Modal promo menutupi form dan bisa menelan klik "Gunakan Paket" — satu-satunya
+ * klik yang benar-benar memakai kuota. Kotak "Jangan tampilkan lagi" ikut
+ * dicentang supaya tidak muncul lagi di profil browser ini.
+ */
+async function tutupPromo(hal) {
+    const modal = hal.locator('.modal, [class*="promo"], [id*="promo"]')
+        .filter({ hasText: /jangan tampilkan lagi|promo/i }).first();
+
+    if (!(await modal.count()) || !(await modal.isVisible().catch(() => false))) return;
+
+    await hal.locator('input[type=checkbox]').filter({ hasNot: hal.locator('#orderForm input') }).first()
+        .evaluate((el) => { if (!el.checked) el.click(); }).catch(() => {});
+
+    for (const sel of ['button:has-text("Tutup")', '[aria-label="Close"]', '.modal .btn-close', 'button:has-text("×")']) {
+        const tombol = hal.locator(sel).first();
+        if (await tombol.count()) {
+            await tombol.evaluate((el) => el.click()).catch(() => {});
+            await tidur(400);
+            break;
+        }
+    }
+
+    if (await modal.isVisible().catch(() => false)) {
+        // Masih menutupi: singkirkan dari DOM supaya tidak menelan klik.
+        await modal.evaluate((el) => el.remove()).catch(() => {});
+        catat('Pop-up promo submitin disingkirkan dari halaman.');
+    } else {
+        catat('Pop-up promo submitin ditutup.');
+    }
+}
+
 async function keForm(hal) {
     await hal.goto(FORM_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await pastikanLogin(hal);
@@ -199,6 +233,8 @@ async function keForm(hal) {
 
     // Metode bayar baru dirender untuk pengguna yang sudah masuk.
     await hal.waitForSelector('#payMethods', { timeout: 20000 }).catch(() => {});
+
+    await tutupPromo(hal);
 }
 
 /* ================================================================
@@ -526,8 +562,13 @@ async function kerjakan(ctx, hal, tugas) {
         // 3. Mode aman: berhenti di sini. Form terisi lengkap, tapi tidak ada
         //    yang dikirim dan kuota tidak terpakai.
         if (CFG.mode !== 'penuh') {
+            // Yang dipotret FORMNYA saja: tangkapan halaman penuh membuat bukti
+            // yang penting tenggelam di antara materi promosi submitin.
             const potret = path.join(CFG.potret, `aman-${tugas.order_number}-${Date.now()}.png`);
-            await hal.screenshot({ path: potret, fullPage: true });
+            const formEl = hal.locator('#orderForm');
+            await (await formEl.count()
+                ? formEl.screenshot({ path: potret })
+                : hal.screenshot({ path: potret, fullPage: true }));
             catat('MODE AMAN — form terisi tapi TIDAK dikirim. Tangkapan layar:', potret);
 
             return laporGagal(
@@ -540,8 +581,18 @@ async function kerjakan(ctx, hal, tugas) {
 
         // 4. Kirim. Dicatat sebelum klik supaya tidak pernah terkirim dua kali.
         catat('Klik "Gunakan Paket" untuk', tugas.order_number);
+        await tutupPromo(hal);
+
         const pindah = hal.waitForURL(/\/status\?order=/i, { timeout: 10 * 60 * 1000 }).catch(() => null);
-        await tombol.click();
+
+        // Klik biasa dulu; kalau ada yang menghalangi, ulangi di tingkat DOM.
+        try {
+            await tombol.click({ timeout: 15000 });
+        } catch (e) {
+            catat('Klik biasa terhalang (' + e.message.split('\n')[0].slice(0, 60) + ') — diulang lewat DOM.');
+            await tombol.evaluate((el) => el.click());
+        }
+
         await pindah;
 
         const galat = await hal.locator('#alertError.show').textContent().catch(() => null);
