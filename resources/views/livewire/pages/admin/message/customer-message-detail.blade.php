@@ -56,14 +56,15 @@ Detail Pesan Pelanggan || lemon
         @if ($sebelum || $berikut)
             <div class="pp-tetangga" style="margin-bottom: 14px;">
                 @if ($sebelum)
-                    <a href="{{ route('admin.customer-message.detail', $sebelum->id) }}" wire:navigate class="pp-btn">
+                    <a href="{{ route('admin.customer-message.detail', $sebelum->id) }}" wire:navigate class="pp-btn" data-arah="baru" title="Pintasan: k">
                         <i class="bi bi-chevron-left"></i><span>Tiket lebih baru</span>
                     </a>
                 @endif
                 @if ($berikut)
-                    <a href="{{ route('admin.customer-message.detail', $berikut->id) }}" wire:navigate class="pp-btn">
+                    <a href="{{ route('admin.customer-message.detail', $berikut->id) }}" wire:navigate class="pp-btn" data-arah="lama" title="Pintasan: j">
                         <span>Tiket lebih lama</span><i class="bi bi-chevron-right"></i>
                     </a>
+                    <span class="pp-pintasan"><kbd>j</kbd>/<kbd>k</kbd> pindah tiket · <kbd>r</kbd> balas · <kbd>c</kbd> catatan</span>
                 @endif
             </div>
         @endif
@@ -97,6 +98,9 @@ Detail Pesan Pelanggan || lemon
                             @else
                                 <span class="pp-tanda is-baru"><i class="bi bi-envelope-exclamation"></i>Belum dibaca</span>
                             @endif
+                            @if ($message->pernahSpam())
+                                <span class="pp-tanda is-spam"><i class="bi bi-shield-exclamation"></i>Pengirim pernah spam</span>
+                            @endif
                             @if ($message->sudahDibalas())
                                 <span class="pp-tanda is-dibalas"><i class="bi bi-check2-all"></i>Dibalas {{ $message->replied_at->locale('id')->diffForHumans() }}</span>
                             @elseif ($message->lewatBatas())
@@ -107,6 +111,46 @@ Detail Pesan Pelanggan || lemon
                         </div>
 
                         <blockquote class="pp-kutip">{{ $message->message }}</blockquote>
+
+                        @if ($lampiran->isNotEmpty() || $bolehUbah)
+                            <div class="pp-lampiran">
+                                <span class="pp-detail-label">Lampiran</span>
+                                @forelse ($lampiran as $l)
+                                    <div class="pp-lampiran-baris" wire:key="lampiran-{{ $l->id }}">
+                                        <i class="bi {{ str_starts_with((string) $l->mime, 'image/') ? 'bi-image' : 'bi-file-earmark-text' }}"></i>
+                                        <span>
+                                            <b>{{ $l->nama_asli }}</b>
+                                            <small>{{ $l->ukuranTerbaca() }} · {{ $l->dariAdmin() ? 'ditambahkan admin' : 'dari pelanggan' }}</small>
+                                        </span>
+                                        <a href="{{ route('admin.customer-message.lampiran', $l->id) }}" target="_blank" rel="noopener"
+                                            class="pp-btn pp-btn-ikon" title="Buka lampiran" aria-label="Buka lampiran"><i class="bi bi-box-arrow-up-right"></i></a>
+                                        @if ($bolehUbah && $l->dariAdmin())
+                                            <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-konfirmasi" data-action="hapusLampiran" data-arg="{{ $l->id }}" data-icon="warning"
+                                                data-title="Hapus lampiran ini?" data-text="{{ $l->nama_asli }} dihapus dari tiket." data-confirm="Ya, hapus"
+                                                title="Hapus lampiran" aria-label="Hapus lampiran"><i class="bi bi-trash3"></i></button>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <p class="pp-catatan-kecil" style="margin-top: 0 !important;">Belum ada lampiran di tiket ini.</p>
+                                @endforelse
+
+                                @if ($bolehUbah)
+                                    <div class="pp-lampiran-unggah">
+                                        <label class="pp-berkas">
+                                            <i class="bi bi-paperclip"></i>
+                                            <span>{{ $berkasBaru?->getClientOriginalName() ?: 'Pilih berkas (gambar, PDF, DOCX, XLSX — maks. 8 MB)' }}</span>
+                                            <input type="file" wire:model="berkasBaru" accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx">
+                                        </label>
+                                        <button type="button" class="pp-btn" wire:click="unggahLampiran" wire:loading.attr="disabled" wire:target="berkasBaru,unggahLampiran">
+                                            <i class="bi bi-upload"></i><span>Tambahkan</span>
+                                        </button>
+                                    </div>
+                                    <span class="pp-catatan-kecil" wire:loading wire:target="berkasBaru">Mengunggah berkas…</span>
+                                    @error('berkasBaru')<span class="pp-galat">{{ $message }}</span>@enderror
+                                    <p class="pp-catatan-kecil">Lampiran admin ikut terkirim saat balasan dikirim lewat surel dari halaman ini.</p>
+                                @endif
+                            </div>
+                        @endif
 
                         <div class="pp-balas">
                             <span class="pp-detail-label">Balas pelanggan</span>
@@ -152,19 +196,36 @@ Detail Pesan Pelanggan || lemon
 
                                 <div class="pp-tulis-baris">
                                     <label class="pp-centang">
-                                        <input type="checkbox" wire:model="balasanSelesai">
+                                        <input type="checkbox" wire:model="balasanSelesai" @checked($balasanSelesai)>
                                         <span>Sekalian tandai tiket selesai</span>
                                     </label>
-                                    <select class="dsb-isian pp-pilih" wire:model="balasanKanal" aria-label="Kanal balasan">
+                                    @if (filled($message->email))
+                                        <label class="pp-centang" title="Balasan dikirim dari aplikasi ke {{ $message->email }}">
+                                            <input type="checkbox" wire:model.live="balasanKirimSurel" @checked($balasanKirimSurel)>
+                                            <span>Kirim langsung lewat surel</span>
+                                        </label>
+                                    @endif
+                                    <select class="dsb-isian pp-pilih" wire:model.live="balasanKanal" aria-label="Kanal balasan">
                                         @foreach ($kanalDaftar as $nilai => $label)
                                             <option value="{{ $nilai }}">{{ $label }}</option>
                                         @endforeach
                                     </select>
+                                    @php $kirimSurel = $balasanKirimSurel && $balasanKanal === 'email' && filled($message->email); @endphp
                                     <button type="button" class="pp-btn is-utama" wire:click="simpanBalasan" wire:loading.attr="disabled" wire:target="simpanBalasan">
-                                        <i class="bi bi-send"></i><span>Simpan balasan</span>
+                                        <span wire:loading.remove wire:target="simpanBalasan" class="pp-isi-tombol">
+                                            <i class="bi {{ $kirimSurel ? 'bi-envelope-arrow-up' : 'bi-send' }}"></i>
+                                            <span>{{ $kirimSurel ? 'Kirim & catat' : 'Simpan balasan' }}</span>
+                                        </span>
+                                        <span wire:loading.inline-flex wire:target="simpanBalasan" class="pp-isi-tombol">
+                                            <span class="dsb-putar is-kecil"></span><span>{{ $kirimSurel ? 'Mengirim…' : 'Menyimpan…' }}</span>
+                                        </span>
                                     </button>
                                 </div>
                             </div>
+
+                            @if ($balasanKanal === 'email' && blank($message->email))
+                                <p class="pp-catatan-kecil"><i class="bi bi-info-circle"></i> Tiket ini tidak punya alamat surel — pilih kanal lain.</p>
+                            @endif
 
                             {{-- Kelola template: jarang dipakai, jadi dilipat. --}}
                             <button type="button" class="pp-teknis-pemicu" style="margin-top: 16px;" wire:click="$toggle('kelolaTemplate')" aria-expanded="{{ $kelolaTemplate ? 'true' : 'false' }}">
@@ -180,9 +241,15 @@ Detail Pesan Pelanggan || lemon
                                 <div class="pp-template-kelola">
                                     @if ($templates->isNotEmpty())
                                         <div class="pp-template-daftar">
-                                            @foreach ($templates as $t)
-                                                <div class="pp-template-item" wire:key="tpl-{{ $t->id }}">
+                                            @foreach ($templates as $i => $t)
+                                                <div class="pp-template-item {{ (string) $templateId === (string) $t->id ? 'is-diedit' : '' }}" wire:key="tpl-{{ $t->id }}">
                                                     <b>{{ $t->nama }}</b>
+                                                    <button type="button" class="pp-btn pp-btn-ikon" wire:click="geserTemplate('{{ $t->id }}', 'naik')" @disabled($i === 0)
+                                                        title="Naikkan urutan" aria-label="Naikkan urutan"><i class="bi bi-chevron-up"></i></button>
+                                                    <button type="button" class="pp-btn pp-btn-ikon" wire:click="geserTemplate('{{ $t->id }}', 'turun')" @disabled($i === $templates->count() - 1)
+                                                        title="Turunkan urutan" aria-label="Turunkan urutan"><i class="bi bi-chevron-down"></i></button>
+                                                    <button type="button" class="pp-btn pp-btn-ikon" wire:click="editTemplate('{{ $t->id }}')"
+                                                        title="Ubah template" aria-label="Ubah template"><i class="bi bi-pencil"></i></button>
                                                     <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-konfirmasi" data-action="hapusTemplate" data-arg="{{ $t->id }}" data-icon="warning"
                                                         data-title="Hapus template ini?" data-text="{{ $t->nama }} tidak akan muncul lagi di tiket mana pun." data-confirm="Ya, hapus"
                                                         title="Hapus template" aria-label="Hapus template"><i class="bi bi-trash3"></i></button>
@@ -192,7 +259,7 @@ Detail Pesan Pelanggan || lemon
                                     @endif
 
                                     <label class="pp-medan">
-                                        <span>Nama template baru</span>
+                                        <span>{{ $templateId ? 'Ubah nama template' : 'Nama template baru' }}</span>
                                         <input type="text" class="dsb-isian" wire:model="templateNama" placeholder="Misalnya: Minta bukti transfer">
                                     </label>
                                     @error('templateNama')<span class="pp-galat">{{ $message }}</span>@enderror
@@ -203,10 +270,15 @@ Detail Pesan Pelanggan || lemon
                                     </label>
                                     @error('templateIsi')<span class="pp-galat">{{ $message }}</span>@enderror
 
-                                    <div>
+                                    <div class="pp-template-aksi">
                                         <button type="button" class="pp-btn" wire:click="simpanTemplate">
-                                            <i class="bi bi-plus-lg"></i><span>Tambah template</span>
+                                            <i class="bi {{ $templateId ? 'bi-check2' : 'bi-plus-lg' }}"></i><span>{{ $templateId ? 'Simpan perubahan' : 'Tambah template' }}</span>
                                         </button>
+                                        @if ($templateId)
+                                            <button type="button" class="pp-btn" wire:click="batalEditTemplate">
+                                                <i class="bi bi-x"></i><span>Batal</span>
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             @endif
@@ -218,6 +290,15 @@ Detail Pesan Pelanggan || lemon
                         <div class="dsb-kartu-isi">
                             <span class="pp-detail-label">Catatan internal</span>
                             <p class="pp-catatan-kecil" style="margin-top: 0 !important;">Hanya terlihat oleh tim — tidak pernah dikirim ke pelanggan.</p>
+                            @if ($templates->isNotEmpty())
+                                <div class="pp-template">
+                                    @foreach ($templates as $t)
+                                        <button type="button" class="pp-template-btn" wire:click="pakaiTemplateCatatan('{{ $t->id }}')" title="Isikan template ini ke catatan">
+                                            <i class="bi bi-lightning-charge-fill"></i>{{ $t->nama }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
                             <div class="pp-tulis">
                                 <textarea class="dsb-isian" rows="2" wire:model="catatanIsi" placeholder="Misalnya: sudah ditelepon, minta ditunda sampai besok."></textarea>
                                 @error('catatanIsi')<span class="pp-galat">{{ $message }}</span>@enderror
@@ -234,29 +315,47 @@ Detail Pesan Pelanggan || lemon
                 {{-- ================== LINIMASA ================== --}}
                 <section class="dsb-kartu">
                     <div class="dsb-kartu-isi">
+                        @php
+                            // Tiket ramai bisa punya puluhan baris; yang lama dilipat
+                            // supaya kejadian terbaru tidak tenggelam.
+                            $batasLinimasa = 6;
+                            $lama = max(0, $logs->count() - $batasLinimasa);
+                        @endphp
                         <span class="pp-detail-label">Linimasa tiket</span>
-                        <ol class="pp-linimasa">
-                            <li class="pp-baris">
-                                <span class="pp-baris-ikon" style="--c: #7c3aed;"><i class="bi bi-inbox-fill"></i></span>
-                                <div class="pp-baris-kepala">
-                                    <b>Pesan masuk</b>
-                                    <small>{{ $message->created_at?->locale('id')->translatedFormat('d M Y, H:i') }} · dari {{ $message->name }}</small>
-                                </div>
-                            </li>
-                            @foreach ($logs as $log)
-                                @php [$lIkon, $lWarna, $lJudul] = $log->tampilan(); @endphp
-                                <li class="pp-baris is-{{ $log->jenis }}" wire:key="log-{{ $log->id }}">
-                                    <span class="pp-baris-ikon" style="--c: {{ $lWarna }}"><i class="bi {{ $lIkon }}"></i></span>
+                        <div x-data="{ semua: {{ $lama ? 'false' : 'true' }} }">
+                            @if ($lama)
+                                <button type="button" class="pp-btn pp-lipat" x-on:click="semua = !semua">
+                                    <i class="bi" :class="semua ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                    <span x-text="semua ? 'Sembunyikan yang lama' : 'Tampilkan {{ $lama }} kejadian lebih lama'"></span>
+                                </button>
+                            @endif
+                            <ol class="pp-linimasa">
+                                <li class="pp-baris" @if ($lama) x-show="semua" x-collapse x-cloak @endif>
+                                    <span class="pp-baris-ikon" style="--c: #7c3aed;"><i class="bi bi-inbox-fill"></i></span>
                                     <div class="pp-baris-kepala">
-                                        <b>{{ $lJudul }}</b>
-                                        <small>{{ $log->created_at?->locale('id')->translatedFormat('d M Y, H:i') }} · {{ $log->pelaku() }}</small>
+                                        <b>Pesan masuk</b>
+                                        <small>{{ $message->created_at?->locale('id')->translatedFormat('d M Y, H:i') }} · dari {{ $message->name }}</small>
                                     </div>
-                                    @if ($log->isi)
-                                        <p class="pp-baris-isi">{{ $log->isi }}</p>
-                                    @endif
                                 </li>
-                            @endforeach
-                        </ol>
+                                @foreach ($logs as $i => $log)
+                                    @php
+                                        [$lIkon, $lWarna, $lJudul] = $log->tampilan();
+                                        $disembunyikan = $lama && $i < $lama;
+                                    @endphp
+                                    <li class="pp-baris is-{{ $log->jenis }}" wire:key="log-{{ $log->id }}"
+                                        @if ($disembunyikan) x-show="semua" x-collapse x-cloak @endif>
+                                        <span class="pp-baris-ikon" style="--c: {{ $lWarna }}"><i class="bi {{ $lIkon }}"></i></span>
+                                        <div class="pp-baris-kepala">
+                                            <b>{{ $lJudul }}</b>
+                                            <small>{{ $log->created_at?->locale('id')->translatedFormat('d M Y, H:i') }} · {{ $log->pelaku() }}</small>
+                                        </div>
+                                        @if ($log->isi)
+                                            <p class="pp-baris-isi">{{ $log->isi }}</p>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
                     </div>
                 </section>
 
@@ -390,13 +489,21 @@ Detail Pesan Pelanggan || lemon
                             <span class="pp-detail-label">Pesan lain dari orang yang sama</span>
                             <div class="pp-kait">
                                 @foreach ($pesanLain as $lain)
-                                    <a href="{{ route('admin.customer-message.detail', $lain->id) }}" wire:navigate class="pp-kait-baris" wire:key="lain-{{ $lain->id }}">
-                                        <i class="bi bi-chat-left-text"></i>
-                                        <span>
-                                            <b>{{ $lain->ticket }}</b>
-                                            <small>{{ $lain->tampilanStatus()[0] }} · {{ $lain->created_at?->locale('id')->translatedFormat('d M Y') }}</small>
-                                        </span>
-                                    </a>
+                                    <div class="pp-kait-gabung" wire:key="lain-{{ $lain->id }}">
+                                        <a href="{{ route('admin.customer-message.detail', $lain->id) }}" wire:navigate class="pp-kait-baris">
+                                            <i class="bi bi-chat-left-text"></i>
+                                            <span>
+                                                <b>{{ $lain->ticket }}</b>
+                                                <small>{{ $lain->tampilanStatus()[0] }} · {{ $lain->created_at?->locale('id')->translatedFormat('d M Y') }}</small>
+                                            </span>
+                                        </a>
+                                        @if ($bolehUbah)
+                                            <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="gabungkanTiket" data-arg="{{ $lain->id }}" data-icon="question"
+                                                data-title="Gabungkan {{ $lain->ticket }} ke tiket ini?"
+                                                data-text="Tiket itu ditutup dan diarsipkan; isinya disalin ke linimasa tiket ini." data-confirm="Ya, gabungkan"
+                                                title="Gabungkan ke tiket ini" aria-label="Gabungkan ke tiket ini"><i class="bi bi-union"></i></button>
+                                        @endif
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
@@ -412,6 +519,9 @@ Detail Pesan Pelanggan || lemon
                             <div><small>Dibaca</small><b>{{ $message->read_at?->locale('id')->translatedFormat('d M Y, H:i') ?: 'Belum dibaca' }}</b></div>
                             <div><small>Dibalas</small><b>{{ $message->replied_at?->locale('id')->translatedFormat('d M Y, H:i') ?: 'Belum dicatat' }}{{ $message->pembalas ? ' · '.$message->pembalas->name : '' }}</b></div>
                             <div><small>Nomor telepon</small><b>{{ $message->no_telp ?: '—' }}</b></div>
+                            @if ($message->induk)
+                                <div><small>Digabungkan ke</small><b>{{ $message->induk->ticket }}</b></div>
+                            @endif
                         </div>
                     </div>
                 </section>
@@ -451,6 +561,31 @@ Detail Pesan Pelanggan || lemon
                     try { document.execCommand('copy'); selesai(); } catch (e) { /* diam: tak ada yang bisa dilakukan */ }
                     document.body.removeChild(ta);
                 };
+                // Pintasan: j/k pindah tiket, r fokus ke kotak balasan, c ke catatan.
+                document.addEventListener('keydown', (e) => {
+                    if (e.metaKey || e.ctrlKey || e.altKey) return;
+                    const el = document.activeElement;
+                    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) {
+                        if (e.key === 'Escape') el.blur();
+                        return;
+                    }
+
+                    const pindah = { j: 1, k: 0 };
+                    if (e.key in pindah) {
+                        const tautan = document.querySelectorAll('.pp-tetangga a');
+                        // Urutan tombolnya: [lebih baru, lebih lama]; k = lebih baru.
+                        const sasaran = document.querySelector('.pp-tetangga a[data-arah="' + (e.key === 'j' ? 'lama' : 'baru') + '"]');
+                        if (sasaran) { e.preventDefault(); sasaran.click(); }
+                        return;
+                    }
+
+                    const fokus = { r: 'textarea[wire\\:model="balasanIsi"]', c: 'textarea[wire\\:model="catatanIsi"]' };
+                    if (e.key in fokus) {
+                        const kotak = document.querySelector(fokus[e.key]);
+                        if (kotak) { e.preventDefault(); kotak.focus(); kotak.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+                    }
+                });
+
                 document.addEventListener('click', (e) => {
                     if (typeof Swal === 'undefined') return;
 

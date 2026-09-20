@@ -190,6 +190,18 @@ $jadwalkan('testimoni:bersihkan-arsip --hari=90')->dailyAt('00:25');
 /* Arsip ulasan produk: alasan yang sama dengan arsip testimoni. */
 $jadwalkan('ulasan:bersihkan-arsip --hari=90')->dailyAt('00:30');
 
+/*
+ * Arsip helpdesk: tiket biasa disimpan 180 hari (bukti percakapan), spam cukup
+ * 30 hari. Lampirannya ikut dibuang dari disk privat.
+ */
+$jadwalkan('helpdesk:bersihkan-arsip --hari=180 --hari-spam=30')->dailyAt('00:35');
+
+/*
+ * Pengingat tiket helpdesk yang lewat batas waktu membalas. Sekali sehari pagi
+ * hari, bukan tiap jam: yang dibutuhkan pengingat, bukan alarm.
+ */
+$jadwalkan('helpdesk:ingatkan-lewat-batas')->dailyAt('08:15');
+
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
  * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).

@@ -691,3 +691,407 @@ it('umur tiket ditulis dalam menit, jam, lalu hari', function () {
         ->and(pesan(['created_at' => now()->subHours(5)])->menungguTeks())->toBe('5 jam')
         ->and(pesan(['created_at' => now()->subDays(3)])->menungguTeks())->toBe('3 hari');
 });
+
+// ===================== Topik: massal & laporan =====================
+
+it('topik bisa diisi massal dan muncul di sebaran 30 hari', function () {
+    $this->actingAs(adminPesan());
+    $a = pesan();
+    $b = pesan();
+
+    $t = Livewire::test(CustomerMessageList::class)
+        ->set('pilih', [(string) $a->id, (string) $b->id])
+        ->call('kategoriTerpilih', 'komplain');
+
+    expect([$a->fresh()->kategori, $b->fresh()->kategori])->toBe(['komplain', 'komplain']);
+
+    $segar = Livewire::test(CustomerMessageList::class);
+    expect($segar->viewData('sebaranTopik'))->toHaveCount(1)
+        ->and($segar->viewData('sebaranTopik')[0])->toMatchArray(['kunci' => 'komplain', 'jumlah' => 2, 'persen' => 100])
+        ->and($segar->viewData('tanpaTopik'))->toBe(0);
+
+    // Topik ngawur tidak pernah tersimpan.
+    $t->set('pilih', [(string) $a->id])->call('kategoriTerpilih', 'ngawur');
+    expect($a->fresh()->kategori)->toBe('komplain');
+});
+
+it('sebaran topik menghitung tiket tanpa topik secara terpisah', function () {
+    $this->actingAs(adminPesan());
+    pesan(['kategori' => 'komplain']);
+    pesan();
+
+    $t = Livewire::test(CustomerMessageList::class);
+    expect($t->viewData('sebaranTopik'))->toHaveCount(1)
+        ->and($t->viewData('tanpaTopik'))->toBe(1);
+});
+
+// ===================== Urut dari kepala kolom =====================
+
+it('kepala kolom tabel mengurutkan naik lalu turun', function () {
+    $this->actingAs(adminPesan());
+    pesan(['name' => 'Ahmad']);
+    pesan(['name' => 'Zulkifli']);
+
+    $t = Livewire::test(CustomerMessageList::class)->call('setTampilan', 'tabel');
+    $nama = fn () => $t->viewData('messages')->pluck('name')->all();
+
+    $t->call('urutkanKolom', 'nama');
+    expect($t->get('urut'))->toBe('nama')
+        ->and($nama())->toBe(['Ahmad', 'Zulkifli'])
+        ->and($t->instance()->arahUrut('nama'))->toBe('naik');
+
+    $t->call('urutkanKolom', 'nama');
+    expect($nama())->toBe(['Zulkifli', 'Ahmad'])
+        ->and($t->instance()->arahUrut('nama'))->toBe('turun');
+
+    // Kolom yang tidak ada di daftar diabaikan, bukan bikin kueri ngawur.
+    $t->call('urutkanKolom', 'rahasia');
+    expect($t->get('urut'))->toBe('nama-turun');
+});
+
+// ===================== Pintasan kartu ringkasan =====================
+
+it('kartu ringkasan jadi pintasan saringan', function () {
+    $this->actingAs(adminPesan());
+    $telat = pesan(['name' => 'Telat', 'priority' => 'urgent', 'created_at' => now()->subHours(5)]);
+    $telat->markAsRead();
+    pesan(['name' => 'Baru Masuk', 'kategori' => 'komplain']);
+
+    $t = Livewire::test(CustomerMessageList::class);
+
+    $t->call('sorotLewatBatas');
+    expect($t->get('tab'))->toBe('semua')
+        ->and($t->get('fBatas'))->toBe('lewat')
+        ->and($t->viewData('messages')->pluck('name')->all())->toBe(['Telat']);
+
+    $t->call('sorotBelumDibaca');
+    expect($t->get('tab'))->toBe('baru')
+        ->and($t->get('fBatas'))->toBe('')
+        ->and($t->viewData('messages')->pluck('name')->all())->toBe(['Baru Masuk']);
+
+    $t->call('sorotPekanIni');
+    expect($t->get('fDari'))->toBe(now()->subDays(7)->toDateString())
+        ->and($t->viewData('messages'))->toHaveCount(2);
+
+    $t->call('sorotTopik', 'komplain');
+    expect($t->get('fKategori'))->toBe('komplain')
+        ->and($t->viewData('messages')->pluck('name')->all())->toBe(['Baru Masuk']);
+
+    $t->call('sorotTopik', 'ngawur');
+    expect($t->get('fKategori'))->toBe('komplain');
+});
+
+// ===================== Jejak spam berulang =====================
+
+it('pengirim yang pernah spam ditandai dan bisa disaring', function () {
+    $this->actingAs(adminPesan());
+
+    $dulu = pesan(['email' => 'spam@contoh.com', 'no_telp' => '081200000001']);
+    $dulu->markAsRead();
+    Livewire::test(CustomerMessageList::class)->call('tandaiSpam', $dulu->id);
+
+    $baru = pesan(['name' => 'Pengirim Sama', 'email' => 'spam@contoh.com', 'no_telp' => '081200000001']);
+    $bersih = pesan(['name' => 'Pengirim Bersih', 'email' => 'halo@contoh.com', 'no_telp' => '081200000002']);
+
+    expect($baru->pernahSpam())->toBeTrue()
+        ->and($bersih->pernahSpam())->toBeFalse();
+
+    $t = Livewire::test(CustomerMessageList::class)->call('setTab', 'semua')->set('fCuriga', '1');
+    expect($t->viewData('messages')->pluck('name')->all())->toBe(['Pengirim Sama']);
+});
+
+it('arsip bisa disaring hanya spam atau tanpa spam', function () {
+    $this->actingAs(adminPesan());
+    $spam = pesan(['name' => 'Iklan Judi']);
+    $spam->markAsRead();
+    $biasa = pesan(['name' => 'Tiket Biasa']);
+    $biasa->markAsRead();
+
+    $t = Livewire::test(CustomerMessageList::class);
+    $t->call('tandaiSpam', $spam->id);
+    $t->call('delete', $biasa->id);
+
+    $t->call('setTab', 'arsip');
+    expect($t->viewData('messages'))->toHaveCount(2);
+
+    $t->set('fSpam', 'spam');
+    expect($t->viewData('messages')->pluck('name')->all())->toBe(['Iklan Judi']);
+
+    $t->set('fSpam', 'biasa');
+    expect($t->viewData('messages')->pluck('name')->all())->toBe(['Tiket Biasa']);
+});
+
+// ===================== Notifikasi =====================
+
+it('petugas diberi tahu saat tiket diserahkan kepadanya', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $saya = adminPesan();
+    $orangLain = adminPesan();
+    $this->actingAs($saya);
+    $p = pesan();
+
+    Livewire::test(CustomerMessageList::class)
+        ->set('pilih', [(string) $p->id])
+        ->call('tugaskanTerpilih', (string) $orangLain->id);
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($orangLain, \App\Notifications\TiketDitugaskan::class);
+
+    // Menugaskan ke diri sendiri tidak perlu diberitahukan.
+    Livewire::test(CustomerMessageList::class)->call('ambilTiket', $p->id);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($saya, \App\Notifications\TiketDitugaskan::class);
+});
+
+it('pengingat harian hanya menyentuh tiket yang lewat batas', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $petugas = adminPesan();
+
+    $telat = pesan(['priority' => 'urgent', 'created_at' => now()->subHours(6)]);
+    $telat->update(['assigned_to' => $petugas->id]);
+    pesan(['priority' => 'low']);
+
+    $this->artisan('helpdesk:ingatkan-lewat-batas')->assertSuccessful();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($petugas, \App\Notifications\TiketLewatBatas::class,
+        fn ($notif) => $notif->tiket->count() === 1);
+
+    // --kering tidak mengirim apa pun.
+    \Illuminate\Support\Facades\Notification::fake();
+    $this->artisan('helpdesk:ingatkan-lewat-batas --kering')->assertSuccessful();
+    \Illuminate\Support\Facades\Notification::assertNothingSent();
+});
+
+// ===================== Pembersih arsip =====================
+
+it('pembersih arsip membuang spam lebih cepat daripada tiket biasa', function () {
+    $lamaBiasa = pesan();
+    $lamaBiasa->delete();
+    $lamaBiasa->forceFill(['deleted_at' => now()->subDays(200)])->saveQuietly();
+
+    $barusanBiasa = pesan();
+    $barusanBiasa->delete();
+    $barusanBiasa->forceFill(['deleted_at' => now()->subDays(60)])->saveQuietly();
+
+    $spamLama = pesan(['is_spam' => true]);
+    $spamLama->delete();
+    $spamLama->forceFill(['deleted_at' => now()->subDays(45)])->saveQuietly();
+
+    $this->artisan('helpdesk:bersihkan-arsip --kering')->assertSuccessful();
+    expect(CustomerMessage::withTrashed()->count())->toBe(3);
+
+    $this->artisan('helpdesk:bersihkan-arsip')->assertSuccessful();
+
+    expect(CustomerMessage::withTrashed()->pluck('id')->all())->toBe([$barusanBiasa->id]);
+});
+
+// ===================== Balasan lewat surel =====================
+
+it('balasan bisa dikirim langsung lewat surel dan tercatat', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan(['email' => 'pelanggan@contoh.com']);
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $p])
+        ->set('balasanKanal', 'email')
+        ->set('balasanKirimSurel', true)
+        ->set('balasanIsi', 'Akunnya sudah aktif ya, silakan dicoba.')
+        ->call('simpanBalasan')
+        ->assertHasNoErrors();
+
+    \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\BalasanTiketMail::class,
+        fn ($mail) => $mail->hasTo('pelanggan@contoh.com') && str_contains($mail->isi, 'sudah aktif'));
+
+    $p->refresh();
+    expect($p->sudahDibalas())->toBeTrue()
+        ->and($p->logs()->pluck('jenis')->all())->toContain('surel');
+});
+
+it('balasan lewat surel ditolak bila tiketnya tanpa alamat surel', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan(['email' => '']);
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $p])
+        ->set('balasanKanal', 'email')
+        ->set('balasanKirimSurel', true)
+        ->set('balasanIsi', 'Halo, ini balasannya.')
+        ->call('simpanBalasan')
+        ->assertHasErrors('balasanIsi');
+
+    \Illuminate\Support\Facades\Mail::assertNothingSent();
+    // Tiket TIDAK boleh terlanjur berstatus dibalas kalau surelnya tidak terkirim.
+    expect($p->fresh()->sudahDibalas())->toBeFalse();
+});
+
+it('kanal selain surel tidak pernah mengirim email', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan(['email' => 'pelanggan@contoh.com']);
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $p])
+        ->set('balasanKanal', 'whatsapp')
+        ->set('balasanKirimSurel', true)
+        ->set('balasanIsi', 'Dibalas lewat WhatsApp.')
+        ->call('simpanBalasan');
+
+    \Illuminate\Support\Facades\Mail::assertNothingSent();
+    expect($p->fresh()->sudahDibalas())->toBeTrue();
+});
+
+// ===================== Lampiran =====================
+
+it('pelanggan bisa melampirkan berkas dari formulir kontak', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+
+    Livewire::test(\App\Livewire\Pages\Public\Contact\Contact::class)
+        ->set('name', 'Bu Ani')
+        ->set('email', 'ani@contoh.com')
+        ->set('no_telp', '+6281234567890')
+        ->set('message', 'Ini bukti transfernya ya.')
+        ->set('lampiran', \Illuminate\Http\UploadedFile::fake()->image('bukti.png'))
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $pesan = CustomerMessage::latest('id')->first();
+    $lampiran = $pesan->lampiran()->first();
+
+    expect($lampiran->nama_asli)->toBe('bukti.png')
+        ->and($lampiran->sumber)->toBe('pelanggan');
+
+    // Disk PRIVAT, bukan public: isinya bisa berupa tangkapan layar mutasi bank.
+    \Illuminate\Support\Facades\Storage::disk('local')->assertExists($lampiran->path);
+});
+
+it('lampiran pelanggan tidak bisa dihapus admin, lampiran admin bisa', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+    $this->actingAs(adminPesan());
+    $p = pesan();
+
+    $dariPelanggan = $p->lampiran()->create([
+        'sumber' => 'pelanggan', 'nama_asli' => 'bukti.png', 'path' => 'helpdesk/bukti.png', 'ukuran' => 1024,
+    ]);
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $p]);
+    $t->call('hapusLampiran', $dariPelanggan->id)->assertDispatched('toast-error');
+    expect($p->lampiran()->count())->toBe(1);
+
+    $t->set('berkasBaru', \Illuminate\Http\UploadedFile::fake()->create('panduan.pdf', 120, 'application/pdf'))
+        ->call('unggahLampiran')
+        ->assertHasNoErrors();
+
+    $dariAdmin = $p->lampiran()->where('sumber', 'admin')->first();
+    expect($dariAdmin->nama_asli)->toBe('panduan.pdf')
+        ->and($p->logs()->where('jenis', 'lampiran')->count())->toBe(1);
+
+    $t->call('hapusLampiran', $dariAdmin->id);
+    expect($p->lampiran()->count())->toBe(1);
+});
+
+it('lampiran hanya bisa diunduh lewat route ber-izin', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+    \Illuminate\Support\Facades\Storage::disk('local')->put('helpdesk/bukti.png', 'isi');
+    $p = pesan();
+    $lampiran = $p->lampiran()->create([
+        'sumber' => 'pelanggan', 'nama_asli' => 'bukti.png', 'path' => 'helpdesk/bukti.png', 'ukuran' => 3,
+    ]);
+
+    $this->get(route('admin.customer-message.lampiran', $lampiran->id))->assertRedirect();
+
+    // Lewat HTTP sungguhan: EnsureProfileComplete ikut jalan, jadi profil
+    // petugasnya dilengkapi dulu supaya yang diuji benar-benar izinnya.
+    $petugas = adminPesan();
+    $petugas->detail()->create([
+        'jabatan' => 'Helpdesk',
+        'nomor_rekening' => '1234567890',
+        'tanggal_lahir' => '1995-01-01',
+        'phone' => '081234567890',
+        'alamat' => 'Jl. Uji No. 1',
+    ]);
+
+    $this->actingAs($petugas)
+        ->get(route('admin.customer-message.lampiran', $lampiran->id))
+        ->assertOk();
+
+    // Tanpa izin lihat helpdesk: ditolak, bukan diunduh.
+    $asing = \App\Models\User::factory()->create([
+        'role_id' => \App\Models\Role::create(['name' => 'uji-pp-asing-'.Str::random(4), 'description' => 'uji'])->id,
+        'status' => 'active',
+    ]);
+    $asing->detail()->create([
+        'jabatan' => 'Lainnya',
+        'nomor_rekening' => '1234567890',
+        'tanggal_lahir' => '1995-01-01',
+        'phone' => '081234567890',
+        'alamat' => 'Jl. Uji No. 2',
+    ]);
+
+    $this->actingAs($asing)
+        ->get(route('admin.customer-message.lampiran', $lampiran->id))
+        ->assertForbidden();
+});
+
+// ===================== Gabung tiket ganda =====================
+
+it('tiket ganda bisa digabungkan ke tiket utama', function () {
+    $this->actingAs(adminPesan());
+    $lama = pesan(['email' => 'sama@contoh.com', 'message' => 'Pesanan saya belum masuk.']);
+    $baru = pesan(['email' => 'sama@contoh.com', 'message' => 'Halo, saya tanya lagi soal pesanan.']);
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $baru])->call('gabungkanTiket', $lama->id);
+
+    $lama = CustomerMessage::withTrashed()->find($lama->id);
+    expect($lama->trashed())->toBeTrue()
+        ->and($lama->status)->toBe('closed')
+        ->and($lama->merged_into)->toBe($baru->id);
+
+    // Isi tiket lama ikut tersalin ke linimasa tiket utama.
+    expect($baru->logs()->where('jenis', 'gabung')->first()->isi)->toContain('Pesanan saya belum masuk.');
+
+    // Tidak bisa digabung dua kali.
+    Livewire::test(CustomerMessageDetail::class, ['message' => $baru])
+        ->call('gabungkanTiket', $lama->id)
+        ->assertDispatched('toast-error');
+});
+
+// ===================== Template: ubah & urutkan =====================
+
+it('template bisa diubah, diurutkan, dan dipakai di catatan', function () {
+    $this->actingAs(adminPesan());
+    $p = pesan(['name' => 'Rina']);
+    $semua = \App\Models\CustomerMessageTemplate::urut()->get();
+    $pertama = $semua->first();
+    $kedua = $semua[1];
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $p]);
+
+    $t->call('editTemplate', $pertama->id)
+        ->assertSet('templateNama', $pertama->nama)
+        ->set('templateNama', 'Sapaan baru')
+        ->call('simpanTemplate')
+        ->assertSet('templateId', '');
+
+    expect($pertama->fresh()->nama)->toBe('Sapaan baru')
+        ->and(\App\Models\CustomerMessageTemplate::count())->toBe($semua->count());
+
+    // Geser: yang kedua naik jadi paling atas.
+    $t->call('geserTemplate', $kedua->id, 'naik');
+    expect(\App\Models\CustomerMessageTemplate::urut()->first()->id)->toBe($kedua->id);
+
+    $t->call('pakaiTemplateCatatan', $kedua->id);
+    expect($t->get('catatanIsi'))->toBe($kedua->fresh()->untuk($p));
+});
+
+// ===================== Ekspor membawa jejak balasan =====================
+
+it('ekspor excel memuat balasan terakhir', function () {
+    \Maatwebsite\Excel\Facades\Excel::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan();
+    $p->catat('balasan', 'Sudah kami kirim ulang ke email Anda.', 'email');
+
+    Livewire::test(CustomerMessageList::class)->call('setTab', 'semua')->call('unduhExcel');
+
+    \Maatwebsite\Excel\Facades\Excel::assertDownloaded('pesan-pelanggan-'.now()->format('Ymd-His').'.xlsx',
+        function (\App\Exports\PesanPelangganExport $ekspor) {
+            return str_contains($ekspor->view()->render(), 'Sudah kami kirim ulang');
+        });
+});

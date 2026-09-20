@@ -52,6 +52,8 @@ class CustomerMessageLog extends Model
             'spam' => ['bi-shield-exclamation', '#dc2626', 'Ditandai spam'],
             'arsip' => ['bi-archive-fill', '#64748b', 'Diarsipkan'],
             'pulih' => ['bi-arrow-counterclockwise', '#16a34a', 'Dikembalikan dari arsip'],
+            'gabung' => ['bi-union', '#7c3aed', 'Tiket digabungkan'],
+            'lampiran' => ['bi-paperclip', '#0891b2', 'Lampiran ditambahkan'],
             default => ['bi-dot', '#64748b', ucfirst((string) $this->jenis)],
         };
     }

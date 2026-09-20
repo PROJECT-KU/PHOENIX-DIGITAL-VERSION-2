@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Contact extends Component
 {
+    use WithFileUploads;
+
     public const WA = '6289505967995';
 
     public const EMAIL = 'halo@phoenixdigitalwarehouse.com';
@@ -22,6 +25,9 @@ class Contact extends Component
     public $no_telp;
 
     public $message;
+
+    /** Lampiran OPSIONAL — komplain hampir selalu butuh tangkapan layar. */
+    public $lampiran;
 
     // Honeypot field
     public $website_url;
@@ -47,9 +53,11 @@ class Contact extends Component
             'email' => 'required|email|max:255',
             'no_telp' => ['required', 'string', 'regex:/^\+[1-9]\d{6,14}$/'],
             'message' => 'required|string|max:2000',
-        ]);
+            // 8 MB: muat untuk tangkapan layar & PDF, tidak untuk video.
+            'lampiran' => ['nullable', 'file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf'],
+        ], [], ['lampiran' => 'lampiran']);
 
-        CustomerMessage::create([
+        $pesan = CustomerMessage::create([
             'name' => $this->name,
             'email' => $this->email,
             'no_telp' => $this->no_telp,
@@ -57,6 +65,20 @@ class Contact extends Component
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
+
+        if ($this->lampiran) {
+            // Disk PRIVAT: lampiran pelanggan kerap berisi tangkapan layar
+            // mutasi bank, jadi tidak boleh bisa diunduh siapa pun yang tahu URL.
+            $pesan->lampiran()->create([
+                'sumber' => 'pelanggan',
+                'nama_asli' => $this->lampiran->getClientOriginalName(),
+                'path' => $this->lampiran->store('helpdesk/'.$pesan->getKey(), 'local'),
+                'mime' => $this->lampiran->getMimeType(),
+                'ukuran' => $this->lampiran->getSize(),
+            ]);
+
+            $this->reset('lampiran');
+        }
 
         RateLimiter::hit($key);
 

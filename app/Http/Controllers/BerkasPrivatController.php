@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomerMessageAttachment;
 use App\Models\JobApplication;
 use App\Models\Order;
 use App\Models\Spending;
@@ -30,6 +31,12 @@ class BerkasPrivatController extends Controller
     public function suratPelamar(JobApplication $pelamar)
     {
         return $this->sajikan($pelamar->cover_letter_path, 'surat-lamaran-'.$pelamar->name.'.pdf');
+    }
+
+    /** Lampiran tiket helpdesk (kiriman pelanggan maupun tambahan admin). */
+    public function lampiranTiket(CustomerMessageAttachment $lampiran)
+    {
+        return $this->sajikan($lampiran->path, $lampiran->nama_asli);
     }
 
     /** Bukti pembayaran pesanan. */

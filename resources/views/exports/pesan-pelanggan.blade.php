@@ -13,6 +13,8 @@
             <th>Petugas</th>
             <th>Dibaca</th>
             <th>Dibalas</th>
+            <th>Balasan terakhir</th>
+            <th>Tindak lanjut</th>
         </tr>
     </thead>
     <tbody>
@@ -30,6 +32,8 @@
                 <td>{{ $p->petugas?->name ?: '-' }}</td>
                 <td>{{ $p->read_at?->format('d/m/Y H:i') ?: 'Belum dibaca' }}</td>
                 <td>{{ $p->replied_at?->format('d/m/Y H:i') ?: 'Belum dibalas' }}</td>
+                <td>{{ optional($p->logs->where('jenis', 'balasan')->last())->isi ?: '-' }}</td>
+                <td>{{ $p->logs->whereIn('jenis', ['balasan', 'catatan'])->count() }} catatan</td>
             </tr>
         @endforeach
     </tbody>

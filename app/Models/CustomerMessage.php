@@ -34,6 +34,7 @@ class CustomerMessage extends Model
         'replied_at',
         'replied_by',
         'is_spam',
+        'merged_into',
     ];
 
     protected $casts = [
@@ -60,6 +61,17 @@ class CustomerMessage extends Model
     public function logs()
     {
         return $this->hasMany(CustomerMessageLog::class)->orderBy('created_at');
+    }
+
+    public function lampiran()
+    {
+        return $this->hasMany(CustomerMessageAttachment::class)->orderBy('id');
+    }
+
+    /** Tiket induk bila tiket ini digabungkan ke tiket lain. */
+    public function induk()
+    {
+        return $this->belongsTo(CustomerMessage::class, 'merged_into');
     }
 
     public function markAsRead(): void
@@ -268,6 +280,55 @@ class CustomerMessage extends Model
             ->whereHas('role.permissions', fn ($q) => $q->where('name', 'view_customer_message'))
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    /**
+     * Pernah mengirim spam sebelumnya (surel atau nomor yang sama).
+     *
+     * Dipakai sebagai PENANDA saja, bukan penyaring otomatis: tiket tetap
+     * masuk antrean, cuma diberi tahu supaya admin membacanya dengan curiga.
+     */
+    public function pernahSpam(): bool
+    {
+        return once(function () {
+            $inti = Customer::normalisasiNoHp($this->no_telp);
+
+            return static::withTrashed()
+                ->where('is_spam', true)
+                ->whereKeyNot($this->getKey())
+                ->where(function ($q) use ($inti) {
+                    if (filled($this->email)) {
+                        $q->orWhere('email', $this->email);
+                    }
+                    if ($inti !== '') {
+                        $q->orWhere('no_telp', 'like', '%'.$inti.'%');
+                    }
+                    $q->orWhereRaw('1 = 0');
+                })
+                ->exists();
+        });
+    }
+
+    /**
+     * Gabungkan tiket $lain ke tiket ini.
+     *
+     * Isi dan linimasa tiket lama TIDAK dipindah — ia ditutup, diarsipkan, dan
+     * ditandai induknya, lalu isinya disalin sebagai satu baris linimasa di
+     * sini. Dengan begitu kedua tiket tetap bisa ditelusuri apa adanya.
+     */
+    public function gabungkan(self $lain): bool
+    {
+        if ($lain->is($this) || $lain->merged_into) {
+            return false;
+        }
+
+        $this->catat('gabung', 'Dari tiket '.$lain->ticket.' ('.$lain->created_at?->format('d/m/Y H:i').'):'."\n".$lain->message);
+
+        $lain->catat('gabung', 'Digabungkan ke tiket '.$this->ticket.'.');
+        $lain->update(['status' => 'closed', 'merged_into' => $this->getKey()]);
+        $lain->delete();
+
+        return true;
     }
 
     // ===== Scope tambahan =====

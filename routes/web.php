@@ -300,6 +300,9 @@ Route::middleware('permission:view_customer')->group(function () {
 Route::middleware('permission:view_customer_message')->group(function () {
     Route::get('/admin/customer-message', CustomerMessageList::class)->name('admin.customer-message.index');
     Route::get('/admin/customer-message/{message}', CustomerMessageDetail::class)->name('admin.customer-message.detail');
+    // Lampiran tiket: berkas privat, hanya lewat route ber-izin.
+    Route::get('/admin/customer-message/lampiran/{lampiran}', [\App\Http\Controllers\BerkasPrivatController::class, 'lampiranTiket'])
+        ->name('admin.customer-message.lampiran');
 });
 
 // Role

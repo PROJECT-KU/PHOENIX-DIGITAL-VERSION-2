@@ -41,6 +41,16 @@
     <h2>Isi pesan</h2>
     <div class="kutip">{{ $pesan->message }}</div>
 
+    @if ($pesan->lampiran->isNotEmpty())
+        <h2>Lampiran</h2>
+        @foreach ($pesan->lampiran as $l)
+            <div class="baris">
+                <b>{{ $l->nama_asli }}</b>
+                <div class="kecil">{{ $l->ukuranTerbaca() }} · {{ $l->dariAdmin() ? 'ditambahkan admin' : 'dari pelanggan' }}</div>
+            </div>
+        @endforeach
+    @endif
+
     <h2>Linimasa</h2>
     <div class="baris">
         <b>Pesan masuk</b>

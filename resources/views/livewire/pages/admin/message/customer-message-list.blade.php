@@ -29,6 +29,15 @@ Pesan Pelanggan || lemon
         $semuaTercentang = $idHalaman && ! array_diff($idHalaman, $pilih);
         $sasaranMuat = 'search,setTab,gotoPage,nextPage,previousPage,fStatus,fPrioritas,fKategori,fPetugas,fBatas,fDari,fSampai,urut,perPage,resetFilters';
         $warnaAvatar = fn ($nama) => ['#7c3aed', '#2563eb', '#16a34a', '#d97706', '#db2777', '#0891b2'][crc32((string) $nama) % 6];
+        [$spamSurel, $spamNomor] = $kontakSpam;
+        $pernahSpam = fn ($item) => (filled($item->email) && in_array($item->email, $spamSurel, true))
+            || (filled($item->no_telp) && in_array($item->no_telp, $spamNomor, true));
+        $kolomTabel = [
+            'nama' => 'Pengirim',
+            'status' => 'Status',
+            'topik' => 'Topik',
+            'petugas' => 'Petugas',
+        ];
     @endphp
 
     <div class="dsb">
@@ -67,7 +76,9 @@ Pesan Pelanggan || lemon
         {{-- ================== RINGKASAN ANTREAN ================== --}}
         <section class="dsb-kartu pp-ringkas">
             <div class="dsb-kartu-isi pp-ringkas-isi">
-                <div class="pp-ringkas-blok">
+                {{-- Tiap blok sekaligus pintasan saringan: angkanya memang untuk
+                     ditindaklanjuti, jadi tidak perlu cari-cari lagi di menu Saring. --}}
+                <button type="button" class="pp-ringkas-blok" wire:click="sorotBelumDibaca" title="Lihat pesan yang belum dibaca, terlama dulu">
                     <span class="pp-ringkas-ikon {{ $tertua ? 'is-tunggu' : 'is-aman' }}">
                         <i class="bi {{ $tertua ? 'bi-clock-history' : 'bi-emoji-smile' }}"></i>
                     </span>
@@ -80,8 +91,8 @@ Pesan Pelanggan || lemon
                             <p class="pp-catatan-kecil">Pesan baru akan muncul di tab "Belum dibaca".</p>
                         @endif
                     </div>
-                </div>
-                <div class="pp-ringkas-blok">
+                </button>
+                <button type="button" class="pp-ringkas-blok" wire:click="sorotLewatBatas" title="Lihat tiket yang lewat batas waktu">
                     <span class="pp-ringkas-ikon {{ $lewatBatas ? 'is-mendesak' : 'is-aman' }}">
                         <i class="bi {{ $lewatBatas ? 'bi-exclamation-triangle-fill' : 'bi-shield-check' }}"></i>
                     </span>
@@ -89,8 +100,8 @@ Pesan Pelanggan || lemon
                         <p><b>{{ $lewatBatas }}</b> tiket lewat batas waktu membalas.</p>
                         <p class="pp-catatan-kecil">{{ $mendesak }} tiket prioritas tinggi/mendesak masih berjalan.</p>
                     </div>
-                </div>
-                <div class="pp-ringkas-blok">
+                </button>
+                <button type="button" class="pp-ringkas-blok" wire:click="sorotPekanIni" title="Lihat pesan 7 hari terakhir">
                     <span class="pp-ringkas-ikon is-aman" style="background: #eef2ff; color: #4338ca;"><i class="bi bi-graph-up"></i></span>
                     <div>
                         <p><b>{{ $masukPekanIni }}</b> pesan masuk dalam 7 hari terakhir.</p>
@@ -102,9 +113,32 @@ Pesan Pelanggan || lemon
                             @endif
                         </p>
                     </div>
-                </div>
+                </button>
             </div>
         </section>
+
+        {{-- ================== SEBARAN TOPIK ================== --}}
+        @if ($sebaranTopik)
+            <section class="dsb-kartu pp-topik">
+                <div class="dsb-kartu-isi">
+                    <div class="pp-topik-kepala">
+                        <span class="pp-detail-label" style="margin: 0;">Topik 30 hari terakhir</span>
+                        @if ($tanpaTopik)
+                            <span class="pp-catatan-kecil" style="margin: 0 !important;">{{ $tanpaTopik }} tiket belum diberi topik</span>
+                        @endif
+                    </div>
+                    <div class="pp-topik-baris">
+                        @foreach ($sebaranTopik as $t)
+                            <button type="button" class="pp-topik-item {{ $fKategori === $t['kunci'] ? 'is-aktif' : '' }}"
+                                wire:click="sorotTopik('{{ $t['kunci'] }}')" title="Saring tiket bertopik {{ $t['label'] }}">
+                                <span class="pp-topik-label">{{ $t['label'] }}<b>{{ $t['jumlah'] }}</b></span>
+                                <span class="pp-topik-bar"><span style="width: {{ max(4, $t['persen']) }}%"></span></span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
 
         {{-- ================== CARI & SARING ================== --}}
         <section class="dsb-kartu pp-saring" x-data="{ buka: @js($this->adaSaring) }">
@@ -152,6 +186,7 @@ Pesan Pelanggan || lemon
                 <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $sasaranMuat }}">
                     <span class="dsb-putar is-kecil"></span>Memuat…
                 </span>
+                <span class="pp-pintasan" aria-hidden="true"><kbd>/</kbd> cari · <kbd>t</kbd> ganti tampilan</span>
             </div>
 
             @if ($pilih)
@@ -216,6 +251,24 @@ Pesan Pelanggan || lemon
                             <option value="belum">Belum dibalas</option>
                         </select>
                     </label>
+                    @if ($arsip)
+                        <label class="pp-saring-medan">
+                            <span>Isi arsip</span>
+                            <select class="dsb-isian" wire:model.live="fSpam">
+                                <option value="">Semua isi arsip</option>
+                                <option value="spam">Hanya spam</option>
+                                <option value="biasa">Tanpa spam</option>
+                            </select>
+                        </label>
+                    @else
+                        <label class="pp-saring-medan">
+                            <span>Pengirim</span>
+                            <select class="dsb-isian" wire:model.live="fCuriga">
+                                <option value="">Semua pengirim</option>
+                                <option value="1">Pernah kirim spam</option>
+                            </select>
+                        </label>
+                    @endif
                     <label class="pp-saring-medan">
                         <span>Masuk dari</span>
                         <input type="date" class="dsb-isian" wire:model.live="fDari" max="{{ now()->toDateString() }}">
@@ -262,6 +315,12 @@ Pesan Pelanggan || lemon
                                     <option value="{{ $nilai }}">{{ $label }}</option>
                                 @endforeach
                             </select>
+                            <select class="dsb-isian pp-pilih is-sempit" wire:change="kategoriTerpilih($event.target.value); $event.target.value = ''" aria-label="Beri topik tiket terpilih">
+                                <option value="">Beri topik…</option>
+                                @foreach ($kategoriDaftar as $nilai => $label)
+                                    <option value="{{ $nilai }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
                             <select class="dsb-isian pp-pilih is-sempit" wire:change="tugaskanTerpilih($event.target.value); $event.target.value = ''" aria-label="Serahkan tiket terpilih">
                                 <option value="">Serahkan ke…</option>
                                 @foreach ($daftarPetugas as $orang)
@@ -302,9 +361,12 @@ Pesan Pelanggan || lemon
           <div class="pp-wadah" wire:loading.class="pp-tukar" wire:target="setTampilan">
             @if ($messages->isEmpty())
                 @php
-                    [$kIkon, $kJudul, $kKet] = ($search || $this->adaSaring)
-                        ? ['bi-funnel', 'Tidak ada pesan yang cocok', 'Coba ubah kata kunci atau bersihkan saringan.']
-                        : $kosong[$tab];
+                    [$kIkon, $kJudul, $kKet] = match (true) {
+                        $arsip && $fSpam === 'spam' => ['bi-shield-check', 'Tidak ada spam di arsip', 'Pesan yang Anda tandai spam akan muncul di sini.'],
+                        $arsip && $fSpam === 'biasa' => ['bi-archive', 'Arsip tanpa spam masih kosong', 'Tiket yang diarsipkan (bukan spam) muncul di sini.'],
+                        (bool) ($search || $this->adaSaring) => ['bi-funnel', 'Tidak ada pesan yang cocok', 'Coba ubah kata kunci atau bersihkan saringan.'],
+                        default => $kosong[$tab],
+                    };
                 @endphp
                 <div class="dsb-kartu">
                     <div class="dsb-kosong">
@@ -328,12 +390,24 @@ Pesan Pelanggan || lemon
                             <thead>
                                 <tr>
                                     <th style="width: 34px;"><span class="visually-hidden">Pilih</span></th>
-                                    <th>Pengirim</th>
-                                    <th>Pesan</th>
-                                    <th>Status</th>
-                                    <th>Prioritas</th>
-                                    <th>Petugas</th>
-                                    <th>Masuk</th>
+                                    {{-- Kepala kolom sekaligus tombol urut: klik sekali naik, klik lagi turun. --}}
+                                    @foreach ($kolomTabel as $kunci => $judul)
+                                        <th>
+                                            <button type="button" class="pp-th {{ $this->arahUrut($kunci) ? 'is-aktif' : '' }}" wire:click="urutkanKolom('{{ $kunci }}')">
+                                                {{ $judul }}
+                                                <i class="bi {{ match ($this->arahUrut($kunci)) { 'naik' => 'bi-sort-down-alt', 'turun' => 'bi-sort-up-alt', default => 'bi-chevron-expand' } }}"></i>
+                                            </button>
+                                        </th>
+                                        @if ($kunci === 'nama')
+                                            <th>Pesan</th>
+                                        @endif
+                                    @endforeach
+                                    <th>
+                                        <button type="button" class="pp-th {{ in_array($urut, ['baru', 'lama'], true) ? 'is-aktif' : '' }}" wire:click="$set('urut', '{{ $urut === 'baru' ? 'lama' : 'baru' }}')">
+                                            Masuk
+                                            <i class="bi {{ $urut === 'lama' ? 'bi-sort-down-alt' : ($urut === 'baru' ? 'bi-sort-up-alt' : 'bi-chevron-expand') }}"></i>
+                                        </button>
+                                    </th>
                                     <th class="text-end">Aksi</th>
                                 </tr>
                             </thead>
@@ -357,12 +431,28 @@ Pesan Pelanggan || lemon
                                                 <span style="min-width: 0;">
                                                     <b>{!! \App\Support\SorotKata::pada($item->name, $search) !!}</b>
                                                     <small>{!! \App\Support\SorotKata::pada($item->ticket, $search) !!}</small>
+                                                    <span class="pp-tanda {{ $prKelas }}" style="margin-top: 4px;"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span>
                                                 </span>
                                             </div>
                                         </td>
-                                        <td class="pp-tabel-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 90), $search) !!}</td>
-                                        <td><span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span></td>
-                                        <td><span class="pp-tanda {{ $prKelas }}"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span></td>
+                                        <td class="pp-tabel-pesan">
+                                            {!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 90), $search) !!}
+                                            @if ($item->lampiran_count ?? 0)
+                                                <span class="pp-tanda is-rendah" style="margin-top: 5px;"><i class="bi bi-paperclip"></i>{{ $item->lampiran_count }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
+                                            @if ($item->lewatBatas())
+                                                <span class="pp-tanda is-lewat" style="margin-top: 5px;"><i class="bi bi-alarm"></i>Lewat batas</span>
+                                            @elseif ($item->sudahDibalas())
+                                                <span class="pp-tanda is-dibalas" style="margin-top: 5px;"><i class="bi bi-check2-all"></i>Dibalas</span>
+                                            @endif
+                                            @if ($pernahSpam($item) && ! $item->is_spam)
+                                                <span class="pp-tanda is-spam" style="margin-top: 5px;"><i class="bi bi-shield-exclamation"></i>Pernah spam</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $item->labelKategori() ?: '—' }}</td>
                                         <td>{{ $item->petugas?->name ?: '—' }}</td>
                                         <td>{{ $item->created_at?->locale('id')->translatedFormat('d M, H:i') }}</td>
                                         <td>
@@ -380,6 +470,11 @@ Pesan Pelanggan || lemon
                                                     <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-btn pp-btn-ikon is-utama" title="Buka & balas" aria-label="Buka & balas"><i class="bi bi-envelope-open"></i></a>
                                                     @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
                                                         <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                                                    @endif
+                                                    @if ($bolehHapus)
+                                                        <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
+                                                            data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam"
+                                                            title="Tandai spam" aria-label="Tandai spam"><i class="bi bi-shield-exclamation"></i></button>
                                                     @endif
                                                     @if ($bolehHapus)
                                                         <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
@@ -440,6 +535,12 @@ Pesan Pelanggan || lemon
                                         @endif
                                         @if ($item->belumDibaca() && $item->menungguJam() >= 3)
                                             <span class="pp-tanda is-lama"><i class="bi bi-clock-history"></i>Menunggu {{ $item->menungguTeks() }}</span>
+                                        @endif
+                                        @if ($pernahSpam($item) && ! $item->is_spam)
+                                            <span class="pp-tanda is-spam"><i class="bi bi-shield-exclamation"></i>Pengirim pernah spam</span>
+                                        @endif
+                                        @if ($item->lampiran_count)
+                                            <span class="pp-tanda is-rendah"><i class="bi bi-paperclip"></i>{{ $item->lampiran_count }} lampiran</span>
                                         @endif
                                     </div>
 
@@ -552,6 +653,30 @@ Pesan Pelanggan || lemon
                         }).then((r) => { if (r.isConfirmed) panggil(hapus, 'delete', hapus.dataset.id); });
                     }
                 });
+                // Pintasan papan tik. Diabaikan saat sedang mengetik di isian mana pun
+                // supaya "/" dan "t" tetap bisa ditulis di kotak pencarian.
+                document.addEventListener('keydown', (e) => {
+                    if (e.metaKey || e.ctrlKey || e.altKey) return;
+                    const el = document.activeElement;
+                    const mengetik = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+
+                    if (e.key === '/' && !mengetik) {
+                        const cari = document.querySelector('.pp-saring input[type="search"]');
+                        if (cari) { e.preventDefault(); cari.focus(); cari.select(); }
+                        return;
+                    }
+
+                    if (e.key === 'Escape' && el && el.matches('.pp-saring input[type="search"]')) {
+                        el.blur();
+                        return;
+                    }
+
+                    if ((e.key === 't' || e.key === 'T') && !mengetik) {
+                        const saklar = document.querySelector('.pp-saklar button:not(.is-aktif)');
+                        if (saklar) { e.preventDefault(); saklar.click(); }
+                    }
+                });
+
                 window.addEventListener('CustomerMessage-deleted', () => {
                     if (typeof Swal !== 'undefined') Swal.fire({ title: 'Beres', text: 'Tiket sudah dipindahkan.', icon: 'success', timer: 2000, showConfirmButton: false, ...gaya });
                 });

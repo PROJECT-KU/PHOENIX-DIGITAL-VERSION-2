@@ -58,6 +58,9 @@
                     <td>
                         {{ $p->petugas?->name ?: 'Belum ditugaskan' }}
                         <div class="kecil">{{ $p->replied_at ? 'dibalas '.$p->replied_at->format('d/m/Y') : ($p->lewatBatas() ? 'lewat batas' : 'belum dibalas') }}</div>
+                        @if ($balasan = optional($p->logs->where('jenis', 'balasan')->last())->isi)
+                            <div class="kecil" style="margin-top:3px; color:#475569;">"{{ \Illuminate\Support\Str::limit($balasan, 90) }}"</div>
+                        @endif
                     </td>
                 </tr>
             @empty

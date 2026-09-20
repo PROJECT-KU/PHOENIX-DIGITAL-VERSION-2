@@ -39,6 +39,14 @@ class CustomerMessageList extends Component
     #[Url(as: 'batas', except: '')]
     public string $fBatas = '';
 
+    /** '' | 'spam' | 'biasa' — hanya berlaku di tab Arsip. */
+    #[Url(as: 'spam', except: '')]
+    public string $fSpam = '';
+
+    /** '1' = hanya pengirim yang pernah kirim spam sebelumnya. */
+    #[Url(as: 'curiga', except: '')]
+    public string $fCuriga = '';
+
     #[Url(as: 'dari', except: '')]
     public string $fDari = '';
 
@@ -61,7 +69,25 @@ class CustomerMessageList extends Component
 
     public const TAB = ['baru', 'berjalan', 'selesai', 'semua', 'arsip'];
 
-    public const URUT = ['baru', 'lama', 'prioritas'];
+    /**
+     * Urutan daftar. Tiga yang pertama muncul di menu; sisanya dipakai kepala
+     * kolom tabel (klik sekali naik, klik lagi turun).
+     */
+    public const URUT = [
+        'baru', 'lama', 'prioritas',
+        'nama', 'nama-turun',
+        'status', 'status-turun',
+        'petugas', 'petugas-turun',
+        'topik', 'topik-turun',
+    ];
+
+    /** Kolom tabel yang bisa diklik untuk mengurutkan. */
+    public const KOLOM_URUT = [
+        'nama' => 'name',
+        'status' => 'status',
+        'petugas' => 'assigned_to',
+        'topik' => 'kategori',
+    ];
 
     public const TAMPILAN = ['kartu', 'tabel'];
 
@@ -81,7 +107,7 @@ class CustomerMessageList extends Component
     ];
 
     /** Saringan yang ikut dibersihkan & bisa dilepas lewat chip. */
-    protected const SARINGAN = ['fStatus', 'fPrioritas', 'fKategori', 'fPetugas', 'fBatas', 'fDari', 'fSampai'];
+    protected const SARINGAN = ['fStatus', 'fPrioritas', 'fKategori', 'fPetugas', 'fBatas', 'fSpam', 'fCuriga', 'fDari', 'fSampai'];
 
     public function updatingSearch(): void
     {
@@ -109,6 +135,66 @@ class CustomerMessageList extends Component
     {
         $this->tab = in_array($t, self::TAB, true) ? $t : 'baru';
         $this->pilih = [];
+        $this->resetPage();
+    }
+
+    /** Klik kepala kolom tabel: naik dulu, klik lagi jadi turun. */
+    public function urutkanKolom(string $kolom): void
+    {
+        if (! array_key_exists($kolom, self::KOLOM_URUT)) {
+            return;
+        }
+
+        $this->urut = $this->urut === $kolom ? $kolom.'-turun' : $kolom;
+        $this->pilih = [];
+        $this->resetPage();
+    }
+
+    /** Untuk panah di kepala kolom: '' | 'naik' | 'turun'. */
+    public function arahUrut(string $kolom): string
+    {
+        return match ($this->urut) {
+            $kolom => 'naik',
+            $kolom.'-turun' => 'turun',
+            default => '',
+        };
+    }
+
+    /** Lompatan dari kartu ringkasan — satu klik, bukan cari-cari di menu Saring. */
+    public function sorotLewatBatas(): void
+    {
+        $this->tab = 'semua';
+        $this->reset(['fStatus', 'fPrioritas', 'fKategori', 'fPetugas', 'fSpam', 'fCuriga', 'fDari', 'fSampai', 'pilih']);
+        $this->fBatas = 'lewat';
+        $this->urut = 'lama';
+        $this->resetPage();
+    }
+
+    public function sorotBelumDibaca(): void
+    {
+        $this->tab = 'baru';
+        $this->reset(array_merge(['pilih'], self::SARINGAN));
+        $this->urut = 'lama';
+        $this->resetPage();
+    }
+
+    public function sorotPekanIni(): void
+    {
+        $this->tab = 'semua';
+        $this->reset(array_merge(['pilih'], self::SARINGAN));
+        $this->fDari = now()->subDays(7)->toDateString();
+        $this->resetPage();
+    }
+
+    public function sorotTopik(string $kategori): void
+    {
+        if (! array_key_exists($kategori, config('helpdesk.kategori'))) {
+            return;
+        }
+
+        $this->tab = 'semua';
+        $this->reset(array_merge(['pilih'], self::SARINGAN));
+        $this->fKategori = $kategori;
         $this->resetPage();
     }
 
@@ -170,6 +256,12 @@ class CustomerMessageList extends Component
         }
         if ($this->fBatas !== '') {
             $tambah('fBatas', $this->fBatas === 'lewat' ? 'Lewat batas waktu' : 'Belum dibalas');
+        }
+        if ($this->fSpam !== '') {
+            $tambah('fSpam', $this->fSpam === 'spam' ? 'Hanya spam' : 'Tanpa spam');
+        }
+        if ($this->fCuriga !== '') {
+            $tambah('fCuriga', 'Pengirim pernah spam');
         }
         if ($this->fDari !== '') {
             $tambah('fDari', 'Dari '.$this->fDari);
@@ -457,6 +549,26 @@ class CustomerMessageList extends Component
         $this->dispatch('swal-success', message: $jumlah.' pesan diubah jadi prioritas '.self::PRIORITAS[$value].'.');
     }
 
+    public function kategoriTerpilih(string $value): void
+    {
+        $daftar = config('helpdesk.kategori');
+
+        if (! $this->bolehUbah() || $this->pilih === [] || ($value !== '' && ! array_key_exists($value, $daftar))) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            $pesan->update(['kategori' => $value ?: null]);
+            $pesan->catat('kategori', $value ? $daftar[$value] : 'Tanpa topik');
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $jumlah.' tiket diberi topik '.($value ? $daftar[$value] : 'kosong').'.');
+    }
+
     public function tugaskanTerpilih(string $value): void
     {
         $petugas = $value === '' ? null : CustomerMessage::petugasTersedia()->firstWhere('id', (int) $value);
@@ -470,6 +582,7 @@ class CustomerMessageList extends Component
         foreach ($this->terpilih() as $pesan) {
             $pesan->update(['assigned_to' => $petugas?->id]);
             $pesan->catat('tugas', $petugas ? 'Dipegang '.$petugas->name : 'Penugasan dilepas');
+            \App\Notifications\TiketDitugaskan::kirim($pesan, $petugas);
             $jumlah++;
         }
 
@@ -588,9 +701,11 @@ class CustomerMessageList extends Component
     /** Yang DICENTANG bila ada, kalau tidak ikut saringan yang sedang tampil. */
     protected function dataEkspor()
     {
+        // Linimasa ikut dimuat supaya ekspor membawa balasan terakhirnya,
+        // bukan cuma status akhir yang tidak bisa dipertanggungjawabkan.
         return $this->pilih
-            ? $this->terpilih()->load('petugas')
-            : $this->kueri()->with('petugas')->get();
+            ? $this->terpilih()->load(['petugas', 'logs'])
+            : $this->kueri()->with(['petugas', 'logs'])->get();
     }
 
     /** Kueri daftar — dipakai kartu, ekspor, dan hitungan. */
@@ -613,6 +728,19 @@ class CustomerMessageList extends Component
             ->when($this->fPetugas !== '' && $this->fPetugas !== 'saya', fn ($q) => $q->milik((int) $this->fPetugas))
             ->when($this->fBatas === 'lewat', fn ($q) => $q->lewatBatas())
             ->when($this->fBatas === 'belum', fn ($q) => $q->belumDibalas())
+            ->when($this->fSpam === 'spam', fn ($q) => $q->where('is_spam', true))
+            ->when($this->fSpam === 'biasa', fn ($q) => $q->where('is_spam', false))
+            ->when($this->fCuriga !== '', function ($q) {
+                // Kontak yang pernah dipakai mengirim spam. Daftarnya disusun di
+                // PHP (jumlah spam selalu kecil) supaya kuerinya sama jalan di
+                // MySQL maupun SQLite.
+                [$surel, $nomor] = $this->kontakSpam();
+
+                $q->where(function ($sub) use ($surel, $nomor) {
+                    $sub->whereIn('email', $surel ?: [''])
+                        ->orWhereIn('no_telp', $nomor ?: ['']);
+                });
+            })
             ->when($this->fDari !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fDari))
             ->when($this->fSampai !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->fSampai))
             ->when($this->search !== '', function ($q) {
@@ -644,7 +772,55 @@ class CustomerMessageList extends Component
                 "CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 ELSE 4 END"
             )->orderBy('created_at'))
             ->when($this->urut === 'lama', fn ($q) => $q->orderBy('created_at'))
-            ->when($this->urut === 'baru', fn ($q) => $q->orderByDesc('created_at'));
+            ->when($this->urut === 'baru', fn ($q) => $q->orderByDesc('created_at'))
+            // Urutan dari kepala kolom tabel.
+            ->when(isset(self::KOLOM_URUT[$this->urut]), fn ($q) => $q
+                ->orderBy(self::KOLOM_URUT[$this->urut])->orderByDesc('created_at'))
+            ->when(str_ends_with($this->urut, '-turun') && isset(self::KOLOM_URUT[substr($this->urut, 0, -6)]),
+                fn ($q) => $q->orderByDesc(self::KOLOM_URUT[substr($this->urut, 0, -6)])->orderByDesc('created_at'));
+    }
+
+    /** [surel, nomor] yang pernah dipakai mengirim spam. */
+    protected function kontakSpam(): array
+    {
+        $spam = CustomerMessage::withTrashed()->where('is_spam', true)->get(['email', 'no_telp']);
+
+        return [
+            $spam->pluck('email')->filter()->unique()->values()->all(),
+            $spam->pluck('no_telp')->filter()->unique()->values()->all(),
+        ];
+    }
+
+    /**
+     * Sebaran topik 30 hari terakhir — menjawab "keluhan terbanyak soal apa".
+     * Tanpa ini topik cuma label yang dikumpulkan lalu tidak pernah dibaca.
+     */
+    protected function sebaranTopik(): array
+    {
+        $hitung = CustomerMessage::query()->bukanSpam()
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('kategori, count(*) as jumlah')
+            ->groupBy('kategori')
+            ->pluck('jumlah', 'kategori');
+
+        $total = (int) $hitung->sum();
+        $daftar = [];
+
+        foreach (config('helpdesk.kategori') as $kunci => $label) {
+            $jumlah = (int) ($hitung[$kunci] ?? 0);
+
+            if ($jumlah > 0) {
+                $daftar[] = ['kunci' => $kunci, 'label' => $label, 'jumlah' => $jumlah,
+                    'persen' => $total ? round($jumlah * 100 / $total) : 0];
+            }
+        }
+
+        usort($daftar, fn ($a, $b) => $b['jumlah'] <=> $a['jumlah']);
+
+        return [
+            'sebaranTopik' => $daftar,
+            'tanpaTopik' => (int) ($hitung[null] ?? $hitung[''] ?? 0),
+        ];
     }
 
     /**
@@ -673,7 +849,7 @@ class CustomerMessageList extends Component
 
     public function render()
     {
-        $messages = $this->kueri()->with('petugas')->paginate(max(6, min(48, $this->perPage)));
+        $messages = $this->kueri()->with('petugas')->withCount('lampiran')->paginate(max(6, min(48, $this->perPage)));
 
         // Satu kueri untuk hitungan status; sisanya dihitung dari situ.
         $perStatus = CustomerMessage::query()->bukanSpam()
@@ -688,7 +864,7 @@ class CustomerMessageList extends Component
             'arsip' => CustomerMessage::onlyTrashed()->count(),
         ];
 
-        return view('livewire.pages.admin.message.customer-message-list', array_merge([
+        return view('livewire.pages.admin.message.customer-message-list', array_merge($this->sebaranTopik(), [
             'messages' => $messages,
             'tabCounts' => $tabCounts,
             'unreadCount' => $tabCounts['baru'],
@@ -697,6 +873,9 @@ class CustomerMessageList extends Component
             // Tiket terlama yang masih menunggu dibaca, untuk kartu ringkasan.
             'tertua' => CustomerMessage::query()->bukanSpam()->unread()->oldest()->first(),
             'daftarPetugas' => CustomerMessage::petugasTersedia(),
+            // Dihitung SEKALI di sini, bukan lewat pernahSpam() per kartu:
+            // satu halaman berisi 12-48 tiket dan itu jadi 48 kueri.
+            'kontakSpam' => $this->kontakSpam(),
         ], $this->ringkasan()))
             ->layout('livewire.layout.templateindex');
     }

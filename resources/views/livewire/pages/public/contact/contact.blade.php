@@ -118,6 +118,18 @@
         .kn-field .form-control:focus { border-color: #f26522; box-shadow: 0 0 0 4px rgba(242, 101, 34, .14); }
         .kn-field .form-control.is-invalid { border-color: #dc2626; background-image: none; }
         .kn-err { display: block; margin-top: 6px; font-size: .78rem; font-weight: 600; color: #dc2626; }
+        /* Lampiran opsional: tombol besar yang jelas, bukan input file bawaan
+           yang kecil — pembaca halaman ini kebanyakan bukan orang teknis. */
+        .kn-berkas {
+            display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 14px; cursor: pointer;
+            border: 1.5px dashed #e8ecf2; border-radius: 12px; background: #fff; color: #475569; font-size: .9rem;
+            transition: border-color .18s ease, background .18s ease;
+        }
+        .kn-berkas:hover { border-color: #f26522; background: #fff7f2; }
+        .kn-berkas i.bi { font-size: 1.05rem; color: #f26522; }
+        .kn-berkas span { min-width: 0; overflow-wrap: anywhere; }
+        .kn-berkas input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .kn-opsional { font-weight: 600; color: var(--kn-muted); }
         .kn-hint { display: block; margin-top: 7px; font-size: .78rem; color: var(--kn-muted); line-height: 1.5; }
         .kn-alert {
             display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 14px; margin-bottom: 16px;
@@ -333,6 +345,21 @@
                                     placeholder="Tulis pesan Anda di sini..."></textarea>
                             </div>
                             @error('message') <span class="kn-err">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="kn-grup" x-data="{ berkas: '' }"
+                            x-on:contact-success.window="berkas = ''; $refs.lampiran.value = '';">
+                            <label class="kn-label" for="kn-lampiran">Lampiran <span class="kn-opsional">(opsional)</span></label>
+                            <label class="kn-berkas" for="kn-lampiran">
+                                <i class="bi bi-paperclip"></i>
+                                <span x-text="berkas || 'Pilih gambar atau PDF — maksimal 8 MB'"></span>
+                                <input type="file" id="kn-lampiran" x-ref="lampiran" wire:model="lampiran"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                    x-on:change="berkas = $event.target.files[0] ? $event.target.files[0].name : ''">
+                            </label>
+                            <span class="kn-hint" wire:loading wire:target="lampiran">Mengunggah lampiran…</span>
+                            @error('lampiran') <span class="kn-err">{{ $message }}</span> @enderror
+                            <small class="kn-hint">Kalau ada tangkapan layar atau bukti transfer, lampirkan di sini supaya lebih cepat kami cek.</small>
                         </div>
 
                         <button type="submit" class="kn-submit" wire:loading.attr="disabled" wire:target="save">
