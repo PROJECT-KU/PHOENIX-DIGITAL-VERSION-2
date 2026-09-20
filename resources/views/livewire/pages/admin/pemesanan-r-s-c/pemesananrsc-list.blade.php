@@ -33,7 +33,7 @@ Data Pesanan RSC || lemon
             </div>
 
             <div class="dsb-hero-aksi">
-                <button wire:click="openExportModal" type="button" class="dsb-tombol is-lembut">
+                <button wire:click="openExportModal" type="button" class="dsb-tombol is-lembut" style="--ikon: #16a34a">
                     <i class="bi bi-download"></i><span>Unduh</span>
                 </button>
                 @if ($bolehBuat)
@@ -498,7 +498,7 @@ Data Pesanan RSC || lemon
                             <i class="bi bi-file-earmark-pdf"></i><span>Invoice PDF</span>
                         </button>
                         <button type="button" class="dsb-tombol is-hijau is-penuh-sempit" wire:click="exportExcel"
-                            wire:loading.attr="disabled" wire:target="exportExcel" @disabled(empty($selectedBatches))>
+                            wire:loading.attr="disabled" wire:target="exportExcel" @disabled(empty($selectedBatches)) style="--ikon: #16a34a">
                             <i class="bi bi-file-earmark-excel"></i><span>Excel</span>
                         </button>
                     </span>

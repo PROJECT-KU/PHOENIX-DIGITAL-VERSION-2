@@ -348,7 +348,7 @@ Pembayaran QRIS || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                <a href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
+                <a href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Pesanan Toko</span>
                 </a>
             </div>

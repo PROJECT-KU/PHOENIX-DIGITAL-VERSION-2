@@ -60,7 +60,7 @@ Data Pesanan || lemon
 
             <div class="dsb-hero-aksi">
                 @if ($bolehUbahPesanan)
-                    <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel" class="dsb-tombol is-lembut" title="Unduh Excel sesuai tab & saringan yang tampil">
+                    <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel" class="dsb-tombol is-lembut" title="Unduh Excel sesuai tab & saringan yang tampil" style="--ikon: #16a34a">
                         <span wire:loading.remove wire:target="unduhExcel" class="pt-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span><span class="pt-hp-sembunyi">Unduh </span>Excel</span></span>
                         <span wire:loading.inline-flex wire:target="unduhExcel" class="pt-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                     </button>

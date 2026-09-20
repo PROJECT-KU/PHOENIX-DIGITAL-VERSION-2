@@ -15,7 +15,7 @@ Tambah Testimoni || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                <a wire:navigate href="{{ route('admin.testimoni.index') }}" class="dsb-tombol is-lembut">
+                <a wire:navigate href="{{ route('admin.testimoni.index') }}" class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Kembali</span>
                 </a>
             </div>

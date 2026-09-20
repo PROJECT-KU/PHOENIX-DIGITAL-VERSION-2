@@ -323,15 +323,23 @@
 
     /* Tombol. Ditulis penuh (bukan .btn bawaan) supaya tinggi, radius, dan
        ikonnya tidak bergantung pada gaya global template. */
+    /* Tombol dasar SENGAJA punya rupa sendiri: tanpa background, tombol
+       bawaan peramban/template tampil abu-abu pudar — persis yang tidak
+       diinginkan di bilah kepala. Ikonnya berwarna (bisa diatur per tombol
+       lewat --ikon) supaya barisnya hidup, bukan sederet kotak kelabu. */
     .dsb-tombol {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        height: 44px; padding: 0 18px; border: 1px solid transparent; border-radius: 12px;
+        height: 44px; padding: 0 18px; border: 1px solid var(--dsb-tepi); border-radius: 12px;
+        background: #fff; color: #334155;
         font-size: .86rem; font-weight: 700; line-height: 1; text-decoration: none;
         cursor: pointer; white-space: nowrap;
-        transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+        box-shadow: 0 6px 16px -12px rgba(15, 23, 42, .55);
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
     }
-    .dsb-tombol i.bi { font-size: .95rem; line-height: 1; }
+    .dsb-tombol i.bi { font-size: .95rem; line-height: 1; color: var(--ikon, #7c3aed); }
     .dsb-tombol i.bi::before { display: block; line-height: 1; }
+    /* Ragam berlatar penuh memakai warna teksnya sendiri untuk ikon. */
+    .dsb-tombol.is-utama i.bi, .dsb-tombol.is-bahaya i.bi { color: inherit; }
     .dsb-tombol.is-utama { background: #7c3aed; color: #fff; box-shadow: 0 8px 18px rgba(124, 58, 237, .26); }
     .dsb-tombol.is-bahaya { background: #fff; color: #dc2626; border-color: #fecaca; }
     .dsb-tombol.is-lembut { background: #fff; color: #475569; border-color: var(--dsb-tepi); }
@@ -339,6 +347,7 @@
         .dsb-tombol:hover { transform: translateY(-2px); }
         .dsb-tombol.is-bahaya:hover { background: #dc2626; color: #fff; border-color: transparent; }
         .dsb-tombol.is-lembut:hover { border-color: #cbd5e1; color: #1c1f26; }
+        .dsb-tombol:hover { border-color: #cbd5e1; color: #1c1f26; }
     }
 
     /* ===== Kartu angka ========================================== */

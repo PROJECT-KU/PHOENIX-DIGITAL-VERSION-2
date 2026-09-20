@@ -45,11 +45,11 @@ Pesan Pelanggan || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel" style="--ikon: #16a34a">
                     <span wire:loading.remove wire:target="unduhExcel" class="pp-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
                     <span wire:loading.inline-flex wire:target="unduhExcel" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
-                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf" style="--ikon: #dc2626">
                     <span wire:loading.remove wire:target="unduhPdf" class="pp-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>PDF</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>

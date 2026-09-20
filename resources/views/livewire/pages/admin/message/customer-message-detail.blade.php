@@ -32,10 +32,10 @@ Detail Pesan Pelanggan || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                <a href="{{ route('admin.customer-message.index') }}" wire:navigate class="dsb-tombol is-lembut">
+                <a href="{{ route('admin.customer-message.index') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Kembali</span>
                 </a>
-                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf" style="--ikon: #dc2626">
                     <span wire:loading.remove wire:target="unduhPdf" class="pp-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>Cetak tiket</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
@@ -110,7 +110,7 @@ Detail Pesan Pelanggan || lemon
     },
     destroy() { this.berhenti(); },
 }" x-on:click.outside="tutup()">
-                        <button type="button" class="dsb-tombol is-lembut" x-ref="pemicu" x-on:click="pasang()" :aria-expanded="buka.toString()">
+                        <button type="button" class="dsb-tombol is-lembut" x-ref="pemicu" x-on:click="pasang()" :aria-expanded="buka.toString()" style="--ikon: #64748b">
                             <span class="pp-isi-tombol">
                                 <i class="bi bi-three-dots"></i><span>Tindakan lain</span>
                             </span>

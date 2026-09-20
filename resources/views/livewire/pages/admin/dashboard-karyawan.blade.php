@@ -378,7 +378,7 @@ Dashboard || lemon
                             @endforeach
                         </div>
 
-                        <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-lembut w-100 mt-3">
+                        <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-lembut w-100 mt-3" style="--ikon: #64748b">
                             <i class="bi bi-gear"></i><span>Pengaturan Profil</span>
                         </a>
                     </div>

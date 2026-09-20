@@ -47,11 +47,11 @@ Detail Pesanan RSC || lemon
                     <i class="bi bi-eye"></i><span>Pratinjau</span>
                 </a>
                 <button type="button" wire:click="unduhExcel" class="dsb-tombol is-lembut"
-                    wire:loading.attr="disabled" wire:target="unduhExcel">
+                    wire:loading.attr="disabled" wire:target="unduhExcel" style="--ikon: #16a34a">
                     <i class="bi bi-file-earmark-excel"></i><span>Excel</span>
                 </button>
                 <button type="button" wire:click="unduhInvoice" class="dsb-tombol is-lembut"
-                    wire:loading.attr="disabled" wire:target="unduhInvoice">
+                    wire:loading.attr="disabled" wire:target="unduhInvoice" style="--ikon: #dc2626">
                     <i class="bi bi-file-earmark-pdf"></i><span>Invoice</span>
                 </button>
                 @if ($bolehBuat)

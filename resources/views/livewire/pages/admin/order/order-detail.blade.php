@@ -78,7 +78,7 @@ Detail Pesanan || lemon
         </div>
 
         <div class="dsb-hero-aksi">
-            <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
+            <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut" style="--ikon: #64748b">
                 <i class="bi bi-arrow-left"></i><span>Kembali</span>
             </a>
             @if ($hdBolehUbah && $hdBisaDiubah)
@@ -86,7 +86,7 @@ Detail Pesanan || lemon
                     <i class="bi bi-pencil-square"></i><span>Ubah</span>
                 </a>
             @endif
-            <button type="button" class="dsb-tombol is-lembut" wire:click="$set('lihatRiwayat', true)">
+            <button type="button" class="dsb-tombol is-lembut" wire:click="$set('lihatRiwayat', true)" style="--ikon: #2563eb">
                 <i class="bi bi-clock-history"></i><span>Riwayat</span>
             </button>
             @if ($order->getReceiptUrl())
@@ -959,7 +959,7 @@ Detail Pesanan || lemon
                 {{-- Tombol hubungi pembeli. --}}
                 <div class="pt-pembeli-aksi">
                     @if ($pblAdaWa)
-                        <a href="https://api.whatsapp.com/send?phone={{ $pblWa }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut is-mungil pt-tombol-wa">
+                        <a href="https://api.whatsapp.com/send?phone={{ $pblWa }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut is-mungil pt-tombol-wa" style="--ikon: #16a34a">
                             <i class="bi bi-whatsapp"></i><span>Chat WhatsApp</span>
                         </a>
                     @endif
