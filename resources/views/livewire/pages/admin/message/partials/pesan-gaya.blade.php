@@ -185,17 +185,18 @@
     .pp-pintasan kbd { padding: 1px 6px; border-radius: 6px; border: 1px solid #e2e8f0; border-bottom-width: 2px; background: #f8fafc; font-family: inherit; font-size: .72rem; color: #475569; }
     @media (max-width: 991.98px) { .pp-pintasan { display: none; } }
 
-    /* ===== Pergantian bentuk daftar ===== */
-    /* Ganti kartu <-> tabel TIDAK lewat kerangka pemuatan: geometrinya beda
-       jauh, jadi blank-lalu-muncul terasa menyentak. Yang dipakai: wadahnya
-       meredup sebentar, lalu bentuk barunya masuk sambil naik tipis. */
-    .pp-wadah { transition: opacity .2s ease, transform .2s ease; }
-    .pp-wadah.pp-tukar { opacity: .4; transform: scale(.994); }
-    .pp-rak, .pp-tabel-bungkus { animation: pp-masuk .3s cubic-bezier(.22, .61, .36, 1) both; }
+    /* ===== Pergantian bentuk daftar =====
+       Kartunya TIDAK dibongkar saat bentuknya ditukar, jadi tinggal dianimasikan
+       perpindahannya: padding & ukuran berubah halus, dan kartu yang masuk dari
+       halaman/saringan baru tetap muncul sambil naik tipis. */
+    .pp-kartu, .pp-kepala, .pp-isi, .pp-aksi, .pp-avatar, .pp-pesan {
+        transition: padding .24s ease, gap .24s ease, flex-basis .24s ease, width .24s ease, height .24s ease, background .24s ease, font-size .24s ease;
+    }
+    .pp-rak { animation: pp-masuk .3s cubic-bezier(.22, .61, .36, 1) both; }
     @keyframes pp-masuk { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) {
-        .pp-wadah, .pp-wadah.pp-tukar { transition: none; transform: none; }
-        .pp-rak, .pp-tabel-bungkus { animation: none; }
+        .pp-kartu, .pp-kepala, .pp-isi, .pp-aksi, .pp-avatar, .pp-pesan { transition: none; }
+        .pp-rak { animation: none; }
     }
 
     /* ===== Kerangka pemuatan ===== */
@@ -253,21 +254,50 @@
     @media (max-width: 575.98px) { .pp-saklar { display: none; } }
     @media (prefers-reduced-motion: reduce) { .pp-saklar-pil { transition: none; } }
 
-    /* ===== Tampilan tabel (layar lebar) ===== */
-    .pp-tabel-bungkus { overflow-x: auto; border-radius: 16px; border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff; }
-    .pp-tabel { width: 100%; border-collapse: collapse; font-size: .84rem; }
-    .pp-tabel th { padding: 11px 13px; text-align: left; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #94a3b8; background: #f8fafc; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
-    .pp-tabel td { padding: 11px 13px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
-    .pp-tabel tr:last-child td { border-bottom: 0; }
-    .pp-tabel tr.is-baru td { background: #fffbeb; }
-    .pp-tabel tr.is-dipilih td { background: color-mix(in srgb, #7c3aed 6%, #fff); }
-    .pp-tabel-nama { display: flex; align-items: center; gap: 9px; min-width: 0; }
-    .pp-tabel-nama b { display: block; font-size: .86rem; color: #1c1f26; }
-    .pp-tabel-nama small { display: block; font-size: .73rem; color: #94a3b8; }
-    .pp-tabel-pesan { max-width: 340px; color: #64748b; }
-    .pp-tabel .pp-tanda { display: inline-flex; }
-    .pp-tabel-aksi { display: flex; gap: 6px; justify-content: flex-end; }
-    .pp-tabel .pp-avatar { width: 34px; height: 34px; flex: 0 0 34px; font-size: .84rem; }
+    /* ===== Bentuk TABEL: kartu yang sama, disusun jadi baris =====
+       Sengaja BUKAN elemen <table> tersendiri. Menukar rak kartu dengan tabel
+       berarti seluruh DOM-nya dibongkar lalu dibangun ulang, dan pergantiannya
+       terasa menyentak. Dengan satu markup, kartunya cuma bergeser posisi. */
+    .pp-tabel-kepala { display: none; gap: 10px; padding: 0 16px 8px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+    /* Lebarnya disamakan dengan .pp-kepala / .pp-isi / .pp-aksi di barisnya. */
+    .pp-tabel-kepala > *:nth-child(1) { flex: 1 1 230px; }
+    .pp-tabel-kepala > *:nth-child(2) { flex: 2 1 260px; }
+    .pp-tabel-kepala > *:nth-child(3) { flex: 0 0 auto; margin-left: auto; }
+    .pp-tabel-kepala button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+    .pp-tabel-kepala button:hover { color: #64748b; }
+    .pp-tabel-kepala button.is-aktif { color: #6d28d9; }
+    .pp-tabel-kepala i { font-size: .68rem; }
+    @media (min-width: 768px) { .pp-daftar.is-tabel .pp-tabel-kepala { display: flex; } }
+
+    @media (min-width: 768px) {
+        .pp-daftar.is-tabel .pp-rak { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+        .pp-daftar.is-tabel .pp-kartu { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 12px 8px 16px; }
+        .pp-daftar.is-tabel .pp-kepala { flex: 1 1 230px; padding: 0; align-items: center; }
+        .pp-daftar.is-tabel .pp-avatar { flex-basis: 34px; width: 34px; height: 34px; font-size: .84rem; }
+        .pp-daftar.is-tabel .pp-kontak { display: none; }
+        .pp-daftar.is-tabel .pp-kepala .dsb-lencana { flex: 0 0 110px; }
+        .pp-daftar.is-tabel .pp-isi { flex: 2 1 260px; padding: 0; }
+        .pp-daftar.is-tabel .pp-penanda { margin: 0 0 4px; flex-wrap: nowrap; overflow: hidden; }
+        .pp-daftar.is-tabel .pp-pesan { flex: 0 0 auto; min-height: 0; padding: 0; background: none; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pp-daftar.is-tabel .pp-waktu { margin-top: 2px; }
+        .pp-daftar.is-tabel .pp-aksi { flex: 0 0 auto; margin-top: 0; padding: 0; border-top: 0; }
+        .pp-daftar.is-tabel .pp-aksi-utama { flex: 0 0 auto; }
+        .pp-daftar.is-tabel .pp-aksi-utama .pp-btn span { display: none; }
+        .pp-daftar.is-tabel .pp-aksi-utama .pp-btn { flex: 0 0 36px; padding: 0; }
+        .pp-daftar.is-tabel .pp-aksi-lain { flex: 0 0 auto; }
+        .pp-daftar.is-tabel .pp-aksi-lain .pp-btn-ikon { flex: 0 0 36px; }
+        /* Nomor tiket jangan dipatahkan jadi dua baris — itu yang bikin baris
+           tingginya tidak seragam di layar sempit. */
+        .pp-daftar.is-tabel .pp-tiket { white-space: nowrap; }
+    }
+    /* Tablet: ruangnya lebih sempit, jadi pangkalan flex-nya dikecilkan supaya
+       barisnya tetap satu baris selama mungkin. */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        .pp-daftar.is-tabel .pp-kepala { flex: 1 1 180px; }
+        .pp-daftar.is-tabel .pp-isi { flex: 2 1 200px; }
+        .pp-daftar.is-tabel .pp-kepala .dsb-lencana { flex: 0 0 auto; }
+        .pp-daftar.is-tabel .pp-penanda { flex-wrap: wrap; }
+    }
 
     /* ===== Penanda tambahan ===== */
     .pp-tanda.is-lewat { background: #fef2f2; color: #b91c1c; }

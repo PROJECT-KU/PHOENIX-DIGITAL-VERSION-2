@@ -32,15 +32,9 @@ Pesan Pelanggan || lemon
         [$spamSurel, $spamNomor] = $kontakSpam;
         $pernahSpam = fn ($item) => (filled($item->email) && in_array($item->email, $spamSurel, true))
             || (filled($item->no_telp) && in_array($item->no_telp, $spamNomor, true));
-        $kolomTabel = [
-            'nama' => 'Pengirim',
-            'status' => 'Status',
-            'topik' => 'Topik',
-            'petugas' => 'Petugas',
-        ];
     @endphp
 
-    <div class="dsb">
+    <div class="dsb" x-data="{ pilihan: @js($tampilan) }">
         {{-- ================== KEPALA ================== --}}
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
@@ -151,8 +145,8 @@ Pesan Pelanggan || lemon
                     @endif
                 </div>
 
-                <div class="pp-saklar" role="group" aria-label="Bentuk tampilan daftar"
-                    x-data="{ pilihan: @js($tampilan) }" x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                <div class="pp-saklar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" role="group" aria-label="Bentuk tampilan daftar"
+                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
                     <span class="pp-saklar-pil" aria-hidden="true"></span>
                     <button type="button" x-bind:class="pilihan === 'kartu' ? 'is-aktif' : ''"
                         x-on:click="pilihan = 'kartu'" wire:click="setTampilan('kartu')"
@@ -170,6 +164,11 @@ Pesan Pelanggan || lemon
                     <option value="baru" @selected($urut === 'baru')>Terbaru</option>
                     <option value="lama" @selected($urut === 'lama')>Paling lama menunggu</option>
                     <option value="prioritas" @selected($urut === 'prioritas')>Prioritas tertinggi</option>
+                    <option value="nama" @selected($urut === 'nama')>Nama A-Z</option>
+                    <option value="nama-turun" @selected($urut === 'nama-turun')>Nama Z-A</option>
+                    <option value="status" @selected($urut === 'status')>Status</option>
+                    <option value="topik" @selected($urut === 'topik')>Topik</option>
+                    <option value="petugas" @selected($urut === 'petugas')>Petugas</option>
                 </select>
 
                 <select class="dsb-isian pp-pilih is-sempit" wire:model.live="perPage" aria-label="Jumlah per halaman">
@@ -358,7 +357,7 @@ Pesan Pelanggan || lemon
 
         {{-- ================== DAFTAR PESAN ================== --}}
         <section wire:loading.class="pp-sembunyi" wire:target="{{ $sasaranMuat }}">
-          <div class="pp-wadah" wire:loading.class="pp-tukar" wire:target="setTampilan">
+          <div class="pp-wadah">
             @if ($messages->isEmpty())
                 @php
                     [$kIkon, $kJudul, $kKet] = match (true) {
@@ -383,113 +382,27 @@ Pesan Pelanggan || lemon
                     </label>
                 </div>
 
-                @if ($tampilan === 'tabel')
-                    {{-- ---------- TAMPILAN TABEL (layar lebar) ---------- --}}
-                    <div class="pp-tabel-bungkus">
-                        <table class="pp-tabel">
-                            <thead>
-                                <tr>
-                                    <th style="width: 34px;"><span class="visually-hidden">Pilih</span></th>
-                                    {{-- Kepala kolom sekaligus tombol urut: klik sekali naik, klik lagi turun. --}}
-                                    @foreach ($kolomTabel as $kunci => $judul)
-                                        <th>
-                                            <button type="button" class="pp-th {{ $this->arahUrut($kunci) ? 'is-aktif' : '' }}" wire:click="urutkanKolom('{{ $kunci }}')">
-                                                {{ $judul }}
-                                                <i class="bi {{ match ($this->arahUrut($kunci)) { 'naik' => 'bi-sort-down-alt', 'turun' => 'bi-sort-up-alt', default => 'bi-chevron-expand' } }}"></i>
-                                            </button>
-                                        </th>
-                                        @if ($kunci === 'nama')
-                                            <th>Pesan</th>
-                                        @endif
-                                    @endforeach
-                                    <th>
-                                        <button type="button" class="pp-th {{ in_array($urut, ['baru', 'lama'], true) ? 'is-aktif' : '' }}" wire:click="$set('urut', '{{ $urut === 'baru' ? 'lama' : 'baru' }}')">
-                                            Masuk
-                                            <i class="bi {{ $urut === 'lama' ? 'bi-sort-down-alt' : ($urut === 'baru' ? 'bi-sort-up-alt' : 'bi-chevron-expand') }}"></i>
-                                        </button>
-                                    </th>
-                                    <th class="text-end">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($messages as $item)
-                                    @php
-                                        [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
-                                        [$prLabel, $prKelas, $prWarna] = $item->tampilanPrioritas();
-                                    @endphp
-                                    <tr wire:key="baris-{{ $item->id }}" class="{{ $item->belumDibaca() ? 'is-baru' : '' }} {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }}">
-                                        <td>
-                                            <label class="pp-centang is-kartu" title="Pilih untuk aksi massal">
-                                                <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
-                                            </label>
-                                        </td>
-                                        <td>
-                                            <div class="pp-tabel-nama">
-                                                <span class="pp-avatar" style="--av: {{ $warnaAvatar($item->name) }}; cursor: default;">
-                                                    {{ mb_strtoupper(mb_substr(trim((string) $item->name), 0, 1)) ?: '?' }}
-                                                </span>
-                                                <span style="min-width: 0;">
-                                                    <b>{!! \App\Support\SorotKata::pada($item->name, $search) !!}</b>
-                                                    <small>{!! \App\Support\SorotKata::pada($item->ticket, $search) !!}</small>
-                                                    <span class="pp-tanda {{ $prKelas }}" style="margin-top: 4px;"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="pp-tabel-pesan">
-                                            {!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 90), $search) !!}
-                                            @if ($item->lampiran_count ?? 0)
-                                                <span class="pp-tanda is-rendah" style="margin-top: 5px;"><i class="bi bi-paperclip"></i>{{ $item->lampiran_count }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
-                                            @if ($item->lewatBatas())
-                                                <span class="pp-tanda is-lewat" style="margin-top: 5px;"><i class="bi bi-alarm"></i>Lewat batas</span>
-                                            @elseif ($item->sudahDibalas())
-                                                <span class="pp-tanda is-dibalas" style="margin-top: 5px;"><i class="bi bi-check2-all"></i>Dibalas</span>
-                                            @endif
-                                            @if ($pernahSpam($item) && ! $item->is_spam)
-                                                <span class="pp-tanda is-spam" style="margin-top: 5px;"><i class="bi bi-shield-exclamation"></i>Pernah spam</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $item->labelKategori() ?: '—' }}</td>
-                                        <td>{{ $item->petugas?->name ?: '—' }}</td>
-                                        <td>{{ $item->created_at?->locale('id')->translatedFormat('d M, H:i') }}</td>
-                                        <td>
-                                            <div class="pp-tabel-aksi">
-                                                @if ($arsip)
-                                                    @if ($bolehHapus)
-                                                        <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="pulihkan" data-arg="{{ $item->id }}" data-icon="question"
-                                                            data-title="Kembalikan tiket ini?" data-text="{{ $item->ticket }} kembali ke daftar aktif." data-confirm="Ya, kembalikan"
-                                                            title="Kembalikan dari arsip" aria-label="Kembalikan dari arsip"><i class="bi bi-arrow-counterclockwise"></i></button>
-                                                        <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-konfirmasi" data-action="hapusPermanen" data-arg="{{ $item->id }}" data-icon="warning"
-                                                            data-title="Hapus permanen?" data-text="{{ $item->ticket }} hilang selamanya." data-confirm="Ya, hapus permanen"
-                                                            title="Hapus permanen" aria-label="Hapus permanen"><i class="bi bi-trash3"></i></button>
-                                                    @endif
-                                                @else
-                                                    <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-btn pp-btn-ikon is-utama" title="Buka & balas" aria-label="Buka & balas"><i class="bi bi-envelope-open"></i></a>
-                                                    @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
-                                                        <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
-                                                    @endif
-                                                    @if ($bolehHapus)
-                                                        <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
-                                                            data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam"
-                                                            title="Tandai spam" aria-label="Tandai spam"><i class="bi bi-shield-exclamation"></i></button>
-                                                    @endif
-                                                    @if ($bolehHapus)
-                                                        <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
-                                                            title="{{ $item->belumDibaca() ? 'Baca dulu sebelum bisa diarsipkan' : 'Arsipkan' }}" aria-label="Arsipkan pesan"><i class="bi bi-archive"></i></button>
-                                                    @endif
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                {{-- Bentuk KARTU dan TABEL memakai markup yang SAMA; yang berubah
+                     hanya kelasnya, jadi kartunya bergeser posisi alih-alih
+                     dibongkar lalu dibangun ulang. Itu yang bikin pergantiannya
+                     mulus (pola yang sama dipakai Moderasi Ulasan Produk). --}}
+                <div class="pp-daftar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}"
+                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    {{-- Tiga label yang benar-benar sejajar dengan isi barisnya.
+                         Urutan lain (status, topik, petugas) ada di menu Urutkan
+                         supaya kepala ini tidak menjanjikan kolom yang tak ada. --}}
+                    <div class="pp-tabel-kepala">
+                        <button type="button" class="{{ $this->arahUrut('nama') ? 'is-aktif' : '' }}" wire:click="urutkanKolom('nama')">
+                            Pengirim &amp; status · {{ $this->arahUrut('nama') === 'turun' ? 'Z-A' : 'A-Z' }}
+                            <i class="bi {{ match ($this->arahUrut('nama')) { 'naik' => 'bi-sort-alpha-down', 'turun' => 'bi-sort-alpha-up', default => 'bi-chevron-expand' } }}"></i>
+                        </button>
+                        <button type="button" class="{{ in_array($urut, ['baru', 'lama'], true) ? 'is-aktif' : '' }}" wire:click="$set('urut', '{{ $urut === 'baru' ? 'lama' : 'baru' }}')">
+                            Pesan &amp; penanda · {{ $urut === 'lama' ? 'terlama' : 'terbaru' }}
+                            <i class="bi {{ $urut === 'lama' ? 'bi-sort-down-alt' : ($urut === 'baru' ? 'bi-sort-up-alt' : 'bi-chevron-expand') }}"></i>
+                        </button>
+                        <span>Tindakan</span>
                     </div>
-                @else
-                    {{-- ---------- TAMPILAN KARTU ---------- --}}
+
                     <div class="pp-rak">
                         @foreach ($messages as $item)
                             @php
@@ -600,7 +513,7 @@ Pesan Pelanggan || lemon
                             </article>
                         @endforeach
                     </div>
-                @endif
+                </div>
 
                 @if ($messages->hasPages())
                     <div class="pp-halaman">{{ $messages->links('vendor.pagination') }}</div>
