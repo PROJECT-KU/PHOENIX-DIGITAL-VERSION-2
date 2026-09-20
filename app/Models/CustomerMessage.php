@@ -46,6 +46,7 @@ class CustomerMessage extends Model
         'kepuasan',
         'kepuasan_at',
         'kepuasan_komentar',
+        'minta_nilai_at',
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class CustomerMessage extends Model
         'is_spam' => 'boolean',
         'tunda_sampai' => 'datetime',
         'kepuasan_at' => 'datetime',
+        'minta_nilai_at' => 'datetime',
     ];
 
     // ===== Relasi =====
@@ -91,6 +93,30 @@ class CustomerMessage extends Model
     public function gabungan()
     {
         return $this->hasMany(CustomerMessage::class, 'merged_into')->withTrashed();
+    }
+
+    /**
+     * Kirim ajakan menilai — sekali saja per tiket, dan hanya kalau ada surelnya.
+     *
+     * Dikirim SESUDAH respons: hosting ini tidak menjalankan queue:work sebagai
+     * proses tetap, dan admin tidak boleh menunggui SMTP saat menutup tiket.
+     */
+    public function mintaPenilaian(): void
+    {
+        if ($this->minta_nilai_at || $this->kepuasan || blank($this->email) || ! $this->selesai()) {
+            return;
+        }
+
+        $this->forceFill(['minta_nilai_at' => now()])->saveQuietly();
+        $pesan = $this;
+
+        app()->terminating(function () use ($pesan) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($pesan->email)->send(new \App\Mail\MintaPenilaianMail($pesan));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Gagal kirim ajakan menilai '.$pesan->ticket.': '.$e->getMessage());
+            }
+        });
     }
 
     /** [label, ikon, warna] penilaian pelanggan. */

@@ -35,6 +35,7 @@
         <tr><td class="judul">Topik</td><td>{{ $pesan->labelKategori() ?: 'Belum ditentukan' }}</td></tr>
         <tr><td class="judul">Petugas</td><td>{{ $pesan->petugas?->name ?: 'Belum ditugaskan' }}</td></tr>
         <tr><td class="judul">Dibaca</td><td>{{ $pesan->read_at?->locale('id')->translatedFormat('d F Y, H:i') ?: 'Belum dibaca' }}</td></tr>
+        <tr><td class="judul">Penilaian</td><td>{{ $pesan->tampilanKepuasan()[0] ?? 'Belum dinilai' }}{{ $pesan->kepuasan_komentar ? ' — '.$pesan->kepuasan_komentar : '' }}</td></tr>
         <tr><td class="judul">Dibalas</td><td>{{ $pesan->replied_at?->locale('id')->translatedFormat('d F Y, H:i') ?: 'Belum dicatat' }}</td></tr>
     </table>
 

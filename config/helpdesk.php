@@ -76,6 +76,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Batas lampiran per tiket
+    |--------------------------------------------------------------------------
+    | Berkasnya baru terbuang saat tiket dihapus permanen, jadi tanpa batas ini
+    | satu tiket bisa menyeret puluhan MB ke disk hosting untuk selamanya.
+    */
+    'lampiran_maks' => 10,
+    'lampiran_maks_mb' => 40,
+
+    /*
+    |--------------------------------------------------------------------------
     | Kanal balasan yang bisa dicatat
     |--------------------------------------------------------------------------
     */

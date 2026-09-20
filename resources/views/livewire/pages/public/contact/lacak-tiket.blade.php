@@ -34,8 +34,15 @@
         .lt-nilai-tombol { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
         .lt-nilai-tombol button { flex: 1 1 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px; border: 1.5px solid #e9d5ff; border-radius: 14px; background: #fff; font-size: .86rem; font-weight: 700; color: #475569; cursor: pointer; }
         .lt-nilai-tombol button:hover { border-color: #a855f7; color: #6d28d9; }
-        .lt-nilai-tombol button i { font-size: 1.5rem; }
+        .lt-nilai-tombol button i { display: block; font-size: 1.5rem; line-height: 1; }
+        .lt-nilai-tombol button i::before { display: block; line-height: 1; }
         .lt-nilai-hasil { display: flex; align-items: center; gap: 10px; font-size: .95rem; font-weight: 700; }
+        .lt-berkas { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 12px 14px; cursor: pointer; border: 1.5px dashed #e8ecf2; border-radius: 12px; background: #fff; font-size: .9rem; color: #475569; }
+        .lt-berkas:hover { border-color: #f26522; background: #fff7f2; }
+        .lt-berkas i.bi { color: #f26522; }
+        .lt-berkas span { min-width: 0; overflow-wrap: anywhere; }
+        .lt-berkas input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .lt-hint { display: block; margin-top: 7px; font-size: .8rem; color: #94a3b8; }
         .lt-pesan-pelanggan { padding: 13px 15px; border-radius: 13px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: .92rem; line-height: 1.6; color: #475569; white-space: pre-wrap; }
     </style>
     @endonce
@@ -45,7 +52,7 @@
             <h1 class="lt-judul">Status Pesan Anda</h1>
 
             @if (session('tiket-sukses'))
-                <div class="lt-sukses"><i class="bi bi-check-circle-fill"></i>{{ session('tiket-sukses') }}</div>
+                <div class="lt-sukses" role="status" aria-live="polite"><i class="bi bi-check-circle-fill"></i>{{ session('tiket-sukses') }}</div>
             @endif
 
             @if ($tautanKedaluwarsa)
@@ -106,23 +113,44 @@
                     </div>
                 @endif
 
+                @if ($pesan->trashed())
+                    <div class="lt-peringatan" style="margin-top: 22px;">
+                        <i class="bi bi-archive"></i>
+                        <span>Tiket ini sudah kami tutup dan rapikan, jadi keterangan baru tidak bisa ditambahkan di sini.
+                            Kalau masih ada kendala, <a href="{{ route('contact') }}" wire:navigate style="color:#92400e; font-weight:700;">kirim pesan baru</a>
+                            sambil menyebut nomor tiket {{ $pesan->ticket }}.</span>
+                    </div>
+                @else
                 {{-- Jalur balik yang benar-benar sampai ke tiket. Kotak masuk surel
                      kami tidak dibaca otomatis, jadi jangan pernah menjanjikan
                      "balas surel ini" di mana pun. --}}
                 <div class="lt-tambah">
                     <p class="lt-ket" style="margin-bottom: 8px;"><b>Ada yang ingin ditambahkan?</b></p>
                     <p class="lt-ket" style="margin-bottom: 10px;">Tulis di sini — keterangannya langsung masuk ke tiket yang sama dan kami baca.</p>
-                    <form wire:submit="tambahKeterangan">
+                    <form wire:submit="tambahKeterangan" x-data="{ berkas: [] }" x-on:tiket-terkirim.window="berkas = []; $refs.lampiran.value = '';">
                         <textarea wire:model="tambahan" placeholder="Misalnya: nomor pesanan saya INV-20260919-0007, sudah saya transfer jam 10 pagi."></textarea>
                         @error('tambahan') <span class="lt-galat">{{ $message }}</span> @enderror
+
+                        <label class="lt-berkas" for="lt-lampiran">
+                            <i class="bi bi-paperclip"></i>
+                            <span x-text="berkas.length ? berkas.join(', ') : 'Lampirkan gambar atau PDF (opsional, maks. 2 berkas)'"></span>
+                            <input type="file" id="lt-lampiran" x-ref="lampiran" wire:model="berkasTambahan" multiple
+                                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                x-on:change="berkas = Array.from($event.target.files).map(f => f.name)">
+                        </label>
+                        <span class="lt-hint" wire:loading wire:target="berkasTambahan">Mengunggah lampiran…</span>
+                        @error('berkasTambahan') <span class="lt-galat">{{ $message }}</span> @enderror
+                        @error('berkasTambahan.*') <span class="lt-galat">{{ $message }}</span> @enderror
+
                         <button type="submit" class="lt-tombol" style="margin-top: 12px;" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="tambahKeterangan"><i class="bi bi-send"></i> Kirim keterangan</span>
                             <span wire:loading wire:target="tambahKeterangan">Mengirim…</span>
                         </button>
                     </form>
                 </div>
+                @endif
 
-                @if ($pesan->selesai())
+                @if ($pesan->selesai() && ! $pesan->trashed())
                     <div class="lt-nilai">
                         @if ($pesan->kepuasan)
                             @php [$kLabel, $kIkon, $kWarna] = $pesan->tampilanKepuasan(); @endphp

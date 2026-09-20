@@ -45,24 +45,71 @@ Detail Pesan Pelanggan || lemon
                     <div class="pp-tunda" x-data="{
     buka: false,
     gaya: '',
-    /* Menu ditempatkan dengan koordinat layar supaya tidak terpotong
-       pembungkusnya yang ber-overflow:hidden. Ukurannya TIDAK diukur di sini:
-       saat dihitung, menunya masih display:none sehingga lebarnya terbaca 0
-       dan posisinya meleset ke luar layar. Yang dipakai kotak tombolnya, lalu
-       menunya digeser sendiri lewat transform. */
-    pasang() {
-        this.buka = ! this.buka;
-        if (! this.buka) return;
-
+    pendengar: null,
+    /* Menu memakai koordinat layar (position:fixed) supaya tidak terpotong
+       pembungkusnya yang ber-overflow:hidden.
+       Posisinya DIHITUNG ULANG selama menu terbuka, bukan sekali saat diklik:
+       begitu halaman atau daftar bergeser, menu yang dihitung sekali akan
+       melayang terlepas dari tombolnya di ruang kosong.
+       Ukuran menunya sengaja tidak diukur — saat dihitung ia masih display:none
+       sehingga lebarnya terbaca 0; yang dipakai kotak tombolnya, lalu menunya
+       digeser sendiri lewat transform. */
+    hitung() {
         const pemicu = this.$refs.pemicu.getBoundingClientRect();
-        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8));
+
+        // Tombolnya sudah tergulung keluar layar: tutup daripada menggantung.
+        if (pemicu.bottom < 0 || pemicu.top > window.innerHeight) {
+            this.tutup();
+            return;
+        }
+
+        /* Koordinat fixed TIDAK selalu relatif layar: bila ada leluhur yang
+           membentuk containing block (transform/filter/backdrop-filter —
+           kartu glossy di panel ini memakainya), titik nolnya bergeser ke
+           sudut leluhur itu. Selisihnya diukur lewat offsetParent, jadi
+           menunya tetap menempel di tombolnya apa pun pembungkusnya. */
+        const induk = this.$refs.menu.offsetParent;
+        const geser = induk ? induk.getBoundingClientRect() : { left: 0, top: 0 };
+
+        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8)) - geser.left;
         const muatBawah = window.innerHeight - pemicu.bottom > 300;
+        const atas = (muatBawah ? pemicu.bottom + 6 : pemicu.top - 6) - geser.top;
 
         this.gaya = muatBawah
-            ? 'left:' + kiri + 'px; top:' + (pemicu.bottom + 6) + 'px; transform: translateX(-100%);'
-            : 'left:' + kiri + 'px; top:' + (pemicu.top - 6) + 'px; transform: translate(-100%, -100%);';
+            ? 'left:' + kiri + 'px; top:' + atas + 'px; transform: translateX(-100%);'
+            : 'left:' + kiri + 'px; top:' + atas + 'px; transform: translate(-100%, -100%);';
     },
-}" x-on:click.outside="buka = false" x-on:scroll.window="buka = false" x-on:resize.window="buka = false">
+    pasang() {
+        this.buka = ! this.buka;
+
+        if (! this.buka) {
+            this.berhenti();
+
+            return;
+        }
+
+        this.hitung();
+        // Sekali lagi sesudah menunya benar-benar tampil: saat hitungan pertama
+        // ia masih display:none sehingga offsetParent-nya belum terbaca.
+        this.$nextTick(() => this.buka && this.hitung());
+
+        // Capture: gulungan bisa datang dari wadah mana pun, bukan cuma window.
+        this.pendengar = () => this.hitung();
+        document.addEventListener('scroll', this.pendengar, true);
+        window.addEventListener('resize', this.pendengar);
+    },
+    tutup() {
+        this.buka = false;
+        this.berhenti();
+    },
+    berhenti() {
+        if (! this.pendengar) return;
+        document.removeEventListener('scroll', this.pendengar, true);
+        window.removeEventListener('resize', this.pendengar);
+        this.pendengar = null;
+    },
+    destroy() { this.berhenti(); },
+}" x-on:click.outside="tutup()">
                         <button type="button" class="dsb-tombol is-lembut" x-ref="pemicu" x-on:click="pasang()" :aria-expanded="buka.toString()">
                             <span class="pp-isi-tombol">
                                 <i class="bi bi-three-dots"></i><span>Tindakan lain</span>
@@ -72,10 +119,10 @@ Detail Pesan Pelanggan || lemon
                             @if ($bolehUbah)
                                 <span class="pp-menu-judul">Tunda</span>
                                 @if ($message->ditunda())
-                                    <button type="button" wire:click="lanjutkanTunda" x-on:click="buka = false">Lanjutkan sekarang</button>
+                                    <button type="button" wire:click="lanjutkanTunda" x-on:click="tutup()">Lanjutkan sekarang</button>
                                 @endif
                                 @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
-                                    <button type="button" wire:click="tunda({{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                                    <button type="button" wire:click="tunda({{ $hari }})" x-on:click="tutup()">{{ $label }}</button>
                                 @endforeach
                                 <label class="pp-menu-tanggal">
                                     <span>Sampai tanggal</span>
@@ -416,8 +463,17 @@ Detail Pesan Pelanggan || lemon
                             // supaya kejadian terbaru tidak tenggelam.
                             $batasLinimasa = 6;
                             $lama = max(0, $logs->count() - $batasLinimasa);
+                            $belumDimuat = max(0, $totalLog - $logs->count());
                         @endphp
-                        <span class="pp-detail-label">Linimasa tiket</span>
+
+                        @if ($belumDimuat)
+                            <div class="pp-linimasa-muat">
+                                <button type="button" class="pp-btn" wire:click="$set('semuaLinimasa', true)" wire:loading.attr="disabled">
+                                    <i class="bi bi-arrow-down-circle"></i><span>Muat {{ $belumDimuat }} kejadian terdahulu</span>
+                                </button>
+                            </div>
+                        @endif
+                        <span class="pp-detail-label" id="pp-judul-linimasa">Linimasa tiket</span>
                         <div x-data="{ semua: {{ $lama ? 'false' : 'true' }} }">
                             @if ($lama)
                                 <button type="button" class="pp-btn pp-lipat" x-on:click="semua = !semua">
@@ -425,7 +481,7 @@ Detail Pesan Pelanggan || lemon
                                     <span x-text="semua ? 'Sembunyikan yang lama' : 'Tampilkan {{ $lama }} kejadian lebih lama'"></span>
                                 </button>
                             @endif
-                            <ol class="pp-linimasa">
+                            <ol class="pp-linimasa" role="log" aria-live="polite" aria-labelledby="pp-judul-linimasa">
                                 <li class="pp-baris-tanggal" @if ($lama) x-show="semua" x-collapse x-cloak @endif>
                                     {{ $message->created_at?->locale('id')->translatedFormat('l, d F Y') }}
                                 </li>

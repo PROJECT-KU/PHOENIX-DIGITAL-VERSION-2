@@ -402,6 +402,7 @@
 
     /* ===== Linimasa yang dilipat ===== */
     .pp-lipat { margin-bottom: 12px; }
+    .pp-linimasa-muat { margin-bottom: 12px; }
     .pp-template-item.is-diedit { border-color: #c4b5fd; background: #faf5ff; }
     .pp-template-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
     .pp-kait-gabung { display: flex; align-items: stretch; gap: 8px; }

@@ -61,6 +61,9 @@
                         @if ($balasan = optional($p->logs->where('jenis', 'balasan')->last())->isi)
                             <div class="kecil" style="margin-top:3px; color:#475569;">"{{ \Illuminate\Support\Str::limit($balasan, 90) }}"</div>
                         @endif
+                        @if ($nilai = $p->tampilanKepuasan())
+                            <div class="kecil" style="margin-top:3px; color:{{ $nilai[2] }};">Penilaian: {{ $nilai[0] }}</div>
+                        @endif
                     </td>
                 </tr>
             @empty

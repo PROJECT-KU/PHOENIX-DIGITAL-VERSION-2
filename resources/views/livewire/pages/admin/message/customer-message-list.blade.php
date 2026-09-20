@@ -338,7 +338,7 @@ Pesan Pelanggan || lemon
 
         {{-- Jaring pengaman sesaat sesudah aksi massal. --}}
         @if ($urungkanId)
-            <div class="pp-urungkan" role="status">
+            <div class="pp-urungkan" role="status" aria-live="polite">
                 <span><i class="bi bi-check2-circle"></i> {{ $urungkanLabel }}.</span>
                 <button type="button" class="pp-btn" wire:click="urungkan"><i class="bi bi-arrow-counterclockwise"></i><span>Urungkan</span></button>
                 <button type="button" class="pp-btn pp-btn-ikon" wire:click="$set('urungkanId', [])" title="Tutup" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
@@ -347,7 +347,7 @@ Pesan Pelanggan || lemon
 
         {{-- ================== BILAH AKSI MASSAL ================== --}}
         @if ($pilih)
-            <div class="pp-massal" role="region" aria-label="Aksi massal">
+            <div class="pp-massal" role="region" aria-live="polite" aria-label="Aksi massal">
                 <span class="pp-massal-jumlah"><b>{{ count($pilih) }}</b> dipilih</span>
                 <div class="pp-massal-tombol">
                     @if ($arsip)
@@ -366,6 +366,10 @@ Pesan Pelanggan || lemon
                             <button type="button" class="pp-btn pp-konfirmasi" data-action="tandaiDibacaTerpilih" data-icon="question"
                                 data-title="Tandai {{ count($pilih) }} pesan sudah dibaca?" data-text="Badge helpdesk ikut berkurang." data-confirm="Ya, tandai">
                                 <i class="bi bi-envelope-open"></i><span>Tandai dibaca</span>
+                            </button>
+                            <button type="button" class="pp-btn pp-konfirmasi" data-action="tandaiBelumDibacaTerpilih" data-icon="question"
+                                data-title="Tandai {{ count($pilih) }} tiket belum dibaca?" data-text="Tiketnya kembali muncul di tab Belum dibaca." data-confirm="Ya, tandai">
+                                <i class="bi bi-envelope"></i><span>Belum dibaca</span>
                             </button>
                             <select class="dsb-isian pp-pilih is-sempit" wire:change="statusTerpilih($event.target.value); $event.target.value = ''" aria-label="Ubah status terpilih">
                                 <option value="">Ubah status…</option>
@@ -441,6 +445,10 @@ Pesan Pelanggan || lemon
                     </div>
                 </div>
             @else
+                <p class="visually-hidden" role="status" aria-live="polite">
+                    {{ $messages->total() }} tiket ditemukan{{ $this->adaSaring || $search ? ' dengan saringan yang sedang aktif' : '' }}.
+                </p>
+
                 <div class="pp-pilih-semua">
                     <label class="pp-centang">
                         <input type="checkbox" @checked($semuaTercentang) wire:click="pilihHalaman({{ \Illuminate\Support\Js::from($idHalaman) }})">
@@ -587,29 +595,76 @@ Pesan Pelanggan || lemon
                                                 <div class="pp-tunda" x-data="{
     buka: false,
     gaya: '',
-    /* Menu ditempatkan dengan koordinat layar supaya tidak terpotong
-       pembungkusnya yang ber-overflow:hidden. Ukurannya TIDAK diukur di sini:
-       saat dihitung, menunya masih display:none sehingga lebarnya terbaca 0
-       dan posisinya meleset ke luar layar. Yang dipakai kotak tombolnya, lalu
-       menunya digeser sendiri lewat transform. */
-    pasang() {
-        this.buka = ! this.buka;
-        if (! this.buka) return;
-
+    pendengar: null,
+    /* Menu memakai koordinat layar (position:fixed) supaya tidak terpotong
+       pembungkusnya yang ber-overflow:hidden.
+       Posisinya DIHITUNG ULANG selama menu terbuka, bukan sekali saat diklik:
+       begitu halaman atau daftar bergeser, menu yang dihitung sekali akan
+       melayang terlepas dari tombolnya di ruang kosong.
+       Ukuran menunya sengaja tidak diukur — saat dihitung ia masih display:none
+       sehingga lebarnya terbaca 0; yang dipakai kotak tombolnya, lalu menunya
+       digeser sendiri lewat transform. */
+    hitung() {
         const pemicu = this.$refs.pemicu.getBoundingClientRect();
-        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8));
+
+        // Tombolnya sudah tergulung keluar layar: tutup daripada menggantung.
+        if (pemicu.bottom < 0 || pemicu.top > window.innerHeight) {
+            this.tutup();
+            return;
+        }
+
+        /* Koordinat fixed TIDAK selalu relatif layar: bila ada leluhur yang
+           membentuk containing block (transform/filter/backdrop-filter —
+           kartu glossy di panel ini memakainya), titik nolnya bergeser ke
+           sudut leluhur itu. Selisihnya diukur lewat offsetParent, jadi
+           menunya tetap menempel di tombolnya apa pun pembungkusnya. */
+        const induk = this.$refs.menu.offsetParent;
+        const geser = induk ? induk.getBoundingClientRect() : { left: 0, top: 0 };
+
+        const kiri = Math.max(216, Math.min(pemicu.right, window.innerWidth - 8)) - geser.left;
         const muatBawah = window.innerHeight - pemicu.bottom > 300;
+        const atas = (muatBawah ? pemicu.bottom + 6 : pemicu.top - 6) - geser.top;
 
         this.gaya = muatBawah
-            ? 'left:' + kiri + 'px; top:' + (pemicu.bottom + 6) + 'px; transform: translateX(-100%);'
-            : 'left:' + kiri + 'px; top:' + (pemicu.top - 6) + 'px; transform: translate(-100%, -100%);';
+            ? 'left:' + kiri + 'px; top:' + atas + 'px; transform: translateX(-100%);'
+            : 'left:' + kiri + 'px; top:' + atas + 'px; transform: translate(-100%, -100%);';
     },
-}" x-on:click.outside="buka = false" x-on:scroll.window="buka = false" x-on:resize.window="buka = false">
+    pasang() {
+        this.buka = ! this.buka;
+
+        if (! this.buka) {
+            this.berhenti();
+
+            return;
+        }
+
+        this.hitung();
+        // Sekali lagi sesudah menunya benar-benar tampil: saat hitungan pertama
+        // ia masih display:none sehingga offsetParent-nya belum terbaca.
+        this.$nextTick(() => this.buka && this.hitung());
+
+        // Capture: gulungan bisa datang dari wadah mana pun, bukan cuma window.
+        this.pendengar = () => this.hitung();
+        document.addEventListener('scroll', this.pendengar, true);
+        window.addEventListener('resize', this.pendengar);
+    },
+    tutup() {
+        this.buka = false;
+        this.berhenti();
+    },
+    berhenti() {
+        if (! this.pendengar) return;
+        document.removeEventListener('scroll', this.pendengar, true);
+        window.removeEventListener('resize', this.pendengar);
+        this.pendengar = null;
+    },
+    destroy() { this.berhenti(); },
+}" x-on:click.outside="tutup()">
                                                     <button type="button" class="pp-btn pp-btn-ikon" x-ref="pemicu" x-on:click="pasang()"
                                                         title="Tindakan lain" aria-label="Tindakan lain"><i class="bi bi-three-dots"></i></button>
                                                     <div class="pp-tunda-menu is-lebar" x-show="buka" x-ref="menu" :style="gaya" x-cloak>
                                                         @if ($bolehUbah && ! $item->belumDibaca())
-                                                            <button type="button" wire:click="tandaiBelumDibaca('{{ $item->id }}')" x-on:click="buka = false">Tandai belum dibaca</button>
+                                                            <button type="button" wire:click="tandaiBelumDibaca('{{ $item->id }}')" x-on:click="tutup()">Tandai belum dibaca</button>
                                                         @endif
                                                         @if ($bolehUbah && ! $item->selesai())
                                                             <span class="pp-menu-judul">Tunda</span>
@@ -617,14 +672,16 @@ Pesan Pelanggan || lemon
                                             <span class="pp-tanda" style="background: {{ $k[2] }}1a; color: {{ $k[2] }};"><i class="bi {{ $k[1] }}"></i>{{ $k[0] }}</span>
                                         @endif
                                         @if ($item->ditunda())
-                                                                <button type="button" wire:click="lanjutkanTunda('{{ $item->id }}')" x-on:click="buka = false">Lanjutkan sekarang</button>
+                                                                <button type="button" wire:click="lanjutkanTunda('{{ $item->id }}')" x-on:click="tutup()">Lanjutkan sekarang</button>
                                                             @endif
                                                             @foreach ([1 => '1 hari', 3 => '3 hari', 7 => '7 hari'] as $hari => $label)
-                                                                <button type="button" wire:click="tunda('{{ $item->id }}', {{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                                                                <button type="button" wire:click="tunda('{{ $item->id }}', {{ $hari }})" x-on:click="tutup()">{{ $label }}</button>
                                                             @endforeach
                                                         @endif
                                                         @if ($bolehHapus)
-                                                            <span class="pp-menu-judul">Singkirkan</span>
+                                                            @if ($bolehUbah)
+                                                                <span class="pp-menu-judul">Singkirkan</span>
+                                                            @endif
                                                             <button type="button" class="pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
                                                                 data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">Tandai spam</button>
                                                         @endif

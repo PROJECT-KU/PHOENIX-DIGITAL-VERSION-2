@@ -15,6 +15,7 @@
             <th>Dibalas</th>
             <th>Balasan terakhir</th>
             <th>Tindak lanjut</th>
+            <th>Kepuasan</th>
         </tr>
     </thead>
     <tbody>
@@ -34,6 +35,7 @@
                 <td>{{ $p->replied_at?->format('d/m/Y H:i') ?: 'Belum dibalas' }}</td>
                 <td>{{ optional($p->logs->where('jenis', 'balasan')->last())->isi ?: '-' }}</td>
                 <td>{{ $p->logs->whereIn('jenis', ['balasan', 'catatan'])->count() }} catatan</td>
+                <td>{{ $p->tampilanKepuasan()[0] ?? '-' }}{{ $p->kepuasan_komentar ? ' — '.$p->kepuasan_komentar : '' }}</td>
             </tr>
         @endforeach
     </tbody>

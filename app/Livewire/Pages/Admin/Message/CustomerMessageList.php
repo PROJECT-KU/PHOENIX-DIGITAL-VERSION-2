@@ -331,6 +331,10 @@ class CustomerMessageList extends Component
         $pesan->update(['status' => $value]);
         $pesan->catat('status', $lama.' → '.self::STATUS[$value]);
 
+        if ($value === 'resolved') {
+            $pesan->mintaPenilaian();
+        }
+
         $this->dispatch('swal-success', message: 'Status diperbarui jadi '.self::STATUS[$value].'.');
         $this->dispatch('sidebar-badge-updated');
     }
@@ -622,6 +626,29 @@ class CustomerMessageList extends Component
         $this->dispatch('swal-success', message: $jumlah.' pesan ditandai sudah dibaca.');
     }
 
+    public function tandaiBelumDibacaTerpilih(): void
+    {
+        if (! $this->bolehUbah() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            if ($pesan->belumDibaca()) {
+                continue;
+            }
+
+            $pesan->update(['read_at' => null]);
+            $pesan->catat('belum-dibaca');
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' tiket ditandai belum dibaca lagi.');
+    }
+
     public function statusTerpilih(string $value): void
     {
         if (! $this->bolehUbah() || $this->pilih === [] || ! array_key_exists($value, self::STATUS)) {
@@ -634,6 +661,11 @@ class CustomerMessageList extends Component
             $lama = self::STATUS[$pesan->status] ?? $pesan->status;
             $pesan->update(['status' => $value]);
             $pesan->catat('status', $lama.' → '.self::STATUS[$value]);
+
+            if ($value === 'resolved') {
+                $pesan->mintaPenilaian();
+            }
+
             $jumlah++;
         }
 
@@ -890,10 +922,23 @@ class CustomerMessageList extends Component
                         $sub->orWhere('no_telp', 'like', '%'.$inti.'%');
                     }
 
-                    // Balasan & catatan internal ikut dicari: sejak linimasa
-                    // jadi tempat bukti tindak lanjut, isinya juga yang dicari
-                    // orang ("tiket yang balasannya menyebut refund").
-                    $sub->orWhereHas('logs', fn ($l) => $l->where('isi', 'like', $term));
+                    /*
+                     * Balasan & catatan internal ikut dicari: sejak linimasa
+                     * jadi tempat bukti tindak lanjut, isinya juga yang dicari
+                     * orang ("tiket yang balasannya menyebut refund").
+                     *
+                     * Di MySQL memakai indeks FULLTEXT — LIKE '%kata%' tidak
+                     * bisa memakai indeks apa pun dan akan memindai seluruh
+                     * tabel linimasa yang tumbuh paling cepat di modul ini.
+                     * SQLite (uji) tidak punya FULLTEXT, jadi tetap LIKE.
+                     */
+                    $kata = trim($this->search);
+
+                    $sub->orWhereHas('logs', function ($l) use ($term, $kata) {
+                        \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'mysql' && mb_strlen($kata) >= 3
+                            ? $l->whereFullText('isi', $kata)
+                            : $l->where('isi', 'like', $term);
+                    });
                 });
             })
             // Mendesak lebih dulu, lalu yang paling lama menunggu.

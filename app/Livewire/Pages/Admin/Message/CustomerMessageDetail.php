@@ -16,6 +16,9 @@ class CustomerMessageDetail extends Component
 {
     use WithFileUploads;
 
+    /** Jumlah baris linimasa yang dimuat sebelum diminta selengkapnya. */
+    public const LINIMASA_AWAL = 30;
+
     public CustomerMessage $message;
 
     public $status;
@@ -59,6 +62,9 @@ class CustomerMessageDetail extends Component
 
     /** Tanggal tunda pilihan sendiri (format Y-m-d). */
     public string $tundaTanggal = '';
+
+    /** Muat seluruh linimasa; bawaannya hanya yang terbaru. */
+    public bool $semuaLinimasa = false;
 
     public function mount(CustomerMessage $message)
     {
@@ -130,6 +136,10 @@ class CustomerMessageDetail extends Component
 
         $this->message->catat('status', $lama.' → '.CustomerMessageList::STATUS[$value]
             .($tanpaBalasan ? ' (tanpa balasan tercatat)' : ''));
+
+        if ($value === 'resolved') {
+            $this->message->mintaPenilaian();
+        }
         $this->dispatch('toast-success', message: 'Status berhasil diperbarui!');
         $this->dispatch('sidebar-badge-updated');
     }
@@ -283,6 +293,10 @@ class CustomerMessageDetail extends Component
             $this->message->update($isian);
         }
 
+        if ($this->balasanSelesai) {
+            $this->message->refresh()->mintaPenilaian();
+        }
+
         $this->balasanIsi = '';
         $this->kembalikanNilai();
         $this->dispatch('sidebar-badge-updated');
@@ -430,6 +444,22 @@ class CustomerMessageDetail extends Component
             // 8 MB: cukup untuk tangkapan layar/PDF, tidak cukup untuk video.
             'berkasBaru' => ['required', 'file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf,docx,xlsx'],
         ], [], ['berkasBaru' => 'berkas']);
+
+        /*
+         * Batas per tiket. Lampiran hanya terbuang saat tiketnya dihapus
+         * permanen, jadi tanpa batas ini satu tiket bisa menyeret puluhan MB
+         * ke disk hosting untuk selamanya.
+         */
+        $batas = (int) config('helpdesk.lampiran_maks', 10);
+        $batasByte = (int) config('helpdesk.lampiran_maks_mb', 40) * 1048576;
+        $sekarang = $this->message->lampiran();
+
+        if ($sekarang->count() >= $batas || $sekarang->sum('ukuran') + $this->berkasBaru->getSize() > $batasByte) {
+            $this->addError('berkasBaru', 'Lampiran tiket ini sudah penuh (maksimal '.$batas.' berkas / '
+                .config('helpdesk.lampiran_maks_mb', 40).' MB). Hapus salah satu dulu.');
+
+            return;
+        }
 
         // Disk PRIVAT: lampiran tiket sering berisi tangkapan layar mutasi bank.
         $path = $this->berkasBaru->store('helpdesk/'.$this->message->getKey(), 'local');
@@ -617,7 +647,12 @@ class CustomerMessageDetail extends Component
         $pelanggan = $this->message->pelangganTerdaftar();
 
         return view('livewire.pages.admin.message.customer-message-detail', [
-            'logs' => $this->message->logs()->get(),
+            // Tiket ramai bisa punya ratusan baris; yang dimuat hanya yang
+            // terbaru sampai diminta selengkapnya.
+            'logs' => $this->semuaLinimasa
+                ? $this->message->logs()->get()
+                : $this->message->logs()->latest('id')->limit(self::LINIMASA_AWAL)->get()->sortBy('created_at')->values(),
+            'totalLog' => $this->message->logs()->count(),
             'lampiran' => $this->message->lampiran()->get(),
             'templates' => CustomerMessageTemplate::urut()->get(),
             'daftarPetugas' => CustomerMessage::petugasTersedia(),

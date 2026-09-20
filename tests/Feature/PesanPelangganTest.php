@@ -953,7 +953,9 @@ it('kanal selain surel tidak pernah mengirim email', function () {
         ->set('balasanIsi', 'Dibalas lewat WhatsApp.')
         ->call('simpanBalasan');
 
-    \Illuminate\Support\Facades\Mail::assertNothingSent();
+    // Balasannya TIDAK dikirim lewat surel. (Ajakan menilai memang terkirim,
+    // karena tiketnya sekalian ditandai selesai — itu perilaku lain.)
+    \Illuminate\Support\Facades\Mail::assertNotSent(\App\Mail\BalasanTiketMail::class);
     expect($p->fresh()->sudahDibalas())->toBeTrue();
 });
 
@@ -1691,4 +1693,152 @@ it('surel balasan tidak lagi menjanjikan balasan surel masuk ke tiket', function
     // menjanjikan sebaliknya.
     expect($isi)->not->toContain('balasannya masuk ke tiket yang sama')
         ->and($isi)->toContain('halaman status tiket');
+});
+
+// ===================== Putaran kelima =====================
+
+it('tiket yang diarsipkan tetap bisa dibaca pelanggan, tapi tidak bisa ditambahi', function () {
+    $p = pesan(['status' => 'resolved', 'email' => 'rudi@contoh.com']);
+    $p->catat('balasan', 'Sudah kami tangani ya Pak.', 'email');
+    $p->markAsRead();
+    $p->delete();
+
+    // Tautan dari surel tetap membuka statusnya, bukan "tidak ditemukan".
+    $tautan = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        'tiket.lacak', now()->addDays(30), ['ticket' => $p->ticket]
+    );
+    $this->get($tautan)->assertOk()->assertSee($p->ticket)->assertSee('Sudah kami tangani');
+
+    // Tapi keterangan baru tidak bisa ditambahkan.
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+    $t->set('tambahan', 'Halo, masih bermasalah.')->call('tambahKeterangan');
+
+    expect($p->logs()->where('jenis', 'pelanggan')->count())->toBe(0);
+});
+
+it('ajakan menilai dikirim sekali saat tiket ditandai selesai', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan(['email' => 'rudi@contoh.com']);
+
+    Livewire::test(CustomerMessageList::class)->call('updateStatus', $p->id, 'resolved');
+
+    $ditandai = $p->fresh()->minta_nilai_at;
+    expect($ditandai)->not->toBeNull();
+
+    $this->app->terminate();
+    \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\MintaPenilaianMail::class,
+        fn ($mail) => $mail->pesan->is($p) && $mail->hasTo('rudi@contoh.com'));
+
+    // Dibuka lalu ditandai selesai lagi TIDAK meminta penilaian ulang —
+    // penandanya tidak bergeser. (Jumlah surel tidak dihitung di sini: satu
+    // proses uji memanggil terminate() berkali-kali sehingga callback yang
+    // sama ikut terulang; di server tiap permintaan punya prosesnya sendiri.)
+    Livewire::test(CustomerMessageList::class)->call('updateStatus', $p->id, 'open');
+    Livewire::test(CustomerMessageList::class)->call('updateStatus', $p->id, 'resolved');
+
+    expect($p->fresh()->minta_nilai_at->eq($ditandai))->toBeTrue();
+});
+
+it('ajakan menilai dilewati bila tiket tanpa surel atau sudah dinilai', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $this->actingAs(adminPesan());
+
+    $tanpaSurel = pesan(['email' => '']);
+    $sudahNilai = pesan(['email' => 'ada@contoh.com', 'kepuasan' => 3]);
+
+    Livewire::test(CustomerMessageList::class)
+        ->set('pilih', [(string) $tanpaSurel->id, (string) $sudahNilai->id])
+        ->call('statusTerpilih', 'resolved');
+
+    $this->app->terminate();
+    \Illuminate\Support\Facades\Mail::assertNothingSent();
+});
+
+it('pelanggan bisa melampirkan berkas saat menambah keterangan', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+    $p = pesan();
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+
+    $t->set('tambahan', 'Ini tangkapan layarnya.')
+        ->set('berkasTambahan', [\Illuminate\Http\UploadedFile::fake()->image('layar.png')])
+        ->call('tambahKeterangan')
+        ->assertHasNoErrors();
+
+    expect($p->lampiran()->where('sumber', 'pelanggan')->count())->toBe(1);
+
+    // Lebih dari dua ditolak.
+    $t->set('tambahan', 'Ini sisanya.')
+        ->set('berkasTambahan', collect(range(1, 3))->map(fn ($i) => \Illuminate\Http\UploadedFile::fake()->image("l{$i}.png"))->all())
+        ->call('tambahKeterangan')
+        ->assertHasErrors('berkasTambahan');
+});
+
+it('lampiran admin dibatasi per tiket', function () {
+    \Illuminate\Support\Facades\Storage::fake('local');
+    config(['helpdesk.lampiran_maks' => 2]);
+    $this->actingAs(adminPesan());
+    $p = pesan();
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $p]);
+
+    foreach (['satu.pdf', 'dua.pdf'] as $nama) {
+        $t->set('berkasBaru', \Illuminate\Http\UploadedFile::fake()->create($nama, 60, 'application/pdf'))
+            ->call('unggahLampiran')
+            ->assertHasNoErrors();
+    }
+
+    $t->set('berkasBaru', \Illuminate\Http\UploadedFile::fake()->create('tiga.pdf', 60, 'application/pdf'))
+        ->call('unggahLampiran')
+        ->assertHasErrors('berkasBaru');
+
+    expect($p->lampiran()->count())->toBe(2);
+});
+
+it('massal tandai belum dibaca mengembalikan tiket ke antrean', function () {
+    $this->actingAs(adminPesan());
+    $a = pesan();
+    $a->markAsRead();
+    $b = pesan();
+    $b->markAsRead();
+
+    Livewire::test(CustomerMessageList::class)
+        ->set('pilih', [(string) $a->id, (string) $b->id])
+        ->call('tandaiBelumDibacaTerpilih')
+        ->assertSet('pilih', []);
+
+    expect([$a->fresh()->belumDibaca(), $b->fresh()->belumDibaca()])->toBe([true, true])
+        ->and($a->logs()->where('jenis', 'belum-dibaca')->count())->toBe(1);
+});
+
+it('linimasa panjang dimuat bertahap', function () {
+    $this->actingAs(adminPesan());
+    $p = pesan();
+
+    foreach (range(1, 35) as $i) {
+        $p->catat('catatan', 'Catatan ke-'.$i);
+    }
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $p]);
+    // mount() menambah satu baris 'dibaca', jadi totalnya 36.
+    expect($t->viewData('totalLog'))->toBe(36)
+        ->and($t->viewData('logs'))->toHaveCount(\App\Livewire\Pages\Admin\Message\CustomerMessageDetail::LINIMASA_AWAL);
+
+    $t->set('semuaLinimasa', true);
+    expect($t->viewData('logs'))->toHaveCount(36);
+});
+
+it('ekspor memuat kolom kepuasan', function () {
+    \Maatwebsite\Excel\Facades\Excel::fake();
+    $this->actingAs(adminPesan());
+    $p = pesan(['status' => 'resolved']);
+    $p->update(['kepuasan' => 3, 'kepuasan_at' => now(), 'kepuasan_komentar' => 'Mantap sekali']);
+
+    Livewire::test(CustomerMessageList::class)->call('setTab', 'semua')->call('unduhExcel');
+
+    \Maatwebsite\Excel\Facades\Excel::assertDownloaded('pesan-pelanggan-'.now()->format('Ymd-His').'.xlsx',
+        fn (\App\Exports\PesanPelangganExport $ekspor) => str_contains($ekspor->view()->render(), 'Mantap sekali'));
 });

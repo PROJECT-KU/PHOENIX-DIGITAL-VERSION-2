@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Halaman publik untuk melihat status satu tiket helpdesk.
@@ -21,6 +22,8 @@ use Livewire\Component;
  */
 class LacakTiket extends Component
 {
+    use WithFileUploads;
+
     public string $ticket = '';
 
     public string $email = '';
@@ -31,6 +34,9 @@ class LacakTiket extends Component
 
     /** Keterangan tambahan dari pelanggan untuk tiket yang sama. */
     public string $tambahan = '';
+
+    /** Lampiran susulan (maks. 2) — justru di tahap ini kita sering minta bukti. */
+    public $berkasTambahan = [];
 
     /** Penilaian kepuasan: 1 kecewa, 2 biasa saja, 3 puas. */
     public ?int $nilai = null;
@@ -46,7 +52,10 @@ class LacakTiket extends Component
 
         // Tautan dari surel sudah bertanda tangan, jadi tidak perlu surel lagi.
         if ($this->ticket !== '' && $request->hasValidSignature()) {
-            $this->pesan = CustomerMessage::where('ticket', $this->ticket)->first();
+            // withTrashed: tiket yang sudah diarsipkan tetap boleh DIBACA
+            // pemiliknya — kalau tidak, tautan di surel berubah jadi "tidak
+            // ditemukan" padahal tiketnya memang selesai lalu dirapikan.
+            $this->pesan = CustomerMessage::withTrashed()->where('ticket', $this->ticket)->first();
             $this->dicari = true;
 
             return;
@@ -68,7 +77,8 @@ class LacakTiket extends Component
      */
     public function tambahKeterangan(Request $request): void
     {
-        if (! $this->pesan) {
+        // Tiket yang sudah diarsipkan hanya bisa dibaca, tidak ditambahi.
+        if (! $this->pesan || $this->pesan->trashed()) {
             return;
         }
 
@@ -82,7 +92,9 @@ class LacakTiket extends Component
 
         $this->validate([
             'tambahan' => ['required', 'string', 'min:3', 'max:2000'],
-        ], [], ['tambahan' => 'keterangan']);
+            'berkasTambahan' => ['nullable', 'array', 'max:2'],
+            'berkasTambahan.*' => ['file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf'],
+        ], [], ['tambahan' => 'keterangan', 'berkasTambahan' => 'lampiran', 'berkasTambahan.*' => 'lampiran']);
 
         RateLimiter::hit($kunci, 300);
 
@@ -100,9 +112,20 @@ class LacakTiket extends Component
             'status' => $this->pesan->selesai() ? 'open' : $this->pesan->status,
         ]);
 
-        $this->tambahan = '';
+        foreach (array_filter((array) $this->berkasTambahan) as $berkas) {
+            $this->pesan->lampiran()->create([
+                'sumber' => 'pelanggan',
+                'nama_asli' => $berkas->getClientOriginalName(),
+                'path' => $berkas->store('helpdesk/'.$this->pesan->getKey(), 'local'),
+                'mime' => $berkas->getMimeType(),
+                'ukuran' => $berkas->getSize(),
+            ]);
+        }
+
+        $this->reset(['tambahan', 'berkasTambahan']);
         $this->pesan->refresh();
         session()->flash('tiket-sukses', 'Keterangan Anda sudah masuk ke tiket ini. Kami akan membacanya.');
+        $this->dispatch('tiket-terkirim');
     }
 
     /** Penilaian kepuasan, hanya untuk tiket yang sudah selesai. */
@@ -148,7 +171,8 @@ class LacakTiket extends Component
             'email' => ['required', 'email', 'max:255'],
         ], [], ['ticket' => 'nomor tiket', 'email' => 'alamat surel']);
 
-        $this->pesan = CustomerMessage::where('ticket', trim($this->ticket))
+        $this->pesan = CustomerMessage::withTrashed()
+            ->where('ticket', trim($this->ticket))
             ->where('email', trim($this->email))
             ->first();
 
