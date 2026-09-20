@@ -60,6 +60,8 @@ Route::prefix('bot-turnitin')
     ->controller(\App\Http\Controllers\BotTurnitinController::class)
     ->group(function () {
         Route::post('/detak', 'detak');
+        // Laporan keadaan VPS + jemput perintah dari agen Telegram.
+        Route::post('/lapor', 'lapor');
         Route::get('/tugas', 'tugas');
         Route::get('/tugas/{upload}/berkas', 'berkas');
         Route::post('/tugas/{upload}/terkirim', 'terkirim');

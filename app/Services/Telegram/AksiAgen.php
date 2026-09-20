@@ -83,6 +83,26 @@ class AksiAgen
                 'jelas' => 'Error terbanyak 24 jam terakhir dari Log Aktivitas.',
                 'ubah' => false,
             ],
+            'vps' => [
+                'judul' => 'Status VPS bot Turnitin',
+                'jelas' => 'Keadaan server bot: hidup/mati, sisa kuota submitin, memori, disk, pekerjaan hari ini.',
+                'ubah' => false,
+            ],
+            'vps_jeda' => [
+                'judul' => 'Jeda bot Turnitin',
+                'jelas' => 'Bot berhenti mengambil antrean (pekerjaan yang sedang jalan diselesaikan dulu).',
+                'ubah' => true,
+            ],
+            'vps_lanjut' => [
+                'judul' => 'Lanjutkan bot Turnitin',
+                'jelas' => 'Bot kembali mengambil antrean pengecekan plagiasi.',
+                'ubah' => true,
+            ],
+            'vps_restart' => [
+                'judul' => 'Mulai ulang bot Turnitin',
+                'jelas' => 'Nyalakan ulang proses bot di VPS. Dipakai saat bot macet.',
+                'ubah' => true,
+            ],
             'cache_bersih' => [
                 'judul' => 'Bersihkan cache',
                 'jelas' => 'Jalankan optimize:clear (config, route, view, cache). Dipakai setelah deploy atau saat tampilan/konfigurasi tidak berubah.',
@@ -156,6 +176,10 @@ class AksiAgen
                 'trafik' => self::trafik(),
                 'antrian' => self::antrian(),
                 'log' => self::log(),
+                'vps' => self::vps(),
+                'vps_jeda' => self::vpsPerintah('jeda'),
+                'vps_lanjut' => self::vpsPerintah('lanjut'),
+                'vps_restart' => self::vpsPerintah('restart'),
                 'cache_bersih' => self::cacheBersih(),
                 'bantuan' => self::bantuan(),
             };
@@ -169,6 +193,98 @@ class AksiAgen
     }
 
     // ---------------------------------------------------------------- aksi --
+
+    /**
+     * Keadaan VPS bot Turnitin.
+     *
+     * Angkanya datang dari laporan yang DIKIRIM VPS tiap detak — Phoenix tidak
+     * pernah menghubungi VPS. Umur laporan ikut ditampilkan supaya "semua
+     * hijau" yang sebenarnya basi tidak menyesatkan.
+     */
+    private static function vps(): string
+    {
+        $data = \App\Support\LaporanVps::terakhir();
+
+        if (! $data) {
+            return "🖥️ VPS BOT TURNITIN\n".str_repeat('─', 24)."\n\n"
+                ."❌ Belum ada laporan sama sekali.\n"
+                .'Bot di VPS mungkin belum berjalan, atau belum memakai versi yang mengirim laporan.';
+        }
+
+        $umur = \App\Support\LaporanVps::umurMenit();
+        $basi = \App\Support\LaporanVps::basi();
+
+        $baris = ['🖥️ VPS BOT TURNITIN', str_repeat('─', 24), ''];
+
+        $baris[] = $basi
+            ? '❌ Laporan terakhir '.$umur.' menit lalu — bot kemungkinan MATI.'
+            : '✅ Hidup (laporan '.($umur < 1 ? 'baru saja' : $umur.' menit lalu').')';
+
+        $mode = $data['mode'] ?? '?';
+        $baris[] = 'Mode        : '.($mode === 'penuh' ? 'PENUH (mengerjakan pesanan)' : strtoupper($mode).' (tidak mengambil antrean)');
+
+        if (isset($data['kuota_teks']) || isset($data['kuota'])) {
+            $sisa = $data['kuota'] ?? null;
+            $tanda = $sisa !== null && $sisa <= 3 ? '⚠️ ' : '';
+            $baris[] = 'Kuota       : '.$tanda.($data['kuota_teks'] ?? $sisa.'x tersisa');
+        }
+
+        if (isset($data['pekerjaan']) && $data['pekerjaan'] !== '') {
+            $baris[] = 'Sedang      : '.$data['pekerjaan'];
+        }
+
+        $baris[] = 'Hari ini    : '.($data['selesai_hari_ini'] ?? 0).' selesai, '.($data['gagal_hari_ini'] ?? 0).' gagal';
+
+        if (isset($data['memori_mb'], $data['memori_total_mb'])) {
+            $baris[] = 'Memori      : '.$data['memori_mb'].' / '.$data['memori_total_mb'].' MB';
+        }
+
+        if (isset($data['disk_persen'])) {
+            $tanda = $data['disk_persen'] >= 85 ? '⚠️ ' : '';
+            $baris[] = 'Disk        : '.$tanda.$data['disk_persen'].'%';
+        }
+
+        if (isset($data['beban'])) {
+            $baris[] = 'Beban CPU   : '.$data['beban'];
+        }
+
+        if (isset($data['hidup_detik'])) {
+            $baris[] = 'Hidup sejak : '.\Illuminate\Support\Carbon::now()->subSeconds((int) $data['hidup_detik'])->locale('id')->diffForHumans();
+        }
+
+        if (! empty($data['galat_terakhir'])) {
+            $baris[] = '';
+            $baris[] = '⚠️ Galat terakhir: '.$data['galat_terakhir'];
+        }
+
+        if ($menunggu = \App\Support\LaporanVps::perintahMenunggu()) {
+            $baris[] = '';
+            $baris[] = '⏳ Perintah "'.$menunggu.'" masih menunggu dijemput VPS.';
+        }
+
+        return implode("\n", $baris);
+    }
+
+    /** Titipkan perintah untuk VPS; dijemput pada detak berikutnya (≤1 menit). */
+    private static function vpsPerintah(string $perintah): string
+    {
+        if (! \App\Support\LaporanVps::titipPerintah($perintah)) {
+            return '⚠️ Perintah tidak dikenal.';
+        }
+
+        $arti = [
+            'jeda' => 'berhenti mengambil antrean',
+            'lanjut' => 'kembali mengambil antrean',
+            'restart' => 'menyalakan ulang prosesnya',
+        ][$perintah];
+
+        $catatan = \App\Support\LaporanVps::basi()
+            ? "\n\n⚠️ Laporan VPS sedang basi — perintah ini baru jalan kalau botnya memang hidup."
+            : '';
+
+        return "✅ Perintah \"{$perintah}\" dititipkan.\n"
+            ."VPS akan {$arti} pada detak berikutnya (≤1 menit).".$catatan;
+    }
 
     private static function status(): string
     {

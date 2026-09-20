@@ -208,6 +208,12 @@ $jadwalkan('helpdesk:ingatkan-lewat-batas')->dailyAt('08:15');
  */
 $jadwalkan('helpdesk:tutup-selesai')->dailyAt('00:40');
 
+/*
+ * Pemantau VPS bot Turnitin → grup Telegram. Hanya berbunyi saat keadaan
+ * BERUBAH; peringatan yang berulang tiap sepuluh menit akan diabaikan orang.
+ */
+$jadwalkan('bot:pantau-vps')->everyTenMinutes()->withoutOverlapping(10);
+
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
  * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).

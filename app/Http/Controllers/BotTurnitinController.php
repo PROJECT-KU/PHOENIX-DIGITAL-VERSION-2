@@ -55,6 +55,39 @@ class BotTurnitinController extends Controller
         ]);
     }
 
+    /**
+     * Laporan keadaan VPS + perintah yang menunggu.
+     *
+     * VPS tidak membuka port apa pun; ia yang menelepon ke sini tiap detak,
+     * menitipkan keadaan mesinnya, lalu membawa pulang perintah dari Telegram
+     * kalau ada. Tidak ada pintu masuk baru ke server itu.
+     */
+    public function lapor(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'mode' => ['nullable', 'string', 'max:20'],
+            'kuota' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'kuota_teks' => ['nullable', 'string', 'max:120'],
+            'memori_mb' => ['nullable', 'integer', 'min:0'],
+            'memori_total_mb' => ['nullable', 'integer', 'min:0'],
+            'disk_persen' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'beban' => ['nullable', 'numeric'],
+            'hidup_detik' => ['nullable', 'integer', 'min:0'],
+            'selesai_hari_ini' => ['nullable', 'integer', 'min:0'],
+            'gagal_hari_ini' => ['nullable', 'integer', 'min:0'],
+            'pekerjaan' => ['nullable', 'string', 'max:60'],
+            'galat_terakhir' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        \App\Support\LaporanVps::simpan($data);
+
+        return response()->json([
+            'ok' => true,
+            // Sekali pakai: perintah yang sama tidak pernah dijalankan dua kali.
+            'perintah' => \App\Support\LaporanVps::ambilPerintah(),
+        ]);
+    }
+
     /** Berkas customer — hanya untuk unggahan yang sedang dipegang bot. */
     public function berkas(OrderUpload $upload)
     {

@@ -70,6 +70,18 @@ const BATAS_HASIL_MS = 60 * 60 * 1000;   // laporan harus keluar dalam 60 menit
 const JEDA_DETAK_MS = 3 * 60 * 1000;     // kabari Phoenix selama menunggu
 const JEDA_MUAT_ULANG_MS = 30 * 1000;    // muat ulang halaman status
 
+/** Keadaan berjalan yang dilaporkan ke Phoenix tiap detak. */
+const KEADAAN = {
+    kuota: null,
+    kuotaTeks: null,
+    pekerjaan: '',
+    selesaiHariIni: 0,
+    gagalHariIni: 0,
+    galatTerakhir: '',
+    hari: new Date().toDateString(),
+    dijedaLokal: false,
+};
+
 const FORM_URL = 'https://submitin.id/services/plagiarism';
 const LOGIN_URL = 'https://submitin.id/user/login';
 
@@ -129,6 +141,10 @@ function formulir(objek) {
 async function laporGagal(tugasId, pesan, kuotaHabis = false) {
     catat('GAGAL:', pesan);
 
+    KEADAAN.gagalHariIni += 1;
+    KEADAAN.galatTerakhir = String(pesan);
+    KEADAAN.pekerjaan = '';
+
     try {
         await api('POST', `/tugas/${tugasId}/gagal`, formulir({
             pesan: String(pesan).slice(0, 480),
@@ -136,6 +152,84 @@ async function laporGagal(tugasId, pesan, kuotaHabis = false) {
         }));
     } catch (e) {
         catat('Laporan gagal tidak terkirim:', e.message);
+    }
+}
+
+/* ================================================================
+ | Laporan ke Phoenix (dibaca agen Telegram)
+ * ================================================================ */
+
+function angkaPerintah(keluaran) {
+    return parseInt(String(keluaran).replace(/[^\d]/g, ''), 10) || 0;
+}
+
+/**
+ * Kirim keadaan mesin ke Phoenix, lalu jemput perintah yang menunggu.
+ *
+ * VPS ini TIDAK membuka port apa pun — Phoenix tidak pernah menghubunginya.
+ * Semua pemantauan dan kendali lewat panggilan keluar ini, jadi tidak ada
+ * pintu masuk baru yang harus dijaga.
+ */
+async function lapor() {
+    // Hitungan harian dinolkan sendiri saat ganti hari.
+    const hariIni = new Date().toDateString();
+    if (KEADAAN.hari !== hariIni) {
+        KEADAAN.hari = hariIni;
+        KEADAAN.selesaiHariIni = 0;
+        KEADAAN.gagalHariIni = 0;
+    }
+
+    let memori = {};
+    let disk = null;
+    let beban = null;
+
+    try {
+        const bebas = execFileSync('free', ['-m']).toString().split('\n')[1].split(/\s+/);
+        memori = { memori_mb: parseInt(bebas[2], 10), memori_total_mb: parseInt(bebas[1], 10) };
+        disk = angkaPerintah(execFileSync('df', ['-h', '/']).toString().split('\n')[1].split(/\s+/)[4]);
+        beban = parseFloat(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]);
+    } catch { /* biarkan kosong; laporan tetap dikirim */ }
+
+    const isi = {
+        mode: KEADAAN.dijedaLokal ? 'jeda' : CFG.mode,
+        kuota: KEADAAN.kuota,
+        kuota_teks: KEADAAN.kuotaTeks,
+        pekerjaan: KEADAAN.pekerjaan,
+        selesai_hari_ini: KEADAAN.selesaiHariIni,
+        gagal_hari_ini: KEADAAN.gagalHariIni,
+        galat_terakhir: KEADAAN.galatTerakhir.slice(0, 300),
+        hidup_detik: Math.round(process.uptime()),
+        ...memori,
+        ...(disk === null ? {} : { disk_persen: disk }),
+        ...(beban === null ? {} : { beban }),
+    };
+
+    const bersih = Object.fromEntries(Object.entries(isi).filter(([, v]) => v !== null && v !== undefined && v !== ''));
+
+    try {
+        const r = await api('POST', '/lapor', formulir(bersih));
+
+        if (r.perintah) await jalankanPerintah(r.perintah);
+    } catch (e) {
+        catat('Laporan ke Phoenix gagal:', e.message);
+    }
+}
+
+/** Perintah dari agen Telegram — daftar tertutup, tidak ada shell. */
+async function jalankanPerintah(perintah) {
+    catat('Perintah dari Telegram:', perintah);
+
+    if (perintah === 'jeda') {
+        KEADAAN.dijedaLokal = true;
+        catat('Bot dijeda: antrean tidak diambil sampai ada perintah lanjut.');
+    } else if (perintah === 'lanjut') {
+        KEADAAN.dijedaLokal = false;
+        catat('Bot dilanjutkan.');
+    } else if (perintah === 'restart') {
+        catat('Bot dimulai ulang atas perintah Telegram.');
+        // Keluar dengan kode 0; systemd (Restart=always) yang menyalakan lagi.
+        await tidur(500);
+        process.exit(0);
     }
 }
 
@@ -394,6 +488,11 @@ async function periksaSiap(hal) {
     }
 
     const paket = await bacaPaket(hal);
+
+    // Disimpan untuk laporan ke Telegram, apa pun hasilnya.
+    KEADAAN.kuota = paket.ada ? paket.sisa : 0;
+    KEADAAN.kuotaTeks = paket.pesan;
+
     if (!paket.ada || paket.habis) return { siap: false, masalah: paket.pesan, kuotaHabis: true };
 
     return { siap: true, paket };
@@ -629,6 +728,7 @@ async function unduhLaporan(hal, ctx) {
 
 async function kerjakan(ctx, hal, tugas) {
     catat(`Mengerjakan ${tugas.order_number} (${tugas.penanda})`);
+    KEADAAN.pekerjaan = tugas.order_number;
 
     // 1. Unduh berkas customer dari Phoenix.
     let isi;
@@ -779,6 +879,10 @@ async function tungguHasil(ctx, hal, tugas, kode) {
             catat(`SELESAI ${tugas.order_number} (${Number.isNaN(persen) ? '?' : persen}%) — `
                 + (r.status === 'selesai' ? 'terkirim ke customer' : 'perlu dilengkapi admin'));
 
+            KEADAAN.selesaiHariIni += 1;
+            KEADAAN.pekerjaan = '';
+            if (KEADAAN.kuota !== null && KEADAAN.kuota > 0) KEADAAN.kuota -= 1;
+
             return;
         }
 
@@ -802,9 +906,17 @@ async function putaran(ctx, hal) {
 
     for (;;) {
         try {
+            // Laporan tiap putaran: itu juga jalur perintah dari Telegram.
+            await lapor();
+
             if (Date.now() - detak > JEDA_DETAK_MS) {
                 await api('POST', '/detak', formulir({ versi: 'vps-1.0' })).catch(() => {});
                 detak = Date.now();
+            }
+
+            if (KEADAAN.dijedaLokal) {
+                await tidur(CFG.jeda);
+                continue;
             }
 
             /*

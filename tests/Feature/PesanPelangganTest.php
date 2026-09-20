@@ -637,6 +637,10 @@ it('saringan lewat batas dan hitungan ringkasannya sejalan', function () {
 });
 
 it('ringkasan menghitung pesan sepekan dan rata-rata waktu tanggap', function () {
+    // Dipatok siang hari: rata-rata waktu tanggap dihitung dengan JAM KERJA,
+    // jadi tanpa patokan ini hasilnya berubah-ubah tergantung jam berapa uji
+    // dijalankan — lewat jam tutup, 4 jam kalender bukan lagi 4 jam kerja.
+    \Illuminate\Support\Carbon::setTestNow('2026-09-21 14:00:00');
     $this->actingAs(adminPesan());
     $a = pesan(['created_at' => now()->subHours(4)]);
     $a->forceFill(['replied_at' => now()->subHours(2)])->saveQuietly();
@@ -645,6 +649,8 @@ it('ringkasan menghitung pesan sepekan dan rata-rata waktu tanggap', function ()
     $data = Livewire::test(CustomerMessageList::class);
     expect($data->viewData('masukPekanIni'))->toBe(1)
         ->and($data->viewData('rataResponJam'))->toBe(2.0);
+
+    \Illuminate\Support\Carbon::setTestNow();
 });
 
 // ===================== Tampilan & navigasi =====================
