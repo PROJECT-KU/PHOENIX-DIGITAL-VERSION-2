@@ -136,3 +136,80 @@ it('--kering tidak menyalin apa pun', function () {
 
     expect(Task::count())->toBe(1);
 });
+
+it('langkah ikut tersalin dalam keadaan belum tercentang', function () {
+    $induk = taskBerulang();
+    \App\Models\TaskChecklist::create(['task_id' => $induk->id, 'teks' => 'Kumpulkan bahan', 'selesai' => true, 'urutan' => 1]);
+    \App\Models\TaskChecklist::create(['task_id' => $induk->id, 'teks' => 'Tulis draf', 'selesai' => true, 'urutan' => 2]);
+
+    Carbon::setTestNow('2026-09-19 06:30:00');
+    $this->artisan('tasks:salin-berulang')->assertSuccessful();
+
+    $salinan = Task::where('id', '!=', $induk->id)->first();
+    $langkah = $salinan->checklists()->get();
+
+    expect($langkah->pluck('teks')->all())->toBe(['Kumpulkan bahan', 'Tulis draf'])
+        // Centangnya adalah hasil kerja periode lalu — tidak ikut.
+        ->and($langkah->pluck('selesai')->all())->toBe([false, false]);
+});
+
+it('lampiran ikut tersalin berikut berkasnya sendiri', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    \Illuminate\Support\Facades\Storage::disk('public')->put('task_files/panduan.pdf', 'isi panduan');
+
+    $induk = taskBerulang();
+    \App\Models\TaskAttachment::create([
+        'task_id' => $induk->id, 'uploaded_by' => $induk->user_id,
+        'path' => 'task_files/panduan.pdf', 'name' => 'panduan.pdf',
+    ]);
+
+    Carbon::setTestNow('2026-09-19 06:30:00');
+    $this->artisan('tasks:salin-berulang')->assertSuccessful();
+
+    $salinan = Task::where('id', '!=', $induk->id)->first();
+    $lampiran = $salinan->attachments()->first();
+
+    expect($lampiran)->not->toBeNull()
+        ->and($lampiran->name)->toBe('panduan.pdf')
+        // Berkasnya SENDIRI: berbagi path membuat penghapusan lampiran periode
+        // lalu ikut mematikan lampiran periode berjalan.
+        ->and($lampiran->path)->not->toBe('task_files/panduan.pdf')
+        ->and(\Illuminate\Support\Facades\Storage::disk('public')->exists($lampiran->path))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Storage::disk('public')->get($lampiran->path))->toBe('isi panduan');
+
+    // Berkas induknya tetap utuh.
+    expect(\Illuminate\Support\Facades\Storage::disk('public')->exists('task_files/panduan.pdf'))->toBeTrue();
+});
+
+it('lampiran yang berkasnya hilang dilewati tanpa menggagalkan penyalinan', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $induk = taskBerulang();
+    \App\Models\TaskAttachment::create([
+        'task_id' => $induk->id, 'uploaded_by' => $induk->user_id,
+        'path' => 'task_files/sudah-hilang.pdf', 'name' => 'hilang.pdf',
+    ]);
+
+    Carbon::setTestNow('2026-09-19 06:30:00');
+    $this->artisan('tasks:salin-berulang')->assertSuccessful();
+
+    $salinan = Task::where('id', '!=', $induk->id)->first();
+    expect($salinan)->not->toBeNull()
+        ->and($salinan->attachments()->count())->toBe(0);
+});
+
+it('komentar dan progres tidak pernah ikut', function () {
+    $induk = taskBerulang(['progress' => 'selesai']);
+    \App\Models\TaskComment::create([
+        'task_id' => $induk->id, 'user_id' => $induk->user_id, 'body' => 'Sudah dikerjakan minggu lalu',
+    ]);
+
+    Carbon::setTestNow('2026-09-19 06:30:00');
+    $this->artisan('tasks:salin-berulang')->assertSuccessful();
+
+    $salinan = Task::where('id', '!=', $induk->id)->first();
+    expect($salinan->progress)->toBe('belum')
+        ->and($salinan->comments()->count())->toBe(0)
+        // group_id baru: ikut grup induk akan memunculkan komentar periode lalu.
+        ->and($salinan->group_id)->not->toBe($induk->group_id);
+});

@@ -3,8 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\Task;
+use App\Models\TaskAttachment;
+use App\Models\TaskChecklist;
 use App\Support\PeriodeGaji;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -14,9 +17,12 @@ use Illuminate\Support\Str;
  * periode — dan yang terlupa dibuat ulang tidak pernah terlihat hilang,
  * karena tidak ada apa pun di layar yang menunjukkan bahwa ia seharusnya ada.
  *
- * Yang disalin hanya PERINTAHNYA: nama, uraian, kategori, bobot, penerima.
- * Progres, komentar, lampiran, dan riwayat tidak ikut — salinan itu pekerjaan
- * baru, bukan lanjutan pekerjaan lama.
+ * Yang disalin adalah PERINTAHNYA: nama, uraian, kategori, bobot, penerima,
+ * langkah, dan lampiran — semua yang menjelaskan CARA mengerjakan.
+ *
+ * Yang TIDAK ikut hanya hasil kerja periode lalu: progres, centang langkah,
+ * komentar, dan riwayat. Salinan itu pekerjaan baru, bukan lanjutan pekerjaan
+ * lama.
  */
 class SalinTaskBerulang extends Command
 {
@@ -136,6 +142,66 @@ class SalinTaskBerulang extends Command
             'ulang' => $t->ulang,
         ]);
 
+        $this->salinLangkah($t, $baru);
+        $this->salinLampiran($t, $baru);
+
         $baru->catat('berulang', null, null, 'Disalin dari task '.$t->nama);
+    }
+
+    /**
+     * Langkah ikut tersalin dalam keadaan BELUM tercentang.
+     *
+     * Langkah adalah cara mengerjakan, bukan hasil kerjanya — menyuruh orang
+     * mengetik ulang daftar yang sama tiap periode adalah pekerjaan sia-sia.
+     */
+    protected function salinLangkah(Task $t, Task $baru): void
+    {
+        foreach ($t->checklists()->get() as $langkah) {
+            TaskChecklist::create([
+                'task_id' => $baru->id,
+                'teks' => $langkah->teks,
+                'selesai' => false,
+                'urutan' => $langkah->urutan,
+            ]);
+        }
+    }
+
+    /**
+     * Lampiran ikut tersalin, BERIKUT berkas fisiknya.
+     *
+     * Berbagi satu berkas antar task berbahaya: menghapus lampiran menghapus
+     * berkasnya di disk DAN seluruh baris dengan path yang sama (lihat
+     * TaskSayaList::removeAttachment). Kalau salinannya ikut menunjuk berkas
+     * yang sama, menghapus lampiran periode lalu akan mematikan lampiran
+     * periode berjalan.
+     *
+     * Gagal-aman: lampiran yang berkasnya sudah hilang dilewati, tidak
+     * menggagalkan penyalinan tasknya.
+     */
+    protected function salinLampiran(Task $t, Task $baru): void
+    {
+        foreach ($t->attachments()->get() as $lampiran) {
+            if (! $lampiran->path || ! Storage::disk('public')->exists($lampiran->path)) {
+                continue;
+            }
+
+            $folder = trim(dirname($lampiran->path), '.') ?: 'task_files';
+            $ekstensi = pathinfo($lampiran->path, PATHINFO_EXTENSION);
+            $tujuan = $folder.'/'.Str::uuid().($ekstensi ? '.'.$ekstensi : '');
+
+            $tersalin = rescue(fn () => Storage::disk('public')->copy($lampiran->path, $tujuan), false, report: false);
+
+            if (! $tersalin) {
+                continue;
+            }
+
+            TaskAttachment::create([
+                'task_id' => $baru->id,
+                'uploaded_by' => $lampiran->uploaded_by,
+                'path' => $tujuan,
+                'name' => $lampiran->name,
+                'jenis' => $lampiran->jenis,
+            ]);
+        }
     }
 }
