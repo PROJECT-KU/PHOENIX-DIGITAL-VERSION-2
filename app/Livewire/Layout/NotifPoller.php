@@ -38,7 +38,7 @@ class NotifPoller extends Component
             ? ProductReview::where('status', 'pending')->count() : 0;
 
         $helpdeskBaru = $login && $u->hasPermission('view_customer_message')
-            ? CustomerMessage::unread()->count() : 0;
+            ? CustomerMessage::query()->bukanSpam()->unread()->count() : 0;
 
         // Pengecekan plagiasi/AI yang menunggu diproses (mis. customer paket 5x
         // mengunggah file ke-2). Naiknya angka ini memicu popup + suara "lemon"

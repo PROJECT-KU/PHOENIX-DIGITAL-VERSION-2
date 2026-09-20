@@ -40,6 +40,7 @@
                 <th>Pesan</th>
                 <th style="width: 58px;">Status</th>
                 <th style="width: 52px;">Prioritas</th>
+                <th style="width: 72px;">Tindak lanjut</th>
             </tr>
         </thead>
         <tbody>
@@ -54,9 +55,13 @@
                     <td>{{ $p->message }}</td>
                     <td>{{ $p->tampilanStatus()[0] }}<div class="kecil">{{ $p->belumDibaca() ? 'belum dibaca' : 'dibaca' }}</div></td>
                     <td>{{ $p->tampilanPrioritas()[0] }}</td>
+                    <td>
+                        {{ $p->petugas?->name ?: 'Belum ditugaskan' }}
+                        <div class="kecil">{{ $p->replied_at ? 'dibalas '.$p->replied_at->format('d/m/Y') : ($p->lewatBatas() ? 'lewat batas' : 'belum dibalas') }}</div>
+                    </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="tengah kecil" style="padding: 18px;">Tidak ada pesan untuk saringan ini.</td></tr>
+                <tr><td colspan="7" class="tengah kecil" style="padding: 18px;">Tidak ada pesan untuk saringan ini.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -17,7 +17,7 @@ class PermissionAccessSeeder extends Seeder
         'pesananrsc' => ['Pesanan RSC', ['view', 'create', 'edit', 'delete']],
         'pemesanantoko' => ['Pesanan Toko', ['view', 'create', 'edit', 'delete']],
         'customer' => ['Pelanggan', ['view', 'create', 'edit', 'delete']],
-        'customer_message' => ['Pesan Pelanggan', ['view', 'delete']],
+        'customer_message' => ['Pesan Pelanggan', ['view', 'edit', 'delete']],
         'productreview' => ['Moderasi Ulasan Produk', ['view']],
         'blog' => ['Blog / Artikel', ['view', 'create', 'edit', 'delete']],
         'banners' => ['Banner', ['view', 'create', 'edit', 'delete']],

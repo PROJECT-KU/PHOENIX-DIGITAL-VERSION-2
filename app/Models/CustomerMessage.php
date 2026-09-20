@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class CustomerMessage extends Model
 {
+    use SoftDeletes;
+
     protected static function booted()
     {
         static::creating(function ($message) {
@@ -26,11 +29,38 @@ class CustomerMessage extends Model
         'ip_address',
         'user_agent',
         'read_at',
+        'kategori',
+        'assigned_to',
+        'replied_at',
+        'replied_by',
+        'is_spam',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
+        'replied_at' => 'datetime',
+        'is_spam' => 'boolean',
     ];
+
+    // ===== Relasi =====
+
+    /** Petugas yang memegang tiket ini. */
+    public function petugas()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** Yang pertama kali mencatat balasan. */
+    public function pembalas()
+    {
+        return $this->belongsTo(User::class, 'replied_by');
+    }
+
+    /** Linimasa tiket: dibaca, status, tugas, balasan, catatan internal. */
+    public function logs()
+    {
+        return $this->hasMany(CustomerMessageLog::class)->orderBy('created_at');
+    }
 
     public function markAsRead(): void
     {
@@ -123,5 +153,154 @@ class CustomerMessage extends Model
         }
 
         return 'mailto:'.$this->email.'?subject='.rawurlencode('Balasan '.$this->ticket.' — Phoenix Digital');
+    }
+
+    // ===== Tindak lanjut =====
+
+    public function sudahDibalas(): bool
+    {
+        return $this->replied_at !== null;
+    }
+
+    /** Target membalas (jam) menurut prioritasnya. */
+    public function batasJam(): int
+    {
+        return (int) (config('helpdesk.batas_jam')[$this->priority] ?? 24);
+    }
+
+    /** Kapan tiket ini seharusnya sudah dibalas. */
+    public function tenggat(): ?\Illuminate\Support\Carbon
+    {
+        return $this->created_at?->copy()->addHours($this->batasJam());
+    }
+
+    /**
+     * Lewat batas = belum dibalas DAN sudah melewati tenggatnya.
+     *
+     * Tiket yang sudah dibalas tidak pernah "lewat batas" walau jawabannya
+     * telat — yang perlu ditandai adalah yang masih menggantung.
+     */
+    public function lewatBatas(): bool
+    {
+        if ($this->sudahDibalas() || $this->selesai()) {
+            return false;
+        }
+
+        return $this->tenggat()?->isPast() ?? false;
+    }
+
+    public function labelKategori(): ?string
+    {
+        return $this->kategori ? (config('helpdesk.kategori')[$this->kategori] ?? $this->kategori) : null;
+    }
+
+    /**
+     * Lama menunggu dalam kalimat: menit untuk tiket yang baru masuk, jam,
+     * lalu hari. "0 jam" untuk pesan lima menit lalu cuma membingungkan.
+     */
+    public function menungguTeks(): string
+    {
+        $sampai = $this->read_at ?: now();
+        $menit = (int) $this->created_at?->diffInMinutes($sampai);
+
+        if ($menit < 60) {
+            return max(1, $menit).' menit';
+        }
+
+        $jam = intdiv($menit, 60);
+
+        return $jam < 24 ? $jam.' jam' : intdiv($jam, 24).' hari';
+    }
+
+    /** Tulis satu baris linimasa. Nama pelaku ikut dibekukan di barisnya. */
+    public function catat(string $jenis, ?string $isi = null, ?string $kanal = null): CustomerMessageLog
+    {
+        return $this->logs()->create([
+            'user_id' => auth()->id(),
+            'nama_pelaku' => auth()->user()?->name,
+            'jenis' => $jenis,
+            'kanal' => $kanal,
+            'isi' => $isi,
+        ]);
+    }
+
+    // ===== Kaitan dengan data pelanggan =====
+
+    /** Pelanggan terdaftar dengan surel/nomor yang sama (kalau ada). */
+    public function pelangganTerdaftar(): ?Customer
+    {
+        return once(function () {
+            if (filled($this->email) && $c = Customer::where('email', $this->email)->first()) {
+                return $c;
+            }
+
+            return filled($this->no_telp) ? Customer::cariDariNoHp($this->no_telp) : null;
+        });
+    }
+
+    /** Pesan lain dari orang yang sama — surel ATAU nomor yang sama. */
+    public function pesanLain(int $batas = 5)
+    {
+        $inti = Customer::normalisasiNoHp($this->no_telp);
+
+        return static::query()
+            ->whereKeyNot($this->getKey())
+            ->where(function ($q) use ($inti) {
+                if (filled($this->email)) {
+                    $q->orWhere('email', $this->email);
+                }
+                if ($inti !== '') {
+                    $q->orWhere('no_telp', 'like', '%'.$inti.'%');
+                }
+                // Tanpa kontak apa pun, jangan sampai kueri ini cocok ke semua baris.
+                $q->orWhereRaw('1 = 0');
+            })
+            ->latest()
+            ->limit($batas)
+            ->get();
+    }
+
+    /** Petugas yang boleh dititipi tiket: akun aktif yang boleh melihat helpdesk. */
+    public static function petugasTersedia()
+    {
+        return User::query()
+            ->where('status', 'active')
+            ->whereHas('role.permissions', fn ($q) => $q->where('name', 'view_customer_message'))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    // ===== Scope tambahan =====
+
+    public function scopeBukanSpam($query)
+    {
+        return $query->where('is_spam', false);
+    }
+
+    public function scopeMilik($query, $userId)
+    {
+        return $query->where('assigned_to', $userId);
+    }
+
+    public function scopeBelumDibalas($query)
+    {
+        return $query->whereNull('replied_at');
+    }
+
+    /**
+     * Tiket yang sudah lewat batas waktu membalas.
+     *
+     * Batasnya beda-beda per prioritas, jadi disusun sebagai gabungan OR di
+     * PHP — bukan DATE_ADD di SQL, yang tulisannya beda antara MySQL (server)
+     * dan SQLite (uji).
+     */
+    public function scopeLewatBatas($query)
+    {
+        return $query->belumDibalas()->berjalan()->where(function ($q) {
+            foreach (config('helpdesk.batas_jam') as $prioritas => $jam) {
+                $q->orWhere(fn ($sub) => $sub->where('priority', $prioritas)
+                    ->where('created_at', '<', now()->subHours($jam)));
+            }
+        });
     }
 }

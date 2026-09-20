@@ -8,21 +8,26 @@ Pesan Pelanggan || lemon
 
     @php
         $bolehHapus = (bool) auth()->user()?->hasPermission('delete_customer_message');
+        $bolehUbah = (bool) auth()->user()?->hasPermission('edit_customer_message');
+        $arsip = $tab === 'arsip';
+        $kategoriDaftar = config('helpdesk.kategori');
         $kartuTab = [
             'baru' => ['Belum dibaca', 'bi-envelope-exclamation-fill', '#d97706'],
             'berjalan' => ['Masih berjalan', 'bi-hourglass-split', '#2563eb'],
             'selesai' => ['Selesai', 'bi-check-circle-fill', '#16a34a'],
             'semua' => ['Semua', 'bi-chat-left-text-fill', '#7c3aed'],
+            'arsip' => ['Arsip', 'bi-archive-fill', '#64748b'],
         ];
         $kosong = [
             'baru' => ['bi-inbox', 'Tidak ada pesan baru', 'Semua pesan pelanggan sudah dibaca.'],
             'berjalan' => ['bi-hourglass', 'Tidak ada yang berjalan', 'Semua tiket sudah selesai atau ditutup.'],
             'selesai' => ['bi-check-circle', 'Belum ada yang selesai', 'Tiket yang selesai atau ditutup muncul di sini.'],
             'semua' => ['bi-chat-left-text', 'Belum ada pesan', 'Pesan muncul di sini setelah pelanggan mengisi formulir kontak.'],
+            'arsip' => ['bi-archive', 'Arsip masih kosong', 'Tiket yang diarsipkan atau ditandai spam disimpan di sini.'],
         ];
         $idHalaman = $messages->pluck('id')->map(fn ($i) => (string) $i)->all();
         $semuaTercentang = $idHalaman && ! array_diff($idHalaman, $pilih);
-        $sasaranMuat = 'search,setTab,gotoPage,nextPage,previousPage,fStatus,fPrioritas,fDari,fSampai,urut,perPage,resetFilters';
+        $sasaranMuat = 'search,setTab,gotoPage,nextPage,previousPage,fStatus,fPrioritas,fKategori,fPetugas,fBatas,fDari,fSampai,urut,perPage,resetFilters,setTampilan';
         $warnaAvatar = fn ($nama) => ['#7c3aed', '#2563eb', '#16a34a', '#d97706', '#db2777', '#0891b2'][crc32((string) $nama) % 6];
     @endphp
 
@@ -37,11 +42,11 @@ Pesan Pelanggan || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                <button type="button" class="dsb-tombol" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
                     <span wire:loading.remove wire:target="unduhExcel" class="pp-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
                     <span wire:loading.inline-flex wire:target="unduhExcel" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
-                <button type="button" class="dsb-tombol" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
                     <span wire:loading.remove wire:target="unduhPdf" class="pp-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>PDF</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
@@ -68,7 +73,7 @@ Pesan Pelanggan || lemon
                     </span>
                     <div>
                         @if ($tertua)
-                            <p><b>{{ $tertua->menungguJam() }} jam</b> pesan terlama menunggu dibaca.</p>
+                            <p><b>{{ $tertua->menungguTeks() }}</b> pesan terlama menunggu dibaca.</p>
                             <p class="pp-catatan-kecil">{{ $tertua->ticket }} · {{ $tertua->name }}</p>
                         @else
                             <p><b>Bersih</b> — tidak ada pesan yang menunggu dibaca.</p>
@@ -77,12 +82,25 @@ Pesan Pelanggan || lemon
                     </div>
                 </div>
                 <div class="pp-ringkas-blok">
-                    <span class="pp-ringkas-ikon {{ $mendesak ? 'is-mendesak' : 'is-aman' }}">
-                        <i class="bi {{ $mendesak ? 'bi-exclamation-triangle-fill' : 'bi-shield-check' }}"></i>
+                    <span class="pp-ringkas-ikon {{ $lewatBatas ? 'is-mendesak' : 'is-aman' }}">
+                        <i class="bi {{ $lewatBatas ? 'bi-exclamation-triangle-fill' : 'bi-shield-check' }}"></i>
                     </span>
                     <div>
-                        <p><b>{{ $mendesak }}</b> tiket prioritas tinggi/mendesak masih berjalan.</p>
-                        <p class="pp-catatan-kecil">Urutkan menurut prioritas untuk menaikkannya ke atas.</p>
+                        <p><b>{{ $lewatBatas }}</b> tiket lewat batas waktu membalas.</p>
+                        <p class="pp-catatan-kecil">{{ $mendesak }} tiket prioritas tinggi/mendesak masih berjalan.</p>
+                    </div>
+                </div>
+                <div class="pp-ringkas-blok">
+                    <span class="pp-ringkas-ikon is-aman" style="background: #eef2ff; color: #4338ca;"><i class="bi bi-graph-up"></i></span>
+                    <div>
+                        <p><b>{{ $masukPekanIni }}</b> pesan masuk dalam 7 hari terakhir.</p>
+                        <p class="pp-catatan-kecil">
+                            @if ($rataResponJam !== null)
+                                Rata-rata dibalas {{ $rataResponJam }} jam (30 hari terakhir).
+                            @else
+                                Belum ada balasan tercatat 30 hari terakhir.
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>
@@ -97,6 +115,15 @@ Pesan Pelanggan || lemon
                     @if ($search)
                         <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian"><i class="bi bi-x-lg"></i></button>
                     @endif
+                </div>
+
+                <div class="pp-saklar" role="group" aria-label="Bentuk tampilan daftar">
+                    <button type="button" class="{{ $tampilan === 'kartu' ? 'is-aktif' : '' }}" wire:click="setTampilan('kartu')" aria-pressed="{{ $tampilan === 'kartu' ? 'true' : 'false' }}">
+                        <i class="bi bi-grid"></i><span>Kartu</span>
+                    </button>
+                    <button type="button" class="{{ $tampilan === 'tabel' ? 'is-aktif' : '' }}" wire:click="setTampilan('tabel')" aria-pressed="{{ $tampilan === 'tabel' ? 'true' : 'false' }}">
+                        <i class="bi bi-list-ul"></i><span>Tabel</span>
+                    </button>
                 </div>
 
                 <select class="dsb-isian pp-pilih" wire:model.live="urut" aria-label="Urutkan">
@@ -157,6 +184,33 @@ Pesan Pelanggan || lemon
                         </select>
                     </label>
                     <label class="pp-saring-medan">
+                        <span>Topik</span>
+                        <select class="dsb-isian" wire:model.live="fKategori">
+                            <option value="">Semua topik</option>
+                            @foreach ($kategoriDaftar as $nilai => $label)
+                                <option value="{{ $nilai }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="pp-saring-medan">
+                        <span>Petugas</span>
+                        <select class="dsb-isian" wire:model.live="fPetugas">
+                            <option value="">Semua petugas</option>
+                            <option value="saya">Tiket saya</option>
+                            @foreach ($daftarPetugas as $orang)
+                                <option value="{{ $orang->id }}">{{ $orang->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="pp-saring-medan">
+                        <span>Tindak lanjut</span>
+                        <select class="dsb-isian" wire:model.live="fBatas">
+                            <option value="">Semua tiket</option>
+                            <option value="lewat">Lewat batas waktu</option>
+                            <option value="belum">Belum dibalas</option>
+                        </select>
+                    </label>
+                    <label class="pp-saring-medan">
                         <span>Masuk dari</span>
                         <input type="date" class="dsb-isian" wire:model.live="fDari" max="{{ now()->toDateString() }}">
                     </label>
@@ -173,21 +227,52 @@ Pesan Pelanggan || lemon
             <div class="pp-massal" role="region" aria-label="Aksi massal">
                 <span class="pp-massal-jumlah"><b>{{ count($pilih) }}</b> dipilih</span>
                 <div class="pp-massal-tombol">
-                    <button type="button" class="pp-btn pp-konfirmasi" data-action="tandaiDibacaTerpilih" data-icon="question"
-                        data-title="Tandai {{ count($pilih) }} pesan sudah dibaca?" data-text="Badge helpdesk ikut berkurang." data-confirm="Ya, tandai">
-                        <i class="bi bi-envelope-open"></i><span>Tandai dibaca</span>
-                    </button>
-                    <select class="dsb-isian pp-pilih is-sempit" wire:change="statusTerpilih($event.target.value); $event.target.value = ''" aria-label="Ubah status terpilih">
-                        <option value="">Ubah status…</option>
-                        @foreach (\App\Livewire\Pages\Admin\Message\CustomerMessageList::STATUS as $nilai => $label)
-                            <option value="{{ $nilai }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @if ($bolehHapus)
-                        <button type="button" class="pp-btn is-bahaya pp-konfirmasi" data-action="hapusTerpilih" data-icon="warning"
-                            data-title="Hapus {{ count($pilih) }} pesan?" data-text="Pesan yang belum dibaca akan dilewati, sisanya dihapus permanen." data-confirm="Ya, hapus">
-                            <i class="bi bi-trash3"></i><span>Hapus</span>
-                        </button>
+                    @if ($arsip)
+                        @if ($bolehHapus)
+                            <button type="button" class="pp-btn pp-konfirmasi" data-action="pulihkanTerpilih" data-icon="question"
+                                data-title="Kembalikan {{ count($pilih) }} tiket?" data-text="Tiket kembali muncul di daftar aktif." data-confirm="Ya, kembalikan">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Kembalikan</span>
+                            </button>
+                            <button type="button" class="pp-btn is-bahaya pp-konfirmasi" data-action="hapusPermanenTerpilih" data-icon="warning"
+                                data-title="Hapus permanen {{ count($pilih) }} tiket?" data-text="Isi pesan dan linimasanya hilang selamanya dan tidak bisa dikembalikan." data-confirm="Ya, hapus permanen">
+                                <i class="bi bi-trash3"></i><span>Hapus permanen</span>
+                            </button>
+                        @endif
+                    @else
+                        @if ($bolehUbah)
+                            <button type="button" class="pp-btn pp-konfirmasi" data-action="tandaiDibacaTerpilih" data-icon="question"
+                                data-title="Tandai {{ count($pilih) }} pesan sudah dibaca?" data-text="Badge helpdesk ikut berkurang." data-confirm="Ya, tandai">
+                                <i class="bi bi-envelope-open"></i><span>Tandai dibaca</span>
+                            </button>
+                            <select class="dsb-isian pp-pilih is-sempit" wire:change="statusTerpilih($event.target.value); $event.target.value = ''" aria-label="Ubah status terpilih">
+                                <option value="">Ubah status…</option>
+                                @foreach (\App\Livewire\Pages\Admin\Message\CustomerMessageList::STATUS as $nilai => $label)
+                                    <option value="{{ $nilai }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <select class="dsb-isian pp-pilih is-sempit" wire:change="prioritasTerpilih($event.target.value); $event.target.value = ''" aria-label="Ubah prioritas terpilih">
+                                <option value="">Ubah prioritas…</option>
+                                @foreach (\App\Livewire\Pages\Admin\Message\CustomerMessageList::PRIORITAS as $nilai => $label)
+                                    <option value="{{ $nilai }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <select class="dsb-isian pp-pilih is-sempit" wire:change="tugaskanTerpilih($event.target.value); $event.target.value = ''" aria-label="Serahkan tiket terpilih">
+                                <option value="">Serahkan ke…</option>
+                                @foreach ($daftarPetugas as $orang)
+                                    <option value="{{ $orang->id }}">{{ $orang->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                        @if ($bolehHapus)
+                            <button type="button" class="pp-btn pp-konfirmasi" data-action="spamTerpilih" data-icon="warning"
+                                data-title="Tandai {{ count($pilih) }} pesan sebagai spam?" data-text="Pesan ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">
+                                <i class="bi bi-shield-exclamation"></i><span>Spam</span>
+                            </button>
+                            <button type="button" class="pp-btn is-bahaya pp-konfirmasi" data-action="hapusTerpilih" data-icon="warning"
+                                data-title="Arsipkan {{ count($pilih) }} pesan?" data-text="Pesan yang belum dibaca dilewati. Tiket yang diarsipkan masih bisa dikembalikan." data-confirm="Ya, arsipkan">
+                                <i class="bi bi-archive"></i><span>Arsipkan</span>
+                            </button>
+                        @endif
                     @endif
                     <button type="button" class="pp-btn" wire:click="lepasPilih"><i class="bi bi-x"></i><span>Lepas</span></button>
                 </div>
@@ -206,7 +291,7 @@ Pesan Pelanggan || lemon
             @endfor
         </div>
 
-        {{-- ================== RAK PESAN ================== --}}
+        {{-- ================== DAFTAR PESAN ================== --}}
         <section wire:loading.class="pp-sembunyi" wire:target="{{ $sasaranMuat }}">
             @if ($messages->isEmpty())
                 @php
@@ -229,74 +314,185 @@ Pesan Pelanggan || lemon
                     </label>
                 </div>
 
-                <div class="pp-rak">
-                    @foreach ($messages as $item)
-                        @php
-                            [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
-                            [$prLabel, $prKelas, $prWarna] = $item->tampilanPrioritas();
-                            $menunggu = $item->menungguJam();
-                        @endphp
-                        <article class="pp-kartu {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }} {{ $item->belumDibaca() ? 'is-baru' : '' }}"
-                            style="--c: {{ $item->belumDibaca() ? '#d97706' : $stWarna }}" wire:key="pesan-{{ $item->id }}">
-                            <div class="pp-kepala">
-                                <label class="pp-centang is-kartu" title="Pilih untuk aksi massal">
-                                    <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
-                                </label>
-                                <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-avatar" style="--av: {{ $warnaAvatar($item->name) }}" title="Buka detail pesan">
-                                    {{ mb_strtoupper(mb_substr(trim((string) $item->name), 0, 1)) ?: '?' }}
-                                </a>
-                                <div class="pp-kepala-teks">
-                                    <p class="pp-nama">{!! \App\Support\SorotKata::pada($item->name, $search) !!}</p>
-                                    <span class="pp-tiket"><i class="bi bi-ticket-perforated"></i>{!! \App\Support\SorotKata::pada($item->ticket, $search) !!}</span>
-                                    <span class="pp-kontak">{!! \App\Support\SorotKata::pada($item->email ?: $item->no_telp ?: 'Tanpa kontak', $search) !!}</span>
-                                </div>
-                                <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
-                            </div>
-
-                            <div class="pp-isi">
-                                <div class="pp-penanda">
-                                    @if ($item->belumDibaca())
-                                        <span class="pp-tanda is-baru"><i class="bi bi-envelope-exclamation"></i>Belum dibaca</span>
-                                    @endif
-                                    <span class="pp-tanda {{ $prKelas }}"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span>
-                                    @if ($item->belumDibaca() && $menunggu >= 24)
-                                        <span class="pp-tanda is-lama"><i class="bi bi-clock-history"></i>Menunggu {{ intdiv($menunggu, 24) }} hari</span>
-                                    @elseif ($item->belumDibaca() && $menunggu >= 3)
-                                        <span class="pp-tanda is-lama"><i class="bi bi-clock-history"></i>Menunggu {{ $menunggu }} jam</span>
-                                    @endif
-                                </div>
-
-                                <p class="pp-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 200), $search) !!}</p>
-                                <div class="pp-waktu">Masuk {{ $item->created_at?->locale('id')->diffForHumans() }}</div>
-                            </div>
-
-                            <div class="pp-aksi">
-                                <div class="pp-aksi-utama">
-                                    <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-btn is-utama">
-                                        <i class="bi bi-envelope-open"></i><span>Buka & balas</span>
+                @if ($tampilan === 'tabel')
+                    {{-- ---------- TAMPILAN TABEL (layar lebar) ---------- --}}
+                    <div class="pp-tabel-bungkus">
+                        <table class="pp-tabel">
+                            <thead>
+                                <tr>
+                                    <th style="width: 34px;"><span class="visually-hidden">Pilih</span></th>
+                                    <th>Pengirim</th>
+                                    <th>Pesan</th>
+                                    <th>Status</th>
+                                    <th>Prioritas</th>
+                                    <th>Petugas</th>
+                                    <th>Masuk</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($messages as $item)
+                                    @php
+                                        [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
+                                        [$prLabel, $prKelas, $prWarna] = $item->tampilanPrioritas();
+                                    @endphp
+                                    <tr wire:key="baris-{{ $item->id }}" class="{{ $item->belumDibaca() ? 'is-baru' : '' }} {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }}">
+                                        <td>
+                                            <label class="pp-centang is-kartu" title="Pilih untuk aksi massal">
+                                                <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <div class="pp-tabel-nama">
+                                                <span class="pp-avatar" style="--av: {{ $warnaAvatar($item->name) }}; cursor: default;">
+                                                    {{ mb_strtoupper(mb_substr(trim((string) $item->name), 0, 1)) ?: '?' }}
+                                                </span>
+                                                <span style="min-width: 0;">
+                                                    <b>{!! \App\Support\SorotKata::pada($item->name, $search) !!}</b>
+                                                    <small>{!! \App\Support\SorotKata::pada($item->ticket, $search) !!}</small>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="pp-tabel-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 90), $search) !!}</td>
+                                        <td><span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span></td>
+                                        <td><span class="pp-tanda {{ $prKelas }}"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span></td>
+                                        <td>{{ $item->petugas?->name ?: '—' }}</td>
+                                        <td>{{ $item->created_at?->locale('id')->translatedFormat('d M, H:i') }}</td>
+                                        <td>
+                                            <div class="pp-tabel-aksi">
+                                                @if ($arsip)
+                                                    @if ($bolehHapus)
+                                                        <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="pulihkan" data-arg="{{ $item->id }}" data-icon="question"
+                                                            data-title="Kembalikan tiket ini?" data-text="{{ $item->ticket }} kembali ke daftar aktif." data-confirm="Ya, kembalikan"
+                                                            title="Kembalikan dari arsip" aria-label="Kembalikan dari arsip"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                                        <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-konfirmasi" data-action="hapusPermanen" data-arg="{{ $item->id }}" data-icon="warning"
+                                                            data-title="Hapus permanen?" data-text="{{ $item->ticket }} hilang selamanya." data-confirm="Ya, hapus permanen"
+                                                            title="Hapus permanen" aria-label="Hapus permanen"><i class="bi bi-trash3"></i></button>
+                                                    @endif
+                                                @else
+                                                    <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-btn pp-btn-ikon is-utama" title="Buka & balas" aria-label="Buka & balas"><i class="bi bi-envelope-open"></i></a>
+                                                    @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
+                                                        <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                                                    @endif
+                                                    @if ($bolehHapus)
+                                                        <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
+                                                            title="{{ $item->belumDibaca() ? 'Baca dulu sebelum bisa diarsipkan' : 'Arsipkan' }}" aria-label="Arsipkan pesan"><i class="bi bi-archive"></i></button>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    {{-- ---------- TAMPILAN KARTU ---------- --}}
+                    <div class="pp-rak">
+                        @foreach ($messages as $item)
+                            @php
+                                [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
+                                [$prLabel, $prKelas, $prWarna] = $item->tampilanPrioritas();
+                            @endphp
+                            <article class="pp-kartu {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }} {{ $item->belumDibaca() ? 'is-baru' : '' }}"
+                                style="--c: {{ $item->belumDibaca() ? '#d97706' : $stWarna }}" wire:key="pesan-{{ $item->id }}">
+                                <div class="pp-kepala">
+                                    <label class="pp-centang is-kartu" title="Pilih untuk aksi massal">
+                                        <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
+                                    </label>
+                                    <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-avatar" style="--av: {{ $warnaAvatar($item->name) }}" title="Buka detail pesan">
+                                        {{ mb_strtoupper(mb_substr(trim((string) $item->name), 0, 1)) ?: '?' }}
                                     </a>
-                                    @if ($item->belumDibaca())
-                                        <button type="button" class="pp-btn" wire:click="tandaiDibaca('{{ $item->id }}')" title="Tandai sudah dibaca tanpa membukanya">
-                                            <i class="bi bi-check2"></i><span>Tandai dibaca</span>
-                                        </button>
+                                    <div class="pp-kepala-teks">
+                                        <p class="pp-nama">{!! \App\Support\SorotKata::pada($item->name, $search) !!}</p>
+                                        <span class="pp-tiket"><i class="bi bi-ticket-perforated"></i>{!! \App\Support\SorotKata::pada($item->ticket, $search) !!}</span>
+                                        <span class="pp-kontak">{!! \App\Support\SorotKata::pada($item->email ?: $item->no_telp ?: 'Tanpa kontak', $search) !!}</span>
+                                    </div>
+                                    <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
+                                </div>
+
+                                <div class="pp-isi">
+                                    <div class="pp-penanda">
+                                        @if ($item->is_spam)
+                                            <span class="pp-tanda is-spam"><i class="bi bi-shield-exclamation"></i>Spam</span>
+                                        @endif
+                                        @if ($item->belumDibaca())
+                                            <span class="pp-tanda is-baru"><i class="bi bi-envelope-exclamation"></i>Belum dibaca</span>
+                                        @endif
+                                        <span class="pp-tanda {{ $prKelas }}"><i class="bi bi-flag-fill"></i>{{ $prLabel }}</span>
+                                        @if ($item->lewatBatas())
+                                            <span class="pp-tanda is-lewat"><i class="bi bi-alarm"></i>Lewat batas {{ $item->batasJam() }} jam</span>
+                                        @elseif ($item->sudahDibalas())
+                                            <span class="pp-tanda is-dibalas"><i class="bi bi-check2-all"></i>Sudah dibalas</span>
+                                        @endif
+                                        @if ($item->labelKategori())
+                                            <span class="pp-tanda is-topik"><i class="bi bi-tag-fill"></i>{{ $item->labelKategori() }}</span>
+                                        @endif
+                                        @if ($item->petugas)
+                                            <span class="pp-tanda is-petugas"><i class="bi bi-person-check-fill"></i>{{ $item->petugas->name }}</span>
+                                        @endif
+                                        @if ($item->belumDibaca() && $item->menungguJam() >= 3)
+                                            <span class="pp-tanda is-lama"><i class="bi bi-clock-history"></i>Menunggu {{ $item->menungguTeks() }}</span>
+                                        @endif
+                                    </div>
+
+                                    <p class="pp-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 200), $search) !!}</p>
+                                    <div class="pp-waktu">Masuk {{ $item->created_at?->locale('id')->diffForHumans() }}</div>
+                                </div>
+
+                                <div class="pp-aksi">
+                                    @if ($arsip)
+                                        <div class="pp-aksi-utama">
+                                            @if ($bolehHapus)
+                                                <button type="button" class="pp-btn is-utama pp-konfirmasi" data-action="pulihkan" data-arg="{{ $item->id }}" data-icon="question"
+                                                    data-title="Kembalikan tiket ini?" data-text="{{ $item->ticket }} kembali ke daftar aktif." data-confirm="Ya, kembalikan">
+                                                    <i class="bi bi-arrow-counterclockwise"></i><span>Kembalikan</span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        <div class="pp-aksi-lain">
+                                            @if ($bolehHapus)
+                                                <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-konfirmasi" data-action="hapusPermanen" data-arg="{{ $item->id }}" data-icon="warning"
+                                                    data-title="Hapus permanen?" data-text="{{ $item->ticket }} beserta linimasanya hilang selamanya." data-confirm="Ya, hapus permanen"
+                                                    title="Hapus permanen" aria-label="Hapus permanen"><i class="bi bi-trash3"></i></button>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div class="pp-aksi-utama">
+                                            <a href="{{ route('admin.customer-message.detail', $item->id) }}" wire:navigate class="pp-btn is-utama">
+                                                <i class="bi bi-envelope-open"></i><span>Buka & balas</span>
+                                            </a>
+                                            @if ($item->belumDibaca())
+                                                <button type="button" class="pp-btn" wire:click="tandaiDibaca('{{ $item->id }}')" title="Tandai sudah dibaca tanpa membukanya">
+                                                    <i class="bi bi-check2"></i><span>Tandai dibaca</span>
+                                                </button>
+                                            @elseif ($bolehUbah && $item->assigned_to !== auth()->id())
+                                                <button type="button" class="pp-btn" wire:click="ambilTiket('{{ $item->id }}')" title="Jadikan tiket ini tanggung jawab Anda">
+                                                    <i class="bi bi-person-check"></i><span>Ambil tiket</span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        <div class="pp-aksi-lain">
+                                            @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
+                                                <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
+                                            @endif
+                                            @if ($surel = $item->tautanEmail())
+                                                <a href="{{ $surel }}" class="pp-btn pp-btn-ikon" title="Balas lewat surel" aria-label="Balas lewat surel"><i class="bi bi-envelope"></i></a>
+                                            @endif
+                                            @if ($bolehHapus)
+                                                <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
+                                                    data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam"
+                                                    title="Tandai spam" aria-label="Tandai spam"><i class="bi bi-shield-exclamation"></i></button>
+                                                <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
+                                                    title="{{ $item->belumDibaca() ? 'Baca dulu sebelum bisa diarsipkan' : 'Arsipkan' }}" aria-label="Arsipkan pesan"><i class="bi bi-archive"></i></button>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
-                                <div class="pp-aksi-lain">
-                                    @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
-                                        <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
-                                    @endif
-                                    @if ($surel = $item->tautanEmail())
-                                        <a href="{{ $surel }}" class="pp-btn pp-btn-ikon" title="Balas lewat surel" aria-label="Balas lewat surel"><i class="bi bi-envelope"></i></a>
-                                    @endif
-                                    @if ($bolehHapus)
-                                        <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
-                                            title="{{ $item->belumDibaca() ? 'Baca dulu sebelum bisa dihapus' : 'Hapus' }}" aria-label="Hapus pesan"><i class="bi bi-trash3"></i></button>
-                                    @endif
-                                </div>
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
 
                 @if ($messages->hasPages())
                     <div class="pp-halaman">{{ $messages->links('vendor.pagination') }}</div>
@@ -342,18 +538,18 @@ Pesan Pelanggan || lemon
                     if (hapus) {
                         e.preventDefault();
                         Swal.fire({
-                            title: 'Hapus pesan ini?',
-                            text: 'Pesan dari ' + (hapus.dataset.nama || '') + ' dihapus permanen.',
-                            icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal', ...gaya,
+                            title: 'Arsipkan pesan ini?',
+                            text: 'Pesan dari ' + (hapus.dataset.nama || '') + ' dipindahkan ke arsip dan masih bisa dikembalikan.',
+                            icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, arsipkan', cancelButtonText: 'Batal', ...gaya,
                         }).then((r) => { if (r.isConfirmed) panggil(hapus, 'delete', hapus.dataset.id); });
                     }
                 });
                 window.addEventListener('CustomerMessage-deleted', () => {
-                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Terhapus', text: 'Pesan berhasil dihapus.', icon: 'success', timer: 2000, showConfirmButton: false, ...gaya });
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Beres', text: 'Tiket sudah dipindahkan.', icon: 'success', timer: 2000, showConfirmButton: false, ...gaya });
                 });
                 window.addEventListener('CustomerMessage-deleteError', (e) => {
                     const d = Array.isArray(e.detail) ? (e.detail[0] || {}) : (e.detail || {});
-                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Gagal', text: d.message || 'Pesan gagal dihapus.', icon: 'error', timer: 2800, showConfirmButton: false, ...gaya });
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Gagal', text: d.message || 'Pesan gagal diarsipkan.', icon: 'error', timer: 2800, showConfirmButton: false, ...gaya });
                 });
             }
         </script>

@@ -14,7 +14,7 @@ class CustomerMessageList extends Component
 {
     use WithPagination;
 
-    /** baru | berjalan | selesai | semua — tab yang sekaligus kartu hitungan. */
+    /** baru | berjalan | selesai | semua | arsip — tab yang sekaligus kartu hitungan. */
     #[Url(as: 'tab', except: 'baru')]
     public string $tab = 'baru';
 
@@ -28,6 +28,17 @@ class CustomerMessageList extends Component
     #[Url(as: 'prioritas', except: '')]
     public string $fPrioritas = '';
 
+    #[Url(as: 'topik', except: '')]
+    public string $fKategori = '';
+
+    /** '' | 'saya' | id petugas */
+    #[Url(as: 'petugas', except: '')]
+    public string $fPetugas = '';
+
+    /** '' | 'lewat' (lewat batas waktu membalas) | 'belum' (belum dibalas) */
+    #[Url(as: 'batas', except: '')]
+    public string $fBatas = '';
+
     #[Url(as: 'dari', except: '')]
     public string $fDari = '';
 
@@ -38,15 +49,21 @@ class CustomerMessageList extends Component
     #[Url(as: 'urut', except: 'baru')]
     public string $urut = 'baru';
 
+    /** kartu | tabel — tabel untuk memindai banyak tiket di layar lebar. */
+    #[Url(as: 'tampilan', except: 'kartu')]
+    public string $tampilan = 'kartu';
+
     #[Url(as: 'per', except: 12)]
     public int $perPage = 12;
 
     /** Id pesan yang dicentang untuk aksi massal. */
     public array $pilih = [];
 
-    public const TAB = ['baru', 'berjalan', 'selesai', 'semua'];
+    public const TAB = ['baru', 'berjalan', 'selesai', 'semua', 'arsip'];
 
     public const URUT = ['baru', 'lama', 'prioritas'];
+
+    public const TAMPILAN = ['kartu', 'tabel'];
 
     public const STATUS = [
         'open' => 'Terbuka',
@@ -63,6 +80,9 @@ class CustomerMessageList extends Component
         'urgent' => 'Mendesak',
     ];
 
+    /** Saringan yang ikut dibersihkan & bisa dilepas lewat chip. */
+    protected const SARINGAN = ['fStatus', 'fPrioritas', 'fKategori', 'fPetugas', 'fBatas', 'fDari', 'fSampai'];
+
     public function updatingSearch(): void
     {
         $this->pilih = [];
@@ -71,13 +91,17 @@ class CustomerMessageList extends Component
 
     public function updated($nama): void
     {
-        if (in_array($nama, ['fStatus', 'fPrioritas', 'fDari', 'fSampai', 'urut', 'perPage'], true)) {
+        if (in_array($nama, array_merge(self::SARINGAN, ['urut', 'perPage', 'tampilan']), true)) {
             $this->pilih = [];
             $this->resetPage();
         }
 
         if ($nama === 'urut' && ! in_array($this->urut, self::URUT, true)) {
             $this->urut = 'baru';
+        }
+
+        if ($nama === 'tampilan' && ! in_array($this->tampilan, self::TAMPILAN, true)) {
+            $this->tampilan = 'kartu';
         }
     }
 
@@ -88,15 +112,20 @@ class CustomerMessageList extends Component
         $this->resetPage();
     }
 
+    public function setTampilan(string $t): void
+    {
+        $this->tampilan = in_array($t, self::TAMPILAN, true) ? $t : 'kartu';
+    }
+
     public function resetFilters(): void
     {
-        $this->reset(['search', 'fStatus', 'fPrioritas', 'fDari', 'fSampai', 'pilih']);
+        $this->reset(array_merge(['search', 'pilih'], self::SARINGAN));
         $this->resetPage();
     }
 
     public function lepasSaring(string $nama): void
     {
-        if (in_array($nama, ['fStatus', 'fPrioritas', 'fDari', 'fSampai', 'search'], true)) {
+        if (in_array($nama, array_merge(self::SARINGAN, ['search']), true)) {
             $this->$nama = '';
             $this->pilih = [];
             $this->resetPage();
@@ -105,7 +134,13 @@ class CustomerMessageList extends Component
 
     public function getAdaSaringProperty(): bool
     {
-        return filled($this->fStatus) || filled($this->fPrioritas) || filled($this->fDari) || filled($this->fSampai);
+        foreach (self::SARINGAN as $nama) {
+            if (filled($this->$nama)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Saringan aktif sebagai chip yang bisa dilepas satu-satu. */
@@ -125,6 +160,17 @@ class CustomerMessageList extends Component
         if ($this->fPrioritas !== '') {
             $tambah('fPrioritas', 'Prioritas '.(self::PRIORITAS[$this->fPrioritas] ?? $this->fPrioritas));
         }
+        if ($this->fKategori !== '') {
+            $tambah('fKategori', 'Topik: '.(config('helpdesk.kategori')[$this->fKategori] ?? $this->fKategori));
+        }
+        if ($this->fPetugas !== '') {
+            $tambah('fPetugas', $this->fPetugas === 'saya'
+                ? 'Tiket saya'
+                : 'Petugas: '.(CustomerMessage::petugasTersedia()->firstWhere('id', (int) $this->fPetugas)?->name ?? $this->fPetugas));
+        }
+        if ($this->fBatas !== '') {
+            $tambah('fBatas', $this->fBatas === 'lewat' ? 'Lewat batas waktu' : 'Belum dibalas');
+        }
         if ($this->fDari !== '') {
             $tambah('fDari', 'Dari '.$this->fDari);
         }
@@ -135,18 +181,32 @@ class CustomerMessageList extends Component
         return $chip;
     }
 
-    // ===== Tindakan satuan =====
+    // ===== Izin =====
 
+    /** Menangani tiket (status, prioritas, topik, penugasan) butuh izin sendiri. */
     protected function bolehUbah(): bool
     {
-        if (auth()->user()?->hasPermission('edit_customer_message') || auth()->user()?->hasPermission('view_customer_message')) {
+        if (auth()->user()?->hasPermission('edit_customer_message')) {
             return true;
         }
 
-        $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah pesan pelanggan.');
+        $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menangani pesan pelanggan.');
 
         return false;
     }
+
+    protected function bolehHapus(): bool
+    {
+        if (auth()->user()?->hasPermission('delete_customer_message')) {
+            return true;
+        }
+
+        $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengarsipkan pesan pelanggan.');
+
+        return false;
+    }
+
+    // ===== Tindakan satuan =====
 
     public function updateStatus($id, $value): void
     {
@@ -154,7 +214,16 @@ class CustomerMessageList extends Component
             return;
         }
 
-        CustomerMessage::whereKey($id)->update(['status' => $value]);
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $lama = self::STATUS[$pesan->status] ?? $pesan->status;
+        $pesan->update(['status' => $value]);
+        $pesan->catat('status', $lama.' → '.self::STATUS[$value]);
+
         $this->dispatch('swal-success', message: 'Status diperbarui jadi '.self::STATUS[$value].'.');
         $this->dispatch('sidebar-badge-updated');
     }
@@ -165,7 +234,16 @@ class CustomerMessageList extends Component
             return;
         }
 
-        CustomerMessage::whereKey($id)->update(['priority' => $value]);
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $lama = self::PRIORITAS[$pesan->priority] ?? $pesan->priority;
+        $pesan->update(['priority' => $value]);
+        $pesan->catat('prioritas', $lama.' → '.self::PRIORITAS[$value]);
+
         $this->dispatch('swal-success', message: 'Prioritas diperbarui jadi '.self::PRIORITAS[$value].'.');
     }
 
@@ -176,15 +254,46 @@ class CustomerMessageList extends Component
             return;
         }
 
-        CustomerMessage::find($id)?->markAsRead();
+        $pesan = CustomerMessage::find($id);
+
+        if ($pesan?->belumDibaca()) {
+            $pesan->markAsRead();
+            $pesan->catat('dibaca');
+        }
+
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: 'Ditandai sudah dibaca.');
     }
 
+    /** Pegang tiket ini sendiri — jalan pintas penugasan yang paling sering dipakai. */
+    public function ambilTiket($id): void
+    {
+        if (! $this->bolehUbah()) {
+            return;
+        }
+
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $pesan->update(['assigned_to' => auth()->id()]);
+        $pesan->catat('tugas', 'Dipegang '.auth()->user()?->name);
+
+        $this->dispatch('swal-success', message: 'Tiket '.$pesan->ticket.' sekarang Anda yang pegang.');
+    }
+
+    /**
+     * Arsipkan (soft delete).
+     *
+     * Isi pesan pelanggan adalah bukti percakapan, jadi tombolnya memindahkan
+     * ke arsip — bukan menghapus. Hapus permanen hanya dari tab Arsip.
+     */
     public function delete($id): void
     {
         if (! auth()->user()->hasPermission('delete_customer_message')) {
-            $this->dispatch('CustomerMessage-deleteError', message: 'Anda tidak memiliki izin menghapus pesan pelanggan.');
+            $this->dispatch('CustomerMessage-deleteError', message: 'Anda tidak memiliki izin mengarsipkan pesan pelanggan.');
 
             return;
         }
@@ -199,12 +308,65 @@ class CustomerMessageList extends Component
 
         // Pesan yang belum dibaca tidak boleh hilang sebelum ada yang melihatnya.
         if ($customerMessage->belumDibaca()) {
-            $this->dispatch('CustomerMessage-deleteError', message: 'Pesan belum dibaca dan tidak bisa dihapus!');
+            $this->dispatch('CustomerMessage-deleteError', message: 'Pesan belum dibaca dan tidak bisa diarsipkan!');
 
             return;
         }
 
+        $customerMessage->catat('arsip');
         $customerMessage->delete();
+
+        $this->dispatch('CustomerMessage-deleted', id: $id);
+        $this->dispatch('sidebar-badge-updated');
+    }
+
+    public function tandaiSpam($id): void
+    {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $pesan->catat('spam');
+        $pesan->update(['is_spam' => true, 'status' => 'closed']);
+        $pesan->delete();
+
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Tiket '.$pesan->ticket.' ditandai spam dan masuk arsip.');
+    }
+
+    public function pulihkan($id): void
+    {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
+        $pesan = CustomerMessage::onlyTrashed()->find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $pesan->restore();
+        $pesan->update(['is_spam' => false]);
+        $pesan->catat('pulih');
+
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Tiket '.$pesan->ticket.' dikembalikan dari arsip.');
+    }
+
+    public function hapusPermanen($id): void
+    {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
+        CustomerMessage::onlyTrashed()->find($id)?->forceDelete();
 
         $this->dispatch('CustomerMessage-deleted', id: $id);
         $this->dispatch('sidebar-badge-updated');
@@ -225,13 +387,32 @@ class CustomerMessageList extends Component
         $this->pilih = [];
     }
 
+    /** Model terpilih; di tab arsip yang diambil justru yang sudah diarsipkan. */
+    protected function terpilih()
+    {
+        $kueri = $this->tab === 'arsip'
+            ? CustomerMessage::onlyTrashed()
+            : CustomerMessage::query();
+
+        return $kueri->whereKey($this->pilih)->get();
+    }
+
     public function tandaiDibacaTerpilih(): void
     {
         if (! $this->bolehUbah() || $this->pilih === []) {
             return;
         }
 
-        $jumlah = CustomerMessage::whereKey($this->pilih)->unread()->update(['read_at' => now()]);
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            if ($pesan->belumDibaca()) {
+                $pesan->markAsRead();
+                $pesan->catat('dibaca');
+                $jumlah++;
+            }
+        }
+
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: $jumlah.' pesan ditandai sudah dibaca.');
@@ -243,28 +424,140 @@ class CustomerMessageList extends Component
             return;
         }
 
-        $jumlah = CustomerMessage::whereKey($this->pilih)->update(['status' => $value]);
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            $lama = self::STATUS[$pesan->status] ?? $pesan->status;
+            $pesan->update(['status' => $value]);
+            $pesan->catat('status', $lama.' → '.self::STATUS[$value]);
+            $jumlah++;
+        }
+
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: $jumlah.' pesan diubah jadi '.self::STATUS[$value].'.');
     }
 
-    public function hapusTerpilih(): void
+    public function prioritasTerpilih(string $value): void
     {
-        if (! auth()->user()?->hasPermission('delete_customer_message') || $this->pilih === []) {
-            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus pesan pelanggan.');
-
+        if (! $this->bolehUbah() || $this->pilih === [] || ! array_key_exists($value, self::PRIORITAS)) {
             return;
         }
 
-        // Pesan yang belum dibaca tetap dilindungi, sama seperti hapus satuan.
-        $jumlah = CustomerMessage::whereKey($this->pilih)->read()->delete();
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            $lama = self::PRIORITAS[$pesan->priority] ?? $pesan->priority;
+            $pesan->update(['priority' => $value]);
+            $pesan->catat('prioritas', $lama.' → '.self::PRIORITAS[$value]);
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $jumlah.' pesan diubah jadi prioritas '.self::PRIORITAS[$value].'.');
+    }
+
+    public function tugaskanTerpilih(string $value): void
+    {
+        $petugas = $value === '' ? null : CustomerMessage::petugasTersedia()->firstWhere('id', (int) $value);
+
+        if (! $this->bolehUbah() || $this->pilih === [] || ($value !== '' && ! $petugas)) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            $pesan->update(['assigned_to' => $petugas?->id]);
+            $pesan->catat('tugas', $petugas ? 'Dipegang '.$petugas->name : 'Penugasan dilepas');
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $petugas
+            ? $jumlah.' tiket diserahkan ke '.$petugas->name.'.'
+            : $jumlah.' tiket dilepas dari petugasnya.');
+    }
+
+    public function spamTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            $pesan->catat('spam');
+            $pesan->update(['is_spam' => true, 'status' => 'closed']);
+            $pesan->delete();
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' pesan ditandai spam dan masuk arsip.');
+    }
+
+    public function hapusTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        // Pesan yang belum dibaca tetap dilindungi, sama seperti arsip satuan.
+        $jumlah = 0;
+
+        foreach ($this->terpilih() as $pesan) {
+            if ($pesan->belumDibaca()) {
+                continue;
+            }
+
+            $pesan->catat('arsip');
+            $pesan->delete();
+            $jumlah++;
+        }
+
         $lewat = count($this->pilih) - $jumlah;
 
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
-        $this->dispatch('swal-success', message: $jumlah.' pesan dihapus.'
+        $this->dispatch('swal-success', message: $jumlah.' pesan dipindahkan ke arsip.'
             .($lewat ? ' '.$lewat.' dilewati karena belum dibaca.' : ''));
+    }
+
+    public function pulihkanTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach (CustomerMessage::onlyTrashed()->whereKey($this->pilih)->get() as $pesan) {
+            $pesan->restore();
+            $pesan->update(['is_spam' => false]);
+            $pesan->catat('pulih');
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' tiket dikembalikan dari arsip.');
+    }
+
+    public function hapusPermanenTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = CustomerMessage::onlyTrashed()->whereKey($this->pilih)->get()
+            ->each(fn ($pesan) => $pesan->forceDelete())
+            ->count();
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $jumlah.' tiket dihapus permanen dari arsip.');
     }
 
     // ===== Unduhan =====
@@ -296,19 +589,30 @@ class CustomerMessageList extends Component
     protected function dataEkspor()
     {
         return $this->pilih
-            ? CustomerMessage::whereKey($this->pilih)->get()
-            : $this->kueri()->get();
+            ? $this->terpilih()->load('petugas')
+            : $this->kueri()->with('petugas')->get();
     }
 
     /** Kueri daftar — dipakai kartu, ekspor, dan hitungan. */
     protected function kueri()
     {
-        return CustomerMessage::query()
+        // Tab arsip melihat yang sudah diarsipkan (termasuk spam); tab lain
+        // hanya melihat tiket hidup dan bukan spam.
+        $kueri = $this->tab === 'arsip'
+            ? CustomerMessage::onlyTrashed()
+            : CustomerMessage::query()->bukanSpam();
+
+        return $kueri
             ->when($this->tab === 'baru', fn ($q) => $q->unread())
             ->when($this->tab === 'berjalan', fn ($q) => $q->berjalan())
             ->when($this->tab === 'selesai', fn ($q) => $q->whereIn('status', ['resolved', 'closed']))
             ->when($this->fStatus !== '', fn ($q) => $q->where('status', $this->fStatus))
             ->when($this->fPrioritas !== '', fn ($q) => $q->where('priority', $this->fPrioritas))
+            ->when($this->fKategori !== '', fn ($q) => $q->where('kategori', $this->fKategori))
+            ->when($this->fPetugas === 'saya', fn ($q) => $q->milik(auth()->id()))
+            ->when($this->fPetugas !== '' && $this->fPetugas !== 'saya', fn ($q) => $q->milik((int) $this->fPetugas))
+            ->when($this->fBatas === 'lewat', fn ($q) => $q->lewatBatas())
+            ->when($this->fBatas === 'belum', fn ($q) => $q->belumDibalas())
             ->when($this->fDari !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fDari))
             ->when($this->fSampai !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->fSampai))
             ->when($this->search !== '', function ($q) {
@@ -343,30 +647,57 @@ class CustomerMessageList extends Component
             ->when($this->urut === 'baru', fn ($q) => $q->orderByDesc('created_at'));
     }
 
+    /**
+     * Ringkasan periode: berapa yang masuk sepekan, rata-rata waktu tanggap,
+     * dan berapa yang sudah lewat batas.
+     */
+    protected function ringkasan(): array
+    {
+        $dibalas = CustomerMessage::query()->bukanSpam()
+            ->whereNotNull('replied_at')
+            ->where('replied_at', '>=', now()->subDays(30))
+            ->get(['created_at', 'replied_at']);
+
+        // Dirata-rata di PHP: AVG atas selisih waktu ditulis berbeda di MySQL
+        // dan SQLite, dan barisnya sedikit (hanya 30 hari terakhir).
+        $rata = $dibalas->isEmpty()
+            ? null
+            : round($dibalas->avg(fn ($p) => abs($p->created_at->diffInMinutes($p->replied_at))) / 60, 1);
+
+        return [
+            'masukPekanIni' => CustomerMessage::query()->bukanSpam()->where('created_at', '>=', now()->subDays(7))->count(),
+            'rataResponJam' => $rata,
+            'lewatBatas' => CustomerMessage::query()->bukanSpam()->lewatBatas()->count(),
+        ];
+    }
+
     public function render()
     {
-        $messages = $this->kueri()->paginate(max(6, min(48, $this->perPage)));
+        $messages = $this->kueri()->with('petugas')->paginate(max(6, min(48, $this->perPage)));
 
         // Satu kueri untuk hitungan status; sisanya dihitung dari situ.
-        $perStatus = CustomerMessage::selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
+        $perStatus = CustomerMessage::query()->bukanSpam()
+            ->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
         $selesai = (int) ($perStatus['resolved'] ?? 0) + (int) ($perStatus['closed'] ?? 0);
 
         $tabCounts = [
-            'baru' => CustomerMessage::unread()->count(),
+            'baru' => CustomerMessage::query()->bukanSpam()->unread()->count(),
             'berjalan' => (int) $perStatus->sum() - $selesai,
             'selesai' => $selesai,
             'semua' => (int) $perStatus->sum(),
+            'arsip' => CustomerMessage::onlyTrashed()->count(),
         ];
 
-        return view('livewire.pages.admin.message.customer-message-list', [
+        return view('livewire.pages.admin.message.customer-message-list', array_merge([
             'messages' => $messages,
             'tabCounts' => $tabCounts,
             'unreadCount' => $tabCounts['baru'],
             // Tiket mendesak yang belum selesai — yang paling pantas dikerjakan dulu.
-            'mendesak' => CustomerMessage::berjalan()->whereIn('priority', ['urgent', 'high'])->count(),
+            'mendesak' => CustomerMessage::query()->bukanSpam()->berjalan()->whereIn('priority', ['urgent', 'high'])->count(),
             // Tiket terlama yang masih menunggu dibaca, untuk kartu ringkasan.
-            'tertua' => CustomerMessage::unread()->oldest()->first(),
-        ])
+            'tertua' => CustomerMessage::query()->bukanSpam()->unread()->oldest()->first(),
+            'daftarPetugas' => CustomerMessage::petugasTersedia(),
+        ], $this->ringkasan()))
             ->layout('livewire.layout.templateindex');
     }
 }

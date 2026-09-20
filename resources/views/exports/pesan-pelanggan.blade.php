@@ -9,7 +9,10 @@
             <th>Pesan</th>
             <th>Status</th>
             <th>Prioritas</th>
+            <th>Topik</th>
+            <th>Petugas</th>
             <th>Dibaca</th>
+            <th>Dibalas</th>
         </tr>
     </thead>
     <tbody>
@@ -23,7 +26,10 @@
                 <td>{{ $p->message }}</td>
                 <td>{{ $p->tampilanStatus()[0] }}</td>
                 <td>{{ $p->tampilanPrioritas()[0] }}</td>
+                <td>{{ $p->labelKategori() ?: '-' }}</td>
+                <td>{{ $p->petugas?->name ?: '-' }}</td>
                 <td>{{ $p->read_at?->format('d/m/Y H:i') ?: 'Belum dibaca' }}</td>
+                <td>{{ $p->replied_at?->format('d/m/Y H:i') ?: 'Belum dibalas' }}</td>
             </tr>
         @endforeach
     </tbody>

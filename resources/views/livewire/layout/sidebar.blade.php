@@ -61,7 +61,7 @@ new class extends Component
         // Pesan helpdesk yang belum dibaca admin. Otomatis berkurang saat admin
         // membuka pesan (markAsRead di halaman detail).
         $helpdeskBaru = $login && $u->hasPermission('view_customer_message')
-            ? CustomerMessage::unread()->count() : 0;
+            ? CustomerMessage::query()->bukanSpam()->unread()->count() : 0;
 
         // Task SAYA yang sudah mendesak: lewat tenggat atau jatuh tempo hari
         // ini. Sengaja BUKAN semua yang belum selesai — badge yang selalu
