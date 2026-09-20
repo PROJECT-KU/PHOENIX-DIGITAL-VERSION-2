@@ -35,6 +35,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Jam kerja (untuk menghitung batas waktu)
+    |--------------------------------------------------------------------------
+    | Batas waktu membalas dihitung memakai jam ini, bukan jam kalender —
+    | tiket yang masuk tengah malam tidak dianggap terlambat saat subuh.
+    */
+    'jam_kerja' => [
+        'mulai' => 8,
+        'selesai' => 21,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tiket Selesai ditutup otomatis setelah sekian hari
+    |--------------------------------------------------------------------------
+    */
+    'tutup_setelah_hari' => 7,
+
+    /*
+    |--------------------------------------------------------------------------
     | Kanal balasan yang bisa dicatat
     |--------------------------------------------------------------------------
     */

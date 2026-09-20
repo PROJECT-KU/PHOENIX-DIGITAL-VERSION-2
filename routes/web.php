@@ -180,6 +180,9 @@ Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product
 Route::get('/bundling/paket/{id}', BundlingDetail::class)->name('bundling.detail');
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
+// Lacak status tiket helpdesk: dibuka lewat tautan bertanda tangan di surel
+// tanda terima, atau dengan mengisi nomor tiket + surel.
+Route::get('/tiket/{ticket?}', \App\Livewire\Pages\Public\Contact\LacakTiket::class)->name('tiket.lacak');
 Route::get('/about', AboutPage::class)->name('about');
 Route::get('/terms', TermsPage::class)->name('terms');
 Route::get('/privacy', PrivacyPage::class)->name('privacy');

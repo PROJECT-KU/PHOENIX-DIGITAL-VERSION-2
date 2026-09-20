@@ -92,7 +92,10 @@ Pesan Pelanggan || lemon
                     </span>
                     <div>
                         <p><b>{{ $lewatBatas }}</b> tiket lewat batas waktu membalas.</p>
-                        <p class="pp-catatan-kecil">{{ $mendesak }} tiket prioritas tinggi/mendesak masih berjalan.</p>
+                        <p class="pp-catatan-kecil">
+                            {{ $mendesak }} tiket prioritas tinggi/mendesak masih berjalan{{ $ditunda ? ', '.$ditunda.' sedang ditunda' : '' }}.
+                            Batasnya dihitung jam kerja {{ \App\Support\JamKerja::mulai() }}.00–{{ \App\Support\JamKerja::selesai() }}.00.
+                        </p>
                     </div>
                 </button>
                 <button type="button" class="pp-ringkas-blok" wire:click="sorotPekanIni" title="Lihat pesan 7 hari terakhir">
@@ -129,6 +132,33 @@ Pesan Pelanggan || lemon
                                 <span class="pp-topik-bar"><span style="width: {{ max(4, $t['persen']) }}%"></span></span>
                             </button>
                         @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== REKAP PETUGAS ================== --}}
+        @if ($rekapPetugas)
+            <section class="dsb-kartu pp-topik" x-data="{ buka: false }">
+                <div class="dsb-kartu-isi">
+                    <button type="button" class="pp-teknis-pemicu" x-on:click="buka = !buka" :aria-expanded="buka.toString()">
+                        <span class="pp-ringkas-ikon is-aman" style="background: #ecfeff; color: #0e7490;"><i class="bi bi-people"></i></span>
+                        <span>
+                            <b>Rekap petugas 30 hari terakhir</b>
+                            <small>Berapa tiket dipegang, berapa yang sudah dibalas, dan rata-rata waktu tanggapnya.</small>
+                        </span>
+                        <i class="bi" :class="buka ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+                    <div x-show="buka" x-collapse x-cloak>
+                        <div class="pp-rekap" style="margin-top: 14px;">
+                            @foreach ($rekapPetugas as $r)
+                                <div class="pp-rekap-item">
+                                    <b>{{ $r['nama'] }}</b>
+                                    <span>{{ $r['dibalas'] }}/{{ $r['jumlah'] }} dibalas</span>
+                                    <small>{{ $r['rata'] !== null ? 'rata-rata '.$r['rata'].' jam kerja' : 'belum ada balasan tercatat' }}</small>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </section>
@@ -204,6 +234,7 @@ Pesan Pelanggan || lemon
             @endif
 
             <div class="pp-saring-lanjut" x-show="buka" x-collapse x-cloak>
+                <p class="pp-saring-judul">Keadaan tiket</p>
                 <div class="pp-saring-baris">
                     <label class="pp-saring-medan">
                         <span>Status</span>
@@ -237,6 +268,7 @@ Pesan Pelanggan || lemon
                         <select class="dsb-isian" wire:model.live="fPetugas">
                             <option value="">Semua petugas</option>
                             <option value="saya">Tiket saya</option>
+                            <option value="kosong">Belum ditugaskan</option>
                             @foreach ($daftarPetugas as $orang)
                                 <option value="{{ $orang->id }}">{{ $orang->name }}</option>
                             @endforeach
@@ -248,8 +280,13 @@ Pesan Pelanggan || lemon
                             <option value="">Semua tiket</option>
                             <option value="lewat">Lewat batas waktu</option>
                             <option value="belum">Belum dibalas</option>
+                            <option value="tunda">Sedang ditunda</option>
                         </select>
                     </label>
+                </div>
+
+                <p class="pp-saring-judul">Penanganan</p>
+                <div class="pp-saring-baris">
                     @if ($arsip)
                         <label class="pp-saring-medan">
                             <span>Isi arsip</span>
@@ -268,6 +305,10 @@ Pesan Pelanggan || lemon
                             </select>
                         </label>
                     @endif
+                </div>
+
+                <p class="pp-saring-judul">Waktu masuk</p>
+                <div class="pp-saring-baris">
                     <label class="pp-saring-medan">
                         <span>Masuk dari</span>
                         <input type="date" class="dsb-isian" wire:model.live="fDari" max="{{ now()->toDateString() }}">
@@ -279,6 +320,15 @@ Pesan Pelanggan || lemon
                 </div>
             </div>
         </section>
+
+        {{-- Jaring pengaman sesaat sesudah aksi massal. --}}
+        @if ($urungkanId)
+            <div class="pp-urungkan" role="status">
+                <span><i class="bi bi-check2-circle"></i> {{ $urungkanLabel }}.</span>
+                <button type="button" class="pp-btn" wire:click="urungkan"><i class="bi bi-arrow-counterclockwise"></i><span>Urungkan</span></button>
+                <button type="button" class="pp-btn pp-btn-ikon" wire:click="$set('urungkanId', [])" title="Tutup" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+            </div>
+        @endif
 
         {{-- ================== BILAH AKSI MASSAL ================== --}}
         @if ($pilih)
@@ -345,7 +395,8 @@ Pesan Pelanggan || lemon
 
         {{-- Kerangka pemuatan: tanpa ini kartu lama cuma meredup dan sekilas
              tampak seolah tidak ada yang berubah. --}}
-        <div class="pp-kerangka" wire:loading.grid wire:target="{{ $sasaranMuat }}">
+        <div class="pp-kerangka {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''"
+            wire:loading.grid wire:target="{{ $sasaranMuat }}">
             @for ($i = 0; $i < 6; $i++)
                 <div class="pp-kerangka-kartu">
                     <div class="pp-kerangka-kepala"><span class="pp-tulang is-bulat"></span><span class="pp-tulang" style="width: 55%"></span></div>
@@ -380,6 +431,11 @@ Pesan Pelanggan || lemon
                         <input type="checkbox" @checked($semuaTercentang) wire:click="pilihHalaman({{ \Illuminate\Support\Js::from($idHalaman) }})">
                         <span>Pilih semua di halaman ini</span>
                     </label>
+                    @if ($semuaTercentang && $messages->total() > count($idHalaman))
+                        <button type="button" class="pp-tautan" wire:click="pilihSemuaHasil">
+                            Pilih semua {{ min(500, $messages->total()) }} tiket hasil saringan
+                        </button>
+                    @endif
                 </div>
 
                 {{-- Bentuk KARTU dan TABEL memakai markup yang SAMA; yang berubah
@@ -455,6 +511,9 @@ Pesan Pelanggan || lemon
                                         @if ($item->lampiran_count)
                                             <span class="pp-tanda is-rendah"><i class="bi bi-paperclip"></i>{{ $item->lampiran_count }} lampiran</span>
                                         @endif
+                                        @if ($item->ditunda())
+                                            <span class="pp-tanda is-tunda"><i class="bi bi-pause-circle"></i>Ditunda sampai {{ $item->tunda_sampai->locale('id')->translatedFormat('d M') }}</span>
+                                        @endif
                                     </div>
 
                                     <p class="pp-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->message, 200), $search) !!}</p>
@@ -494,6 +553,24 @@ Pesan Pelanggan || lemon
                                             @endif
                                         </div>
                                         <div class="pp-aksi-lain">
+                                            @if ($bolehUbah && ! $item->belumDibaca())
+                                                <button type="button" class="pp-btn pp-btn-ikon" wire:click="tandaiBelumDibaca('{{ $item->id }}')"
+                                                    title="Kembalikan ke belum dibaca" aria-label="Kembalikan ke belum dibaca"><i class="bi bi-envelope"></i></button>
+                                            @endif
+                                            @if ($bolehUbah && ! $item->selesai())
+                                                <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
+                                                    <button type="button" class="pp-btn pp-btn-ikon" x-on:click="buka = !buka"
+                                                        title="{{ $item->ditunda() ? 'Sedang ditunda' : 'Tunda tiket' }}" aria-label="Tunda tiket"><i class="bi bi-pause-circle"></i></button>
+                                                    <div class="pp-tunda-menu" x-show="buka" x-cloak>
+                                                        @if ($item->ditunda())
+                                                            <button type="button" wire:click="lanjutkanTunda('{{ $item->id }}')" x-on:click="buka = false">Lanjutkan sekarang</button>
+                                                        @endif
+                                                        @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
+                                                            <button type="button" wire:click="tunda('{{ $item->id }}', {{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
                                             @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
                                                 <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
                                             @endif

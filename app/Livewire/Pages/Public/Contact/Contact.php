@@ -2,9 +2,12 @@
 
 namespace App\Livewire\Pages\Public\Contact;
 
+use App\Mail\TiketDiterimaMail;
 use App\Models\Banners;
 use App\Models\CustomerMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -26,8 +29,8 @@ class Contact extends Component
 
     public $message;
 
-    /** Lampiran OPSIONAL — komplain hampir selalu butuh tangkapan layar. */
-    public $lampiran;
+    /** Lampiran OPSIONAL (maks. 3) — komplain hampir selalu butuh tangkapan layar. */
+    public $lampiran = [];
 
     // Honeypot field
     public $website_url;
@@ -53,9 +56,27 @@ class Contact extends Component
             'email' => 'required|email|max:255',
             'no_telp' => ['required', 'string', 'regex:/^\+[1-9]\d{6,14}$/'],
             'message' => 'required|string|max:2000',
+            'lampiran' => ['nullable', 'array', 'max:3'],
             // 8 MB: muat untuk tangkapan layar & PDF, tidak untuk video.
-            'lampiran' => ['nullable', 'file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf'],
-        ], [], ['lampiran' => 'lampiran']);
+            'lampiran.*' => ['file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf'],
+        ], [], ['lampiran' => 'lampiran', 'lampiran.*' => 'lampiran']);
+
+        /*
+         * Penangkal kiriman kembar: menekan Kirim dua kali (atau jaringan yang
+         * mengulang permintaan) sebelumnya menghasilkan dua tiket yang harus
+         * digabungkan manual oleh admin.
+         */
+        $kembar = CustomerMessage::where('email', $this->email)
+            ->where('message', $this->message)
+            ->where('created_at', '>=', now()->subMinutes(10))
+            ->first();
+
+        if ($kembar) {
+            RateLimiter::hit($key);
+            $this->dispatch('contact-success', message: 'Pesan Anda sudah kami terima sebelumnya (tiket '.$kembar->ticket.').');
+
+            return;
+        }
 
         $pesan = CustomerMessage::create([
             'name' => $this->name,
@@ -66,25 +87,33 @@ class Contact extends Component
             'user_agent' => $request->userAgent(),
         ]);
 
-        if ($this->lampiran) {
+        foreach (array_filter((array) $this->lampiran) as $berkas) {
             // Disk PRIVAT: lampiran pelanggan kerap berisi tangkapan layar
             // mutasi bank, jadi tidak boleh bisa diunduh siapa pun yang tahu URL.
             $pesan->lampiran()->create([
                 'sumber' => 'pelanggan',
-                'nama_asli' => $this->lampiran->getClientOriginalName(),
-                'path' => $this->lampiran->store('helpdesk/'.$pesan->getKey(), 'local'),
-                'mime' => $this->lampiran->getMimeType(),
-                'ukuran' => $this->lampiran->getSize(),
+                'nama_asli' => $berkas->getClientOriginalName(),
+                'path' => $berkas->store('helpdesk/'.$pesan->getKey(), 'local'),
+                'mime' => $berkas->getMimeType(),
+                'ukuran' => $berkas->getSize(),
             ]);
+        }
 
-            $this->reset('lampiran');
+        $this->reset('lampiran');
+
+        // Tanda terima berisi nomor tiket + tautan lacak. Tidak pernah boleh
+        // menggagalkan pengiriman pesannya sendiri.
+        try {
+            Mail::to($pesan->email)->send(new TiketDiterimaMail($pesan));
+        } catch (\Throwable $e) {
+            Log::warning('Gagal kirim tanda terima tiket '.$pesan->ticket.': '.$e->getMessage());
         }
 
         RateLimiter::hit($key);
 
         // Catatan: field dikosongkan via JS (lihat handler 'contact-success' di blade)
         // untuk menghindari re-render yang mengganggu widget intl-tel-input.
-        $this->dispatch('contact-success', message: 'Terima kasih! Pesan Anda telah kami terima.');
+        $this->dispatch('contact-success', message: 'Terima kasih! Pesan Anda kami terima dengan nomor tiket '.$pesan->ticket.'. Kami kirimkan juga ke surel Anda.');
     }
 
     /** Tautan WhatsApp admin dengan pesan pembuka yang sudah terisi. */

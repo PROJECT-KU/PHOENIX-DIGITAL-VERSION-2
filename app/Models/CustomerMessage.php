@@ -35,12 +35,14 @@ class CustomerMessage extends Model
         'replied_by',
         'is_spam',
         'merged_into',
+        'tunda_sampai',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
         'replied_at' => 'datetime',
         'is_spam' => 'boolean',
+        'tunda_sampai' => 'datetime',
     ];
 
     // ===== Relasi =====
@@ -141,7 +143,9 @@ class CustomerMessage extends Model
     {
         $sampai = $this->read_at ?: now();
 
-        return (int) $this->created_at?->diffInHours($sampai);
+        return $this->created_at
+            ? \App\Support\JamKerja::selisihJam($this->created_at, $sampai)
+            : 0;
     }
 
     /** Tautan WhatsApp untuk membalas pengirim (kosong bila nomornya tidak ada). */
@@ -180,10 +184,22 @@ class CustomerMessage extends Model
         return (int) (config('helpdesk.batas_jam')[$this->priority] ?? 24);
     }
 
-    /** Kapan tiket ini seharusnya sudah dibalas. */
+    /**
+     * Kapan tiket ini seharusnya sudah dibalas.
+     *
+     * Dihitung dengan JAM KERJA (lihat App\Support\JamKerja): tiket yang masuk
+     * pukul 23.00 tidak dianggap terlambat pukul 01.00.
+     */
     public function tenggat(): ?\Illuminate\Support\Carbon
     {
-        return $this->created_at?->copy()->addHours($this->batasJam());
+        return $this->created_at
+            ? \App\Support\JamKerja::maju($this->created_at, $this->batasJam())
+            : null;
+    }
+
+    public function ditunda(): bool
+    {
+        return $this->tunda_sampai && $this->tunda_sampai->isFuture();
     }
 
     /**
@@ -194,7 +210,7 @@ class CustomerMessage extends Model
      */
     public function lewatBatas(): bool
     {
-        if ($this->sudahDibalas() || $this->selesai()) {
+        if ($this->sudahDibalas() || $this->selesai() || $this->ditunda()) {
             return false;
         }
 
@@ -213,7 +229,11 @@ class CustomerMessage extends Model
     public function menungguTeks(): string
     {
         $sampai = $this->read_at ?: now();
-        $menit = (int) $this->created_at?->diffInMinutes($sampai);
+        // Ikut JAM KERJA, sama seperti menungguJam() — kalau tidak, dua angka
+        // di kartu yang sama bisa bercerita beda.
+        $menit = $this->created_at
+            ? \App\Support\JamKerja::selisihMenit($this->created_at, $sampai)
+            : 0;
 
         if ($menit < 60) {
             return max(1, $menit).' menit';
@@ -357,11 +377,22 @@ class CustomerMessage extends Model
      */
     public function scopeLewatBatas($query)
     {
-        return $query->belumDibalas()->berjalan()->where(function ($q) {
-            foreach (config('helpdesk.batas_jam') as $prioritas => $jam) {
-                $q->orWhere(fn ($sub) => $sub->where('priority', $prioritas)
-                    ->where('created_at', '<', now()->subHours($jam)));
-            }
-        });
+        return $query->belumDibalas()->berjalan()
+            ->where(fn ($q) => $q->whereNull('tunda_sampai')->orWhere('tunda_sampai', '<=', now()))
+            ->where(function ($q) {
+                foreach (config('helpdesk.batas_jam') as $prioritas => $jam) {
+                    // Titik potongnya dimundurkan lewat JAM KERJA, bukan jam
+                    // kalender — lihat alasannya di App\Support\JamKerja.
+                    $batas = \App\Support\JamKerja::mundur(now(), (int) $jam);
+
+                    $q->orWhere(fn ($sub) => $sub->where('priority', $prioritas)
+                        ->where('created_at', '<', $batas));
+                }
+            });
+    }
+
+    public function scopeDitunda($query)
+    {
+        return $query->whereNotNull('tunda_sampai')->where('tunda_sampai', '>', now());
     }
 }

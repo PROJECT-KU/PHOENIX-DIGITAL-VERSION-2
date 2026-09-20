@@ -116,7 +116,13 @@ class CustomerMessageDetail extends Component
 
         $lama = CustomerMessageList::STATUS[$this->message->status] ?? $this->message->status;
         $this->message->update(['status' => $value]);
-        $this->message->catat('status', $lama.' → '.CustomerMessageList::STATUS[$value]);
+
+        // Ditutup tanpa pernah ada balasan tercatat? Tetap boleh — tapi jejaknya
+        // menyebutkan itu, supaya "Selesai" tidak pernah jadi klaim kosong.
+        $tanpaBalasan = in_array($value, ['resolved', 'closed'], true) && ! $this->message->sudahDibalas();
+
+        $this->message->catat('status', $lama.' → '.CustomerMessageList::STATUS[$value]
+            .($tanpaBalasan ? ' (tanpa balasan tercatat)' : ''));
         $this->dispatch('toast-success', message: 'Status berhasil diperbarui!');
         $this->dispatch('sidebar-badge-updated');
     }
@@ -408,6 +414,50 @@ class CustomerMessageDetail extends Component
         $lampiran->hapusBerkas();
         $lampiran->delete();
         $this->dispatch('toast-success', message: 'Lampiran dihapus.');
+    }
+
+    // ===== Tunda & tanda baca =====
+
+    public function tandaiBelumDibaca()
+    {
+        if (! $this->bolehUbah()) {
+            return null;
+        }
+
+        $this->message->update(['read_at' => null]);
+        $this->message->catat('belum-dibaca');
+        $this->dispatch('sidebar-badge-updated');
+
+        session()->flash('success', 'Tiket '.$this->message->ticket.' ditandai belum dibaca lagi.');
+
+        // Balik ke daftar: kalau tetap di sini, mount() akan menandainya dibaca
+        // lagi begitu halamannya dimuat ulang.
+        return $this->redirectRoute('admin.customer-message.index', navigate: true);
+    }
+
+    public function tunda(int $hari): void
+    {
+        if (! $this->bolehUbah() || ! in_array($hari, [1, 3, 7], true)) {
+            return;
+        }
+
+        $sampai = now()->addDays($hari)->setTime(\App\Support\JamKerja::mulai(), 0);
+        $this->message->update(['tunda_sampai' => $sampai]);
+        $this->message->catat('tunda', 'Ditunda sampai '.$sampai->locale('id')->translatedFormat('d F Y, H:i'));
+
+        $this->dispatch('toast-success', message: 'Tiket ditunda sampai '.$sampai->locale('id')->translatedFormat('d M, H:i').'.');
+    }
+
+    public function lanjutkanTunda(): void
+    {
+        if (! $this->bolehUbah() || ! $this->message->tunda_sampai) {
+            return;
+        }
+
+        $this->message->update(['tunda_sampai' => null]);
+        $this->message->catat('tunda', 'Penundaan dibatalkan');
+
+        $this->dispatch('toast-success', message: 'Tiket kembali masuk hitungan batas waktu.');
     }
 
     // ===== Gabung tiket ganda =====

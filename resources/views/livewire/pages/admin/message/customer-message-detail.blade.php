@@ -39,6 +39,28 @@ Detail Pesan Pelanggan || lemon
                     <span wire:loading.remove wire:target="unduhPdf" class="pp-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>Cetak tiket</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
+                @if ($bolehUbah)
+                    <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
+                        <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka">
+                            <span class="pp-isi-tombol">
+                                <i class="bi bi-pause-circle"></i>
+                                <span>{{ $message->ditunda() ? 'Ditunda sampai '.$message->tunda_sampai->locale('id')->translatedFormat('d M') : 'Tunda' }}</span>
+                            </span>
+                        </button>
+                        <div class="pp-tunda-menu is-bawah" x-show="buka" x-cloak>
+                            @if ($message->ditunda())
+                                <button type="button" wire:click="lanjutkanTunda" x-on:click="buka = false">Lanjutkan sekarang</button>
+                            @endif
+                            @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
+                                <button type="button" wire:click="tunda({{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <button type="button" class="dsb-tombol is-lembut pp-konfirmasi" data-action="tandaiBelumDibaca" data-icon="question"
+                        data-title="Tandai belum dibaca?" data-text="Tiket kembali muncul di tab Belum dibaca dan Anda dikembalikan ke daftar." data-confirm="Ya, tandai">
+                        <span class="pp-isi-tombol"><i class="bi bi-envelope"></i><span>Belum dibaca</span></span>
+                    </button>
+                @endif
                 @if ($bolehHapus)
                     <button type="button" class="dsb-tombol is-lembut pp-konfirmasi" data-action="tandaiSpam" data-icon="warning"
                         data-title="Tandai tiket ini spam?" data-text="Tiket ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">
@@ -64,7 +86,9 @@ Detail Pesan Pelanggan || lemon
                     <a href="{{ route('admin.customer-message.detail', $berikut->id) }}" wire:navigate class="pp-btn" data-arah="lama" title="Pintasan: j">
                         <span>Tiket lebih lama</span><i class="bi bi-chevron-right"></i>
                     </a>
-                    <span class="pp-pintasan"><kbd>j</kbd>/<kbd>k</kbd> pindah tiket · <kbd>r</kbd> balas · <kbd>c</kbd> catatan</span>
+                    <button type="button" class="pp-pintasan pp-bantuan-pemicu" title="Daftar pintasan papan tik">
+                        <kbd>j</kbd>/<kbd>k</kbd> pindah tiket · <kbd>r</kbd> balas · <kbd>c</kbd> catatan · <kbd>?</kbd> bantuan
+                    </button>
                 @endif
             </div>
         @endif
@@ -101,6 +125,9 @@ Detail Pesan Pelanggan || lemon
                             @if ($message->pernahSpam())
                                 <span class="pp-tanda is-spam"><i class="bi bi-shield-exclamation"></i>Pengirim pernah spam</span>
                             @endif
+                            @if ($message->ditunda())
+                                <span class="pp-tanda is-tunda"><i class="bi bi-pause-circle"></i>Ditunda sampai {{ $message->tunda_sampai->locale('id')->translatedFormat('d M Y, H:i') }}</span>
+                            @endif
                             @if ($message->sudahDibalas())
                                 <span class="pp-tanda is-dibalas"><i class="bi bi-check2-all"></i>Dibalas {{ $message->replied_at->locale('id')->diffForHumans() }}</span>
                             @elseif ($message->lewatBatas())
@@ -117,7 +144,15 @@ Detail Pesan Pelanggan || lemon
                                 <span class="pp-detail-label">Lampiran</span>
                                 @forelse ($lampiran as $l)
                                     <div class="pp-lampiran-baris" wire:key="lampiran-{{ $l->id }}">
-                                        <i class="bi {{ str_starts_with((string) $l->mime, 'image/') ? 'bi-image' : 'bi-file-earmark-text' }}"></i>
+                                        @if (str_starts_with((string) $l->mime, 'image/'))
+                                            {{-- Pratinjau kecil: tanpa ini tiap lampiran harus dibuka
+                                                 satu per satu di tab baru cuma untuk tahu isinya. --}}
+                                            <a href="{{ route('admin.customer-message.lampiran', $l->id) }}" target="_blank" rel="noopener" class="pp-lampiran-gambar">
+                                                <img src="{{ route('admin.customer-message.lampiran', $l->id) }}" alt="Pratinjau {{ $l->nama_asli }}" loading="lazy">
+                                            </a>
+                                        @else
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        @endif
                                         <span>
                                             <b>{{ $l->nama_asli }}</b>
                                             <small>{{ $l->ukuranTerbaca() }} · {{ $l->dariAdmin() ? 'ditambahkan admin' : 'dari pelanggan' }}</small>
@@ -337,11 +372,20 @@ Detail Pesan Pelanggan || lemon
                                         <small>{{ $message->created_at?->locale('id')->translatedFormat('d M Y, H:i') }} · dari {{ $message->name }}</small>
                                     </div>
                                 </li>
+                                @php $tanggalTerakhir = $message->created_at?->toDateString(); @endphp
                                 @foreach ($logs as $i => $log)
                                     @php
                                         [$lIkon, $lWarna, $lJudul] = $log->tampilan();
                                         $disembunyikan = $lama && $i < $lama;
+                                        $tanggalIni = $log->created_at?->toDateString();
+                                        $gantiHari = $tanggalIni !== $tanggalTerakhir;
+                                        $tanggalTerakhir = $tanggalIni;
                                     @endphp
+                                    @if ($gantiHari)
+                                        <li class="pp-baris-tanggal" @if ($disembunyikan) x-show="semua" x-collapse x-cloak @endif>
+                                            {{ $log->created_at?->locale('id')->translatedFormat('l, d F Y') }}
+                                        </li>
+                                    @endif
                                     <li class="pp-baris is-{{ $log->jenis }}" wire:key="log-{{ $log->id }}"
                                         @if ($disembunyikan) x-show="semua" x-collapse x-cloak @endif>
                                         <span class="pp-baris-ikon" style="--c: {{ $lWarna }}"><i class="bi {{ $lIkon }}"></i></span>
@@ -542,6 +586,43 @@ Detail Pesan Pelanggan || lemon
                     customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel', title: 'swal-glossy-title' },
                     buttonsStyling: false,
                 };
+                // Daftar pintasan. Disusun lewat DOM, bukan string HTML: markup di
+                // dalam <script> membuat Livewire salah menghitung elemen akar.
+                const bukaBantuan = () => {
+                    if (typeof Swal === 'undefined') return;
+                    const daftar = [
+                        ['j', 'Tiket lebih lama'], ['k', 'Tiket lebih baru'],
+                        ['r', 'Fokus ke kotak balasan'], ['c', 'Fokus ke catatan internal'],
+                        ['Esc', 'Keluar dari kotak isian'], ['?', 'Buka bantuan ini'],
+                    ];
+                    const kotak = document.createElement('div');
+                    kotak.style.display = 'grid';
+                    kotak.style.gap = '8px';
+                    kotak.style.textAlign = 'left';
+                    daftar.forEach(([tombol, arti]) => {
+                        const baris = document.createElement('div');
+                        baris.style.display = 'flex';
+                        baris.style.alignItems = 'center';
+                        baris.style.gap = '10px';
+                        const kbd = document.createElement('kbd');
+                        kbd.textContent = tombol;
+                        kbd.style.cssText = 'min-width:34px;text-align:center;padding:3px 8px;border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:7px;background:#f8fafc;font-size:.8rem;color:#475569';
+                        const teks = document.createElement('span');
+                        teks.textContent = arti;
+                        teks.style.fontSize = '.88rem';
+                        baris.append(kbd, teks);
+                        kotak.append(baris);
+                    });
+                    Swal.fire({ title: 'Pintasan papan tik', html: kotak, confirmButtonText: 'Tutup', ...gaya });
+                };
+
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.pp-bantuan-pemicu')) {
+                        e.preventDefault();
+                        bukaBantuan();
+                    }
+                });
+
                 const panggil = (el, metode, arg) => {
                     const komponen = el.closest('[wire\\:id]');
                     if (!komponen) return;
@@ -576,6 +657,12 @@ Detail Pesan Pelanggan || lemon
                         // Urutan tombolnya: [lebih baru, lebih lama]; k = lebih baru.
                         const sasaran = document.querySelector('.pp-tetangga a[data-arah="' + (e.key === 'j' ? 'lama' : 'baru') + '"]');
                         if (sasaran) { e.preventDefault(); sasaran.click(); }
+                        return;
+                    }
+
+                    if (e.key === '?') {
+                        e.preventDefault();
+                        bukaBantuan();
                         return;
                     }
 

@@ -202,6 +202,12 @@ $jadwalkan('helpdesk:bersihkan-arsip --hari=180 --hari-spam=30')->dailyAt('00:35
  */
 $jadwalkan('helpdesk:ingatkan-lewat-batas')->dailyAt('08:15');
 
+/*
+ * Tiket "Selesai" ditutup sendiri setelah seminggu tanpa kelanjutan, supaya
+ * papan antrean hanya memperlihatkan pekerjaan yang benar-benar hidup.
+ */
+$jadwalkan('helpdesk:tutup-selesai')->dailyAt('00:40');
+
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
  * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).

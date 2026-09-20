@@ -54,6 +54,9 @@ class CustomerMessageLog extends Model
             'pulih' => ['bi-arrow-counterclockwise', '#16a34a', 'Dikembalikan dari arsip'],
             'gabung' => ['bi-union', '#7c3aed', 'Tiket digabungkan'],
             'lampiran' => ['bi-paperclip', '#0891b2', 'Lampiran ditambahkan'],
+            'tunda' => ['bi-pause-circle-fill', '#4338ca', 'Penundaan'],
+            'belum-dibaca' => ['bi-envelope-fill', '#d97706', 'Ditandai belum dibaca'],
+            'surel' => ['bi-envelope-arrow-up-fill', '#16a34a', 'Balasan dikirim lewat surel'],
             default => ['bi-dot', '#64748b', ucfirst((string) $this->jenis)],
         };
     }

@@ -67,6 +67,15 @@ class CustomerMessageList extends Component
     /** Id pesan yang dicentang untuk aksi massal. */
     public array $pilih = [];
 
+    /**
+     * Id yang BARU SAJA diarsipkan/dispam massal, untuk tombol "Urungkan".
+     * Hanya bertahan selama halaman ini terbuka — jaring pengaman sesaat,
+     * bukan riwayat.
+     */
+    public array $urungkanId = [];
+
+    public string $urungkanLabel = '';
+
     public const TAB = ['baru', 'berjalan', 'selesai', 'semua', 'arsip'];
 
     /**
@@ -250,12 +259,18 @@ class CustomerMessageList extends Component
             $tambah('fKategori', 'Topik: '.(config('helpdesk.kategori')[$this->fKategori] ?? $this->fKategori));
         }
         if ($this->fPetugas !== '') {
-            $tambah('fPetugas', $this->fPetugas === 'saya'
-                ? 'Tiket saya'
-                : 'Petugas: '.(CustomerMessage::petugasTersedia()->firstWhere('id', (int) $this->fPetugas)?->name ?? $this->fPetugas));
+            $tambah('fPetugas', match ($this->fPetugas) {
+                'saya' => 'Tiket saya',
+                'kosong' => 'Belum ditugaskan',
+                default => 'Petugas: '.(CustomerMessage::petugasTersedia()->firstWhere('id', (int) $this->fPetugas)?->name ?? $this->fPetugas),
+            });
         }
         if ($this->fBatas !== '') {
-            $tambah('fBatas', $this->fBatas === 'lewat' ? 'Lewat batas waktu' : 'Belum dibalas');
+            $tambah('fBatas', match ($this->fBatas) {
+                'lewat' => 'Lewat batas waktu',
+                'tunda' => 'Sedang ditunda',
+                default => 'Belum dibalas',
+            });
         }
         if ($this->fSpam !== '') {
             $tambah('fSpam', $this->fSpam === 'spam' ? 'Hanya spam' : 'Tanpa spam');
@@ -355,6 +370,69 @@ class CustomerMessageList extends Component
 
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: 'Ditandai sudah dibaca.');
+    }
+
+    /**
+     * Kembalikan tiket ke "belum dibaca".
+     *
+     * Sekali salah klik, read_at terisi permanen dan tiketnya hilang dari tab
+     * Belum dibaca — padahal itu sinyal terpenting di antrean ini.
+     */
+    public function tandaiBelumDibaca($id): void
+    {
+        if (! $this->bolehUbah()) {
+            return;
+        }
+
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan || $pesan->belumDibaca()) {
+            return;
+        }
+
+        $pesan->update(['read_at' => null]);
+        $pesan->catat('belum-dibaca');
+
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Tiket '.$pesan->ticket.' ditandai belum dibaca lagi.');
+    }
+
+    /** Tunda tiket sekian hari — berhenti dihitung lewat batas sampai jatuh tempo. */
+    public function tunda($id, int $hari): void
+    {
+        if (! $this->bolehUbah() || ! in_array($hari, [1, 3, 7], true)) {
+            return;
+        }
+
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan) {
+            return;
+        }
+
+        $sampai = now()->addDays($hari)->setTime(\App\Support\JamKerja::mulai(), 0);
+        $pesan->update(['tunda_sampai' => $sampai]);
+        $pesan->catat('tunda', 'Ditunda sampai '.$sampai->locale('id')->translatedFormat('d F Y, H:i'));
+
+        $this->dispatch('swal-success', message: 'Tiket ditunda sampai '.$sampai->locale('id')->translatedFormat('d M, H:i').'.');
+    }
+
+    public function lanjutkanTunda($id): void
+    {
+        if (! $this->bolehUbah()) {
+            return;
+        }
+
+        $pesan = CustomerMessage::find($id);
+
+        if (! $pesan?->tunda_sampai) {
+            return;
+        }
+
+        $pesan->update(['tunda_sampai' => null]);
+        $pesan->catat('tunda', 'Penundaan dibatalkan');
+
+        $this->dispatch('swal-success', message: 'Tiket kembali masuk hitungan batas waktu.');
     }
 
     /** Pegang tiket ini sendiri — jalan pintas penugasan yang paling sering dipakai. */
@@ -479,6 +557,40 @@ class CustomerMessageList extends Component
         $this->pilih = [];
     }
 
+    /**
+     * Centang SEMUA hasil saringan, bukan cuma halaman ini.
+     *
+     * Dibatasi 500 supaya satu klik tidak pernah memuat puluhan ribu id ke
+     * dalam keadaan komponen.
+     */
+    public function pilihSemuaHasil(): void
+    {
+        $this->pilih = $this->kueri()->limit(500)->pluck('id')->map(fn ($i) => (string) $i)->all();
+
+        $this->dispatch('swal-success', message: count($this->pilih).' tiket dicentang.');
+    }
+
+    /** Kembalikan yang baru saja diarsipkan/dispam massal. */
+    public function urungkan(): void
+    {
+        if (! $this->bolehHapus() || $this->urungkanId === []) {
+            return;
+        }
+
+        $jumlah = 0;
+
+        foreach (CustomerMessage::onlyTrashed()->whereKey($this->urungkanId)->get() as $pesan) {
+            $pesan->restore();
+            $pesan->update(['is_spam' => false]);
+            $pesan->catat('pulih', 'Diurungkan dari aksi massal');
+            $jumlah++;
+        }
+
+        $this->reset(['urungkanId', 'urungkanLabel']);
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' tiket dikembalikan.');
+    }
+
     /** Model terpilih; di tab arsip yang diambil justru yang sudah diarsipkan. */
     protected function terpilih()
     {
@@ -600,13 +712,18 @@ class CustomerMessageList extends Component
 
         $jumlah = 0;
 
+        $jejak = [];
+
         foreach ($this->terpilih() as $pesan) {
             $pesan->catat('spam');
             $pesan->update(['is_spam' => true, 'status' => 'closed']);
             $pesan->delete();
+            $jejak[] = (string) $pesan->getKey();
             $jumlah++;
         }
 
+        $this->urungkanId = $jejak;
+        $this->urungkanLabel = $jumlah.' tiket ditandai spam';
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: $jumlah.' pesan ditandai spam dan masuk arsip.');
@@ -620,6 +737,7 @@ class CustomerMessageList extends Component
 
         // Pesan yang belum dibaca tetap dilindungi, sama seperti arsip satuan.
         $jumlah = 0;
+        $jejak = [];
 
         foreach ($this->terpilih() as $pesan) {
             if ($pesan->belumDibaca()) {
@@ -628,11 +746,14 @@ class CustomerMessageList extends Component
 
             $pesan->catat('arsip');
             $pesan->delete();
+            $jejak[] = (string) $pesan->getKey();
             $jumlah++;
         }
 
         $lewat = count($this->pilih) - $jumlah;
 
+        $this->urungkanId = $jejak;
+        $this->urungkanLabel = $jumlah.' tiket diarsipkan';
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: $jumlah.' pesan dipindahkan ke arsip.'
@@ -725,9 +846,12 @@ class CustomerMessageList extends Component
             ->when($this->fPrioritas !== '', fn ($q) => $q->where('priority', $this->fPrioritas))
             ->when($this->fKategori !== '', fn ($q) => $q->where('kategori', $this->fKategori))
             ->when($this->fPetugas === 'saya', fn ($q) => $q->milik(auth()->id()))
-            ->when($this->fPetugas !== '' && $this->fPetugas !== 'saya', fn ($q) => $q->milik((int) $this->fPetugas))
+            ->when($this->fPetugas === 'kosong', fn ($q) => $q->whereNull('assigned_to'))
+            ->when($this->fPetugas !== '' && ! in_array($this->fPetugas, ['saya', 'kosong'], true),
+                fn ($q) => $q->milik((int) $this->fPetugas))
             ->when($this->fBatas === 'lewat', fn ($q) => $q->lewatBatas())
             ->when($this->fBatas === 'belum', fn ($q) => $q->belumDibalas())
+            ->when($this->fBatas === 'tunda', fn ($q) => $q->ditunda())
             ->when($this->fSpam === 'spam', fn ($q) => $q->where('is_spam', true))
             ->when($this->fSpam === 'biasa', fn ($q) => $q->where('is_spam', false))
             ->when($this->fCuriga !== '', function ($q) {
@@ -762,6 +886,11 @@ class CustomerMessageList extends Component
                     if ($inti !== '') {
                         $sub->orWhere('no_telp', 'like', '%'.$inti.'%');
                     }
+
+                    // Balasan & catatan internal ikut dicari: sejak linimasa
+                    // jadi tempat bukti tindak lanjut, isinya juga yang dicari
+                    // orang ("tiket yang balasannya menyebut refund").
+                    $sub->orWhereHas('logs', fn ($l) => $l->where('isi', 'like', $term));
                 });
             })
             // Mendesak lebih dulu, lalu yang paling lama menunggu.
@@ -824,6 +953,34 @@ class CustomerMessageList extends Component
     }
 
     /**
+     * Rekap per petugas 30 hari terakhir: berapa tiket dipegang, berapa yang
+     * sudah dibalas, dan rata-rata waktu tanggapnya (JAM KERJA).
+     */
+    protected function rekapPetugas(): array
+    {
+        $tiket = CustomerMessage::query()->bukanSpam()
+            ->whereNotNull('assigned_to')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->with('petugas:id,name')
+            ->get(['id', 'assigned_to', 'created_at', 'replied_at']);
+
+        $rekap = $tiket->groupBy('assigned_to')->map(function ($baris) {
+            $dibalas = $baris->whereNotNull('replied_at');
+
+            return [
+                'nama' => $baris->first()->petugas?->name ?? 'Tidak dikenal',
+                'jumlah' => $baris->count(),
+                'dibalas' => $dibalas->count(),
+                'rata' => $dibalas->isEmpty() ? null : round($dibalas->avg(
+                    fn ($p) => \App\Support\JamKerja::selisihMenit($p->created_at, $p->replied_at)
+                ) / 60, 1),
+            ];
+        })->sortByDesc('jumlah')->values()->all();
+
+        return ['rekapPetugas' => $rekap];
+    }
+
+    /**
      * Ringkasan periode: berapa yang masuk sepekan, rata-rata waktu tanggap,
      * dan berapa yang sudah lewat batas.
      */
@@ -838,12 +995,15 @@ class CustomerMessageList extends Component
         // dan SQLite, dan barisnya sedikit (hanya 30 hari terakhir).
         $rata = $dibalas->isEmpty()
             ? null
-            : round($dibalas->avg(fn ($p) => abs($p->created_at->diffInMinutes($p->replied_at))) / 60, 1);
+            : round($dibalas->avg(
+                fn ($p) => \App\Support\JamKerja::selisihMenit($p->created_at, $p->replied_at)
+            ) / 60, 1);
 
         return [
             'masukPekanIni' => CustomerMessage::query()->bukanSpam()->where('created_at', '>=', now()->subDays(7))->count(),
             'rataResponJam' => $rata,
             'lewatBatas' => CustomerMessage::query()->bukanSpam()->lewatBatas()->count(),
+            'ditunda' => CustomerMessage::query()->bukanSpam()->berjalan()->ditunda()->count(),
         ];
     }
 
@@ -876,7 +1036,7 @@ class CustomerMessageList extends Component
             // Dihitung SEKALI di sini, bukan lewat pernahSpam() per kartu:
             // satu halaman berisi 12-48 tiket dan itu jadi 48 kueri.
             'kontakSpam' => $this->kontakSpam(),
-        ], $this->ringkasan()))
+        ], $this->ringkasan(), $this->rekapPetugas()))
             ->layout('livewire.layout.templateindex');
     }
 }

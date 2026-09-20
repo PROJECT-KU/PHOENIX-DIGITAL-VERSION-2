@@ -347,18 +347,19 @@
                             @error('message') <span class="kn-err">{{ $message }}</span> @enderror
                         </div>
 
-                        <div class="kn-grup" x-data="{ berkas: '' }"
-                            x-on:contact-success.window="berkas = ''; $refs.lampiran.value = '';">
+                        <div class="kn-grup" x-data="{ berkas: [] }"
+                            x-on:contact-success.window="berkas = []; $refs.lampiran.value = '';">
                             <label class="kn-label" for="kn-lampiran">Lampiran <span class="kn-opsional">(opsional)</span></label>
                             <label class="kn-berkas" for="kn-lampiran">
                                 <i class="bi bi-paperclip"></i>
-                                <span x-text="berkas || 'Pilih gambar atau PDF — maksimal 8 MB'"></span>
-                                <input type="file" id="kn-lampiran" x-ref="lampiran" wire:model="lampiran"
+                                <span x-text="berkas.length ? berkas.join(', ') : 'Pilih gambar atau PDF — maksimal 3 berkas, 8 MB per berkas'"></span>
+                                <input type="file" id="kn-lampiran" x-ref="lampiran" wire:model="lampiran" multiple
                                     accept=".jpg,.jpeg,.png,.webp,.pdf"
-                                    x-on:change="berkas = $event.target.files[0] ? $event.target.files[0].name : ''">
+                                    x-on:change="berkas = Array.from($event.target.files).map(f => f.name)">
                             </label>
                             <span class="kn-hint" wire:loading wire:target="lampiran">Mengunggah lampiran…</span>
                             @error('lampiran') <span class="kn-err">{{ $message }}</span> @enderror
+                            @error('lampiran.*') <span class="kn-err">{{ $message }}</span> @enderror
                             <small class="kn-hint">Kalau ada tangkapan layar atau bukti transfer, lampirkan di sini supaya lebih cepat kami cek.</small>
                         </div>
 
@@ -367,6 +368,12 @@
                             <span wire:loading wire:target="save"><span class="spinner-border spinner-border-sm"></span> Mengirim...</span>
                         </button>
                     </form>
+
+                    <p class="kn-catatan" style="--c: #7c3aed">
+                        <span class="kn-ubin"><i class="bi bi-ticket-perforated"></i></span>
+                        Sudah pernah mengirim pesan? <a href="{{ route('tiket.lacak') }}" wire:navigate>Cek status pesan Anda</a>
+                        dengan nomor tiket dari surel tanda terima.
+                    </p>
 
                     <p class="kn-catatan" style="--c: #16a34a">
                         <span class="kn-ubin"><i class="bi bi-shield-check"></i></span>
