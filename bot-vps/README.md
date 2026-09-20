@@ -37,6 +37,25 @@ Ubuntu 24.04, 1 vCPU / 2 GB). Akses: `ssh vpsbot` dari laptop admin.
 
 Mengembalikan ke aman: ubah `MODE=aman`, lalu restart.
 
+## Berkas kebesaran
+
+Submitin menolak berkas **di atas 50 MB**. Bot mengecilkan PDF yang melewati
+`BATAS_MB` (bawaan 48) memakai Ghostscript — bertahap dari `/printer` ke
+`/ebook` lalu `/screen`, berhenti begitu muat.
+
+**Yang dikecilkan hanya gambarnya.** Sesudah dikecilkan, jumlah kata pada
+lapisan teks dibandingkan dengan berkas asli; kalau berkurang, hasilnya dibuang
+dan bot memilih gagal terang-terangan daripada mengirim naskah yang isinya
+sudah berkurang. Nama berkas dipertahankan karena memuat penanda `PD-…`.
+
+Terbukti 20 Sep 2026: 92,80 MB → 15,18 MB dalam 18,8 detik, teks 7.560 kata
+**identik kata per kata**.
+
+Berkas non-PDF (DOCX/DOC/TXT) yang kebesaran tidak dikecilkan — bot melapor
+gagal dengan pesan jelas supaya dikerjakan manual.
+
+Butuh `ghostscript` + `poppler-utils` di server (sudah terpasang).
+
 ## Pengaman yang TIDAK boleh dilepas
 
 - Bot hanya membayar dengan **paket Standard**. QRIS dan Saldo tidak pernah

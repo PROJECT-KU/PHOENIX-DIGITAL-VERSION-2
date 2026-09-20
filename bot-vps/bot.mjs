@@ -25,6 +25,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 
 const AKAR = path.dirname(new URL(import.meta.url).pathname);
 
@@ -58,6 +59,8 @@ const CFG = {
     // tangkapan layar. Dipakai untuk uji pertama supaya kuota tidak terpakai.
     mode: (env.MODE || 'aman').toLowerCase(),
     jeda: Math.max(15, parseInt(env.JEDA_DETIK || '60', 10)) * 1000,
+    // Batas submitin 50 MB per berkas; diberi jarak aman sedikit.
+    batasMb: Math.max(1, parseInt(env.BATAS_MB || '48', 10)),
     profil: path.join(AKAR, 'profil'),
     potret: path.join(AKAR, 'potret'),
     sekali: process.argv.includes('--sekali'),
@@ -134,6 +137,96 @@ async function laporGagal(tugasId, pesan, kuotaHabis = false) {
     } catch (e) {
         catat('Laporan gagal tidak terkirim:', e.message);
     }
+}
+
+/* ================================================================
+ | Mengecilkan berkas kebesaran
+ * ================================================================ */
+
+const megabyte = (byte) => (byte / 1048576).toFixed(2) + ' MB';
+
+/** Banyaknya kata pada lapisan teks PDF — dipakai membuktikan isi tidak hilang. */
+function kataPdf(berkas) {
+    try {
+        const teks = execFileSync('pdftotext', ['-q', berkas, '-'], { maxBuffer: 64 * 1024 * 1024 }).toString();
+
+        return (teks.match(/\S+/g) || []).length;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Kecilkan PDF yang melebihi batas submitin.
+ *
+ * Yang dikecilkan HANYA gambar di dalamnya (diturunkan resolusinya oleh
+ * Ghostscript); lapisan teks — satu-satunya yang dibaca Turnitin — disalin apa
+ * adanya. Sesudah dikecilkan, jumlah katanya dibandingkan dengan aslinya:
+ * kalau berkurang, hasilnya DIBUANG dan berkas asli yang dipakai. Lebih baik
+ * gagal terang-terangan daripada mengirim naskah yang isinya sudah berkurang.
+ */
+function kecilkanBerkas(berkas, namaBerkas) {
+    const batas = CFG.batasMb * 1048576;
+    const awal = fs.statSync(berkas).size;
+
+    if (awal <= batas) return { berkas, diubah: false };
+
+    if (!/\.pdf$/i.test(namaBerkas)) {
+        throw new Error(`Berkas ${megabyte(awal)} melewati batas ${CFG.batasMb} MB submitin dan bukan PDF, `
+            + 'jadi tidak bisa dikecilkan otomatis. Kerjakan manual atau minta customer mengirim PDF.');
+    }
+
+    const kataAsli = kataPdf(berkas);
+    catat(`Berkas ${megabyte(awal)} melebihi batas ${CFG.batasMb} MB — dikecilkan dulu`
+        + (kataAsli === null ? '' : ` (teks asli ${kataAsli} kata)`));
+
+    // Dari yang paling menjaga mutu ke yang paling agresif; berhenti begitu muat.
+    for (const mutu of ['/printer', '/ebook', '/screen']) {
+        const wadah = fs.mkdtempSync(path.join(os.tmpdir(), 'kecil-'));
+        const keluar = path.join(wadah, namaBerkas);
+
+        try {
+            execFileSync('gs', [
+                '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4', `-dPDFSETTINGS=${mutu}`,
+                '-dNOPAUSE', '-dQUIET', '-dBATCH', '-dSAFER',
+                // Teks TIDAK diubah jadi gambar: tanpa ini Turnitin bisa kehilangan
+                // lapisan teksnya sama sekali.
+                '-dNoOutputFonts=false', '-dSubsetFonts=true', '-dEmbedAllFonts=true',
+                `-sOutputFile=${keluar}`, berkas,
+            ], { timeout: 10 * 60 * 1000, stdio: 'pipe' });
+        } catch (e) {
+            fs.rmSync(wadah, { recursive: true, force: true });
+            catat(`Ghostscript ${mutu} gagal: ${String(e.message).split('\n')[0].slice(0, 80)}`);
+            continue;
+        }
+
+        const ukuran = fs.statSync(keluar).size;
+        const kataBaru = kataPdf(keluar);
+
+        // Isi wajib utuh. Selisih 0,5% ditoleransi untuk beda pemenggalan kata.
+        const isiUtuh = kataAsli === null || kataBaru === null
+            ? kataBaru !== null && kataBaru > 0
+            : kataBaru >= Math.floor(kataAsli * 0.995);
+
+        catat(`  ${mutu}: ${megabyte(ukuran)}${kataBaru === null ? '' : `, teks ${kataBaru} kata`}`
+            + (isiUtuh ? '' : ' — ISI BERKURANG, dibuang'));
+
+        if (!isiUtuh) {
+            fs.rmSync(wadah, { recursive: true, force: true });
+            continue;
+        }
+
+        if (ukuran <= batas) {
+            catat(`Berhasil dikecilkan: ${megabyte(awal)} → ${megabyte(ukuran)} (mutu ${mutu}), isi utuh.`);
+
+            return { berkas: keluar, diubah: true };
+        }
+
+        fs.rmSync(wadah, { recursive: true, force: true });
+    }
+
+    throw new Error(`Berkas ${megabyte(awal)} tetap di atas batas ${CFG.batasMb} MB sesudah dikecilkan `
+        + 'tanpa mengurangi isinya. Kerjakan manual.');
 }
 
 /* ================================================================
@@ -548,13 +641,28 @@ async function kerjakan(ctx, hal, tugas) {
     const berkasPath = path.join(os.tmpdir(), tugas.nama_berkas);
     fs.writeFileSync(berkasPath, isi);
 
+    let dipakai = berkasPath;
+    let berkasKecil = null;
+
+    try {
+        // Batas submitin 50 MB. Berkas yang lebih besar dikecilkan dulu —
+        // gambarnya saja, teksnya dijaga utuh (lihat kecilkanBerkas).
+        const hasil = kecilkanBerkas(berkasPath, tugas.nama_berkas);
+        dipakai = hasil.berkas;
+        if (hasil.diubah) berkasKecil = hasil.berkas;
+    } catch (e) {
+        fs.rmSync(berkasPath, { force: true });
+
+        return laporGagal(tugas.id, e.message);
+    }
+
     try {
         // 2. Isi form.
         await keForm(hal);
         const siap = await periksaSiap(hal);
         if (!siap.siap) throw Object.assign(new Error(siap.masalah), { kuotaHabis: !!siap.kuotaHabis });
 
-        await isiForm(hal, tugas, berkasPath, tugas.nama_berkas);
+        await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
         await tidur(900);
 
         const tombol = await periksaSebelumKirim(hal, tugas.nama_berkas);
@@ -629,6 +737,7 @@ async function kerjakan(ctx, hal, tugas) {
         return laporGagal(tugas.id, e.message || String(e), !!e.kuotaHabis);
     } finally {
         fs.rmSync(berkasPath, { force: true });
+        if (berkasKecil) fs.rmSync(path.dirname(berkasKecil), { recursive: true, force: true });
     }
 }
 
