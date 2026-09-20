@@ -1,0 +1,15 @@
+{
+  "name": "phoenix-bot-turnitin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bot cek plagiasi Phoenix untuk submitin.id — versi VPS (Playwright, tanpa browser admin).",
+  "main": "bot.mjs",
+  "scripts": {
+    "mulai": "node bot.mjs",
+    "sekali": "node bot.mjs --sekali"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

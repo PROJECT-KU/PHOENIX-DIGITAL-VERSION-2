@@ -37,3 +37,9 @@ yarn-error.log
 * [0-9][0-9].php
 * [0-9].blade.php
 * [0-9][0-9].blade.php
+
+# Bot VPS: kredensial & berkas kerja tidak pernah ikut repo
+/bot-vps/.env
+/bot-vps/profil/
+/bot-vps/potret/
+/bot-vps/node_modules/

@@ -1,0 +1,30 @@
+[Unit]
+Description=Bot Turnitin Phoenix (submitin.id)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+WorkingDirectory=/opt/botturnitin
+ExecStart=/usr/bin/node /opt/botturnitin/bot.mjs
+Restart=always
+RestartSec=20
+# Satu proses saja: kuota paket submitin terpakai sungguhan, jadi dua proses
+# yang berjalan bersamaan bisa mengirim dokumen yang sama dua kali.
+KillMode=mixed
+TimeoutStopSec=30
+StandardOutput=append:/var/log/botturnitin/bot.log
+StandardError=append:/var/log/botturnitin/bot.log
+Environment=NODE_ENV=production
+
+# Pengaman: bot tidak butuh akses ke mana-mana selain direktorinya sendiri.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/botturnitin /var/log/botturnitin /home/bot/.cache
+
+[Install]
+WantedBy=multi-user.target
