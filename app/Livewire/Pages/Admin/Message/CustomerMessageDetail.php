@@ -47,11 +47,18 @@ class CustomerMessageDetail extends Component
 
     public string $templateIsi = '';
 
+    public string $templateStatus = '';
+
+    public string $templateKategori = '';
+
     /** Id template yang sedang diedit ('' = sedang menambah yang baru). */
     public string $templateId = '';
 
     // ===== Lampiran =====
     public $berkasBaru;
+
+    /** Tanggal tunda pilihan sendiri (format Y-m-d). */
+    public string $tundaTanggal = '';
 
     public function mount(CustomerMessage $message)
     {
@@ -179,9 +186,47 @@ class CustomerMessageDetail extends Component
     {
         $template = CustomerMessageTemplate::find($id);
 
-        if ($template) {
-            $this->balasanIsi = $template->untuk($this->message);
+        if (! $template) {
+            return;
         }
+
+        $this->balasanIsi = $template->untuk($this->message);
+
+        // Template boleh sekalian memindahkan tiketnya: "Akun sedang disiapkan"
+        // hampir selalu berarti status Diproses.
+        if ($template->status_baru && array_key_exists($template->status_baru, CustomerMessageList::STATUS)) {
+            $this->status = $template->status_baru;
+            $this->updatedStatus($template->status_baru);
+        }
+
+        if ($template->kategori_baru && array_key_exists($template->kategori_baru, config('helpdesk.kategori'))) {
+            $this->kategori = $template->kategori_baru;
+            $this->updatedKategori($template->kategori_baru);
+        }
+    }
+
+    /**
+     * "Sudah saya balas di WhatsApp" — satu klik.
+     *
+     * WhatsApp tidak punya API resmi di sini, jadi balasannya memang dikirim
+     * dari aplikasi WA sendiri. Yang bisa dijaga adalah jejaknya: tanpa tombol
+     * ini, tiket yang sudah dijawab tetap terlihat menggantung.
+     */
+    public function tandaiDibalasWa(): void
+    {
+        if (! $this->bolehUbah()) {
+            return;
+        }
+
+        $this->message->catat('balasan', 'Dibalas lewat WhatsApp oleh '.auth()->user()?->name.'. Isi percakapan ada di aplikasi WhatsApp.', 'whatsapp');
+
+        if (! $this->message->sudahDibalas()) {
+            $this->message->update(['replied_at' => now(), 'replied_by' => auth()->id()]);
+        }
+
+        $this->kembalikanNilai();
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('toast-success', message: 'Tercatat: tiket ini sudah dibalas lewat WhatsApp.');
     }
 
     public function simpanBalasan(): void
@@ -284,12 +329,14 @@ class CustomerMessageDetail extends Component
         $this->templateId = (string) $template->id;
         $this->templateNama = $template->nama;
         $this->templateIsi = $template->isi;
+        $this->templateStatus = (string) ($template->status_baru ?? '');
+        $this->templateKategori = (string) ($template->kategori_baru ?? '');
         $this->kelolaTemplate = true;
     }
 
     public function batalEditTemplate(): void
     {
-        $this->reset(['templateId', 'templateNama', 'templateIsi']);
+        $this->reset(['templateId', 'templateNama', 'templateIsi', 'templateStatus', 'templateKategori']);
         $this->resetErrorBag(['templateNama', 'templateIsi']);
     }
 
@@ -306,17 +353,22 @@ class CustomerMessageDetail extends Component
 
         $lama = $this->templateId ? CustomerMessageTemplate::find($this->templateId) : null;
 
+        $aksi = [
+            'status_baru' => array_key_exists($this->templateStatus, CustomerMessageList::STATUS) ? $this->templateStatus : null,
+            'kategori_baru' => array_key_exists($this->templateKategori, config('helpdesk.kategori')) ? $this->templateKategori : null,
+        ];
+
         if ($lama) {
-            $lama->update(['nama' => $this->templateNama, 'isi' => $this->templateIsi]);
+            $lama->update(['nama' => $this->templateNama, 'isi' => $this->templateIsi] + $aksi);
         } else {
             CustomerMessageTemplate::create([
                 'nama' => $this->templateNama,
                 'isi' => $this->templateIsi,
                 'urutan' => (int) CustomerMessageTemplate::max('urutan') + 1,
-            ]);
+            ] + $aksi);
         }
 
-        $this->reset(['templateId', 'templateNama', 'templateIsi']);
+        $this->reset(['templateId', 'templateNama', 'templateIsi', 'templateStatus', 'templateKategori']);
         $this->dispatch('toast-success', message: $lama ? 'Template diperbarui.' : 'Template balasan ditambahkan.');
     }
 
@@ -448,6 +500,27 @@ class CustomerMessageDetail extends Component
         $this->dispatch('toast-success', message: 'Tiket ditunda sampai '.$sampai->locale('id')->translatedFormat('d M, H:i').'.');
     }
 
+    /** Tunda sampai tanggal pilihan sendiri. */
+    public function tundaSampai(string $tanggal): void
+    {
+        if (! $this->bolehUbah()) {
+            return;
+        }
+
+        $this->tundaTanggal = $tanggal;
+
+        $this->validate([
+            'tundaTanggal' => ['required', 'date', 'after:today'],
+        ], [], ['tundaTanggal' => 'tanggal']);
+
+        $sampai = \Illuminate\Support\Carbon::parse($tanggal)->setTime(\App\Support\JamKerja::mulai(), 0);
+        $this->message->update(['tunda_sampai' => $sampai]);
+        $this->message->catat('tunda', 'Ditunda sampai '.$sampai->locale('id')->translatedFormat('d F Y, H:i'));
+
+        $this->tundaTanggal = '';
+        $this->dispatch('toast-success', message: 'Tiket ditunda sampai '.$sampai->locale('id')->translatedFormat('d M Y').'.');
+    }
+
     public function lanjutkanTunda(): void
     {
         if (! $this->bolehUbah() || ! $this->message->tunda_sampai) {
@@ -551,6 +624,7 @@ class CustomerMessageDetail extends Component
             'pelanggan' => $pelanggan,
             'pesanan' => $pelanggan?->orders()->latest()->limit(3)->get() ?? collect(),
             'pesanLain' => $this->message->pesanLain(),
+            'gabungan' => $this->message->gabungan()->get(),
             'sebelum' => $sebelum,
             'berikut' => $berikut,
         ])

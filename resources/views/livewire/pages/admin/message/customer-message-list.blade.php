@@ -104,9 +104,12 @@ Pesan Pelanggan || lemon
                         <p><b>{{ $masukPekanIni }}</b> pesan masuk dalam 7 hari terakhir.</p>
                         <p class="pp-catatan-kecil">
                             @if ($rataResponJam !== null)
-                                Rata-rata dibalas {{ $rataResponJam }} jam (30 hari terakhir).
+                                Rata-rata dibalas {{ $rataResponJam }} jam kerja.
                             @else
                                 Belum ada balasan tercatat 30 hari terakhir.
+                            @endif
+                            @if ($kepuasan)
+                                {{ $kepuasan['persen'] }}% puas dari {{ $kepuasan['jumlah'] }} penilaian.
                             @endif
                         </p>
                     </div>
@@ -114,17 +117,27 @@ Pesan Pelanggan || lemon
             </div>
         </section>
 
-        {{-- ================== SEBARAN TOPIK ================== --}}
+        <div class="pp-lipat-baris">
+        {{-- ================== SEBARAN TOPIK ==================
+             Dilipat secara bawaan: tab + ringkasan + topik + rekap sempat
+             memakan ~800px sebelum tiket pertama terlihat. Pilihannya diingat
+             peramban masing-masing. --}}
         @if ($sebaranTopik)
-            <section class="dsb-kartu pp-topik">
+            <section class="dsb-kartu pp-topik" x-data="{
+                buka: false,
+                init() { try { this.buka = localStorage.getItem('pp-topik-buka') === '1'; } catch (e) {} },
+                ganti() { this.buka = !this.buka; try { localStorage.setItem('pp-topik-buka', this.buka ? '1' : '0'); } catch (e) {} },
+            }">
                 <div class="dsb-kartu-isi">
-                    <div class="pp-topik-kepala">
-                        <span class="pp-detail-label" style="margin: 0;">Topik 30 hari terakhir</span>
-                        @if ($tanpaTopik)
-                            <span class="pp-catatan-kecil" style="margin: 0 !important;">{{ $tanpaTopik }} tiket belum diberi topik</span>
-                        @endif
-                    </div>
-                    <div class="pp-topik-baris">
+                    <button type="button" class="pp-teknis-pemicu" x-on:click="ganti()" :aria-expanded="buka.toString()">
+                        <span class="pp-ringkas-ikon is-aman" style="background: #f5f3ff; color: #6d28d9;"><i class="bi bi-tags"></i></span>
+                        <span>
+                            <b>Topik 30 hari terakhir</b>
+                            <small>{{ collect($sebaranTopik)->pluck('label')->take(3)->implode(' · ') }}{{ count($sebaranTopik) > 3 ? ' · …' : '' }}{{ $tanpaTopik ? ' — '.$tanpaTopik.' belum diberi topik' : '' }}</small>
+                        </span>
+                        <i class="bi" :class="buka ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+                    <div class="pp-topik-baris" style="margin-top: 14px;" x-show="buka" x-collapse x-cloak>
                         @foreach ($sebaranTopik as $t)
                             <button type="button" class="pp-topik-item {{ $fKategori === $t['kunci'] ? 'is-aktif' : '' }}"
                                 wire:click="sorotTopik('{{ $t['kunci'] }}')" title="Saring tiket bertopik {{ $t['label'] }}">
@@ -163,6 +176,8 @@ Pesan Pelanggan || lemon
                 </div>
             </section>
         @endif
+
+        </div>
 
         {{-- ================== CARI & SARING ================== --}}
         <section class="dsb-kartu pp-saring" x-data="{ buka: @js($this->adaSaring) }">
@@ -511,6 +526,9 @@ Pesan Pelanggan || lemon
                                         @if ($item->lampiran_count)
                                             <span class="pp-tanda is-rendah"><i class="bi bi-paperclip"></i>{{ $item->lampiran_count }} lampiran</span>
                                         @endif
+                                        @if ($k = $item->tampilanKepuasan())
+                                            <span class="pp-tanda" style="background: {{ $k[2] }}1a; color: {{ $k[2] }};"><i class="bi {{ $k[1] }}"></i>{{ $k[0] }}</span>
+                                        @endif
                                         @if ($item->ditunda())
                                             <span class="pp-tanda is-tunda"><i class="bi bi-pause-circle"></i>Ditunda sampai {{ $item->tunda_sampai->locale('id')->translatedFormat('d M') }}</span>
                                         @endif
@@ -553,24 +571,6 @@ Pesan Pelanggan || lemon
                                             @endif
                                         </div>
                                         <div class="pp-aksi-lain">
-                                            @if ($bolehUbah && ! $item->belumDibaca())
-                                                <button type="button" class="pp-btn pp-btn-ikon" wire:click="tandaiBelumDibaca('{{ $item->id }}')"
-                                                    title="Kembalikan ke belum dibaca" aria-label="Kembalikan ke belum dibaca"><i class="bi bi-envelope"></i></button>
-                                            @endif
-                                            @if ($bolehUbah && ! $item->selesai())
-                                                <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
-                                                    <button type="button" class="pp-btn pp-btn-ikon" x-on:click="buka = !buka"
-                                                        title="{{ $item->ditunda() ? 'Sedang ditunda' : 'Tunda tiket' }}" aria-label="Tunda tiket"><i class="bi bi-pause-circle"></i></button>
-                                                    <div class="pp-tunda-menu" x-show="buka" x-cloak>
-                                                        @if ($item->ditunda())
-                                                            <button type="button" wire:click="lanjutkanTunda('{{ $item->id }}')" x-on:click="buka = false">Lanjutkan sekarang</button>
-                                                        @endif
-                                                        @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
-                                                            <button type="button" wire:click="tunda('{{ $item->id }}', {{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                            @endif
                                             @if ($wa = $item->tautanWa('Halo '.$item->name.', terima kasih sudah menghubungi Phoenix Digital (tiket '.$item->ticket.'). '))
                                                 <a href="{{ $wa }}" target="_blank" rel="noopener" class="pp-btn pp-btn-ikon is-wa" title="Balas lewat WhatsApp" aria-label="Balas lewat WhatsApp"><i class="bi bi-whatsapp"></i></a>
                                             @endif
@@ -578,11 +578,38 @@ Pesan Pelanggan || lemon
                                                 <a href="{{ $surel }}" class="pp-btn pp-btn-ikon" title="Balas lewat surel" aria-label="Balas lewat surel"><i class="bi bi-envelope"></i></a>
                                             @endif
                                             @if ($bolehHapus)
-                                                <button type="button" class="pp-btn pp-btn-ikon pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
-                                                    data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam"
-                                                    title="Tandai spam" aria-label="Tandai spam"><i class="bi bi-shield-exclamation"></i></button>
                                                 <button type="button" class="pp-btn pp-btn-ikon is-bahaya pp-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->name }}"
                                                     title="{{ $item->belumDibaca() ? 'Baca dulu sebelum bisa diarsipkan' : 'Arsipkan' }}" aria-label="Arsipkan pesan"><i class="bi bi-archive"></i></button>
+                                            @endif
+                                            @if ($bolehUbah || $bolehHapus)
+                                                {{-- Yang jarang dipakai dikumpulkan: enam ikon sebaris sudah
+                                                     terlalu padat dan artinya tidak jelas tanpa hover. --}}
+                                                <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
+                                                    <button type="button" class="pp-btn pp-btn-ikon" x-on:click="buka = !buka"
+                                                        title="Tindakan lain" aria-label="Tindakan lain"><i class="bi bi-three-dots"></i></button>
+                                                    <div class="pp-tunda-menu is-lebar" x-show="buka" x-cloak>
+                                                        @if ($bolehUbah && ! $item->belumDibaca())
+                                                            <button type="button" wire:click="tandaiBelumDibaca('{{ $item->id }}')" x-on:click="buka = false">Tandai belum dibaca</button>
+                                                        @endif
+                                                        @if ($bolehUbah && ! $item->selesai())
+                                                            <span class="pp-menu-judul">Tunda</span>
+                                                            @if ($k = $item->tampilanKepuasan())
+                                            <span class="pp-tanda" style="background: {{ $k[2] }}1a; color: {{ $k[2] }};"><i class="bi {{ $k[1] }}"></i>{{ $k[0] }}</span>
+                                        @endif
+                                        @if ($item->ditunda())
+                                                                <button type="button" wire:click="lanjutkanTunda('{{ $item->id }}')" x-on:click="buka = false">Lanjutkan sekarang</button>
+                                                            @endif
+                                                            @foreach ([1 => '1 hari', 3 => '3 hari', 7 => '7 hari'] as $hari => $label)
+                                                                <button type="button" wire:click="tunda('{{ $item->id }}', {{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                                                            @endforeach
+                                                        @endif
+                                                        @if ($bolehHapus)
+                                                            <span class="pp-menu-judul">Singkirkan</span>
+                                                            <button type="button" class="pp-konfirmasi" data-action="tandaiSpam" data-arg="{{ $item->id }}" data-icon="warning"
+                                                                data-title="Tandai spam?" data-text="{{ $item->ticket }} ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">Tandai spam</button>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             @endif
                                         </div>
                                     @endif

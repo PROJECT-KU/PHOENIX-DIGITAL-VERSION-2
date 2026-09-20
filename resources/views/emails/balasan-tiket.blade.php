@@ -38,8 +38,16 @@
 
                     <tr>
                         <td style="padding:0 26px 28px;">
+                            <p style="margin:0 0 14px; font-size:13px; line-height:1.6; color:#64748b;">
+                                Masih ada yang ingin ditanyakan? Tambahkan keterangan di halaman status tiket Anda —
+                                keterangannya langsung masuk ke tiket <b>{{ $pesan->ticket }}</b> dan kami baca di sana.
+                            </p>
+                            <p style="margin:0 0 14px;">
+                                <a href="{{ $tautan }}" style="display:inline-block; padding:11px 22px; border-radius:11px; background:#7c3aed; color:#ffffff; font-size:13.5px; font-weight:700; text-decoration:none;">
+                                    Buka halaman tiket saya
+                                </a>
+                            </p>
                             <p style="margin:0; font-size:13px; line-height:1.6; color:#64748b;">
-                                Balas surel ini kalau masih ada yang ingin ditanyakan — balasannya masuk ke tiket yang sama.
                                 Jam operasional kami setiap hari 08.00–21.00 WIB.
                             </p>
                         </td>

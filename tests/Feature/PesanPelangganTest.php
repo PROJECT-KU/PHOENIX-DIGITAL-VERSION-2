@@ -10,7 +10,7 @@ use Livewire\Livewire;
  * Layar Pesan Pelanggan (helpdesk): tab antrean, saringan, aksi massal,
  * halaman detail, dan unduhan.
  */
-function adminPesan(array $izin = ['view_customer_message', 'edit_customer_message', 'delete_customer_message']): \App\Models\User
+function adminPesan(array $izin = ['view_customer_message', 'edit_customer_message', 'delete_customer_message', 'view_all_customer_message']): \App\Models\User
 {
     $peran = \App\Models\Role::create(['name' => 'uji-pp-'.Str::random(5), 'description' => 'uji']);
     foreach ($izin as $nama) {
@@ -1457,4 +1457,238 @@ it('lacak tiket menolak percobaan beruntun', function () {
 
     $t->call('cari')->assertHasErrors('ticket');
     \Illuminate\Support\Facades\RateLimiter::clear('lacak-tiket:127.0.0.1');
+});
+
+// ===================== Pembatasan akses antar petugas =====================
+
+it('tanpa izin lihat semua, petugas hanya melihat tiketnya dan yang belum dipegang', function () {
+    $saya = adminPesan(['view_customer_message', 'edit_customer_message']);
+    $orangLain = adminPesan();
+    $this->actingAs($saya);
+
+    $milikSaya = pesan(['name' => 'Punya Saya', 'assigned_to' => $saya->id]);
+    $milikOrangLain = pesan(['name' => 'Punya Orang Lain', 'assigned_to' => $orangLain->id]);
+    $bebas = pesan(['name' => 'Belum Dipegang']);
+
+    $t = Livewire::test(CustomerMessageList::class)->call('setTab', 'semua');
+    $terlihat = $t->viewData('messages')->pluck('name')->all();
+
+    expect($terlihat)->toContain('Punya Saya')
+        ->and($terlihat)->toContain('Belum Dipegang')
+        ->and($terlihat)->not->toContain('Punya Orang Lain')
+        // Hitungan tabnya ikut dibatasi, bukan cuma daftarnya.
+        ->and($t->viewData('tabCounts')['semua'])->toBe(2);
+
+    // Dengan izin lihat semua, ketiganya terlihat.
+    $this->actingAs(adminPesan());
+    expect(Livewire::test(CustomerMessageList::class)->call('setTab', 'semua')->viewData('messages'))->toHaveCount(3);
+});
+
+// ===================== Nomor tiket =====================
+
+it('nomor tiket tidak pernah bentrok dengan yang sudah ada', function () {
+    $pertama = pesan();
+
+    // Paksa pembangkit acak mengembalikan nomor yang sudah dipakai lebih dulu.
+    $urutan = [substr($pertama->ticket, 4, 4), substr($pertama->ticket, 9, 4), 'ZZZZ', 'YYYY'];
+    $i = 0;
+    \Illuminate\Support\Str::createRandomStringsUsing(function () use (&$i, $urutan) {
+        return $urutan[$i++] ?? 'XXXX';
+    });
+
+    $kedua = pesan();
+    \Illuminate\Support\Str::createRandomStringsNormally();
+
+    expect($kedua->ticket)->not->toBe($pertama->ticket)
+        ->and($kedua->ticket)->toBe('TKT-ZZZZ-YYYY');
+});
+
+// ===================== Balas WA satu klik & template beraksi =====================
+
+it('tombol sudah dibalas di WA mencatat tanpa mengetik ulang', function () {
+    $petugas = adminPesan();
+    $this->actingAs($petugas);
+    $p = pesan();
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $p])->call('tandaiDibalasWa');
+
+    $p->refresh();
+    $log = $p->logs()->where('jenis', 'balasan')->first();
+
+    expect($p->sudahDibalas())->toBeTrue()
+        ->and($p->replied_by)->toBe($petugas->id)
+        ->and($log->kanal)->toBe('whatsapp')
+        ->and($log->isi)->toContain('WhatsApp');
+});
+
+it('template bisa sekalian mengubah status dan topik', function () {
+    $this->actingAs(adminPesan());
+    $p = pesan();
+
+    $template = \App\Models\CustomerMessageTemplate::create([
+        'nama' => 'Akun disiapkan',
+        'isi' => 'Halo {nama}, akunnya sedang kami siapkan.',
+        'status_baru' => 'in_progress',
+        'kategori_baru' => 'jasa',
+        'urutan' => 9,
+    ]);
+
+    Livewire::test(CustomerMessageDetail::class, ['message' => $p])
+        ->call('pakaiTemplate', $template->id)
+        ->assertSet('status', 'in_progress')
+        ->assertSet('kategori', 'jasa');
+
+    $p->refresh();
+    expect($p->status)->toBe('in_progress')
+        ->and($p->kategori)->toBe('jasa')
+        ->and($template->aksiTeks())->toBe('Diproses · Jasa cek plagiasi & AI');
+});
+
+it('tunda bisa memakai tanggal pilihan sendiri', function () {
+    \Illuminate\Support\Carbon::setTestNow('2026-09-21 10:00:00');
+    $this->actingAs(adminPesan());
+    $p = pesan();
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $p]);
+    $t->call('tundaSampai', '2026-10-02');
+
+    expect($p->fresh()->tunda_sampai->format('Y-m-d H:i'))->toBe('2026-10-02 08:00');
+
+    // Tanggal yang sudah lewat ditolak.
+    $t->call('tundaSampai', '2026-09-01')->assertHasErrors('tundaTanggal');
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+it('tiket induk menampilkan tiket yang digabungkan ke dalamnya', function () {
+    $this->actingAs(adminPesan());
+    $lama = pesan(['email' => 'sama@contoh.com']);
+    $induk = pesan(['email' => 'sama@contoh.com']);
+
+    $t = Livewire::test(CustomerMessageDetail::class, ['message' => $induk]);
+    $t->call('gabungkanTiket', $lama->id);
+
+    $segar = Livewire::test(CustomerMessageDetail::class, ['message' => $induk->fresh()]);
+    expect($segar->viewData('gabungan')->pluck('id')->all())->toBe([$lama->id]);
+});
+
+// ===================== Pengingat per topik =====================
+
+it('pengingat tiket tanpa petugas diarahkan menurut topiknya', function () {
+    \Illuminate\Support\Carbon::setTestNow('2026-09-21 14:00:00');
+    \Illuminate\Support\Facades\Notification::fake();
+
+    $keuangan = adminPesan(['view_customer_message', 'view_cashflow']);
+    $helpdesk = adminPesan(['view_customer_message', 'edit_customer_message']);
+
+    pesan(['priority' => 'urgent', 'kategori' => 'pembayaran', 'created_at' => now()->subHours(6)]);
+    pesan(['priority' => 'urgent', 'kategori' => 'komplain', 'created_at' => now()->subHours(6)]);
+
+    $this->artisan('helpdesk:ingatkan-lewat-batas')->assertSuccessful();
+
+    // Tiket pembayaran ke pemegang izin cashflow, sisanya ke penanggung helpdesk.
+    \Illuminate\Support\Facades\Notification::assertSentTo($keuangan, \App\Notifications\TiketLewatBatas::class,
+        fn ($notif) => $notif->tiket->count() === 1 && $notif->tiket->first()->kategori === 'pembayaran');
+    \Illuminate\Support\Facades\Notification::assertSentTo($helpdesk, \App\Notifications\TiketLewatBatas::class,
+        fn ($notif) => $notif->tiket->first()->kategori === 'komplain');
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+// ===================== Pelanggan: keterangan tambahan & penilaian =====================
+
+it('keterangan dari pelanggan masuk ke tiket dan mengembalikannya ke antrean', function () {
+    $p = pesan(['status' => 'resolved']);
+    $p->markAsRead();
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+
+    $t->set('tambahan', 'Ternyata masih belum bisa dipakai, Pak.')->call('tambahKeterangan')
+        ->assertSet('tambahan', '');
+
+    $p->refresh();
+    expect($p->logs()->where('jenis', 'pelanggan')->first()->isi)->toContain('masih belum bisa')
+        // Tiket yang sudah ditutup dibuka lagi supaya tidak terlewat.
+        ->and($p->status)->toBe('open')
+        ->and($p->belumDibaca())->toBeTrue();
+});
+
+it('keterangan kosong ditolak dan butuh tiket yang sudah ditemukan', function () {
+    $p = pesan();
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    // Belum mencari apa pun: tidak melakukan apa-apa, bukan galat.
+    $t->set('tambahan', 'Halo')->call('tambahKeterangan');
+    expect($p->fresh()->logs()->count())->toBe(0);
+
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+    $t->set('tambahan', ' ')->call('tambahKeterangan')->assertHasErrors('tambahan');
+});
+
+it('pelanggan bisa menilai tiket yang sudah selesai', function () {
+    $p = pesan(['status' => 'resolved']);
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+
+    $t->call('nilai', 3);
+    expect($p->fresh()->kepuasan)->toBe(3)
+        ->and($p->fresh()->tampilanKepuasan()[0])->toBe('Puas');
+
+    $t->set('nilaiKomentar', 'Cepat dan jelas, terima kasih.')->call('simpanKomentarNilai');
+    expect($p->fresh()->kepuasan_komentar)->toContain('Cepat dan jelas');
+
+    // Nilai di luar 1-3 diabaikan.
+    $t->call('nilai', 9);
+    expect($p->fresh()->kepuasan)->toBe(3);
+});
+
+it('tiket yang belum selesai tidak bisa dinilai', function () {
+    $p = pesan(['status' => 'in_progress']);
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Contact\LacakTiket::class);
+    $t->set('ticket', $p->ticket)->set('email', $p->email)->call('cari');
+    $t->call('nilai', 3);
+
+    expect($p->fresh()->kepuasan)->toBeNull();
+});
+
+it('ringkasan helpdesk memuat persentase kepuasan', function () {
+    $this->actingAs(adminPesan());
+    $puas = pesan(['status' => 'resolved']);
+    $puas->update(['kepuasan' => 3, 'kepuasan_at' => now()]);
+    $kecewa = pesan(['status' => 'resolved']);
+    $kecewa->update(['kepuasan' => 1, 'kepuasan_at' => now()]);
+
+    expect(Livewire::test(CustomerMessageList::class)->viewData('kepuasan'))
+        ->toMatchArray(['jumlah' => 2, 'puas' => 1, 'persen' => 50]);
+});
+
+// ===================== Tautan surel =====================
+
+it('tautan lacak di surel punya masa berlaku', function () {
+    \Illuminate\Support\Carbon::setTestNow('2026-09-21 10:00:00');
+    $p = pesan();
+
+    $tautan = (new \App\Mail\TiketDiterimaMail($p))->content()->with['tautan'];
+
+    // Masih berlaku hari ini…
+    $this->get($tautan)->assertOk()->assertSee($p->ticket);
+
+    // …tapi tidak selamanya.
+    \Illuminate\Support\Carbon::setTestNow('2027-01-21 10:00:00');
+    $this->get($tautan)->assertOk()->assertSee('sudah kedaluwarsa');
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+it('surel balasan tidak lagi menjanjikan balasan surel masuk ke tiket', function () {
+    $p = pesan();
+    $isi = (new \App\Mail\BalasanTiketMail($p, 'Sudah kami proses ya.'))->render();
+
+    // Kotak masuk surel tidak ada yang membaca otomatis; jangan pernah
+    // menjanjikan sebaliknya.
+    expect($isi)->not->toContain('balasannya masuk ke tiket yang sama')
+        ->and($isi)->toContain('halaman status tiket');
 });

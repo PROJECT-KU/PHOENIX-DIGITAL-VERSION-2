@@ -39,9 +39,15 @@ class TiketDiterimaMail extends Mailable
             view: 'emails.tiket-diterima',
             with: [
                 'pesan' => $this->pesan,
-                // Tautan bertanda tangan: pelanggan tidak perlu mengingat apa
-                // pun, dan tiket orang lain tidak bisa ditebak dari URL.
-                'tautan' => URL::signedRoute('tiket.lacak', ['ticket' => $this->pesan->ticket]),
+                // Tautan bertanda tangan & BERBATAS WAKTU: pelanggan tidak
+                // perlu mengingat apa pun, tiket orang lain tidak bisa ditebak
+                // dari URL, dan surel yang diteruskan tidak memberi akses
+                // selamanya.
+                'tautan' => URL::temporarySignedRoute(
+                    'tiket.lacak',
+                    now()->addDays((int) config('helpdesk.masa_tautan_hari', 90)),
+                    ['ticket' => $this->pesan->ticket],
+                ),
                 'batas' => $this->pesan->tenggat()?->locale('id')->translatedFormat('l, d F Y H:i'),
             ],
         );

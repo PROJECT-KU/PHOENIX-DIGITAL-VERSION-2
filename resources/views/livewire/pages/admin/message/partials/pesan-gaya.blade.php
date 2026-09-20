@@ -177,6 +177,12 @@
     .pp-tunda-menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 20; display: grid; min-width: 168px; padding: 5px; border-radius: 12px; background: #fff; border: 1px solid #e9edf3; box-shadow: 0 16px 34px -20px rgba(15, 23, 42, .5); }
     .pp-tunda-menu button { padding: 8px 11px; border: 0; border-radius: 9px; background: none; font-size: .82rem; font-weight: 600; color: #334155; text-align: left; cursor: pointer; }
     .pp-tunda-menu button:hover { background: #f5f3ff; color: #6d28d9; }
+    .pp-tunda-menu.is-lebar { min-width: 208px; }
+    .pp-menu-judul { padding: 7px 11px 3px; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+    .pp-menu-tanggal { display: block; padding: 6px 11px 9px; }
+    .pp-menu-tanggal > span { display: block; margin-bottom: 4px; font-size: .74rem; font-weight: 700; color: #64748b; }
+    .pp-menu-tanggal .dsb-isian { width: 100%; }
+    .pp-template-aksi-tanda { display: block; margin-top: 2px; font-size: .68rem; font-weight: 600; color: #94a3b8; }
     .pp-tanda.is-tunda { background: #eef2ff; color: #4338ca; }
 
     /* ===== Tautan kecil (pilih semua hasil) ===== */
@@ -188,6 +194,11 @@
     .pp-saring-judul:first-child { margin-top: 0; }
 
     /* ===== Sebaran topik ===== */
+    /* Dua kartu ringkasan yang bisa dilipat disandingkan: dua baris penuh di
+       atas daftar membuat tiket pertama baru terlihat sesudah menggulung. */
+    .pp-lipat-baris { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+    @media (min-width: 992px) { .pp-lipat-baris { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+    .pp-lipat-baris > .dsb-kartu { margin-bottom: 0; }
     .pp-topik { margin-bottom: 14px; }
     .pp-topik-kepala { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     .pp-topik-baris { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }

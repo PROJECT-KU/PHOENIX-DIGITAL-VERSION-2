@@ -55,6 +55,7 @@ class PermissionAccessSeeder extends Seeder
         'gajikaryawan',
         'loan',
         'dashboard',
+        'customer_message',
     ];
 
     /**
@@ -65,6 +66,7 @@ class PermissionAccessSeeder extends Seeder
         'gajikaryawan' => 'Centang HANYA untuk admin/finance agar bisa melihat gaji SEMUA karyawan. Untuk role karyawan jangan dicentang — cukup beri "Lihat" agar ia hanya melihat gajinya sendiri.',
         'loan' => 'Centang HANYA untuk admin/finance agar bisa melihat peminjaman SEMUA karyawan. Untuk role karyawan jangan dicentang — cukup beri "Lihat" agar ia hanya melihat pinjamannya sendiri.',
         'dashboard' => 'Centang HANYA untuk admin/finance agar dashboard menampilkan ringkasan PERUSAHAAN (omzet, pengeluaran, gaji semua). Untuk role karyawan jangan dicentang — dashboard akan menampilkan ringkasan PRIBADI miliknya (gaji & pinjaman sendiri).',
+        'customer_message' => 'Centang untuk admin/supervisor agar bisa melihat SEMUA tiket helpdesk. Tanpa ini, petugas hanya melihat tiket yang ditugaskan kepadanya plus tiket yang belum dipegang siapa pun.',
     ];
 
     public function run(): void

@@ -839,6 +839,9 @@ class CustomerMessageList extends Component
             : CustomerMessage::query()->bukanSpam();
 
         return $kueri
+            // Tanpa izin "lihat semua", petugas hanya melihat tiketnya sendiri
+            // plus yang belum dipegang siapa pun (agar triase tetap jalan).
+            ->terlihatOleh(auth()->user())
             ->when($this->tab === 'baru', fn ($q) => $q->unread())
             ->when($this->tab === 'berjalan', fn ($q) => $q->berjalan())
             ->when($this->tab === 'selesai', fn ($q) => $q->whereIn('status', ['resolved', 'closed']))
@@ -1002,8 +1005,21 @@ class CustomerMessageList extends Component
         return [
             'masukPekanIni' => CustomerMessage::query()->bukanSpam()->where('created_at', '>=', now()->subDays(7))->count(),
             'rataResponJam' => $rata,
-            'lewatBatas' => CustomerMessage::query()->bukanSpam()->lewatBatas()->count(),
+            'lewatBatas' => CustomerMessage::query()->bukanSpam()->terlihatOleh(auth()->user())->lewatBatas()->count(),
             'ditunda' => CustomerMessage::query()->bukanSpam()->berjalan()->ditunda()->count(),
+            // Kepuasan 30 hari terakhir: puas dibanding seluruh yang menilai.
+            'kepuasan' => (function () {
+                $nilai = CustomerMessage::query()->bukanSpam()
+                    ->whereNotNull('kepuasan')
+                    ->where('kepuasan_at', '>=', now()->subDays(30))
+                    ->pluck('kepuasan');
+
+                return $nilai->isEmpty() ? null : [
+                    'jumlah' => $nilai->count(),
+                    'puas' => $nilai->filter(fn ($n) => $n >= 3)->count(),
+                    'persen' => (int) round($nilai->filter(fn ($n) => $n >= 3)->count() * 100 / $nilai->count()),
+                ];
+            })(),
         ];
     }
 
@@ -1012,16 +1028,16 @@ class CustomerMessageList extends Component
         $messages = $this->kueri()->with('petugas')->withCount('lampiran')->paginate(max(6, min(48, $this->perPage)));
 
         // Satu kueri untuk hitungan status; sisanya dihitung dari situ.
-        $perStatus = CustomerMessage::query()->bukanSpam()
+        $perStatus = CustomerMessage::query()->bukanSpam()->terlihatOleh(auth()->user())
             ->selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
         $selesai = (int) ($perStatus['resolved'] ?? 0) + (int) ($perStatus['closed'] ?? 0);
 
         $tabCounts = [
-            'baru' => CustomerMessage::query()->bukanSpam()->unread()->count(),
+            'baru' => CustomerMessage::query()->bukanSpam()->terlihatOleh(auth()->user())->unread()->count(),
             'berjalan' => (int) $perStatus->sum() - $selesai,
             'selesai' => $selesai,
             'semua' => (int) $perStatus->sum(),
-            'arsip' => CustomerMessage::onlyTrashed()->count(),
+            'arsip' => CustomerMessage::onlyTrashed()->terlihatOleh(auth()->user())->count(),
         ];
 
         return view('livewire.pages.admin.message.customer-message-list', array_merge($this->sebaranTopik(), [
@@ -1029,9 +1045,9 @@ class CustomerMessageList extends Component
             'tabCounts' => $tabCounts,
             'unreadCount' => $tabCounts['baru'],
             // Tiket mendesak yang belum selesai — yang paling pantas dikerjakan dulu.
-            'mendesak' => CustomerMessage::query()->bukanSpam()->berjalan()->whereIn('priority', ['urgent', 'high'])->count(),
+            'mendesak' => CustomerMessage::query()->bukanSpam()->terlihatOleh(auth()->user())->berjalan()->whereIn('priority', ['urgent', 'high'])->count(),
             // Tiket terlama yang masih menunggu dibaca, untuk kartu ringkasan.
-            'tertua' => CustomerMessage::query()->bukanSpam()->unread()->oldest()->first(),
+            'tertua' => CustomerMessage::query()->bukanSpam()->terlihatOleh(auth()->user())->unread()->oldest()->first(),
             'daftarPetugas' => CustomerMessage::petugasTersedia(),
             // Dihitung SEKALI di sini, bukan lewat pernahSpam() per kartu:
             // satu halaman berisi 12-48 tiket dan itu jadi 48 kueri.

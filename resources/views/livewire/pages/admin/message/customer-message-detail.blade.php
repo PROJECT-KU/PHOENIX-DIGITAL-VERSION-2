@@ -39,37 +39,49 @@ Detail Pesan Pelanggan || lemon
                     <span wire:loading.remove wire:target="unduhPdf" class="pp-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>Cetak tiket</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="pp-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
-                @if ($bolehUbah)
+                @if ($bolehUbah || $bolehHapus)
+                    {{-- Tindakan sekunder dikumpulkan: enam tombol sejajar
+                         membungkus jadi dua baris di tablet. --}}
                     <div class="pp-tunda" x-data="{ buka: false }" x-on:click.outside="buka = false">
-                        <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka">
+                        <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka" :aria-expanded="buka.toString()">
                             <span class="pp-isi-tombol">
-                                <i class="bi bi-pause-circle"></i>
-                                <span>{{ $message->ditunda() ? 'Ditunda sampai '.$message->tunda_sampai->locale('id')->translatedFormat('d M') : 'Tunda' }}</span>
+                                <i class="bi bi-three-dots"></i><span>Tindakan lain</span>
                             </span>
                         </button>
-                        <div class="pp-tunda-menu is-bawah" x-show="buka" x-cloak>
-                            @if ($message->ditunda())
-                                <button type="button" wire:click="lanjutkanTunda" x-on:click="buka = false">Lanjutkan sekarang</button>
+                        <div class="pp-tunda-menu is-bawah is-lebar" x-show="buka" x-cloak>
+                            @if ($bolehUbah)
+                                <span class="pp-menu-judul">Tunda</span>
+                                @if ($message->ditunda())
+                                    <button type="button" wire:click="lanjutkanTunda" x-on:click="buka = false">Lanjutkan sekarang</button>
+                                @endif
+                                @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
+                                    <button type="button" wire:click="tunda({{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
+                                @endforeach
+                                <label class="pp-menu-tanggal">
+                                    <span>Sampai tanggal</span>
+                                    <input type="date" class="dsb-isian" min="{{ now()->addDay()->toDateString() }}"
+                                        x-on:change="$wire.tundaSampai($event.target.value); buka = false">
+                                </label>
+
+                                <span class="pp-menu-judul">Tanda baca</span>
+                                <button type="button" class="pp-konfirmasi" data-action="tandaiBelumDibaca" data-icon="question"
+                                    data-title="Tandai belum dibaca?" data-text="Tiket kembali muncul di tab Belum dibaca dan Anda dikembalikan ke daftar." data-confirm="Ya, tandai">
+                                    Tandai belum dibaca
+                                </button>
                             @endif
-                            @foreach ([1 => 'Tunda 1 hari', 3 => 'Tunda 3 hari', 7 => 'Tunda 7 hari'] as $hari => $label)
-                                <button type="button" wire:click="tunda({{ $hari }})" x-on:click="buka = false">{{ $label }}</button>
-                            @endforeach
+                            @if ($bolehHapus)
+                                <span class="pp-menu-judul">Singkirkan</span>
+                                <button type="button" class="pp-konfirmasi" data-action="tandaiSpam" data-icon="warning"
+                                    data-title="Tandai tiket ini spam?" data-text="Tiket ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">
+                                    Tandai spam
+                                </button>
+                                <button type="button" class="pp-konfirmasi" data-action="arsipkan" data-icon="question"
+                                    data-title="Arsipkan tiket ini?" data-text="Tiket disimpan di arsip dan masih bisa dikembalikan." data-confirm="Ya, arsipkan">
+                                    Arsipkan
+                                </button>
+                            @endif
                         </div>
                     </div>
-                    <button type="button" class="dsb-tombol is-lembut pp-konfirmasi" data-action="tandaiBelumDibaca" data-icon="question"
-                        data-title="Tandai belum dibaca?" data-text="Tiket kembali muncul di tab Belum dibaca dan Anda dikembalikan ke daftar." data-confirm="Ya, tandai">
-                        <span class="pp-isi-tombol"><i class="bi bi-envelope"></i><span>Belum dibaca</span></span>
-                    </button>
-                @endif
-                @if ($bolehHapus)
-                    <button type="button" class="dsb-tombol is-lembut pp-konfirmasi" data-action="tandaiSpam" data-icon="warning"
-                        data-title="Tandai tiket ini spam?" data-text="Tiket ditutup dan dipindahkan ke arsip." data-confirm="Ya, spam">
-                        <span class="pp-isi-tombol"><i class="bi bi-shield-exclamation"></i><span>Spam</span></span>
-                    </button>
-                    <button type="button" class="dsb-tombol is-lembut pp-konfirmasi" data-action="arsipkan" data-icon="question"
-                        data-title="Arsipkan tiket ini?" data-text="Tiket disimpan di arsip dan masih bisa dikembalikan." data-confirm="Ya, arsipkan">
-                        <span class="pp-isi-tombol"><i class="bi bi-archive"></i><span>Arsipkan</span></span>
-                    </button>
                 @endif
             </div>
         </header>
@@ -203,6 +215,12 @@ Detail Pesan Pelanggan || lemon
                                 <button type="button" class="pp-btn pp-salin" data-teks="{{ $message->message }}">
                                     <i class="bi bi-clipboard"></i><span>Salin pesan</span>
                                 </button>
+                                @if ($bolehUbah && $message->tautanWa())
+                                    <button type="button" class="pp-btn pp-konfirmasi" data-action="tandaiDibalasWa" data-icon="question"
+                                        data-title="Catat sebagai sudah dibalas?" data-text="Tiket ini ditandai sudah dijawab lewat WhatsApp." data-confirm="Ya, catat">
+                                        <i class="bi bi-check2-all"></i><span>Sudah saya balas di WA</span>
+                                    </button>
+                                @endif
                             </div>
                             <p class="pp-catatan-kecil">Balasannya dikirim dari aplikasi WhatsApp atau surel Anda sendiri. Tempelkan isinya di kotak bawah supaya tiket ini punya bukti sudah dijawab.</p>
                         </div>
@@ -218,8 +236,10 @@ Detail Pesan Pelanggan || lemon
                             @if ($templates->isNotEmpty())
                                 <div class="pp-template">
                                     @foreach ($templates as $t)
-                                        <button type="button" class="pp-template-btn" wire:click="pakaiTemplate('{{ $t->id }}')" title="Isikan template ini ke kotak balasan">
+                                        <button type="button" class="pp-template-btn" wire:click="pakaiTemplate('{{ $t->id }}')"
+                                            title="{{ $t->aksiTeks() ? 'Isikan template + set '.$t->aksiTeks() : 'Isikan template ini ke kotak balasan' }}">
                                             <i class="bi bi-lightning-charge-fill"></i>{{ $t->nama }}
+                                            @if ($t->aksiTeks())<small class="pp-template-aksi-tanda">{{ $t->aksiTeks() }}</small>@endif
                                         </button>
                                     @endforeach
                                 </div>
@@ -305,6 +325,27 @@ Detail Pesan Pelanggan || lemon
                                     </label>
                                     @error('templateIsi')<span class="pp-galat">{{ $message }}</span>@enderror
 
+                                    <div class="pp-saring-baris">
+                                        <label class="pp-saring-medan">
+                                            <span>Sekalian ubah status</span>
+                                            <select class="dsb-isian" wire:model="templateStatus">
+                                                <option value="">Tidak diubah</option>
+                                                @foreach (\App\Livewire\Pages\Admin\Message\CustomerMessageList::STATUS as $nilai => $label)
+                                                    <option value="{{ $nilai }}">{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                        <label class="pp-saring-medan">
+                                            <span>Sekalian beri topik</span>
+                                            <select class="dsb-isian" wire:model="templateKategori">
+                                                <option value="">Tidak diubah</option>
+                                                @foreach ($kategoriDaftar as $nilai => $label)
+                                                    <option value="{{ $nilai }}">{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    </div>
+
                                     <div class="pp-template-aksi">
                                         <button type="button" class="pp-btn" wire:click="simpanTemplate">
                                             <i class="bi {{ $templateId ? 'bi-check2' : 'bi-plus-lg' }}"></i><span>{{ $templateId ? 'Simpan perubahan' : 'Tambah template' }}</span>
@@ -365,6 +406,9 @@ Detail Pesan Pelanggan || lemon
                                 </button>
                             @endif
                             <ol class="pp-linimasa">
+                                <li class="pp-baris-tanggal" @if ($lama) x-show="semua" x-collapse x-cloak @endif>
+                                    {{ $message->created_at?->locale('id')->translatedFormat('l, d F Y') }}
+                                </li>
                                 <li class="pp-baris" @if ($lama) x-show="semua" x-collapse x-cloak @endif>
                                     <span class="pp-baris-ikon" style="--c: #7c3aed;"><i class="bi bi-inbox-fill"></i></span>
                                     <div class="pp-baris-kepala">
@@ -550,6 +594,42 @@ Detail Pesan Pelanggan || lemon
                                     </div>
                                 @endforeach
                             </div>
+                        </div>
+                    </section>
+                @endif
+
+                @if ($message->kepuasan || $gabungan->isNotEmpty())
+                    <section class="dsb-kartu">
+                        <div class="dsb-kartu-isi">
+                            @if ($message->kepuasan)
+                                @php [$kLabel, $kIkon, $kWarna] = $message->tampilanKepuasan(); @endphp
+                                <span class="pp-detail-label">Penilaian pelanggan</span>
+                                <div class="pp-kait-baris" style="border-color: {{ $kWarna }}33;">
+                                    <i class="bi {{ $kIkon }}" style="color: {{ $kWarna }};"></i>
+                                    <span>
+                                        <b style="color: {{ $kWarna }};">{{ $kLabel }}</b>
+                                        <small>Dinilai {{ $message->kepuasan_at?->locale('id')->diffForHumans() }}</small>
+                                    </span>
+                                </div>
+                                @if ($message->kepuasan_komentar)
+                                    <p class="pp-baris-isi" style="margin-top: 8px;">{{ $message->kepuasan_komentar }}</p>
+                                @endif
+                            @endif
+
+                            @if ($gabungan->isNotEmpty())
+                                <span class="pp-detail-label" style="margin-top: {{ $message->kepuasan ? '16px' : '0' }};">Tiket yang digabung ke sini</span>
+                                <div class="pp-kait">
+                                    @foreach ($gabungan as $anak)
+                                        <div class="pp-kait-baris" wire:key="gabung-{{ $anak->id }}">
+                                            <i class="bi bi-union"></i>
+                                            <span>
+                                                <b>{{ $anak->ticket }}</b>
+                                                <small>{{ $anak->created_at?->locale('id')->translatedFormat('d M Y') }} · diarsipkan</small>
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </section>
                 @endif

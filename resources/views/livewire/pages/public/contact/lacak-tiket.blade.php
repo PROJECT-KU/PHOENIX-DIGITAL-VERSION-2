@@ -25,12 +25,35 @@
         .lt-kosong { padding: 18px; border-radius: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: .9rem; color: #64748b; text-align: center; }
         .lt-bantu { margin-top: 20px; font-size: .86rem; line-height: 1.6; color: #64748b; }
         .lt-bantu a { color: #f26522; font-weight: 700; }
+        .lt-sukses { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 12px 15px; border-radius: 13px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: .9rem; color: #166534; }
+        .lt-peringatan { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; padding: 12px 15px; border-radius: 13px; background: #fffbeb; border: 1px solid #fde68a; font-size: .9rem; line-height: 1.55; color: #92400e; }
+        .lt-tambah { margin-top: 24px; padding-top: 20px; border-top: 1px solid #eef2f7; }
+        .lt-tambah textarea { width: 100%; min-height: 104px; padding: 13px 15px; border: 1.5px solid #e8ecf2; border-radius: 12px; font-size: .95rem; line-height: 1.6; color: #0f172a; resize: vertical; }
+        .lt-tambah textarea:focus { outline: none; border-color: #f26522; box-shadow: 0 0 0 4px rgba(242, 101, 34, .14); }
+        .lt-nilai { margin-top: 24px; padding: 18px; border-radius: 16px; background: #faf5ff; border: 1px solid #e9d5ff; }
+        .lt-nilai-tombol { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        .lt-nilai-tombol button { flex: 1 1 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px; border: 1.5px solid #e9d5ff; border-radius: 14px; background: #fff; font-size: .86rem; font-weight: 700; color: #475569; cursor: pointer; }
+        .lt-nilai-tombol button:hover { border-color: #a855f7; color: #6d28d9; }
+        .lt-nilai-tombol button i { font-size: 1.5rem; }
+        .lt-nilai-hasil { display: flex; align-items: center; gap: 10px; font-size: .95rem; font-weight: 700; }
+        .lt-pesan-pelanggan { padding: 13px 15px; border-radius: 13px; background: #f8fafc; border: 1px dashed #cbd5e1; font-size: .92rem; line-height: 1.6; color: #475569; white-space: pre-wrap; }
     </style>
     @endonce
 
     <div class="lt-bungkus">
         <div class="lt-kartu">
             <h1 class="lt-judul">Status Pesan Anda</h1>
+
+            @if (session('tiket-sukses'))
+                <div class="lt-sukses"><i class="bi bi-check-circle-fill"></i>{{ session('tiket-sukses') }}</div>
+            @endif
+
+            @if ($tautanKedaluwarsa)
+                <div class="lt-peringatan">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Tautan di surel Anda sudah kedaluwarsa. Masukkan saja nomor tiket dan alamat surel Anda di bawah ini.</span>
+                </div>
+            @endif
 
             @if ($pesan)
                 @php [$stLabel, , $stWarna] = $pesan->tampilanStatus(); @endphp
@@ -69,9 +92,65 @@
                     </div>
                 @endif
 
+                @if ($this->keterangan->isNotEmpty())
+                    <p class="lt-ket" style="margin: 18px 0 8px;"><b>Keterangan yang Anda tambahkan</b></p>
+                    <div class="lt-balasan">
+                        @foreach ($this->keterangan as $k)
+                            <div class="lt-pesan-pelanggan">
+                                <small style="display:block; margin-bottom:5px; font-size:.76rem; font-weight:700; color:#94a3b8;">
+                                    {{ $k->created_at?->locale('id')->translatedFormat('d F Y, H:i') }} WIB
+                                </small>
+                                {{ $k->isi }}
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Jalur balik yang benar-benar sampai ke tiket. Kotak masuk surel
+                     kami tidak dibaca otomatis, jadi jangan pernah menjanjikan
+                     "balas surel ini" di mana pun. --}}
+                <div class="lt-tambah">
+                    <p class="lt-ket" style="margin-bottom: 8px;"><b>Ada yang ingin ditambahkan?</b></p>
+                    <p class="lt-ket" style="margin-bottom: 10px;">Tulis di sini — keterangannya langsung masuk ke tiket yang sama dan kami baca.</p>
+                    <form wire:submit="tambahKeterangan">
+                        <textarea wire:model="tambahan" placeholder="Misalnya: nomor pesanan saya INV-20260919-0007, sudah saya transfer jam 10 pagi."></textarea>
+                        @error('tambahan') <span class="lt-galat">{{ $message }}</span> @enderror
+                        <button type="submit" class="lt-tombol" style="margin-top: 12px;" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="tambahKeterangan"><i class="bi bi-send"></i> Kirim keterangan</span>
+                            <span wire:loading wire:target="tambahKeterangan">Mengirim…</span>
+                        </button>
+                    </form>
+                </div>
+
+                @if ($pesan->selesai())
+                    <div class="lt-nilai">
+                        @if ($pesan->kepuasan)
+                            @php [$kLabel, $kIkon, $kWarna] = $pesan->tampilanKepuasan(); @endphp
+                            <div class="lt-nilai-hasil" style="color: {{ $kWarna }};">
+                                <i class="bi {{ $kIkon }}" style="font-size: 1.4rem;"></i>
+                                <span>Terima kasih! Penilaian Anda: {{ $kLabel }}.</span>
+                            </div>
+
+                            @if (! $pesan->kepuasan_komentar)
+                                <form wire:submit="simpanKomentarNilai" style="margin-top: 12px;">
+                                    <textarea wire:model="nilaiKomentar" style="min-height: 76px; width: 100%; padding: 11px 13px; border: 1.5px solid #e9d5ff; border-radius: 12px; font-size: .92rem;"
+                                        placeholder="Boleh ceritakan sedikit? (opsional)"></textarea>
+                                    <button type="submit" class="lt-tombol" style="margin-top: 10px; background: #7c3aed;">Kirim masukan</button>
+                                </form>
+                            @endif
+                        @else
+                            <p class="lt-ket" style="margin: 0;"><b>Bagaimana penanganan kami?</b></p>
+                            <div class="lt-nilai-tombol">
+                                <button type="button" wire:click="nilai(3)"><i class="bi bi-emoji-smile"></i>Puas</button>
+                                <button type="button" wire:click="nilai(2)"><i class="bi bi-emoji-neutral"></i>Biasa saja</button>
+                                <button type="button" wire:click="nilai(1)"><i class="bi bi-emoji-frown"></i>Kecewa</button>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 <p class="lt-bantu">
-                    Ada yang ingin ditambahkan? Balas surel tanda terima Anda, atau
-                    <a href="{{ route('contact') }}" wire:navigate>kirim pesan baru</a> dengan menyebut nomor tiket di atas.
+                    Butuh yang lain? <a href="{{ route('contact') }}" wire:navigate>Kirim pesan baru</a> atau hubungi kami lewat WhatsApp.
                 </p>
             @else
                 @if ($dicari)

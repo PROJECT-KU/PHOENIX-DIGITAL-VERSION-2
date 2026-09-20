@@ -23,7 +23,7 @@ class IngatkanTiketLewatBatas extends Command
     {
         $tiket = CustomerMessage::query()->bukanSpam()->lewatBatas()
             ->orderBy('created_at')
-            ->get(['id', 'ticket', 'name', 'priority', 'assigned_to', 'created_at']);
+            ->get(['id', 'ticket', 'name', 'priority', 'kategori', 'assigned_to', 'created_at']);
 
         if ($tiket->isEmpty()) {
             $this->info('Tidak ada tiket yang lewat batas. Antrean bersih.');
@@ -46,16 +46,31 @@ class IngatkanTiketLewatBatas extends Command
         }
 
         if ($tanpaPetugas->isNotEmpty()) {
-            $penanggung = User::query()
-                ->where('status', 'active')
-                ->whereHas('role.permissions', fn ($q) => $q->where('name', 'edit_customer_message'))
-                ->get();
+            // Dikelompokkan per TOPIK: komplain pembayaran tidak perlu
+            // membanjiri semua orang, cukup pemegang izin yang relevan.
+            $rute = config('helpdesk.penanggung_topik', []);
 
-            $this->line('Tanpa petugas: '.$tanpaPetugas->count().' tiket → '.$penanggung->count().' penerima');
+            foreach ($tanpaPetugas->groupBy(fn ($t) => $rute[$t->kategori] ?? 'edit_customer_message') as $izin => $baris) {
+                $penanggung = User::query()
+                    ->where('status', 'active')
+                    ->whereHas('role.permissions', fn ($q) => $q->where('name', $izin))
+                    ->get();
 
-            if (! $this->option('kering')) {
-                foreach ($penanggung as $orang) {
-                    $orang->notify(new TiketLewatBatas($tanpaPetugas));
+                // Tidak ada pemegang izin khusus itu? Jangan sampai tiketnya
+                // hilang dari radar — kembalikan ke penanggung umum helpdesk.
+                if ($penanggung->isEmpty() && $izin !== 'edit_customer_message') {
+                    $penanggung = User::query()
+                        ->where('status', 'active')
+                        ->whereHas('role.permissions', fn ($q) => $q->where('name', 'edit_customer_message'))
+                        ->get();
+                }
+
+                $this->line('Tanpa petugas ('.$izin.'): '.$baris->count().' tiket → '.$penanggung->count().' penerima');
+
+                if (! $this->option('kering')) {
+                    foreach ($penanggung as $orang) {
+                        $orang->notify(new TiketLewatBatas($baris));
+                    }
                 }
             }
         }

@@ -54,6 +54,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Penanggung jawab per topik
+    |--------------------------------------------------------------------------
+    | Dipakai pengingat tiket lewat batas yang BELUM ditugaskan: rekapnya
+    | dikirim ke pemegang izin berikut, bukan ke semua orang. Topik yang tidak
+    | terdaftar jatuh ke pemegang izin edit_customer_message.
+    */
+    'penanggung_topik' => [
+        'pembayaran' => 'view_cashflow',
+        'jasa' => 'view_pemesanantoko',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Masa berlaku tautan lacak tiket di surel (hari)
+    |--------------------------------------------------------------------------
+    | Surel bisa diteruskan ke orang lain; tautannya tidak boleh berlaku
+    | selamanya. Halaman /tiket dengan nomor + surel tetap jadi jalan cadangan.
+    */
+    'masa_tautan_hari' => 90,
+
+    /*
+    |--------------------------------------------------------------------------
     | Kanal balasan yang bisa dicatat
     |--------------------------------------------------------------------------
     */

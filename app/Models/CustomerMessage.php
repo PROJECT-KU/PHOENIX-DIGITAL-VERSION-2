@@ -13,8 +13,15 @@ class CustomerMessage extends Model
     protected static function booted()
     {
         static::creating(function ($message) {
-            // Generate ticket unik: format TKT-XXXX-XXXX
-            $message->ticket = 'TKT-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
+            // Format TKT-XXXX-XXXX, diulang sampai benar-benar belum terpakai.
+            // Kolomnya unique(): tanpa pemeriksaan ini, satu tabrakan acak
+            // (sekecil apa pun peluangnya) muncul sebagai galat 500 di
+            // formulir kontak — ditanggung pelanggan yang sedang mengeluh.
+            do {
+                $nomor = 'TKT-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
+            } while (static::withTrashed()->where('ticket', $nomor)->exists());
+
+            $message->ticket = $nomor;
         });
     }
 
@@ -36,6 +43,9 @@ class CustomerMessage extends Model
         'is_spam',
         'merged_into',
         'tunda_sampai',
+        'kepuasan',
+        'kepuasan_at',
+        'kepuasan_komentar',
     ];
 
     protected $casts = [
@@ -43,6 +53,7 @@ class CustomerMessage extends Model
         'replied_at' => 'datetime',
         'is_spam' => 'boolean',
         'tunda_sampai' => 'datetime',
+        'kepuasan_at' => 'datetime',
     ];
 
     // ===== Relasi =====
@@ -74,6 +85,23 @@ class CustomerMessage extends Model
     public function induk()
     {
         return $this->belongsTo(CustomerMessage::class, 'merged_into');
+    }
+
+    /** Tiket lain yang digabungkan KE tiket ini. */
+    public function gabungan()
+    {
+        return $this->hasMany(CustomerMessage::class, 'merged_into')->withTrashed();
+    }
+
+    /** [label, ikon, warna] penilaian pelanggan. */
+    public function tampilanKepuasan(): ?array
+    {
+        return match ($this->kepuasan) {
+            3 => ['Puas', 'bi-emoji-smile-fill', '#16a34a'],
+            2 => ['Biasa saja', 'bi-emoji-neutral-fill', '#d97706'],
+            1 => ['Kecewa', 'bi-emoji-frown-fill', '#dc2626'],
+            default => null,
+        };
     }
 
     public function markAsRead(): void
@@ -361,6 +389,22 @@ class CustomerMessage extends Model
     public function scopeMilik($query, $userId)
     {
         return $query->where('assigned_to', $userId);
+    }
+
+    /**
+     * Batasi ke tiket yang boleh dilihat pengguna ini.
+     *
+     * Mengikuti konvensi view_all_* di modul lain: tanpa izin itu, petugas
+     * hanya melihat tiket miliknya sendiri plus yang belum dipegang siapa pun
+     * (supaya triase tetap bisa jalan).
+     */
+    public function scopeTerlihatOleh($query, $user)
+    {
+        if (! $user || $user->hasPermission('view_all_customer_message')) {
+            return $query;
+        }
+
+        return $query->where(fn ($q) => $q->where('assigned_to', $user->id)->orWhereNull('assigned_to'));
     }
 
     public function scopeBelumDibalas($query)

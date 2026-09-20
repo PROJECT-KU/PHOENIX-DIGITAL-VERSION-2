@@ -101,13 +101,21 @@ class Contact extends Component
 
         $this->reset('lampiran');
 
-        // Tanda terima berisi nomor tiket + tautan lacak. Tidak pernah boleh
-        // menggagalkan pengiriman pesannya sendiri.
-        try {
-            Mail::to($pesan->email)->send(new TiketDiterimaMail($pesan));
-        } catch (\Throwable $e) {
-            Log::warning('Gagal kirim tanda terima tiket '.$pesan->ticket.': '.$e->getMessage());
-        }
+        /*
+         * Tanda terima berisi nomor tiket + tautan lacak.
+         *
+         * Dikirim SESUDAH respons: antrean (queue:work) tidak berjalan sebagai
+         * proses tetap di hosting ini, sementara mengirim di tengah permintaan
+         * membuat pelanggan menatap tombol "Mengirim…" selama SMTP bekerja.
+         * Kegagalannya tidak pernah boleh menggagalkan pesannya sendiri.
+         */
+        app()->terminating(function () use ($pesan) {
+            try {
+                Mail::to($pesan->email)->send(new TiketDiterimaMail($pesan));
+            } catch (\Throwable $e) {
+                Log::warning('Gagal kirim tanda terima tiket '.$pesan->ticket.': '.$e->getMessage());
+            }
+        });
 
         RateLimiter::hit($key);
 

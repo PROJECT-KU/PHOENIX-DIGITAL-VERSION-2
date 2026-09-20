@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Balasan helpdesk yang dikirim LANGSUNG dari panel admin.
@@ -47,6 +48,12 @@ class BalasanTiketMail extends Mailable
             with: [
                 'pesan' => $this->pesan,
                 'isi' => $this->isi,
+                // Tautan berbatas waktu: surel bisa diteruskan ke siapa saja.
+                'tautan' => URL::temporarySignedRoute(
+                    'tiket.lacak',
+                    now()->addDays((int) config('helpdesk.masa_tautan_hari', 90)),
+                    ['ticket' => $this->pesan->ticket],
+                ),
             ],
         );
     }
