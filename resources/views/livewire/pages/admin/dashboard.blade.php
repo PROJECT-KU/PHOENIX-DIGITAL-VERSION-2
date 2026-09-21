@@ -767,9 +767,11 @@ Dashboard || lemon
                     <div class="dsb-kepala-teks">
                         <span class="dsb-kicker">Promo</span>
                         <h2 class="dsb-judul">Promo yang Terpakai</h2>
-                        <div class="dsb-chip-deret">
+                        {{-- is-sepasang: di ponsel dua pil angka berdampingan sama
+                             lebar, keterangan samar di bawahnya. --}}
+                        <div class="dsb-chip-deret is-sepasang">
                             <span class="dsb-chip"><i class="bi bi-check2-circle"></i>{{ $totalPakai }}× dipakai</span>
-                            <span class="dsb-chip"><i class="bi bi-cash-coin"></i>{{ $rupiahPromo($promoDipakai['total_nilai'] ?? 0) }} dilepas</span>
+                            <span class="dsb-chip"><i class="bi bi-cash-coin"></i><span><span class="text-nowrap">{{ $rupiahPromo($promoDipakai['total_nilai'] ?? 0) }}</span> dilepas</span></span>
                             <span class="dsb-chip is-samar">Hanya pesanan yang dibayar, periode {{ $periodeLabel }}</span>
                         </div>
                     </div>

@@ -864,6 +864,19 @@
         .is-hitung-atas .dsb-chip-hitung { grid-column: 2; grid-row: 1; justify-self: start; }
         .is-hitung-atas .dsb-chip-deret > :not(.dsb-chip-hitung) { grid-column: 1 / -1; margin-top: 4px; }
 
+        /* Dua pil angka yang sepasang (mis. "1× dipakai" + "Rp 21.000
+           dilepas"): di ponsel keduanya tidak muat sebaris di sebelah ikon,
+           jadi yang kedua jatuh ke baris baru dan tiap pil menyisakan ruang
+           kosong. Kini dua kolom sama lebar; isi pil boleh turun baris bila
+           angkanya panjang, supaya tidak pernah meluber. Keterangan samar
+           mengambil baris penuh di bawahnya. */
+        .dsb-chip-deret.is-sepasang { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .dsb-chip-deret.is-sepasang > .dsb-chip:not(.is-samar) {
+            justify-content: center; min-width: 0; min-height: 32px;
+            padding: 4px 8px; gap: 5px; white-space: normal; text-align: center; line-height: 1.2;
+        }
+        .dsb-chip-deret.is-sepasang > .is-samar { grid-column: 1 / -1; }
+
         .dsb-segar-grup { display: flex; margin: 10px 0 0; }
         .dsb-segar-grup > .dsb-segar { flex: 1 1 0; justify-content: center; min-height: 36px; }
     }
