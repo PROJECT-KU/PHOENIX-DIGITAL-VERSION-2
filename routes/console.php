@@ -210,6 +210,19 @@ $jadwalkan('artikel:bersihkan-draf --hari=60')->dailyAt('00:50');
 $jadwalkan('artikel:pangkas-baca --hari=400')->weeklyOn(1, '01:10');
 
 /*
+ * Gambar yang disisipkan ke naskah lalu dihapus lagi dari tulisan tetap
+ * tinggal sebagai berkas. Tenggang 7 hari supaya gambar yang baru diunggah
+ * (artikel masih dibuka, belum disimpan) tidak ikut terhapus.
+ */
+$jadwalkan('artikel:bersihkan-gambar --hari=7')->weeklyOn(1, '01:20');
+
+/*
+ * Riwayat versi: batas 20 per artikel menahan JUMLAH, ini menahan UMUR.
+ * Lima versi terbaru selalu disisakan supaya jaring pengamannya tidak kosong.
+ */
+$jadwalkan('artikel:pangkas-revisi --hari=180 --sisakan=5')->weeklyOn(1, '01:30');
+
+/*
  * Arsip helpdesk: tiket biasa disimpan 180 hari (bukti percakapan), spam cukup
  * 30 hari. Lampirannya ikut dibuang dari disk privat.
  */

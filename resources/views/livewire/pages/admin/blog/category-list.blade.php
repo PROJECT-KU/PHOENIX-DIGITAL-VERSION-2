@@ -125,7 +125,7 @@ Kategori Artikel || lemon
                                 <div class="bl-kat-aksi">
                                     <a wire:navigate href="{{ route('admin.blog.index', ['category' => $item->name]) }}"
                                         class="bl-btn bl-btn-ikon" title="Kelola artikel kategori ini"><i class="bi bi-journals"></i></a>
-                                    <a href="{{ route('blog.index', ['kategori' => $item->name]) }}" target="_blank" rel="noopener"
+                                    <a href="{{ route('blog.index', ['kategori' => $item->slug]) }}" target="_blank" rel="noopener"
                                         class="bl-btn bl-btn-ikon" title="Lihat kategori ini di blog publik"><i class="bi bi-box-arrow-up-right"></i></a>
                                     @if ($bolehUbah)
                                         <button type="button" class="bl-btn bl-btn-ikon" wire:click="startEdit({{ $item->id }})" title="Ubah nama"><i class="bi bi-pencil-square"></i></button>

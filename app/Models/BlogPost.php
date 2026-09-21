@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -81,8 +82,29 @@ class BlogPost extends Model
         return $this->belongsTo(User::class, 'dibuka_oleh');
     }
 
+    /**
+     * Nomor versi data artikel, dinaikkan setiap ada perubahan.
+     *
+     * Dipakai sebagai bagian kunci singgahan ringkasan daftar: angka-angka
+     * itu tidak berubah saat orang mengetik kata pencarian, tapi harus
+     * langsung segar begitu satu artikel disimpan.
+     */
+    public static function versiData(): int
+    {
+        return (int) Cache::rememberForever('blog:versi', fn () => 1);
+    }
+
+    public static function naikkanVersiData(): void
+    {
+        Cache::forever('blog:versi', static::versiData() + 1);
+    }
+
     protected static function booted(): void
     {
+        foreach (['saved', 'deleted', 'restored', 'forceDeleted'] as $peristiwa) {
+            static::$peristiwa(fn () => static::naikkanVersiData());
+        }
+
         static::updating(function (self $artikel) {
             // Hanya untuk jejak internal. Kolom 'author' sengaja tidak ikut
             // berubah supaya halaman publik tetap menulis "admin".
@@ -328,10 +350,19 @@ class BlogPost extends Model
     /**
      * Baca 30 hari terakhir. Memakai hasil withSum() bila daftarnya sudah
      * memuatnya, supaya halaman daftar tidak menembak satu kueri per baris.
+     *
+     * Diperiksa lewat array_key_exists, BUKAN "?? ": withSum mengembalikan
+     * NULL (bukan 0) untuk artikel yang belum punya baris baca sama sekali,
+     * sehingga "??" justru menembak kueri untuk setiap artikel sepi —
+     * persis N+1 yang mau dihindari.
      */
     public function baca30(): int
     {
-        return (int) ($this->baca_30 ?? $this->dibacaPeriode(30));
+        if (array_key_exists('baca_30', $this->attributes)) {
+            return (int) $this->attributes['baca_30'];
+        }
+
+        return $this->dibacaPeriode(30);
     }
 
     /**

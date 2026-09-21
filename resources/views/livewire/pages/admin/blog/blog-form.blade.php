@@ -342,6 +342,12 @@
                                 <b>Riwayat versi</b>
                                 <small>Isi sebelum tiap penyimpanan, {{ \App\Models\BlogPostRevision::BATAS }} versi terakhir.</small>
                             </span>
+                            @if ($this->jumlahRevisi > 10)
+                                <button type="button" class="bl-btn bl-seo-acak" wire:click="$toggle('semuaRevisi')">
+                                    <i class="bi {{ $semuaRevisi ? 'bi-chevron-up' : 'bi-chevron-down' }}"></i>
+                                    <span>{{ $semuaRevisi ? 'Ringkas' : 'Lihat semua ('.$this->jumlahRevisi.')' }}</span>
+                                </button>
+                            @endif
                         </div>
 
                         @if ($riwayat->isEmpty())
@@ -717,6 +723,43 @@
 
     // Isi dikembalikan dari riwayat: editor harus ikut berganti, kalau tidak
     // yang terlihat masih versi lama dan penyimpanan berikutnya menimpanya lagi.
+    /* Klik gambar di dalam editor untuk mengubah teks alternatifnya.
+       Keterangan di bawah gambar tidak perlu jendela sendiri — bentuknya
+       paragraf biasa yang bisa langsung diketik ulang. */
+    quillBody.root.addEventListener('click', async function (e) {
+        const img = e.target.closest && e.target.closest('img');
+        if (!img || typeof Swal === 'undefined') return;
+
+        const jawab = await Swal.fire({
+            title: 'Teks alternatif gambar',
+            input: 'text',
+            inputValue: img.getAttribute('alt') || '',
+            inputPlaceholder: 'Mis. Tampilan halaman pesanan di ponsel',
+            text: 'Dibacakan pembaca layar dan dipakai mesin pencari saat gambarnya gagal dimuat.',
+            showCancelButton: true,
+            confirmButtonText: 'Simpan',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            buttonsStyling: false,
+            background: 'rgba(255,255,255,.96)',
+            backdrop: 'rgba(124, 58, 237, .18)',
+            customClass: { popup: 'shadow rounded-4', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel' },
+        });
+
+        if (!jawab.isConfirmed) return;
+
+        const teks = (jawab.value || '').trim();
+        if (teks) {
+            img.setAttribute('alt', teks);
+        } else {
+            img.removeAttribute('alt');
+        }
+
+        hiddenBody.value = quillBody.root.innerHTML;
+        hiddenBody.dispatchEvent(new Event('input'));
+        tandaiBerubah();
+    });
+
     $wire.on('gambar-tersisip', async (e) => {
         const url = Array.isArray(e) ? e[0]?.url : e?.url;
         if (!url) return;

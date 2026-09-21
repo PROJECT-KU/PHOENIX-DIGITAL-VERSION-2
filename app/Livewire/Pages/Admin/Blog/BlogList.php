@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Support\EksporMarkdown;
 use App\Support\ImporArtikel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -65,6 +66,17 @@ class BlogList extends Component
     /** Sertakan isi artikel di unduhan (bukan hanya metadata). */
     public bool $ikutIsi = false;
 
+    /**
+     * Ikut memindai ISI artikel saat mencari.
+     *
+     * Mati secara bawaan dan sengaja jadi pilihan sadar: mencari di kolom
+     * longtext berarti memindai seluruh tabel tanpa indeks — pencarian
+     * termahal di seluruh aplikasi. Judul, kategori, tag, dan ringkasan
+     * hampir selalu sudah cukup.
+     */
+    #[Url(as: 'dalam', except: false)]
+    public bool $cariIsi = false;
+
     /** Berkas tulisan yang diimpor jadi draf baru (boleh banyak sekaligus). */
     public $berkasImpor = [];
 
@@ -87,7 +99,7 @@ class BlogList extends Component
 
     public function updated($nama): void
     {
-        if (in_array($nama, ['category', 'tag', 'urut', 'perPage', 'tampilan', 'fUnggulan', 'fMandek', 'fPenyunting'], true)) {
+        if (in_array($nama, ['category', 'tag', 'urut', 'perPage', 'tampilan', 'fUnggulan', 'fMandek', 'fPenyunting', 'cariIsi'], true)) {
             $this->resetPage();
         }
 
@@ -477,12 +489,24 @@ class BlogList extends Component
             $nama = pathinfo($berkas->getClientOriginalName(), PATHINFO_FILENAME);
             $jenis = strtolower($berkas->getClientOriginalExtension());
 
-            [$judul, $tubuh] = ImporArtikel::urai($isi, $nama, $jenis);
+            [$judul, $tubuh, $kepala] = ImporArtikel::uraiLengkap($isi, $nama, $jenis);
 
             $dibuat[] = BlogPost::create([
                 'title' => $judul,
-                'slug' => BlogPost::makeSlug($judul),
+                // Slug dari front-matter dipakai bila ada, tapi tetap
+                // dilewatkan makeSlug supaya tidak bentrok dengan artikel
+                // yang sudah ada.
+                'slug' => BlogPost::makeSlug($kepala['slug'] ?? $judul),
                 'body' => $tubuh,
+                'category' => $kepala['category'] ?? null,
+                'tags' => ! empty($kepala['tags']) ? (array) $kepala['tags'] : null,
+                'excerpt' => $kepala['excerpt'] ?? null,
+                'meta_title' => $kepala['meta_title'] ?? null,
+                'meta_description' => $kepala['meta_description'] ?? null,
+                'cover_alt' => $kepala['cover_alt'] ?? null,
+                // Status dari berkas SENGAJA diabaikan: hasil impor selalu
+                // draf sampai diperiksa manusia, walau berkasnya menulis
+                // status: published.
                 'status' => 'draft',
                 'author' => 'admin',
             ]);
@@ -596,7 +620,7 @@ class BlogList extends Component
         $chip = [];
 
         if ($this->search !== '') {
-            $chip[] = ['nama' => 'search', 'label' => 'Cari: "'.$this->search.'"'];
+            $chip[] = ['nama' => 'search', 'label' => 'Cari: "'.$this->search.'"'.($this->cariIsi ? ' (sampai isi)' : '')];
         }
 
         if ($this->category !== '') {
@@ -715,10 +739,13 @@ class BlogList extends Component
                     $sub->where('title', 'like', $term)
                         ->orWhere('category', 'like', $term)
                         ->orWhere('excerpt', 'like', $term)
-                        ->orWhere('tags', 'like', $term)
-                        // Isi artikel ikut dicari: kalimat yang diingat orang
-                        // biasanya ada di badan tulisan, bukan judulnya.
-                        ->orWhere('body', 'like', $term);
+                        ->orWhere('tags', 'like', $term);
+
+                    // Isi artikel hanya ikut bila diminta — lihat catatan di
+                    // properti $cariIsi.
+                    if ($this->cariIsi) {
+                        $sub->orWhere('body', 'like', $term);
+                    }
                 });
             })
             ->with('penyunting:id,name')
@@ -736,38 +763,57 @@ class BlogList extends Component
     public function render()
     {
         $posts = $this->kueri()->paginate(max(6, min(48, $this->perPage)));
-        $awal = $this->awalPeriode();
 
-        // Satu kueri untuk hitungan status; sisanya dihitung dari situ.
-        $perStatus = BlogPost::selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
-        $terjadwal = BlogPost::where('status', 'published')->whereNotNull('published_at')->where('published_at', '>', now())->count();
+        return view('livewire.pages.admin.blog.blog-list', array_merge(
+            ['posts' => $posts],
+            $this->ringkasan(),
+        ))->layout('livewire.layout.templateindex');
+    }
 
-        $tabCounts = [
-            'all' => (int) $perStatus->sum(),
-            'published' => (int) ($perStatus['published'] ?? 0) - $terjadwal,
-            'terjadwal' => $terjadwal,
-            'draft' => (int) ($perStatus['draft'] ?? 0),
-            'sampah' => BlogPost::onlyTrashed()->count(),
-        ];
+    /**
+     * Angka & daftar yang menghiasi kepala halaman.
+     *
+     * Disinggahkan bersama-sama: tak satu pun berubah saat orang mengetik
+     * kata pencarian, padahal komponennya dirender ulang tiap 300 md. Kunci
+     * singgahannya memuat nomor versi data artikel, jadi begitu ada artikel
+     * disimpan atau dihapus angkanya langsung segar lagi — bukan menunggu
+     * masa simpan habis.
+     */
+    private function ringkasan(): array
+    {
+        $kunci = 'blog:ringkasan:'.BlogPost::versiData().':'.now()->toDateString();
 
-        return view('livewire.pages.admin.blog.blog-list', [
-            'posts' => $posts,
-            'tabCounts' => $tabCounts,
-            'kategoriDaftar' => BlogCategory::orderBy('name')->pluck('name')->all(),
-            'tagDaftar' => $this->semuaTag(),
-            'penyuntingDaftar' => \App\Models\User::whereIn('id', BlogPost::whereNotNull('updated_by')->distinct()->pluck('updated_by'))
-                ->orderBy('name')->get(['id', 'name']),
-            // Angka ringkasan: yang paling menjawab "blognya hidup atau tidak".
-            'totalDibaca' => (int) BlogPost::sum('views'),
-            'dibaca30' => (int) \App\Models\BlogPostRead::where('tanggal', '>=', $awal)->sum('jumlah'),
-            'dibaca30Sebelumnya' => (int) \App\Models\BlogPostRead::whereBetween('tanggal', [
-                now()->subDays(59)->toDateString(),
-                now()->subDays(30)->toDateString(),
-            ])->sum('jumlah'),
-            'terpopuler' => BlogPost::where('views', '>', 0)->orderByDesc('views')->first(),
-            'terbaru' => BlogPost::published()->latest('published_at')->first(),
-            'jumlahMandek' => $this->hitungMandek(),
-        ])->layout('livewire.layout.templateindex');
+        return Cache::remember($kunci, now()->addMinutes(10), function () {
+            $awal = $this->awalPeriode();
+
+            // Satu kueri untuk hitungan status; sisanya dihitung dari situ.
+            $perStatus = BlogPost::selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
+            $terjadwal = BlogPost::where('status', 'published')->whereNotNull('published_at')->where('published_at', '>', now())->count();
+
+            return [
+                'tabCounts' => [
+                    'all' => (int) $perStatus->sum(),
+                    'published' => (int) ($perStatus['published'] ?? 0) - $terjadwal,
+                    'terjadwal' => $terjadwal,
+                    'draft' => (int) ($perStatus['draft'] ?? 0),
+                    'sampah' => BlogPost::onlyTrashed()->count(),
+                ],
+                'kategoriDaftar' => BlogCategory::orderBy('name')->pluck('name')->all(),
+                'tagDaftar' => $this->semuaTag(),
+                'penyuntingDaftar' => \App\Models\User::whereIn('id', BlogPost::whereNotNull('updated_by')->distinct()->pluck('updated_by'))
+                    ->orderBy('name')->get(['id', 'name']),
+                // Angka ringkasan: yang paling menjawab "blognya hidup atau tidak".
+                'totalDibaca' => (int) BlogPost::sum('views'),
+                'dibaca30' => (int) \App\Models\BlogPostRead::where('tanggal', '>=', $awal)->sum('jumlah'),
+                'dibaca30Sebelumnya' => (int) \App\Models\BlogPostRead::whereBetween('tanggal', [
+                    now()->subDays(59)->toDateString(),
+                    now()->subDays(30)->toDateString(),
+                ])->sum('jumlah'),
+                'terpopuler' => BlogPost::where('views', '>', 0)->orderByDesc('views')->first(),
+                'terbaru' => BlogPost::published()->latest('published_at')->first(),
+                'jumlahMandek' => $this->hitungMandek(),
+            ];
+        });
     }
 
     /** Semua tag yang pernah dipakai, tanpa duplikat. */

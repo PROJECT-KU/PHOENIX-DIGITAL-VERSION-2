@@ -20,6 +20,34 @@ class BlogIndex extends Component
     #[Url(as: 'tag', keep: false)]
     public string $tag = '';
 
+    public function mount(): void
+    {
+        $this->category = self::namaKategori($this->category);
+    }
+
+    public function updatedCategory(): void
+    {
+        $this->category = self::namaKategori($this->category);
+        $this->resetPage();
+    }
+
+    /**
+     * Terima kategori sebagai NAMA maupun SLUG.
+     *
+     * Alamat yang dibagikan ke luar (sitemap, layar admin) memakai slug —
+     * "?kategori=tips-panduan" jauh lebih enak dibaca dan dibagikan daripada
+     * "?kategori=Tips%20%26%20Panduan". Di dalam komponen nilainya tetap nama
+     * supaya pencocokan kategori artikel tidak berubah.
+     */
+    public static function namaKategori(string $nilai): string
+    {
+        if ($nilai === '' || BlogPost::where('category', $nilai)->exists()) {
+            return $nilai;
+        }
+
+        return \App\Models\BlogCategory::where('slug', $nilai)->value('name') ?? $nilai;
+    }
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -60,10 +88,16 @@ class BlogIndex extends Component
                 $q->where(function ($sub) use ($term) {
                     $sub->where('title', 'like', $term)
                         ->orWhere('excerpt', 'like', $term)
-                        ->orWhere('category', 'like', $term)
-                        // Isi artikel ikut dicari: kalimat yang diingat orang
-                        // biasanya ada di badan tulisan, bukan di judulnya.
-                        ->orWhere('body', 'like', $term);
+                        ->orWhere('category', 'like', $term);
+
+                    // Isi artikel ikut dicari — kalimat yang diingat orang
+                    // biasanya ada di badan tulisan, bukan di judulnya. Tapi
+                    // hanya mulai 4 huruf: memindai kolom longtext untuk
+                    // "ak" berarti memindai seluruh tabel demi hasil yang
+                    // tetap tidak berguna.
+                    if (mb_strlen($this->search) >= 4) {
+                        $sub->orWhere('body', 'like', $term);
+                    }
                 });
             })
             ->when($this->category !== '', fn ($q) => $q->where('category', $this->category))

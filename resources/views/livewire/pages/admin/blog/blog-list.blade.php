@@ -221,6 +221,11 @@ Artikel || lemon
                     <span>Disematkan</span>
                 </label>
 
+                <label class="bl-tukar {{ $cariIsi ? 'is-nyala' : '' }}" title="Pencarian ikut memindai isi artikel. Jauh lebih lambat karena seluruh naskah dipindai tanpa indeks.">
+                    <input type="checkbox" wire:model.live="cariIsi">
+                    <span>Cari sampai isi</span>
+                </label>
+
                 <label class="bl-tukar {{ $ikutIsi ? 'is-nyala' : '' }}" title="Sertakan isi artikel di berkas Excel/PDF yang diunduh">
                     <input type="checkbox" wire:model.live="ikutIsi">
                     <span>Unduh + isi</span>

@@ -63,7 +63,9 @@ class EksporMarkdown
     {
         $t = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $html);
 
-        $t = preg_replace('/<h([1-6])\b[^>]*>(.*?)<\/h\1>/is', "\n".'$1HASH$ $2'."\n", $t);
+        // Baris kosong di kedua sisi judul WAJIB: tanpa itu judul dan
+        // paragraf sesudahnya terbaca sebagai satu blok saat diimpor kembali.
+        $t = preg_replace('/<h([1-6])\b[^>]*>(.*?)<\/h\1>/is', "\n\n".'$1HASH$ $2'."\n\n", $t);
         $t = preg_replace_callback('/(\d)HASH\$ /', fn ($m) => str_repeat('#', (int) $m[1]).' ', $t);
 
         $t = preg_replace('/<(strong|b)\b[^>]*>(.*?)<\/\1>/is', '**$2**', $t);

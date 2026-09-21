@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Blog;
 
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Models\BlogPostRevision;
 use App\Services\BlogImageService;
 use App\Support\BedaTeks;
 use Illuminate\Support\Facades\Storage;
@@ -83,6 +84,9 @@ class BlogForm extends Component
 
     /** Id revisi yang sedang dibandingkan dengan isi sekarang. */
     public ?int $revisiDilihat = null;
+
+    /** Tampilkan seluruh versi tersimpan, bukan sepuluh terbaru saja. */
+    public bool $semuaRevisi = false;
 
     public function mount()
     {
@@ -439,7 +443,20 @@ class BlogForm extends Component
     /** Riwayat versi artikel ini. */
     public function getRiwayatProperty()
     {
-        return $this->post ? $this->post->revisi()->with('penyunting')->take(10)->get() : collect();
+        if (! $this->post) {
+            return collect();
+        }
+
+        return $this->post->revisi()
+            ->with('penyunting')
+            ->take($this->semuaRevisi ? BlogPostRevision::BATAS : 10)
+            ->get();
+    }
+
+    /** Jumlah seluruh versi tersimpan — untuk tombol "lihat semua". */
+    public function getJumlahRevisiProperty(): int
+    {
+        return $this->post ? $this->post->revisi()->count() : 0;
     }
 
     public function lihatBeda(int $id): void

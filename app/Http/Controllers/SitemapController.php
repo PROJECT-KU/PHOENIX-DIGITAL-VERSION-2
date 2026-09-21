@@ -47,13 +47,17 @@ class SitemapController extends Controller
 
         // Halaman kategori & tag blog — keduanya halaman nyata yang bisa
         // dibuka, jadi pantas diketahui mesin pencari.
+        // Slug dipakai di alamatnya, bukan nama: "?kategori=tips-panduan"
+        // lebih enak dibaca dan dibagikan daripada nama ber-spasi & ber-&.
+        $slugKategori = \App\Models\BlogCategory::pluck('slug', 'name');
+
         BlogPost::published()
             ->whereNotNull('category')->where('category', '!=', '')
             ->selectRaw('category, MAX(updated_at) as diubah')
             ->groupBy('category')
             ->get()
             ->each(fn ($baris) => $add(
-                route('blog.index', ['kategori' => $baris->category]),
+                route('blog.index', ['kategori' => $slugKategori[$baris->category] ?? $baris->category]),
                 '0.5',
                 'weekly',
                 $baris->diubah ? \Illuminate\Support\Carbon::parse($baris->diubah)->toAtomString() : null

@@ -1010,7 +1010,7 @@ it('deskripsi kategori muncul saat daftar blog disaring kategori itu', function 
     $t->assertSee('Langkah praktis memakai layanan kami.');
 });
 
-it('pencarian menjangkau isi artikel, bukan hanya judul', function () {
+it('pencarian isi artikel di admin harus diminta lebih dulu', function () {
     $this->actingAs(adminArtikel());
     artikel([
         'title' => 'Judul Biasa',
@@ -1020,11 +1020,19 @@ it('pencarian menjangkau isi artikel, bukan hanya judul', function () {
     ]);
     artikel(['title' => 'Artikel Lain', 'status' => 'published', 'published_at' => now()->subDays(2)]);
 
+    // Memindai kolom longtext tanpa indeks itu mahal, jadi bawaannya mati.
     expect(Livewire::test(BlogList::class)->set('search', 'rahasiadalamtubuh')->viewData('posts')->pluck('title')->all())
+        ->toBe([]);
+
+    expect(Livewire::test(BlogList::class)->set('cariIsi', true)->set('search', 'rahasiadalamtubuh')->viewData('posts')->pluck('title')->all())
         ->toBe(['Judul Biasa']);
 
+    // Di halaman publik tetap otomatis, tapi hanya mulai empat huruf.
     expect(Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class)->set('search', 'rahasiadalamtubuh')->viewData('posts')->pluck('title')->all())
         ->toBe(['Judul Biasa']);
+
+    expect(Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class)->set('search', 'rah')->viewData('posts')->pluck('title')->all())
+        ->toBe([]);
 });
 
 it('umpan rss memuat artikel terbit saja', function () {
@@ -1479,4 +1487,242 @@ it('impor beberapa berkas sekaligus membuat draf untuk masing-masing', function 
 
     // Banyak berkas TIDAK membuka penyunting; cukup dipindahkan ke tab Draf.
     $t->assertSet('filter', 'draft')->assertNoRedirect();
+});
+
+// ===================== Biaya & kebersihan =====================
+
+it('daftar artikel tidak menembak satu kueri baca per baris', function () {
+    $this->actingAs(adminArtikel());
+
+    // Artikel TANPA baris baca sama sekali — di sinilah withSum memberi NULL
+    // dan versi lama jatuh ke kueri per baris.
+    for ($i = 0; $i < 6; $i++) {
+        artikel(['title' => 'Sepi '.$i, 'status' => 'published', 'published_at' => now()->subDays(200)]);
+    }
+
+    Livewire::test(BlogList::class); // panaskan singgahan ringkasan
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    Livewire::test(BlogList::class);
+    $kueri = \Illuminate\Support\Facades\DB::getQueryLog();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $perBaris = collect($kueri)->filter(
+        fn ($q) => str_contains($q['query'], 'blog_post_reads') && str_contains($q['query'], 'blog_post_id` = ?')
+    );
+
+    expect($perBaris)->toHaveCount(0)
+        ->and(count($kueri))->toBeLessThan(15);
+});
+
+it('baca30 memakai angka yang sudah dimuat, termasuk saat nol', function () {
+    $p = artikel();
+
+    $dimuat = BlogPost::query()
+        ->withSum(['bacaHarian as baca_30' => fn ($q) => $q->where('tanggal', '>=', '2000-01-01')], 'jumlah')
+        ->find($p->id);
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $hasil = $dimuat->baca30();
+    $jumlahKueri = count(\Illuminate\Support\Facades\DB::getQueryLog());
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    expect($hasil)->toBe(0)->and($jumlahKueri)->toBe(0);
+});
+
+it('ringkasan daftar disegarkan begitu ada artikel berubah', function () {
+    $this->actingAs(adminArtikel());
+    artikel(['title' => 'Pertama']);
+
+    expect(Livewire::test(BlogList::class)->viewData('tabCounts')['all'])->toBe(1);
+
+    artikel(['title' => 'Kedua']);
+
+    // Kalau singgahannya tidak ikut versi data, angka ini masih 1.
+    expect(Livewire::test(BlogList::class)->viewData('tabCounts')['all'])->toBe(2);
+});
+
+it('gambar yang tidak dirujuk artikel mana pun dibersihkan', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+
+    $disk->put('img/blog/dipakai-sampul.webp', 'x');
+    $disk->put('img/blog/dipakai-isi.webp', 'x');
+    $disk->put('img/blog/yatim.webp', 'x');
+    $disk->put('img/blog/baru-diunggah.webp', 'x');
+
+    // Hanya yang lebih tua dari tenggang yang boleh dihapus.
+    foreach (['dipakai-sampul.webp', 'dipakai-isi.webp', 'yatim.webp'] as $nama) {
+        touch($disk->path('img/blog/'.$nama), now()->subDays(30)->getTimestamp());
+    }
+
+    artikel([
+        'cover' => 'dipakai-sampul.webp',
+        'body' => '<p><img src="/storage/img/blog/dipakai-isi.webp" alt="a"></p>',
+    ]);
+
+    $this->artisan('artikel:bersihkan-gambar --hari=7')->assertSuccessful();
+
+    $disk->assertExists('img/blog/dipakai-sampul.webp');
+    $disk->assertExists('img/blog/dipakai-isi.webp');
+    // Baru diunggah: artikelnya mungkin masih dibuka dan belum disimpan.
+    $disk->assertExists('img/blog/baru-diunggah.webp');
+    $disk->assertMissing('img/blog/yatim.webp');
+});
+
+it('gambar yang masih dipakai artikel di tong sampah tidak dihapus', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+    $disk->put('img/blog/di-sampah.webp', 'x');
+    touch($disk->path('img/blog/di-sampah.webp'), now()->subDays(30)->getTimestamp());
+
+    artikel(['cover' => 'di-sampah.webp'])->delete();
+
+    $this->artisan('artikel:bersihkan-gambar --hari=7')->assertSuccessful();
+
+    $disk->assertExists('img/blog/di-sampah.webp');
+});
+
+// ===================== Riwayat: mampat & pangkas =====================
+
+it('isi revisi disimpan termampat tapi terbaca utuh', function () {
+    $p = artikel();
+    $naskah = '<p>'.str_repeat('kalimat yang berulang-ulang supaya layak dimampatkan. ', 80).'</p>';
+    $p->update(['body' => $naskah]);
+    $p->catatRevisi();
+
+    $revisi = $p->revisi()->first();
+    $mentah = \Illuminate\Support\Facades\DB::table('blog_post_revisions')->where('id', $revisi->id)->value('body');
+
+    expect($revisi->body)->toBe($naskah)
+        ->and($mentah)->toStartWith('gz:')
+        ->and(strlen($mentah))->toBeLessThan(strlen($naskah));
+});
+
+it('revisi lama dipangkas tapi yang terbaru selalu disisakan', function () {
+    $p = artikel();
+
+    for ($i = 0; $i < 12; $i++) {
+        $p->catatRevisi();
+    }
+
+    // Semuanya dituakan; tanpa penyisaan seluruh riwayat bisa habis.
+    \App\Models\BlogPostRevision::query()->update(['created_at' => now()->subDays(400)]);
+
+    $this->artisan('artikel:pangkas-revisi --hari=180 --sisakan=5')->assertSuccessful();
+
+    expect($p->revisi()->count())->toBe(5);
+});
+
+it('revisi yatim ikut dibersihkan', function () {
+    $p = artikel();
+    $p->catatRevisi();
+    $idRevisi = $p->revisi()->first()->id;
+
+    \Illuminate\Support\Facades\DB::table('blog_posts')->where('id', $p->id)->delete();
+
+    $this->artisan('artikel:pangkas-revisi')->assertSuccessful();
+
+    expect(\App\Models\BlogPostRevision::find($idRevisi))->toBeNull();
+});
+
+// ===================== Ekspor–impor bolak-balik =====================
+
+it('artikel yang diekspor ke markdown bisa diimpor kembali utuh', function () {
+    $this->actingAs(adminArtikel());
+
+    $asli = artikel([
+        'title' => 'Panduan Lengkap Garansi',
+        'category' => 'Tips',
+        'tags' => ['garansi', 'akun'],
+        'excerpt' => 'Ringkasan aslinya.',
+        'cover_alt' => 'Ilustrasi garansi',
+        'body' => '<h2>Bagian Satu</h2><p>Isi dengan <strong>tebal</strong> dan <a href="https://contoh.id">tautan</a>.</p><ul><li>butir satu</li><li>butir dua</li></ul>',
+    ]);
+
+    $md = \App\Support\EksporMarkdown::naskah($asli);
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent('hasil-ekspor.md', $md);
+
+    Livewire::test(BlogList::class)->set('berkasImpor', [$berkas]);
+
+    $salinan = BlogPost::where('id', '!=', $asli->id)->first();
+
+    expect($salinan->title)->toBe('Panduan Lengkap Garansi')
+        ->and($salinan->category)->toBe('Tips')
+        ->and($salinan->tagDaftar())->toBe(['garansi', 'akun'])
+        ->and($salinan->excerpt)->toBe('Ringkasan aslinya.')
+        ->and($salinan->cover_alt)->toBe('Ilustrasi garansi')
+        // Front-matter TIDAK boleh bocor jadi isi tulisan.
+        ->and($salinan->body)->not->toContain('title:')
+        ->and($salinan->body)->toContain('<h2>Bagian Satu</h2>')
+        ->and($salinan->body)->toContain('<strong>tebal</strong>')
+        ->and($salinan->body)->toContain('<li>butir satu</li>')
+        // Status di berkas diabaikan; hasil impor selalu draf.
+        ->and($salinan->status)->toBe('draft');
+});
+
+it('berkas markdown tanpa front-matter tetap terbaca seperti biasa', function () {
+    $this->actingAs(adminArtikel());
+
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+        'biasa.md',
+        "# Judul Dari Markdown\n\nParagraf biasa.\n"
+    );
+
+    Livewire::test(BlogList::class)->set('berkasImpor', [$berkas]);
+
+    $p = BlogPost::first();
+    expect($p->title)->toBe('Judul Dari Markdown')
+        ->and($p->body)->toContain('Paragraf biasa.');
+});
+
+it('garis pemisah di awal naskah tidak disangka front-matter', function () {
+    [$judul, $isi] = \App\Support\ImporArtikel::urai("---\n\nParagraf sesudah garis.\n", 'berkas-uji', 'md');
+
+    expect($isi)->toContain('Paragraf sesudah garis.')
+        ->and($judul)->toBe('Berkas Uji');
+});
+
+// ===================== Kategori lewat slug =====================
+
+it('halaman blog menerima kategori sebagai slug maupun nama', function () {
+    BlogCategory::create(['name' => 'Tips & Panduan', 'slug' => 'tips-panduan']);
+    artikel(['title' => 'Artikel Kategori', 'category' => 'Tips & Panduan', 'status' => 'published', 'published_at' => now()->subDay()]);
+    artikel(['title' => 'Artikel Lain', 'category' => 'Akun', 'status' => 'published', 'published_at' => now()->subDays(2)]);
+
+    $lewatSlug = Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class, ['category' => 'tips-panduan']);
+    expect($lewatSlug->get('category'))->toBe('Tips & Panduan')
+        ->and($lewatSlug->viewData('posts')->pluck('title')->all())->toBe(['Artikel Kategori']);
+
+    $lewatNama = Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class, ['category' => 'Tips & Panduan']);
+    expect($lewatNama->viewData('posts')->pluck('title')->all())->toBe(['Artikel Kategori']);
+});
+
+it('sitemap memakai slug kategori, bukan nama ber-spasi', function () {
+    BlogCategory::create(['name' => 'Tips & Panduan', 'slug' => 'tips-panduan']);
+    artikel(['category' => 'Tips & Panduan', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    $isi = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+    expect($isi)->toContain('kategori=tips-panduan')
+        ->not->toContain('Tips%20%26%20Panduan');
+});
+
+// ===================== Riwayat: lihat semua =====================
+
+it('riwayat menampilkan sepuluh versi lalu bisa dibuka seluruhnya', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel();
+
+    for ($i = 0; $i < 14; $i++) {
+        $p->catatRevisi();
+    }
+
+    $t = Livewire::test(BlogForm::class, ['post' => $p]);
+
+    expect($t->instance()->riwayat)->toHaveCount(10)
+        ->and($t->instance()->jumlahRevisi)->toBe(14);
+
+    $t->set('semuaRevisi', true);
+    expect($t->instance()->riwayat)->toHaveCount(14);
 });

@@ -19,13 +19,105 @@ class ImporArtikel
      */
     public static function urai(string $isi, string $namaBerkas, string $jenis): array
     {
+        [$judul, $tubuh] = self::uraiLengkap($isi, $namaBerkas, $jenis);
+
+        return [$judul, $tubuh];
+    }
+
+    /**
+     * Sama dengan urai(), tetapi juga mengembalikan medan dari front-matter.
+     *
+     * @return array{0: string, 1: string, 2: array<string, mixed>}
+     */
+    public static function uraiLengkap(string $isi, string $namaBerkas, string $jenis): array
+    {
         $isi = str_replace(["\r\n", "\r"], "\n", trim($isi));
 
+        // Berkas hasil ekspor sistem ini sendiri berkepala front-matter.
+        // Tanpa ini, "title: ..." dan kawan-kawannya ikut jadi isi tulisan
+        // dan judulnya diambil dari nama berkas — ekspor lalu impor kembali
+        // menghasilkan draf yang salah.
+        [$kepala, $isi] = self::pisahkanFrontMatter($isi);
+
         if (in_array($jenis, ['html', 'htm'], true)) {
-            return [self::judulDariHtml($isi, $namaBerkas), self::potongBadan($isi)];
+            $judul = $kepala['title'] ?? self::judulDariHtml($isi, $namaBerkas);
+
+            return [$judul, self::potongBadan($isi), $kepala];
         }
 
-        return self::dariMarkdown($isi, $namaBerkas);
+        [$judulMd, $tubuh] = self::dariMarkdown($isi, $namaBerkas);
+
+        return [$kepala['title'] ?? $judulMd, $tubuh, $kepala];
+    }
+
+    /**
+     * Pisahkan blok "---" di awal berkas beserta isinya.
+     *
+     * Penguraiannya sengaja sederhana — hanya "kunci: nilai" dan daftar
+     * ["a", "b"] — karena itulah yang ditulis EksporMarkdown. Berkas YAML
+     * rumit dari tempat lain tetap aman: yang tidak dikenali diabaikan.
+     *
+     * @return array{0: array<string, mixed>, 1: string}
+     */
+    private static function pisahkanFrontMatter(string $isi): array
+    {
+        if (! str_starts_with($isi, '---')) {
+            return [[], $isi];
+        }
+
+        $baris = explode("\n", $isi);
+        array_shift($baris);
+
+        $kepala = [];
+        $tutup = false;
+
+        while ($baris) {
+            $b = array_shift($baris);
+
+            if (trim($b) === '---') {
+                $tutup = true;
+                break;
+            }
+
+            if (! preg_match('/^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/', trim($b), $m)) {
+                continue;
+            }
+
+            $kepala[$m[1]] = self::nilaiFrontMatter(trim($m[2]));
+        }
+
+        // Tanpa penutup, "---" itu ternyata bukan front-matter (mis. garis
+        // pemisah di awal tulisan). Naskahnya dikembalikan utuh.
+        if (! $tutup) {
+            return [[], $isi];
+        }
+
+        return [$kepala, ltrim(implode("\n", $baris))];
+    }
+
+    private static function nilaiFrontMatter(string $nilai)
+    {
+        if (str_starts_with($nilai, '[') && str_ends_with($nilai, ']')) {
+            $daftar = array_map(
+                fn ($v) => self::lepasKutip(trim($v)),
+                array_filter(explode(',', trim($nilai, '[]')), fn ($v) => trim($v) !== '')
+            );
+
+            return array_values(array_filter($daftar, 'strlen'));
+        }
+
+        return self::lepasKutip($nilai);
+    }
+
+    private static function lepasKutip(string $nilai): string
+    {
+        $nilai = trim($nilai);
+
+        if (strlen($nilai) >= 2 && $nilai[0] === '"' && str_ends_with($nilai, '"')) {
+            $nilai = substr($nilai, 1, -1);
+        }
+
+        return str_replace(['\\"', '\\\\'], ['"', '\\'], $nilai);
     }
 
     private static function judulDariHtml(string $html, string $cadangan): string
@@ -91,9 +183,17 @@ class ImporArtikel
                 continue;
             }
 
-            if (preg_match('/^(#{2,6})\s+(.+)$/s', $blok, $m)) {
+            // Judul hanya memakan BARIS PERTAMA. Berkas dari tempat lain
+            // sering menulis judul dan paragraf berikutnya tanpa baris kosong
+            // pemisah; tanpa pemisahan ini keduanya melebur jadi satu judul.
+            if (preg_match('/^(#{1,6})\s+([^\n]+)(?:\n(.*))?$/s', $blok, $m)) {
                 $tingkat = min(6, max(2, strlen($m[1])));
                 $keluar[] = '<h'.$tingkat.'>'.self::sebaris(trim($m[2])).'</h'.$tingkat.'>';
+
+                $sisa = trim($m[3] ?? '');
+                if ($sisa !== '') {
+                    $keluar[] = self::markdownKeHtml($sisa);
+                }
 
                 continue;
             }

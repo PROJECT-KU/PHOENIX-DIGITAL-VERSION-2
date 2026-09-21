@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,6 +21,63 @@ class BlogPostRevision extends Model
 
     /** Riwayat yang disimpan per artikel; sisanya dibuang saat menyimpan. */
     public const BATAS = 20;
+
+    /** Penanda di awal kolom body untuk isi yang dimampatkan. */
+    private const TANDA_MAMPAT = 'gz:';
+
+    /**
+     * Isi revisi disimpan TERMAMPAT.
+     *
+     * Dua puluh salinan naskah utuh per artikel tumbuh cepat: artikel 50 KB
+     * dikali 20 versi dikali seratus artikel sudah 100 MB di basis data.
+     * gzip pada HTML biasanya menyisakan sekitar sepertiganya.
+     *
+     * Baris lama yang belum bertanda tetap terbaca apa adanya, jadi
+     * perubahan ini tidak perlu memigrasikan data yang sudah ada.
+     */
+    protected function body(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($nilai) => self::lepasMampat($nilai),
+            set: fn ($nilai) => self::mampatkan($nilai),
+        );
+    }
+
+    private static function mampatkan(?string $nilai): ?string
+    {
+        if ($nilai === null || $nilai === '' || ! function_exists('gzencode')) {
+            return $nilai;
+        }
+
+        $mampat = @gzencode($nilai, 6);
+
+        if ($mampat === false) {
+            return $nilai;
+        }
+
+        $terkode = self::TANDA_MAMPAT.base64_encode($mampat);
+
+        // Naskah sangat pendek justru membengkak setelah dimampatkan dan
+        // di-base64; simpan apa adanya kalau tidak ada untungnya.
+        return strlen($terkode) < strlen($nilai) ? $terkode : $nilai;
+    }
+
+    private static function lepasMampat(?string $nilai): ?string
+    {
+        if ($nilai === null || ! str_starts_with($nilai, self::TANDA_MAMPAT)) {
+            return $nilai;
+        }
+
+        $mentah = base64_decode(substr($nilai, strlen(self::TANDA_MAMPAT)), true);
+
+        if ($mentah === false) {
+            return $nilai;
+        }
+
+        $asli = @gzdecode($mentah);
+
+        return $asli === false ? $nilai : $asli;
+    }
 
     public function post(): BelongsTo
     {
