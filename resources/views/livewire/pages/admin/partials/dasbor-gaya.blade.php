@@ -850,6 +850,20 @@
        tombol yang berdiri sendirian dengan sisi kanan kosong. Penanda jamnya
        disamakan tingginya dengan tombol supaya terbaca sepasang. */
     @media (max-width: 575.98px) {
+        /* Kepala bagian dengan pil jumlah: di ponsel pil "3 hal" naik ke
+           baris kicker, tepat di sebelah teksnya. Di bawah judul ia memakan
+           satu baris penuh hanya untuk satu angka. Keterangan samar tetap di
+           bawah judul. Markupnya tidak dipindah — hanya disusun ulang lewat
+           kisi — jadi desktop dan pembaca layar tidak berubah. */
+        .dsb-kepala-teks.is-hitung-atas {
+            display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center;
+        }
+        .is-hitung-atas > .dsb-kicker { grid-column: 1; grid-row: 1; }
+        .is-hitung-atas > .dsb-judul { grid-column: 1 / -1; grid-row: 2; }
+        .is-hitung-atas > .dsb-chip-deret { display: contents; }
+        .is-hitung-atas .dsb-chip-hitung { grid-column: 2; grid-row: 1; justify-self: start; }
+        .is-hitung-atas .dsb-chip-deret > :not(.dsb-chip-hitung) { grid-column: 1 / -1; margin-top: 4px; }
+
         .dsb-segar-grup { display: flex; margin: 10px 0 0; }
         .dsb-segar-grup > .dsb-segar { flex: 1 1 0; justify-content: center; min-height: 36px; }
     }

@@ -319,11 +319,13 @@ Dashboard || lemon
                 <div class="dsb-rak">
                     <div class="dsb-kepala" style="--c: #d97706">
                         <span class="dsb-kepala-ikon"><i class="bi bi-exclamation-diamond-fill"></i></span>
-                        <div class="dsb-kepala-teks">
+                        {{-- is-hitung-atas: di ponsel pil jumlah naik sebaris dengan
+                             kicker supaya tidak memakan satu baris sendiri. --}}
+                        <div class="dsb-kepala-teks is-hitung-atas">
                             <span class="dsb-kicker">Butuh Perhatian</span>
                             <h2 class="dsb-judul">Yang Menunggu Dikerjakan</h2>
                             <div class="dsb-chip-deret">
-                                <span class="dsb-chip"><i class="bi bi-list-check"></i>{{ count($perhatian) }} hal</span>
+                                <span class="dsb-chip dsb-chip-hitung"><i class="bi bi-list-check"></i>{{ count($perhatian) }} hal</span>
                                 <span class="dsb-chip is-samar">Kartu hanya muncul saat memang ada isinya</span>
                             </div>
                         </div>
