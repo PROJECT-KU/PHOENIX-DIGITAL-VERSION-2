@@ -54,7 +54,7 @@
     /* ===== Bilah cari & saring ===== */
     .bl-saring { margin-bottom: 14px; }
     .bl-saring-isi { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .bl-saring-isi .dsb-cari { flex: 1 1 260px; min-width: 0; max-width: 420px; }
+    .bl-saring-isi .dsb-cari { flex: 1 1 240px; min-width: 0; max-width: 340px; }
     .bl-pilih { flex: 0 0 auto; width: auto; min-width: 150px; }
     .bl-pilih.is-sempit { min-width: 124px; }
     .bl-saklar { position: relative; display: inline-flex; padding: 3px; gap: 3px; border-radius: 12px; background: #f1f5f9; border: 1px solid #e9edf3; }
@@ -65,6 +65,15 @@
     .bl-saklar button.is-aktif { color: #7c3aed; }
     @media (max-width: 575.98px) { .bl-saklar { display: none; } }
     @media (prefers-reduced-motion: reduce) { .bl-saklar-pil { transition: none; } }
+
+    /* Saringan yang jarang dipakai disembunyikan di balik satu tombol,
+       supaya bilah utamanya muat satu baris dan tidak jadi deretan kotak
+       centang yang seragam dan sulit dibedakan. */
+    .bl-saring-lanjut { display: grid; gap: 12px; padding: 0 clamp(14px, 2vw, 20px) clamp(14px, 2vw, 18px); }
+    .bl-saring-judul { margin: 0; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+    .bl-saring-baris { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .bl-saring-titik { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: #7c3aed; }
+    .bl-saring-tombol { position: relative; }
 
     .bl-chip-saring { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 clamp(14px, 2vw, 20px) clamp(12px, 2vw, 16px); }
     .bl-chip-lepas { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid #e9d5ff; background: #faf5ff; color: #6d28d9; font-size: .78rem; font-weight: 700; cursor: pointer; }
@@ -86,7 +95,16 @@
     }
     @media (hover: hover) and (pointer: fine) { .bl-kartu:hover { box-shadow: 0 16px 32px -24px rgba(15, 23, 42, .45); } }
 
-    .bl-sampul { position: relative; display: block; aspect-ratio: 16 / 9; background: linear-gradient(135deg, #f5f3ff, #ede9fe); overflow: hidden; }
+    /* Dipakai sebagai <button> pada artikel yang punya sampul (agar bisa
+       diperbesar), jadi tepi & padding bawaan tombol harus dimatikan —
+       tanpa ini gambarnya terbingkai garis gelap bawaan peramban. */
+    .bl-sampul {
+        position: relative; display: block; width: 100%; aspect-ratio: 16 / 9;
+        padding: 0; border: 0; border-radius: 0; appearance: none; -webkit-appearance: none;
+        font: inherit; color: inherit; text-align: inherit;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe); overflow: hidden;
+    }
+    .bl-sampul:focus-visible { outline: 2px solid #7c3aed; outline-offset: -2px; }
     .bl-sampul img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
     .bl-sampul-kosong { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #a78bfa; }
     .bl-sampul-kosong i { font-size: 1.6rem; }

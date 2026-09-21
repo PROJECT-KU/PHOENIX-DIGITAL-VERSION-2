@@ -149,7 +149,7 @@ Artikel || lemon
         </section>
 
         {{-- ================== CARI & SARING ================== --}}
-        <section class="dsb-kartu bl-saring">
+        <section class="dsb-kartu bl-saring" x-data="{ buka: @js((bool) ($tag !== '' || $fUnggulan || $fMandek || $fPenyunting !== '' || $cariIsi || $ikutIsi)) }">
             <div class="dsb-kartu-isi bl-saring-isi">
                 <div class="dsb-cari">
                     <i class="bi bi-search"></i>
@@ -183,24 +183,6 @@ Artikel || lemon
                     @endforeach
                 </select>
 
-                @if ($tagDaftar)
-                    <select class="dsb-isian bl-pilih is-sempit" wire:model.live="tag" aria-label="Saring tag">
-                        <option value="">Semua tag</option>
-                        @foreach ($tagDaftar as $nama)
-                            <option value="{{ $nama }}">#{{ $nama }}</option>
-                        @endforeach
-                    </select>
-                @endif
-
-                @if ($penyuntingDaftar->isNotEmpty())
-                    <select class="dsb-isian bl-pilih" wire:model.live="fPenyunting" aria-label="Saring menurut penyunting">
-                        <option value="">Semua penyunting</option>
-                        @foreach ($penyuntingDaftar as $u)
-                            <option value="{{ $u->id }}">{{ $u->name }}</option>
-                        @endforeach
-                    </select>
-                @endif
-
                 <select class="dsb-isian bl-pilih" wire:model.live="urut" aria-label="Urutkan">
                     <option value="baru">Terbaru</option>
                     <option value="lama">Terlama</option>
@@ -216,20 +198,11 @@ Artikel || lemon
                     @endforeach
                 </select>
 
-                <label class="bl-tukar {{ $fUnggulan ? 'is-nyala' : '' }}" title="Hanya artikel yang disematkan di halaman blog">
-                    <input type="checkbox" wire:model.live="fUnggulan">
-                    <span>Disematkan</span>
-                </label>
-
-                <label class="bl-tukar {{ $cariIsi ? 'is-nyala' : '' }}" title="Pencarian ikut memindai isi artikel. Jauh lebih lambat karena seluruh naskah dipindai tanpa indeks.">
-                    <input type="checkbox" wire:model.live="cariIsi">
-                    <span>Cari sampai isi</span>
-                </label>
-
-                <label class="bl-tukar {{ $ikutIsi ? 'is-nyala' : '' }}" title="Sertakan isi artikel di berkas Excel/PDF yang diunduh">
-                    <input type="checkbox" wire:model.live="ikutIsi">
-                    <span>Unduh + isi</span>
-                </label>
+                <button type="button" class="bl-btn bl-saring-tombol {{ $this->adaSaring ? 'is-aktif' : '' }}"
+                    x-on:click="buka = ! buka" x-bind:aria-expanded="buka.toString()" aria-label="Saringan lanjutan">
+                    <i class="bi bi-sliders"></i><span>Saring</span>
+                    @if ($this->adaSaring)<span class="bl-saring-titik"></span>@endif
+                </button>
 
                 <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $sasaranMuat }}">
                     <span class="dsb-putar is-kecil"></span>Memuat…
@@ -244,12 +217,64 @@ Artikel || lemon
                 <div class="bl-chip-saring"><span class="bl-galat">{{ $message }}</span></div>
             @enderror
 
-            @unless ($tagDaftar)
-                <p class="bl-petunjuk" style="margin: 0 clamp(14px, 2vw, 20px) clamp(12px, 2vw, 16px);">
-                    <i class="bi bi-lightbulb"></i>
-                    <span>Belum ada artikel yang diberi tag. Tag mengelompokkan tulisan lebih tajam daripada kategori — dipakai bilah topik di halaman blog dan menentukan "artikel terkait" yang muncul di bawah tulisan.</span>
-                </p>
-            @endunless
+            {{-- Saringan yang jarang dipakai. Disembunyikan supaya bilah di atas
+                 muat satu baris; terbuka sendiri kalau salah satunya sedang aktif. --}}
+            <div class="bl-saring-lanjut" x-show="buka" x-collapse x-cloak>
+                <div>
+                    <p class="bl-saring-judul">Persempit hasil</p>
+                    <div class="bl-saring-baris">
+                        @if ($tagDaftar)
+                            <select class="dsb-isian bl-pilih" wire:model.live="tag" aria-label="Saring tag">
+                                <option value="">Semua tag</option>
+                                @foreach ($tagDaftar as $nama)
+                                    <option value="{{ $nama }}">#{{ $nama }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+
+                        @if ($penyuntingDaftar->isNotEmpty())
+                            <select class="dsb-isian bl-pilih" wire:model.live="fPenyunting" aria-label="Saring menurut penyunting">
+                                <option value="">Semua penyunting</option>
+                                @foreach ($penyuntingDaftar as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+
+                        <label class="bl-tukar {{ $fUnggulan ? 'is-nyala' : '' }}" title="Hanya artikel yang disematkan di halaman blog">
+                            <input type="checkbox" wire:model.live="fUnggulan">
+                            <span>Hanya yang disematkan</span>
+                        </label>
+
+                        <label class="bl-tukar {{ $fMandek ? 'is-nyala' : '' }}" title="Sudah lama terbit tapi tidak dibaca sama sekali sebulan terakhir">
+                            <input type="checkbox" wire:model.live="fMandek">
+                            <span>Hanya yang mandek</span>
+                        </label>
+                    </div>
+
+                    @unless ($tagDaftar)
+                        <p class="bl-petunjuk">
+                            <i class="bi bi-lightbulb"></i>
+                            <span>Belum ada artikel yang diberi tag. Tag mengelompokkan tulisan lebih tajam daripada kategori — dipakai bilah topik di halaman blog dan menentukan "artikel terkait" yang muncul di bawah tulisan.</span>
+                        </p>
+                    @endunless
+                </div>
+
+                <div>
+                    <p class="bl-saring-judul">Cari &amp; unduh</p>
+                    <div class="bl-saring-baris">
+                        <label class="bl-tukar {{ $cariIsi ? 'is-nyala' : '' }}" title="Pencarian ikut memindai seluruh naskah — jauh lebih lambat karena tidak ada indeksnya.">
+                            <input type="checkbox" wire:model.live="cariIsi">
+                            <span>Cari sampai isi artikel</span>
+                        </label>
+
+                        <label class="bl-tukar {{ $ikutIsi ? 'is-nyala' : '' }}" title="Sertakan naskah di berkas Excel/PDF yang diunduh">
+                            <input type="checkbox" wire:model.live="ikutIsi">
+                            <span>Sertakan isi di unduhan</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             @if ($chipSaring)
                 <div class="bl-chip-saring">
