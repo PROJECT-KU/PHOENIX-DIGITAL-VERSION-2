@@ -224,6 +224,23 @@
             .bt-aksi > :last-child:nth-child(odd) { grid-column: 1 / -1; }
             .bt-pantau-kepala, .bt-pantau-isi { padding-inline: 16px; }
             .bt-pantau-kepala h6 { flex: 1 1 100%; }
+
+            /* Penghitung di kepala kartu jadi kisi dua kolom sama lebar.
+               Sebagai flex, tiap pil selebar teksnya sendiri — "perlu admin"
+               dan "selesai hari ini" lebar, "antre" sempit — sehingga barisnya
+               membungkus tak rata dan sisi kanan "berjalan" & "antre" kosong.
+               Judul mengambil baris penuh; kalau jumlah pilnya ganjil (mis.
+               penanda "terbengkalai" ikut muncul), yang terakhir mengambil
+               satu baris penuh. */
+            .bt-pantau-kepala { display: grid; grid-template-columns: 1fr 1fr; }
+            .bt-pantau-kepala h6 { grid-column: 1 / -1; }
+            .bt-pantau-kepala > .bt-tab,
+            .bt-pantau-kepala > .bt-hitung,
+            .bt-pantau-kepala > .bt-lama {
+                justify-content: center; min-height: 36px; min-width: 0;
+                white-space: normal; text-align: center; line-height: 1.25;
+            }
+            .bt-pantau-kepala > :last-child:nth-child(even) { grid-column: 1 / -1; }
         }
     </style>
 
