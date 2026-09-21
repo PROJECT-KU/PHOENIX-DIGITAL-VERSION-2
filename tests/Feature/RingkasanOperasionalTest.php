@@ -185,3 +185,42 @@ it('grafik harian menampilkan hari sepi sebagai nol, bukan melompatinya', functi
         ->and($g['nilai'][3])->toBe(100000.0)
         ->and($g['tanggal'])->toHaveCount(4);
 });
+
+it('task telat hanya menghitung tenggat di periode yang dipilih', function () {
+    // Task dari periode lalu yang tak pernah ditutup dulu ikut menumpuk di
+    // kartu dasbor. Kini hanya yang tenggatnya jatuh di periode 21–20 itu.
+    \Illuminate\Support\Carbon::setTestNow('2026-10-05 10:00:00');
+
+    $karyawan = \App\Models\User::factory()->create(['status' => 'active']);
+    $buat = fn (string $tenggat, string $progress = 'belum') => Task::create([
+        'nama' => 'Task '.Str::random(4),
+        'user_id' => $karyawan->id,
+        'periode_bulan' => 10,
+        'periode_tahun' => 2026,
+        'bobot' => 'sedang',
+        'deadline_mulai' => $tenggat,
+        'deadline_selesai' => $tenggat,
+        'progress' => $progress,
+    ]);
+
+    $buat('2026-08-04');                 // periode lalu-lalu — diabaikan
+    $buat('2026-09-18');                 // periode lalu (21 Agt–20 Sep) — diabaikan
+    $buat('2026-09-22');                 // periode ini, telat
+    $buat('2026-10-01');                 // periode ini, telat
+    $buat('2026-10-02', 'selesai');      // periode ini, tapi sudah selesai
+    $buat('2026-10-10');                 // periode ini, belum lewat tenggat
+
+    $mulai = \App\Support\PeriodeGaji::mulai(10, 2026);
+    $akhirEks = \App\Support\PeriodeGaji::akhir(10, 2026)->copy()->addDay()->startOfDay();
+
+    $t = Ringkas::taskTerlambat($mulai, $akhirEks);
+
+    expect($mulai->toDateString())->toBe('2026-09-21')
+        ->and($t['jumlah'])->toBe(2)
+        ->and($t['terlama']->toDateString())->toBe('2026-09-22');
+
+    // Tanpa periode: perilaku lama (sepanjang masa) tetap tersedia.
+    expect(Ringkas::taskTerlambat()['jumlah'])->toBe(4);
+
+    \Illuminate\Support\Carbon::setTestNow();
+});

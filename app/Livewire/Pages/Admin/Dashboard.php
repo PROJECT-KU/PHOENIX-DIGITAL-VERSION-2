@@ -323,11 +323,15 @@ class Dashboard extends Component
         // Angka OPERASIONAL: pekerjaan & uang yang menunggu tindakan. Tidak
         // ikut berubah saat periode digeser — yang menunggu tindakan selalu
         // "sekarang", bukan bulan lalu.
+        //
+        // KECUALI task telat: ia mengikuti periode 21–20 yang dipilih. Task
+        // dari periode lalu yang tak pernah ditutup hanya menumpuk di kartu
+        // ini dan menenggelamkan yang memang perlu dikejar periode ini.
         $operasional = [
             'langganan' => \App\Support\RingkasanOperasional::langganan(),
             'jasa' => \App\Support\RingkasanOperasional::antreanJasa(),
             'pesanan' => \App\Support\RingkasanOperasional::pesananMenunggu(),
-            'task' => \App\Support\RingkasanOperasional::taskTerlambat(),
+            'task' => \App\Support\RingkasanOperasional::taskTerlambat($perMulai, $perAkhirEks),
             'stok' => \App\Support\RingkasanOperasional::stokAkun(),
         ];
 

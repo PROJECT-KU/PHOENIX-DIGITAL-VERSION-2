@@ -137,11 +137,21 @@ class RingkasanOperasional
         ];
     }
 
-    /** Task yang lewat tenggat dan belum selesai. */
-    public static function taskTerlambat(): array
+    /**
+     * Task yang lewat tenggat dan belum selesai.
+     *
+     * Bila periode diberikan (21–20, lihat PeriodeGaji), hanya task yang
+     * TENGGATNYA jatuh di periode itu yang dihitung. Tanpa batas ini kartu
+     * dasbor ikut menghitung task dari periode-periode lalu yang sudah tidak
+     * diurus lagi, sehingga angkanya menumpuk terus dan tidak lagi
+     * menunjukkan apa yang perlu dikejar sekarang.
+     */
+    public static function taskTerlambat(?Carbon $mulai = null, ?Carbon $akhirEksklusif = null): array
     {
         $terlambat = Task::whereDate('deadline_selesai', '<', today())
-            ->where('progress', '!=', 'selesai');
+            ->where('progress', '!=', 'selesai')
+            ->when($mulai, fn ($q) => $q->whereDate('deadline_selesai', '>=', $mulai->toDateString()))
+            ->when($akhirEksklusif, fn ($q) => $q->whereDate('deadline_selesai', '<', $akhirEksklusif->toDateString()));
 
         return [
             'jumlah' => (clone $terlambat)->count(),

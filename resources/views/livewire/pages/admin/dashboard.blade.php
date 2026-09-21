@@ -268,7 +268,8 @@ Dashboard || lemon
                     'pil' => $ops['task']['terlama']
                         ? 'Terlama '.$ops['task']['terlama']->locale('id')->translatedFormat('d M Y')
                         : null,
-                    'ket' => 'Belum selesai melewati tenggatnya',
+                    // Mengikuti periode 21–20 yang dipilih, bukan sepanjang masa.
+                    'ket' => 'Tenggat periode '.$periodeLabel.', belum selesai',
                     'ikon_ket' => 'bi-calendar-x',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.task-saya.index')
                         ? route('admin.task-saya.index') : null,
