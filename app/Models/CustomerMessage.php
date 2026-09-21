@@ -202,6 +202,18 @@ class CustomerMessage extends Model
             : 0;
     }
 
+    /**
+     * Belum dibaca dan sudah menunggu cukup lama untuk pantas ditandai.
+     *
+     * Perbandingannya sengaja di sini, bukan di dalam @if di Blade: teks
+     * ">=" sesudah direktif membuat Livewire melewatkan penanda morph-nya,
+     * dan penanda yang timpang merusak pembaruan Livewire berikutnya.
+     */
+    public function menungguLama(int $jam = 3): bool
+    {
+        return $this->belumDibaca() && $this->menungguJam() >= $jam;
+    }
+
     /** Tautan WhatsApp untuk membalas pengirim (kosong bila nomornya tidak ada). */
     public function tautanWa(?string $pesan = null): ?string
     {

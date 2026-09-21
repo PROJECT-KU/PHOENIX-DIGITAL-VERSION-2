@@ -33,6 +33,7 @@ function berkasPenandaAdmin(): array
         'orcha/rab/*.blade.php',
         'blog/*.blade.php',
         'blog/partials/*.blade.php',
+        'message/*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
 }
 
@@ -119,4 +120,50 @@ it('poller notifikasi tidak berdetak cepat di tab latar belakang', function () {
         ->toContain('}, 5000);')
         // Interval dibersihkan saat komponennya dilepas (wire:navigate).
         ->toContain('destroy() { clearInterval(this.jeda); }');
+});
+
+it('kelas Alpine yang juga dirender server diikat dengan bentuk objek', function () {
+    // x-bind:class="syarat ? 'kelas' : ''" hanya MELEPAS kelas yang
+    // ditambahkan Alpine sendiri. Kalau kelas yang sama juga ikut dirender
+    // server pada tag itu — class="bl-daftar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}"
+    // — yang dari server tidak pernah dilepas: saklar tampilan terlihat
+    // berpindah, tapi daftarnya tetap pada bentuk lama.
+    //
+    // Bentuk objek, x-bind:class="{ 'kelas': syarat }", melepasnya apa pun
+    // asalnya. Dibuktikan langsung di peramban sebelum uji ini ditulis.
+    //
+    // Yang ditandai HANYA yang bentrok: mengikat kelas yang tidak pernah
+    // dirender server dengan ternari tetap aman.
+    $pelanggar = [];
+
+    foreach (berkasPenandaAdmin() as $jalur) {
+        $isi = file_get_contents($jalur);
+
+        // \x27 = kutip tunggal, ditulis begitu supaya polanya muat di dalam
+        // string PHP berkutip tunggal.
+        preg_match_all('/x-bind:class="[^"]*\?\s*\x27([A-Za-z0-9_-]+)\x27\s*:\s*\x27\x27"/', $isi, $m, PREG_OFFSET_CAPTURE | PREG_SET_ORDER);
+
+        foreach ($m as $cocok) {
+            [$ikatan, $posisi] = $cocok[0];
+            $kelas = $cocok[1][0];
+
+            // Ambil teks tag yang membungkus atribut ini.
+            $mulai = strrpos(substr($isi, 0, $posisi), '<');
+            $akhir = strpos($isi, '>', $posisi + strlen($ikatan));
+            if ($mulai === false || $akhir === false) {
+                continue;
+            }
+
+            $tag = substr($isi, $mulai, $akhir - $mulai);
+            $sisaTag = str_replace($ikatan, '', $tag);
+
+            // Kelas yang sama muncul lagi di tag itu (atribut class statis
+            // atau hasil ekspresi Blade) = dua sumber untuk satu kelas.
+            if (str_contains($sisaTag, $kelas)) {
+                $pelanggar[] = basename($jalur).': '.$kelas.' — '.trim($ikatan);
+            }
+        }
+    }
+
+    expect($pelanggar)->toBe([]);
 });

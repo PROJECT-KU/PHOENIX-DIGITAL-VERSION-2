@@ -191,14 +191,14 @@ Pesan Pelanggan || lemon
                 </div>
 
                 <div class="pp-saklar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" role="group" aria-label="Bentuk tampilan daftar"
-                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    x-bind:class="{ 'is-tabel': pilihan === 'tabel' }">
                     <span class="pp-saklar-pil" aria-hidden="true"></span>
-                    <button type="button" x-bind:class="pilihan === 'kartu' ? 'is-aktif' : ''"
+                    <button type="button" x-bind:class="{ 'is-aktif': pilihan === 'kartu' }"
                         x-on:click="pilihan = 'kartu'" wire:click="setTampilan('kartu')"
                         x-bind:aria-pressed="(pilihan === 'kartu').toString()">
                         <i class="bi bi-grid"></i><span>Kartu</span>
                     </button>
-                    <button type="button" x-bind:class="pilihan === 'tabel' ? 'is-aktif' : ''"
+                    <button type="button" x-bind:class="{ 'is-aktif': pilihan === 'tabel' }"
                         x-on:click="pilihan = 'tabel'" wire:click="setTampilan('tabel')"
                         x-bind:aria-pressed="(pilihan === 'tabel').toString()">
                         <i class="bi bi-list-ul"></i><span>Tabel</span>
@@ -414,7 +414,7 @@ Pesan Pelanggan || lemon
 
         {{-- Kerangka pemuatan: tanpa ini kartu lama cuma meredup dan sekilas
              tampak seolah tidak ada yang berubah. --}}
-        <div class="pp-kerangka {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''"
+        <div class="pp-kerangka {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" x-bind:class="{ 'is-tabel': pilihan === 'tabel' }"
             wire:loading.grid wire:target="{{ $sasaranMuat }}">
             @for ($i = 0; $i < 6; $i++)
                 <div class="pp-kerangka-kartu">
@@ -466,7 +466,7 @@ Pesan Pelanggan || lemon
                      dibongkar lalu dibangun ulang. Itu yang bikin pergantiannya
                      mulus (pola yang sama dipakai Moderasi Ulasan Produk). --}}
                 <div class="pp-daftar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}"
-                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    x-bind:class="{ 'is-tabel': pilihan === 'tabel' }">
                     {{-- Tiga label yang benar-benar sejajar dengan isi barisnya.
                          Urutan lain (status, topik, petugas) ada di menu Urutkan
                          supaya kepala ini tidak menjanjikan kolom yang tak ada. --}}
@@ -525,7 +525,7 @@ Pesan Pelanggan || lemon
                                         @if ($item->petugas)
                                             <span class="pp-tanda is-petugas"><i class="bi bi-person-check-fill"></i>{{ $item->petugas->name }}</span>
                                         @endif
-                                        @if ($item->belumDibaca() && $item->menungguJam() >= 3)
+                                        @if ($item->menungguLama())
                                             <span class="pp-tanda is-lama"><i class="bi bi-clock-history"></i>Menunggu {{ $item->menungguTeks() }}</span>
                                         @endif
                                         @if ($pernahSpam($item) && ! $item->is_spam)

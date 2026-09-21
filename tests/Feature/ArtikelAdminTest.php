@@ -1806,3 +1806,27 @@ it('gaya artikel tetap sampai ke halaman sunting lewat induknya', function () {
         ->toContain('.bl-panel-judul')
         ->toContain('class="blog-editor');
 });
+
+it('bentuk tampilan kembali ke kartu setelah bolak-balik', function () {
+    $this->actingAs(adminArtikel());
+    artikel(['title' => 'Satu Artikel']);
+
+    $t = Livewire::test(BlogList::class);
+
+    $t->call('setTampilan', 'tabel');
+    expect($t->html())->toContain('bl-daftar is-tabel');
+
+    // Pernah gagal di layar: pil saklar berpindah tapi daftarnya tetap tabel,
+    // karena kelas "is-tabel" dari server tidak ikut dilepas Alpine.
+    $t->call('setTampilan', 'kartu');
+    expect($t->html())->not->toContain('bl-daftar is-tabel');
+
+    expect($t->get('tampilan'))->toBe('kartu');
+});
+
+it('saklar tampilan mengikat kelas dengan bentuk objek', function () {
+    $blade = file_get_contents(resource_path('views/livewire/pages/admin/blog/blog-list.blade.php'));
+
+    expect($blade)->toContain("x-bind:class=\"{ 'is-tabel': pilihan === 'tabel' }\"")
+        ->not->toContain("x-bind:class=\"pilihan === 'tabel' ? 'is-tabel' : ''\"");
+});

@@ -160,16 +160,22 @@ Artikel || lemon
                 </div>
 
                 {{-- Pil putihnya bergeser; tampilannya sendiri diganti seketika
-                     oleh Alpine supaya tidak menunggu jawaban server. --}}
+                     oleh Alpine supaya tidak menunggu jawaban server.
+
+                     Kelas diikat dengan bentuk OBJEK, bukan ternari string.
+                     Ternari string hanya melepas kelas yang ditambahkan Alpine
+                     sendiri — "is-tabel" yang ikut dirender server bertahan,
+                     sehingga menekan "t" kedua kali memindahkan pil ke Kartu
+                     tapi daftarnya tetap berbentuk tabel. --}}
                 <div class="bl-saklar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}" role="group" aria-label="Bentuk tampilan daftar"
-                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    x-bind:class="{ 'is-tabel': pilihan === 'tabel' }">
                     <span class="bl-saklar-pil" aria-hidden="true"></span>
-                    <button type="button" x-bind:class="pilihan === 'kartu' ? 'is-aktif' : ''"
+                    <button type="button" x-bind:class="{ 'is-aktif': pilihan === 'kartu' }"
                         x-on:click="pilihan = 'kartu'" wire:click="setTampilan('kartu')"
                         x-bind:aria-pressed="(pilihan === 'kartu').toString()">
                         <i class="bi bi-grid"></i><span>Kartu</span>
                     </button>
-                    <button type="button" x-bind:class="pilihan === 'tabel' ? 'is-aktif' : ''"
+                    <button type="button" x-bind:class="{ 'is-aktif': pilihan === 'tabel' }"
                         x-on:click="pilihan = 'tabel'" wire:click="setTampilan('tabel')"
                         x-bind:aria-pressed="(pilihan === 'tabel').toString()">
                         <i class="bi bi-list-ul"></i><span>Tabel</span>
@@ -356,7 +362,7 @@ Artikel || lemon
                      dibongkar lalu dibangun ulang. Itu yang bikin pergantiannya
                      mulus (pola yang sama dipakai Moderasi Ulasan Produk). --}}
                 <div class="bl-daftar {{ $tampilan === 'tabel' ? 'is-tabel' : '' }}"
-                    x-bind:class="pilihan === 'tabel' ? 'is-tabel' : ''">
+                    x-bind:class="{ 'is-tabel': pilihan === 'tabel' }">
                     <div class="bl-tabel-kepala">
                         <button type="button" class="{{ $this->arahUrut('judul') ? 'is-aktif' : '' }}" wire:click="urutkanKolom('judul')">
                             Artikel · {{ $urut === 'judul' ? 'judul A-Z' : 'terbaru' }}
