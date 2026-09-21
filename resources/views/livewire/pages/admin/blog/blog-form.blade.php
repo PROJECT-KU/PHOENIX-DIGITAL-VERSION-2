@@ -22,6 +22,8 @@
     $puncakGrafik = $grafik ? max(max($grafik), 1) : 1;
     $adaGrafik = array_sum($grafik) !== 0;
     $riwayat = $mode === 'edit' ? $this->riwayat : collect();
+    $beda = $mode === 'edit' ? $this->beda : null;
+    $pengalihan = $mode === 'edit' ? $this->pengalihan : collect();
 @endphp
 
 <form wire:submit.prevent="save" class="blog-editor dsb"
@@ -56,6 +58,11 @@
     <div class="bl-form">
         {{-- ============ KOLOM UTAMA: ISI ARTIKEL ============ --}}
         <div class="bl-form-utama">
+            {{-- Di layar sempit pengaturan berada jauh di bawah editor yang
+                 panjang; tanpa pintasan ini orang harus menggulir melewati
+                 seluruh naskah untuk mengubah status. --}}
+            <a href="#bl-pengaturan" class="bl-lompat"><i class="bi bi-arrow-down-circle"></i>Lompat ke pengaturan &amp; sampul</a>
+
             <section class="dsb-kartu">
                 <div class="dsb-kartu-isi">
                     <div class="bl-panel-judul">
@@ -98,10 +105,19 @@
                         @endif
                     </label>
 
+                    {{-- Dipicu tombol gambar di toolbar Quill. Disembunyikan,
+                         bukan dihapus: Livewire yang mengunggah berkasnya. --}}
+                    <input type="file" id="gambarIsiInput" class="bl-sembunyi" wire:model="gambarIsi"
+                        accept="image/png, image/jpeg, image/jpg, image/webp">
+                    @error('gambarIsi') <span class="bl-galat">{{ $message }}</span> @enderror
+
                     <div class="bl-editor-alat">
                         <button type="button" class="bl-btn" x-data x-on:click="document.body.classList.toggle('bl-fokus')" title="Sembunyikan panel lain supaya layar penuh untuk menulis">
                             <i class="bi bi-arrows-fullscreen"></i><span>Mode fokus</span>
                         </button>
+                        <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="gambarIsi">
+                            <span class="dsb-putar is-kecil"></span>Mengunggah gambar…
+                        </span>
                         <span class="bl-hitung {{ $this->jumlahKata >= 300 ? 'is-pas' : '' }}">
                             <i class="bi bi-file-text"></i>{{ number_format($this->jumlahKata, 0, ',', '.') }} kata · {{ $this->lamaBaca }} menit baca
                         </span>
@@ -254,7 +270,7 @@
         </div>
 
         {{-- ============ SAMPING: PENGATURAN ============ --}}
-        <aside class="bl-form-samping">
+        <aside class="bl-form-samping" id="bl-pengaturan">
             <section class="dsb-kartu">
                 <div class="dsb-kartu-isi">
                     <div class="bl-panel-judul">
@@ -338,10 +354,12 @@
                                             <b>{{ $r->title }}</b>
                                             <small>
                                                 {{ $r->created_at->locale('id')->translatedFormat('d M Y H:i') }}
-                                                · {{ number_format($r->jumlahKata(), 0, ',', '.') }} kata
+                                                · {{ \App\Support\BedaTeks::ringkas($r->body, $body) }}
                                                 @if ($r->penyunting) · {{ \Illuminate\Support\Str::limit($r->penyunting->name, 16) }} @endif
                                             </small>
                                         </span>
+                                        <button type="button" class="bl-btn bl-btn-ikon {{ $revisiDilihat === $r->id ? 'is-aktif' : '' }}"
+                                            wire:click="lihatBeda({{ $r->id }})" title="Lihat apa yang berubah"><i class="bi bi-file-diff"></i></button>
                                         <button type="button" class="bl-btn pcek-konfirmasi"
                                             data-action="pulihkanRevisi" data-arg="{{ $r->id }}"
                                             data-title="Kembalikan ke versi ini?"
@@ -351,6 +369,58 @@
                                 @endforeach
                             </ul>
                         @endif
+                    </div>
+                </section>
+            @endif
+
+            @if ($beda)
+                <section class="dsb-kartu">
+                    <div class="dsb-kartu-isi">
+                        <div class="bl-panel-judul">
+                            <span class="bl-panel-ikon" style="background: #f8fafc; color: #64748b;"><i class="bi bi-file-diff"></i></span>
+                            <span>
+                                <b>Beda dengan versi {{ $beda['revisi']->created_at->locale('id')->translatedFormat('d M H:i') }}</b>
+                                <small>{{ $beda['ringkas'] }} · merah dibuang, hijau ditambahkan.</small>
+                            </span>
+                            <button type="button" class="bl-btn bl-seo-acak" wire:click="tutupBeda"><i class="bi bi-x-lg"></i><span>Tutup</span></button>
+                        </div>
+
+                        <p class="bl-beda-label">Judul</p>
+                        <div class="bl-beda">{!! $beda['judul'] !!}</div>
+
+                        <p class="bl-beda-label">Isi</p>
+                        <div class="bl-beda is-panjang">{!! $beda['isi'] !!}</div>
+                    </div>
+                </section>
+            @endif
+
+            @if ($pengalihan->isNotEmpty())
+                <section class="dsb-kartu">
+                    <div class="dsb-kartu-isi">
+                        <div class="bl-panel-judul">
+                            <span class="bl-panel-ikon" style="background: #ecfeff; color: #0e7490;"><i class="bi bi-signpost-split"></i></span>
+                            <span>
+                                <b>Alamat lama</b>
+                                <small>Masih mengarah ke artikel ini (pengalihan permanen).</small>
+                            </span>
+                        </div>
+
+                        <ul class="bl-riwayat">
+                            @foreach ($pengalihan as $alih)
+                                <li wire:key="alih-{{ $alih->id }}">
+                                    <span class="bl-riwayat-teks">
+                                        <b>/blog/{{ $alih->slug_lama }}</b>
+                                        <small>dibuat {{ $alih->created_at->locale('id')->translatedFormat('d M Y') }}</small>
+                                    </span>
+                                    <button type="button" class="bl-btn bl-btn-ikon is-bahaya pcek-konfirmasi"
+                                        data-action="hapusPengalihan" data-arg="{{ $alih->id }}"
+                                        data-title="Hapus alamat lama ini?"
+                                        data-text="Tautan yang memakai alamat itu akan berakhir di halaman tidak ditemukan. Hapus hanya kalau alamatnya memang salah ketik."
+                                        data-confirm="Ya, hapus" data-icon="warning"
+                                        title="Hapus pengalihan"><i class="bi bi-trash"></i></button>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 </section>
             @endif
@@ -434,6 +504,12 @@
                             <button type="button" class="bl-btn" wire:click="tambahTag"><i class="bi bi-plus-lg"></i></button>
                         </div>
                         @error('tags') <span class="bl-galat">{{ $message }}</span> @enderror
+                        @unless ($tags)
+                            <span class="bl-petunjuk">
+                                <i class="bi bi-lightbulb"></i>
+                                <span>Tag menentukan artikel terkait yang muncul di bawah tulisan ini dan mengisi bilah topik di halaman blog.</span>
+                            </span>
+                        @endunless
                     </div>
                 </div>
             </section>
@@ -542,7 +618,7 @@
     const blogToolbar = [
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'header': 2 }, { 'header': 3 }],
-        ['blockquote', 'link'],
+        ['blockquote', 'code-block', 'link', 'image'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         [{ 'align': [] }],
         ['clean']
@@ -550,8 +626,26 @@
 
     const quillBody = new Quill('#editor-body', {
         theme: 'snow',
-        modules: { toolbar: blogToolbar },
+        modules: {
+            toolbar: {
+                container: blogToolbar,
+                handlers: {
+                    // Bawaan Quill menyisipkan gambar sebagai base64 di dalam
+                    // naskah. Satu foto kamera saja bisa membengkakkan isi
+                    // artikel puluhan megabyte, jadi berkasnya diunggah dulu.
+                    image: function () {
+                        rangeTersimpan = quillBody.getSelection(true);
+                        document.getElementById('gambarIsiInput')?.click();
+                    },
+                },
+            },
+        },
         placeholder: 'Tulis isi artikel di sini...'
+    });
+
+    let rangeTersimpan = null;
+    quillBody.on('selection-change', function (range) {
+        if (range) rangeTersimpan = range;
     });
 
     const hiddenBody = document.querySelector('#body');
@@ -623,6 +717,52 @@
 
     // Isi dikembalikan dari riwayat: editor harus ikut berganti, kalau tidak
     // yang terlihat masih versi lama dan penyimpanan berikutnya menimpanya lagi.
+    $wire.on('gambar-tersisip', async (e) => {
+        const url = Array.isArray(e) ? e[0]?.url : e?.url;
+        if (!url) return;
+
+        let keterangan = '';
+        if (typeof Swal !== 'undefined') {
+            const jawab = await Swal.fire({
+                title: 'Keterangan gambar',
+                input: 'text',
+                inputPlaceholder: 'Mis. Tampilan halaman pesanan di ponsel',
+                text: 'Boleh dikosongkan. Dipakai sebagai teks alternatif dan ditulis di bawah gambar.',
+                showCancelButton: true,
+                confirmButtonText: 'Sisipkan',
+                cancelButtonText: 'Tanpa keterangan',
+                reverseButtons: true,
+                buttonsStyling: false,
+                background: 'rgba(255,255,255,.96)',
+                backdrop: 'rgba(124, 58, 237, .18)',
+                customClass: { popup: 'shadow rounded-4', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel' },
+            });
+            if (jawab.isConfirmed) keterangan = (jawab.value || '').trim();
+        }
+
+        const posisi = (rangeTersimpan ? rangeTersimpan.index : quillBody.getLength());
+        quillBody.insertEmbed(posisi, 'image', url, 'user');
+
+        // Teks alternatif ditulis langsung ke elemennya: blot gambar Quill
+        // menyimpan src saja kalau tidak diatur sesudah disisipkan.
+        const img = quillBody.root.querySelector('img[src="' + url + '"]');
+        if (img && keterangan) img.setAttribute('alt', keterangan);
+
+        let lanjut = posisi + 1;
+        if (keterangan) {
+            // Keterangan ditulis sebagai paragraf miring tepat di bawah
+            // gambar — bentuk yang dikenali gaya artikel publik sebagai
+            // caption, tanpa perlu blot khusus di editor.
+            quillBody.insertText(lanjut, '\n' + keterangan, { italic: true }, 'user');
+            lanjut += keterangan.length + 1;
+        }
+
+        quillBody.setSelection(lanjut, 0, 'user');
+        hiddenBody.value = quillBody.root.innerHTML;
+        hiddenBody.dispatchEvent(new Event('input'));
+        tandaiBerubah();
+    });
+
     $wire.on('isi-dipulihkan', (e) => {
         const isi = Array.isArray(e) ? e[0]?.isi : e?.isi;
         if (typeof isi !== 'string') return;

@@ -35,7 +35,10 @@ class HtmlSanitizer
     private const ATRIBUT_AMAN = [
         '*' => ['class', 'style', 'title'],
         'a' => ['href', 'target', 'rel'],
-        'img' => ['src', 'alt', 'width', 'height'],
+        // loading/decoding ditambahkan BlogImageService supaya gambar tidak
+        // menahan pemuatan halaman; tanpa masuk daftar ini keduanya dibuang
+        // lagi saat ditampilkan. 'title' menyimpan keterangan gambar.
+        'img' => ['src', 'alt', 'width', 'height', 'title', 'loading', 'decoding'],
         'td' => ['colspan', 'rowspan'],
         'th' => ['colspan', 'rowspan'],
     ];

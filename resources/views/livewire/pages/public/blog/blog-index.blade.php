@@ -2,6 +2,15 @@
     {{-- Penemuan otomatis umpan: pembaca RSS menemukannya tanpa perlu
          ditunjukkan alamatnya. --}}
     <link rel="alternate" type="application/rss+xml" title="Blog Phoenix Digital" href="{{ route('blog.feed') }}">
+
+    {{-- Penanda halaman berurutan: tanpa ini tiap halaman daftar terbaca
+         sebagai halaman terpisah yang isinya mirip. --}}
+    @if ($posts->previousPageUrl())
+        <link rel="prev" href="{{ $posts->previousPageUrl() }}">
+    @endif
+    @if ($posts->nextPageUrl())
+        <link rel="next" href="{{ $posts->nextPageUrl() }}">
+    @endif
 @endpush
 
 @section('title')

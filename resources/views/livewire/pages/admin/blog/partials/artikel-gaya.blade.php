@@ -377,8 +377,9 @@
 
     /* ===== Riwayat versi ===== */
     .bl-riwayat { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .bl-riwayat li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 11px; border-radius: 11px; background: #f8fafc; border: 1px solid #eef2f7; }
-    .bl-riwayat-teks { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .bl-riwayat li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 9px 11px; border-radius: 11px; background: #f8fafc; border: 1px solid #eef2f7; }
+    .bl-riwayat-teks { flex: 1 1 150px; min-width: 0; overflow: hidden; }
+    .bl-riwayat li > .bl-btn:first-of-type { margin-left: auto; }
     .bl-riwayat-teks b { display: block; font-size: .82rem; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bl-riwayat-teks small { display: block; font-size: .74rem; color: #94a3b8; }
     .bl-riwayat .bl-btn { flex: 0 0 auto; height: 30px; padding: 0 10px; font-size: .74rem; }
@@ -418,6 +419,53 @@
     /* ===== Tautan hasil periksa ===== */
     .bl-tautan-daftar a { color: #4338ca; text-decoration: none; overflow-wrap: anywhere; }
     .bl-tautan-daftar a:hover { text-decoration: underline; }
+
+
+    /* Penanda sekunder disembunyikan di bentuk tabel pada layar sedang:
+       enam chip dalam satu baris membuat tingginya tidak lagi seragam. */
+    @media (min-width: 768px) and (max-width: 1399.98px) {
+        .bl-daftar.is-tabel .bl-tanda.is-sekunder { display: none; }
+    }
+
+    /* ===== Tampilan beda versi ===== */
+    .bl-beda-label { margin: 12px 0 5px; font-size: .76rem; font-weight: 700; color: #475569; }
+    .bl-beda {
+        padding: 11px 13px; border-radius: 11px; background: #f8fafc; border: 1px solid #eef2f7;
+        font-size: .84rem; line-height: 1.7; color: #334155; overflow-wrap: anywhere;
+    }
+    .bl-beda.is-panjang { max-height: 320px; overflow-y: auto; }
+    .bl-beda .bd-buang { background: #fee2e2; color: #991b1b; text-decoration: line-through; padding: 0 2px; border-radius: 3px; }
+    .bl-beda .bd-tambah { background: #dcfce7; color: #166534; text-decoration: none; padding: 0 2px; border-radius: 3px; }
+    .bl-beda .bd-sama { color: #94a3b8; }
+
+    /* ===== Pintasan ke pengaturan di ponsel ===== */
+    .bl-lompat { display: none; }
+    @media (max-width: 1199.98px) {
+        .bl-lompat {
+            display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px;
+            padding: 9px 14px; border-radius: 11px; border: 1px dashed #c4b5fd;
+            background: #faf5ff; color: #6d28d9; font-size: .82rem; font-weight: 700;
+            text-decoration: none;
+        }
+    }
+
+    /* ===== Tombol aksi di layar sentuh =====
+       Tooltip tidak pernah muncul di layar sentuh, jadi lima ikon tanpa teks
+       harus ditebak. Di perangkat sentuh labelnya dimunculkan lagi. */
+    @media (pointer: coarse) and (min-width: 768px) {
+        .bl-daftar.is-tabel .bl-aksi { flex: 1 1 100%; justify-content: flex-end; }
+        .bl-daftar.is-tabel .bl-aksi-utama .bl-btn span { display: inline; }
+        .bl-daftar.is-tabel .bl-aksi-utama .bl-btn { flex: 0 0 auto; padding: 0 14px; }
+        .bl-daftar.is-tabel .bl-btn-ikon { min-width: 40px; }
+    }
+
+    /* ===== Petunjuk keadaan kosong ===== */
+    .bl-petunjuk {
+        display: flex; align-items: flex-start; gap: 9px; margin: 10px 0 0;
+        padding: 10px 13px; border-radius: 11px; background: #f8fafc; border: 1px dashed #e2e8f0;
+        font-size: .79rem; line-height: 1.55; color: #64748b;
+    }
+    .bl-petunjuk i { flex: 0 0 auto; margin-top: 2px; color: #94a3b8; }
 
     /* ===== Fokus papan tik ===== */
     .bl-btn:focus-visible, .bl-status-btn:focus-visible, .bl-chip-lepas:focus-visible,

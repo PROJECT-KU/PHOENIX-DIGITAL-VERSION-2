@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Blog;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Services\BlogImageService;
+use App\Support\BedaTeks;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -28,6 +29,9 @@ class BlogForm extends Component
     public $body = '';
 
     public $cover; // upload baru
+
+    /** Gambar yang disisipkan ke DALAM isi artikel lewat tombol editor. */
+    public $gambarIsi;
 
     public $existingCover = null; // nama file lama
 
@@ -76,6 +80,9 @@ class BlogForm extends Component
 
     /** Diisi saat bentrok terdeteksi; tampilan menawarkan timpa atau batal. */
     public bool $bentrok = false;
+
+    /** Id revisi yang sedang dibandingkan dengan isi sekarang. */
+    public ?int $revisiDilihat = null;
 
     public function mount()
     {
@@ -435,6 +442,66 @@ class BlogForm extends Component
         return $this->post ? $this->post->revisi()->with('penyunting')->take(10)->get() : collect();
     }
 
+    public function lihatBeda(int $id): void
+    {
+        $this->revisiDilihat = $this->revisiDilihat === $id ? null : $id;
+    }
+
+    public function tutupBeda(): void
+    {
+        $this->revisiDilihat = null;
+    }
+
+    /**
+     * Perbedaan isi antara versi yang dipilih dan isi sekarang.
+     *
+     * Tanpa ini riwayat hanya bisa menjawab "kapan berubah", bukan "apa yang
+     * berubah" — dan satu-satunya cara tahu adalah memulihkannya dulu.
+     */
+    public function getBedaProperty(): ?array
+    {
+        if (! $this->revisiDilihat || ! $this->post) {
+            return null;
+        }
+
+        $revisi = $this->post->revisi()->whereKey($this->revisiDilihat)->first();
+
+        if (! $revisi) {
+            return null;
+        }
+
+        return [
+            'revisi' => $revisi,
+            'judul' => BedaTeks::antara($revisi->title, $this->title),
+            'isi' => BedaTeks::antara($revisi->body, $this->body),
+            'ringkas' => BedaTeks::ringkas($revisi->body, $this->body),
+        ];
+    }
+
+    /** Alamat lama yang masih mengarah ke artikel ini. */
+    public function getPengalihanProperty()
+    {
+        return $this->post ? $this->post->pengalihan()->latest('id')->get() : collect();
+    }
+
+    /**
+     * Buang satu pengalihan.
+     *
+     * Berguna untuk alamat yang lahir dari salah ketik: membiarkannya berarti
+     * alamat keliru itu selamanya sah dan bisa muncul di hasil pencarian.
+     */
+    public function hapusPengalihan(int $id): void
+    {
+        if (! auth()->user()?->hasPermission('edit_blog')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah artikel.');
+
+            return;
+        }
+
+        $this->post?->pengalihan()->whereKey($id)->delete();
+        $this->dispatch('swal-success', message: 'Alamat lama dihapus. Tautan lama itu sekarang berakhir di halaman tidak ditemukan.');
+    }
+
     /**
      * Kembalikan isi ke salah satu versi lama.
      *
@@ -482,6 +549,39 @@ class BlogForm extends Component
             ['label' => 'Muncul di paragraf awal', 'ok' => str_contains($awal, $kunci)],
             ['label' => 'Muncul di meta description', 'ok' => str_contains(mb_strtolower((string) $this->meta_description), $kunci)],
         ];
+    }
+
+    /**
+     * Unggah gambar yang disisipkan ke dalam isi artikel.
+     *
+     * Disimpan sebagai berkas WEBP ringan lebih dulu, bukan base64 di dalam
+     * naskah: satu foto kamera yang ditempel mentah bisa membengkakkan isi
+     * artikel sampai puluhan megabyte dan membuat penyimpanan gagal.
+     */
+    public function updatedGambarIsi(): void
+    {
+        $this->validate([
+            'gambarIsi' => 'required|image|mimes:png,jpg,jpeg,webp|max:8192',
+        ], [], ['gambarIsi' => 'gambar']);
+
+        $svc = app(BlogImageService::class);
+        $nama = 'blog_isi_'.time().'_'.mt_rand(10000, 99999).'.webp';
+        $dir = Storage::disk('public')->path('img/blog');
+
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        if (! $svc->compressFileToWebp($this->gambarIsi->getRealPath(), $dir.DIRECTORY_SEPARATOR.$nama, 1600)) {
+            // Kompres gagal (mis. ekstensi GD tidak lengkap) — simpan apa adanya
+            // supaya tombolnya tetap bisa dipakai.
+            $nama = 'blog_isi_'.time().'_'.mt_rand(10000, 99999).'.'.($this->gambarIsi->getClientOriginalExtension() ?: 'jpg');
+            $this->gambarIsi->storeAs('img/blog', $nama, 'public');
+        }
+
+        $this->reset('gambarIsi');
+
+        $this->dispatch('gambar-tersisip', url: asset('storage/img/blog/'.$nama));
     }
 
     /**

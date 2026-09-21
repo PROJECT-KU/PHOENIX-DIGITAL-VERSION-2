@@ -1054,7 +1054,7 @@ it('impor berkas markdown membuat draf baru', function () {
         "# Panduan Hasil Impor\n\nParagraf **pertama** artikel.\n\n## Bagian Dua\n\n- satu\n- dua\n"
     );
 
-    Livewire::test(BlogList::class)->set('berkasImpor', $berkas);
+    Livewire::test(BlogList::class)->set('berkasImpor', [$berkas]);
 
     $p = BlogPost::where('title', 'Panduan Hasil Impor')->first();
 
@@ -1073,7 +1073,7 @@ it('impor menolak jenis berkas yang tidak didukung', function () {
 
     $berkas = \Illuminate\Http\UploadedFile::fake()->create('gambar.png', 10, 'image/png');
 
-    Livewire::test(BlogList::class)->set('berkasImpor', $berkas)->assertHasErrors('berkasImpor');
+    Livewire::test(BlogList::class)->set('berkasImpor', [$berkas])->assertHasErrors('berkasImpor.0');
 
     expect(BlogPost::count())->toBe(0);
 });
@@ -1083,7 +1083,7 @@ it('tanpa izin membuat artikel, impor ditolak', function () {
 
     $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent('catatan.md', "# Apa Saja\n\nIsi.\n");
 
-    Livewire::test(BlogList::class)->set('berkasImpor', $berkas);
+    Livewire::test(BlogList::class)->set('berkasImpor', [$berkas]);
 
     expect(BlogPost::count())->toBe(0);
 });
@@ -1210,4 +1210,273 @@ it('artikel hasil simpan manual tidak pernah ikut terpangkas', function () {
     $this->artisan('artikel:bersihkan-draf --hari=60')->assertSuccessful();
 
     expect(BlogPost::find($p->id))->not->toBeNull();
+});
+
+// ===================== Gambar di dalam isi =====================
+
+it('gambar yang disisipkan ke isi diunggah sebagai berkas, bukan base64', function () {
+    $this->actingAs(adminArtikel());
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $gambar = \Illuminate\Http\UploadedFile::fake()->image('foto.jpg', 1200, 800);
+
+    $t = Livewire::test(BlogForm::class)->set('gambarIsi', $gambar);
+
+    $t->assertDispatched('gambar-tersisip');
+
+    $berkas = \Illuminate\Support\Facades\Storage::disk('public')->files('img/blog');
+    expect($berkas)->toHaveCount(1)
+        ->and($berkas[0])->toContain('blog_isi_')
+        // Medannya dikosongkan lagi supaya unggahan berikutnya bersih.
+        ->and($t->get('gambarIsi'))->toBeNull();
+});
+
+it('penyaring html tidak lagi membuang atribut gambar yang dipakai', function () {
+    $bersih = \App\Support\HtmlSanitizer::bersihkan(
+        '<p><img src="/a.webp" alt="Teks" title="Keterangan" loading="lazy" decoding="async" onerror="alert(1)"></p>'
+    );
+
+    expect($bersih)->toContain('alt="Teks"')
+        ->toContain('title="Keterangan"')
+        ->toContain('loading="lazy"')
+        ->toContain('decoding="async"')
+        // Yang berbahaya tetap dibuang.
+        ->not->toContain('onerror');
+});
+
+// ===================== Beda versi =====================
+
+it('beda versi menandai kata yang dibuang dan ditambahkan', function () {
+    $hasil = (string) \App\Support\BedaTeks::antara('<p>satu dua tiga</p>', '<p>satu dua empat lima</p>');
+
+    expect($hasil)->toContain('<del class="bd-buang">tiga</del>')
+        ->toContain('<ins class="bd-tambah">empat lima</ins>');
+
+    expect(\App\Support\BedaTeks::ringkas('<p>satu dua tiga</p>', '<p>satu dua empat lima</p>'))
+        ->toBe('+2 kata, −1 kata');
+
+    expect(\App\Support\BedaTeks::ringkas('<p>sama saja</p>', '<p>sama saja</p>'))->toBe('isi sama');
+});
+
+it('layar sunting bisa menampilkan beda satu versi lalu menutupnya', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Judul Kini', 'body' => '<p>isi lama sekali</p>']);
+    $p->catatRevisi();
+    $revisi = $p->revisi()->first();
+
+    $t = Livewire::test(BlogForm::class, ['post' => $p])->set('body', '<p>isi baru sekali</p>');
+
+    expect($t->instance()->beda)->toBeNull();
+
+    $t->call('lihatBeda', $revisi->id);
+    $beda = $t->instance()->beda;
+
+    expect($beda['revisi']->id)->toBe($revisi->id)
+        ->and((string) $beda['isi'])->toContain('bd-buang')
+        ->and((string) $beda['isi'])->toContain('bd-tambah');
+
+    // Tombol yang sama menutupnya lagi.
+    $t->call('lihatBeda', $revisi->id);
+    expect($t->instance()->beda)->toBeNull();
+});
+
+// ===================== Kelola alamat lama =====================
+
+it('alamat lama artikel bisa dilihat dan dihapus dari layar sunting', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Judul Awal']);
+    $slugLama = $p->slug;
+
+    Livewire::test(BlogForm::class, ['post' => $p])->set('slug', 'alamat-benar')->call('save');
+
+    $p->refresh();
+    $t = Livewire::test(BlogForm::class, ['post' => $p]);
+    expect($t->instance()->pengalihan)->toHaveCount(1);
+
+    $alih = \App\Models\BlogPostRedirect::where('slug_lama', $slugLama)->first();
+    $t->call('hapusPengalihan', $alih->id);
+
+    expect(\App\Models\BlogPostRedirect::count())->toBe(0);
+    $this->get('/blog/'.$slugLama)->assertNotFound();
+});
+
+it('tanpa izin ubah, alamat lama tidak bisa dihapus', function () {
+    $p = artikel();
+    $alih = \App\Models\BlogPostRedirect::create(['slug_lama' => 'alamat-lama', 'blog_post_id' => $p->id]);
+
+    $this->actingAs(adminArtikel(['view_blog']));
+    Livewire::test(BlogForm::class, ['post' => $p])->call('hapusPengalihan', $alih->id);
+
+    expect(\App\Models\BlogPostRedirect::count())->toBe(1);
+});
+
+// ===================== Sitemap & 404 =====================
+
+it('sitemap menyebut waktu perubahan artikel dan halaman kategori & tag', function () {
+    artikel([
+        'title' => 'Artikel Sitemap',
+        'category' => 'Panduan',
+        'tags' => ['garansi'],
+        'status' => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+
+    $isi = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+    expect($isi)->toContain('<lastmod>')
+        ->toContain(route('blog.index', ['kategori' => 'Panduan']))
+        ->toContain(route('blog.index', ['tag' => 'garansi']));
+});
+
+it('sitemap tidak memuat artikel yang sudah berhenti tayang', function () {
+    artikel([
+        'title' => 'Sudah Berakhir',
+        'slug' => 'sudah-berakhir',
+        'status' => 'published',
+        'published_at' => now()->subDays(5),
+        'unpublish_at' => now()->subDay(),
+    ]);
+
+    expect($this->get('/sitemap.xml')->getContent())->not->toContain('/blog/sudah-berakhir');
+});
+
+it('alamat artikel yang salah menawarkan judul yang mirip', function () {
+    artikel([
+        'title' => 'Cara Cek Plagiasi Skripsi',
+        'slug' => 'cara-cek-plagiasi-skripsi',
+        'status' => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+
+    $this->get('/blog/cara-cek-plagiasi-tesis')
+        ->assertNotFound()
+        ->assertSee('Artikel ini tidak ada')
+        ->assertSee('Cara Cek Plagiasi Skripsi');
+});
+
+it('halaman tidak ditemukan tetap menawarkan tulisan terbaru saat tak ada yang mirip', function () {
+    artikel(['title' => 'Tulisan Paling Baru', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    $this->get('/blog/zzzz')
+        ->assertNotFound()
+        ->assertSee('Tulisan Paling Baru');
+});
+
+it('daftar blog menandai halaman berikutnya untuk mesin pencari', function () {
+    for ($i = 0; $i < 15; $i++) {
+        artikel(['title' => 'Artikel Nomor '.$i, 'status' => 'published', 'published_at' => now()->subDays($i + 1)]);
+    }
+
+    $this->get('/blog')->assertOk()->assertSee('rel="next"', false);
+});
+
+// ===================== Aksi massal tag & saringan penyunting =====================
+
+it('tag bisa ditambahkan dan dilepas untuk banyak artikel sekaligus', function () {
+    $this->actingAs(adminArtikel());
+    $a = artikel(['tags' => ['lama']]);
+    $b = artikel();
+
+    $t = Livewire::test(BlogList::class)
+        ->call('pilihHalaman', [(string) $a->id, (string) $b->id])
+        ->set('tagMassal', 'promo')
+        ->call('massalTagTambah');
+
+    expect($a->refresh()->tagDaftar())->toBe(['lama', 'promo'])
+        ->and($b->refresh()->tagDaftar())->toBe(['promo'])
+        // Medannya dikosongkan supaya aksi berikutnya tidak memakai tag lama.
+        ->and($t->get('tagMassal'))->toBe('');
+
+    Livewire::test(BlogList::class)
+        ->call('pilihHalaman', [(string) $a->id, (string) $b->id])
+        ->set('tagMassal', 'promo')
+        ->call('massalTagLepas');
+
+    expect($a->refresh()->tagDaftar())->toBe(['lama'])
+        ->and($b->refresh()->tags)->toBeNull();
+});
+
+it('aksi massal tag menghormati batas delapan tag', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['tags' => ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']]);
+
+    Livewire::test(BlogList::class)
+        ->call('pilihHalaman', [(string) $p->id])
+        ->set('tagMassal', 'kesembilan')
+        ->call('massalTagTambah');
+
+    expect($p->refresh()->tagDaftar())->toHaveCount(8);
+});
+
+it('daftar bisa disaring menurut siapa yang terakhir mengubah', function () {
+    $saya = adminArtikel();
+    $orangLain = adminArtikel();
+
+    $this->actingAs($saya);
+    $punyaSaya = artikel(['title' => 'Diubah Saya']);
+    $punyaSaya->update(['excerpt' => 'diubah']);
+
+    $punyaDia = artikel(['title' => 'Diubah Dia']);
+    $punyaDia->forceFill(['updated_by' => $orangLain->id])->saveQuietly();
+
+    $t = Livewire::test(BlogList::class)->set('fPenyunting', (string) $orangLain->id);
+
+    expect($t->viewData('posts')->pluck('title')->all())->toBe(['Diubah Dia'])
+        ->and(collect($t->instance()->chipSaring())->pluck('nama'))->toContain('fPenyunting');
+
+    expect($t->viewData('penyuntingDaftar')->pluck('id')->all())->toContain($orangLain->id);
+});
+
+// ===================== Ekspor Markdown & impor banyak =====================
+
+it('satu artikel diunduh sebagai satu berkas markdown', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Naskah Tunggal', 'category' => 'Tips', 'tags' => ['satu']]);
+
+    Livewire::test(BlogList::class)
+        ->call('pilihHalaman', [(string) $p->id])
+        ->call('unduhMarkdown')
+        ->assertFileDownloaded($p->slug.'.md');
+});
+
+it('banyak artikel diunduh sebagai satu arsip', function () {
+    $this->actingAs(adminArtikel());
+    artikel();
+    artikel();
+
+    Livewire::test(BlogList::class)->call('unduhMarkdown')->assertFileDownloaded();
+});
+
+it('naskah markdown membawa front-matter dan isi yang terbaca', function () {
+    $p = artikel([
+        'title' => 'Judul Naskah',
+        'category' => 'Tips',
+        'tags' => ['satu', 'dua'],
+        'body' => '<h2>Bagian</h2><p>Teks <strong>tebal</strong> dan <a href="https://contoh.id">tautan</a>.</p>',
+    ]);
+
+    $md = \App\Support\EksporMarkdown::naskah($p);
+
+    expect($md)->toStartWith('---')
+        ->toContain('title: "Judul Naskah"')
+        ->toContain('tags: ["satu", "dua"]')
+        ->toContain('## Bagian')
+        ->toContain('**tebal**')
+        ->toContain('[tautan](https://contoh.id)');
+});
+
+it('impor beberapa berkas sekaligus membuat draf untuk masing-masing', function () {
+    $this->actingAs(adminArtikel());
+
+    $berkas = [
+        \Illuminate\Http\UploadedFile::fake()->createWithContent('satu.md', "# Artikel Satu\n\nIsi pertama.\n"),
+        \Illuminate\Http\UploadedFile::fake()->createWithContent('dua.md', "# Artikel Dua\n\nIsi kedua.\n"),
+    ];
+
+    $t = Livewire::test(BlogList::class)->set('berkasImpor', $berkas);
+
+    expect(BlogPost::where('status', 'draft')->count())->toBe(2);
+
+    // Banyak berkas TIDAK membuka penyunting; cukup dipindahkan ke tab Draf.
+    $t->assertSet('filter', 'draft')->assertNoRedirect();
 });

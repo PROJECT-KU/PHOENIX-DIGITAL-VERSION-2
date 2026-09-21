@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Blog;
 use App\Exports\ArtikelExport;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Support\EksporMarkdown;
 use App\Support\ImporArtikel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
@@ -51,6 +52,10 @@ class BlogList extends Component
     #[Url(as: 'mandek', except: false)]
     public bool $fMandek = false;
 
+    /** Saring menurut siapa yang terakhir mengubah. */
+    #[Url(as: 'oleh', except: '')]
+    public string $fPenyunting = '';
+
     /** Id artikel yang dicentang untuk aksi massal. */
     public array $pilih = [];
 
@@ -60,8 +65,11 @@ class BlogList extends Component
     /** Sertakan isi artikel di unduhan (bukan hanya metadata). */
     public bool $ikutIsi = false;
 
-    /** Berkas tulisan yang diimpor jadi draf baru. */
-    public $berkasImpor;
+    /** Berkas tulisan yang diimpor jadi draf baru (boleh banyak sekaligus). */
+    public $berkasImpor = [];
+
+    /** Tag yang dipakai aksi massal. */
+    public string $tagMassal = '';
 
     public const TAB = ['all', 'published', 'terjadwal', 'draft', 'sampah'];
 
@@ -79,7 +87,7 @@ class BlogList extends Component
 
     public function updated($nama): void
     {
-        if (in_array($nama, ['category', 'tag', 'urut', 'perPage', 'tampilan', 'fUnggulan', 'fMandek'], true)) {
+        if (in_array($nama, ['category', 'tag', 'urut', 'perPage', 'tampilan', 'fUnggulan', 'fMandek', 'fPenyunting'], true)) {
             $this->resetPage();
         }
 
@@ -112,14 +120,14 @@ class BlogList extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'category', 'tag', 'urut', 'fUnggulan', 'fMandek']);
+        $this->reset(['search', 'category', 'tag', 'urut', 'fUnggulan', 'fMandek', 'fPenyunting']);
         $this->resetPage();
     }
 
     public function getAdaSaringProperty(): bool
     {
         return filled($this->search) || filled($this->category) || filled($this->tag)
-            || $this->urut !== 'baru' || $this->fUnggulan || $this->fMandek;
+            || filled($this->fPenyunting) || $this->urut !== 'baru' || $this->fUnggulan || $this->fMandek;
     }
 
     /** Arah urut kolom tertentu di kepala tabel: 'naik' | 'turun' | null. */
@@ -360,6 +368,60 @@ class BlogList extends Component
         $this->dispatch('swal-success', message: $jumlah.' artikel dipindah ke kategori '.($nama ?: 'kosong').'.');
     }
 
+    /**
+     * Tambah atau lepas satu tag pada semua artikel yang dicentang.
+     *
+     * @param  string  $aksi  'tambah' | 'lepas'
+     */
+    public function massalTag(string $aksi, string $nama): void
+    {
+        if (! $this->bolehUbah() || ! $this->pilih) {
+            return;
+        }
+
+        $nama = trim($nama);
+        if ($nama === '') {
+            return;
+        }
+
+        $jumlah = 0;
+        foreach (BlogPost::whereIn('id', $this->pilih)->get() as $post) {
+            $tag = $post->tagDaftar();
+            $ada = collect($tag)->contains(fn ($t) => mb_strtolower($t) === mb_strtolower($nama));
+
+            if ($aksi === 'lepas') {
+                if (! $ada) {
+                    continue;
+                }
+                $tag = array_values(array_filter($tag, fn ($t) => mb_strtolower($t) !== mb_strtolower($nama)));
+            } else {
+                // Batas 8 tag per artikel sama dengan yang berlaku di formulir.
+                if ($ada || count($tag) >= 8) {
+                    continue;
+                }
+                $tag[] = $nama;
+            }
+
+            $post->update(['tags' => $tag ?: null]);
+            $jumlah++;
+        }
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $jumlah.' artikel '.($aksi === 'lepas' ? 'dilepas dari' : 'diberi').' tag "'.$nama.'".');
+    }
+
+    public function massalTagTambah(): void
+    {
+        $this->massalTag('tambah', $this->tagMassal);
+        $this->tagMassal = '';
+    }
+
+    public function massalTagLepas(): void
+    {
+        $this->massalTag('lepas', $this->tagMassal);
+        $this->tagMassal = '';
+    }
+
     public function massalHapus(): void
     {
         if (! $this->bolehHapus() || ! $this->pilih) {
@@ -404,27 +466,47 @@ class BlogList extends Component
         }
 
         $this->validate([
-            'berkasImpor' => 'required|file|max:2048|mimes:md,markdown,html,htm,txt',
-        ], [], ['berkasImpor' => 'berkas artikel']);
+            'berkasImpor' => 'required|array|max:30',
+            'berkasImpor.*' => 'file|max:2048|mimes:md,markdown,html,htm,txt',
+        ], [], ['berkasImpor' => 'berkas artikel', 'berkasImpor.*' => 'berkas artikel']);
 
-        $isi = (string) file_get_contents($this->berkasImpor->getRealPath());
-        $nama = pathinfo($this->berkasImpor->getClientOriginalName(), PATHINFO_FILENAME);
-        $jenis = strtolower($this->berkasImpor->getClientOriginalExtension());
+        $dibuat = [];
 
-        [$judul, $tubuh] = ImporArtikel::urai($isi, $nama, $jenis);
+        foreach ($this->berkasImpor as $berkas) {
+            $isi = (string) file_get_contents($berkas->getRealPath());
+            $nama = pathinfo($berkas->getClientOriginalName(), PATHINFO_FILENAME);
+            $jenis = strtolower($berkas->getClientOriginalExtension());
 
-        $artikel = BlogPost::create([
-            'title' => $judul,
-            'slug' => BlogPost::makeSlug($judul),
-            'body' => $tubuh,
-            'status' => 'draft',
-            'author' => 'admin',
-        ]);
+            [$judul, $tubuh] = ImporArtikel::urai($isi, $nama, $jenis);
+
+            $dibuat[] = BlogPost::create([
+                'title' => $judul,
+                'slug' => BlogPost::makeSlug($judul),
+                'body' => $tubuh,
+                'status' => 'draft',
+                'author' => 'admin',
+            ]);
+        }
 
         $this->reset('berkasImpor');
-        session()->flash('successCreated', 'Berkas diimpor sebagai draf. Periksa dan rapikan sebelum diterbitkan.');
 
-        $this->redirectRoute('admin.blog.edit', $artikel, navigate: true);
+        if (! $dibuat) {
+            return;
+        }
+
+        // Satu berkas langsung dibuka untuk disunting; banyak berkas cukup
+        // ditunjukkan di tab Draf — membuka 30 penyunting sekaligus tidak ada
+        // gunanya.
+        if (count($dibuat) === 1) {
+            session()->flash('successCreated', 'Berkas diimpor sebagai draf. Periksa dan rapikan sebelum diterbitkan.');
+
+            $this->redirectRoute('admin.blog.edit', $dibuat[0], navigate: true);
+
+            return;
+        }
+
+        $this->setFilter('draft');
+        $this->dispatch('swal-success', message: count($dibuat).' berkas diimpor sebagai draf.');
     }
 
     // ===== Unduhan =====
@@ -450,6 +532,54 @@ class BlogList extends Component
         ])->setPaper('a4', $this->ikutIsi ? 'portrait' : 'landscape');
 
         return response()->streamDownload(fn () => print ($pdf->output()), 'artikel-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    /**
+     * Unduh naskah sebagai Markdown.
+     *
+     * Satu artikel keluar sebagai satu berkas .md; lebih dari satu dibungkus
+     * ZIP, karena itulah bentuk yang bisa langsung dipakai memindahkan blog
+     * ke tempat lain. Bila ZipArchive tidak tersedia di server, semuanya
+     * digabung jadi satu berkas .md — tetap terbaca, hanya kurang rapi.
+     */
+    public function unduhMarkdown()
+    {
+        abort_unless(auth()->user()?->hasPermission('view_blog'), 403);
+
+        $artikel = $this->kueriUnduhan();
+        $cap = now()->format('Ymd-His');
+
+        if ($artikel->count() === 1) {
+            $satu = $artikel->first();
+
+            return response()->streamDownload(
+                fn () => print (EksporMarkdown::naskah($satu)),
+                $satu->slug.'.md',
+                ['Content-Type' => 'text/markdown; charset=UTF-8']
+            );
+        }
+
+        if (class_exists(\ZipArchive::class)) {
+            $jalur = tempnam(sys_get_temp_dir(), 'artikel').'.zip';
+            $zip = new \ZipArchive;
+            $zip->open($jalur, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+            foreach ($artikel as $a) {
+                $zip->addFromString($a->slug.'.md', EksporMarkdown::naskah($a));
+            }
+
+            $zip->close();
+
+            return response()->download($jalur, 'artikel-'.$cap.'.zip')->deleteFileAfterSend();
+        }
+
+        $gabung = $artikel->map(fn ($a) => EksporMarkdown::naskah($a))->implode("\n\n---\n\n");
+
+        return response()->streamDownload(
+            fn () => print ($gabung),
+            'artikel-'.$cap.'.md',
+            ['Content-Type' => 'text/markdown; charset=UTF-8']
+        );
     }
 
     /** Baris yang ikut diunduh: yang dicentang bila ada, kalau tidak seluruh hasil saringan. */
@@ -485,6 +615,10 @@ class BlogList extends Component
             $chip[] = ['nama' => 'fMandek', 'label' => 'Hanya yang mandek'];
         }
 
+        if ($this->fPenyunting !== '') {
+            $chip[] = ['nama' => 'fPenyunting', 'label' => 'Diubah: '.(\App\Models\User::find($this->fPenyunting)?->name ?: 'pengguna terhapus')];
+        }
+
         if ($this->urut !== 'baru') {
             $chip[] = ['nama' => 'urut', 'label' => 'Urut: '.[
                 'lama' => 'terlama',
@@ -504,7 +638,7 @@ class BlogList extends Component
             $this->urut = 'baru';
         } elseif (in_array($nama, ['fUnggulan', 'fMandek'], true)) {
             $this->$nama = false;
-        } elseif (in_array($nama, ['search', 'category', 'tag'], true)) {
+        } elseif (in_array($nama, ['search', 'category', 'tag', 'fPenyunting'], true)) {
             $this->$nama = '';
         }
 
@@ -567,6 +701,7 @@ class BlogList extends Component
             // memuat tanda kutip.
             ->when($this->tag !== '', fn ($q) => $q->whereJsonContains('tags', $this->tag))
             ->when($this->fUnggulan, fn ($q) => $q->where('is_featured', true))
+            ->when($this->fPenyunting !== '', fn ($q) => $q->where('updated_by', $this->fPenyunting))
             // Mandek: sudah lama terbit dan tidak ada baca sama sekali 30 hari
             // terakhir. Dihitung di SQL supaya halaman tidak menembak satu
             // kueri per baris.
@@ -620,6 +755,8 @@ class BlogList extends Component
             'tabCounts' => $tabCounts,
             'kategoriDaftar' => BlogCategory::orderBy('name')->pluck('name')->all(),
             'tagDaftar' => $this->semuaTag(),
+            'penyuntingDaftar' => \App\Models\User::whereIn('id', BlogPost::whereNotNull('updated_by')->distinct()->pluck('updated_by'))
+                ->orderBy('name')->get(['id', 'name']),
             // Angka ringkasan: yang paling menjawab "blognya hidup atau tidak".
             'totalDibaca' => (int) BlogPost::sum('views'),
             'dibaca30' => (int) \App\Models\BlogPostRead::where('tanggal', '>=', $awal)->sum('jumlah'),

@@ -160,6 +160,19 @@
         .ph-article .blgd-prosa a { color: var(--o); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(242,101,34,.35); text-underline-offset: 3px; }
         .ph-article .blgd-prosa a:hover { text-decoration-color: currentColor; }
         .ph-article .blgd-prosa img { max-width: 100%; height: auto; border-radius: 14px; margin: 1.4rem 0; }
+        /* Keterangan gambar: paragraf yang isinya HANYA teks miring dan
+           berdiri tepat di bawah gambar. Bentuk itulah yang disisipkan tombol
+           gambar di editor, jadi tidak perlu blot khusus di Quill. Peramban
+           tanpa :has() cuma menampilkannya sebagai paragraf miring biasa. */
+        .ph-article .blgd-prosa p:has(> img) + p > em:only-child {
+            display: block; margin-top: -.8rem; font-size: .88rem; font-style: normal;
+            color: var(--muted); text-align: center;
+        }
+        .ph-article .blgd-prosa figure { margin: 1.4rem 0; }
+        .ph-article .blgd-prosa figcaption {
+            margin-top: .5rem; font-size: .88rem; color: var(--muted); text-align: center;
+        }
+
         .ph-article .blgd-prosa blockquote {
             position: relative; margin: 1.8rem 0; padding: 1.2rem 1.4rem 1.2rem 3.2rem; border: 0; border-radius: 16px;
             background: color-mix(in srgb, var(--kb) 6%, #fff); color: var(--ink); font-style: italic; line-height: 1.7;

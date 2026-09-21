@@ -59,6 +59,10 @@ Artikel || lemon
                     <span wire:loading.remove wire:target="unduhPdf" class="bl-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>PDF</span></span>
                     <span wire:loading.inline-flex wire:target="unduhPdf" class="bl-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
+                <button type="button" class="dsb-tombol is-lembut" wire:click="unduhMarkdown" wire:loading.attr="disabled" wire:target="unduhMarkdown" style="--ikon: #0f172a" title="Unduh naskah sebagai Markdown (untuk pindah platform)">
+                    <span wire:loading.remove wire:target="unduhMarkdown" class="bl-isi-tombol"><i class="bi bi-markdown"></i><span>Markdown</span></span>
+                    <span wire:loading.inline-flex wire:target="unduhMarkdown" class="bl-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
+                </button>
                 <a wire:navigate href="{{ route('admin.blog.categories') }}" class="dsb-tombol is-lembut" style="--ikon: #2563eb">
                     <i class="bi bi-tags"></i><span>Kategori</span>
                 </a>
@@ -67,7 +71,7 @@ Artikel || lemon
                     <label class="dsb-tombol is-lembut bl-impor" style="--ikon: #0e7490" title="Impor berkas .md, .html, atau .txt sebagai draf">
                         <span wire:loading.remove wire:target="berkasImpor" class="bl-isi-tombol"><i class="bi bi-box-arrow-in-down"></i><span>Impor</span></span>
                         <span wire:loading.inline-flex wire:target="berkasImpor" class="bl-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Mengimpor…</span></span>
-                        <input type="file" wire:model="berkasImpor" accept=".md,.markdown,.html,.htm,.txt">
+                        <input type="file" multiple wire:model="berkasImpor" accept=".md,.markdown,.html,.htm,.txt">
                     </label>
                     <a wire:navigate href="{{ route('admin.blog.create') }}" class="dsb-tombol is-utama">
                         <i class="bi bi-pencil-square"></i><span>Tulis Artikel</span>
@@ -188,6 +192,15 @@ Artikel || lemon
                     </select>
                 @endif
 
+                @if ($penyuntingDaftar->isNotEmpty())
+                    <select class="dsb-isian bl-pilih" wire:model.live="fPenyunting" aria-label="Saring menurut penyunting">
+                        <option value="">Semua penyunting</option>
+                        @foreach ($penyuntingDaftar as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+
                 <select class="dsb-isian bl-pilih" wire:model.live="urut" aria-label="Urutkan">
                     <option value="baru">Terbaru</option>
                     <option value="lama">Terlama</option>
@@ -222,6 +235,16 @@ Artikel || lemon
             @error('berkasImpor')
                 <div class="bl-chip-saring"><span class="bl-galat">{{ $message }}</span></div>
             @enderror
+            @error('berkasImpor.*')
+                <div class="bl-chip-saring"><span class="bl-galat">{{ $message }}</span></div>
+            @enderror
+
+            @unless ($tagDaftar)
+                <p class="bl-petunjuk" style="margin: 0 clamp(14px, 2vw, 20px) clamp(12px, 2vw, 16px);">
+                    <i class="bi bi-lightbulb"></i>
+                    <span>Belum ada artikel yang diberi tag. Tag mengelompokkan tulisan lebih tajam daripada kategori — dipakai bilah topik di halaman blog dan menentukan "artikel terkait" yang muncul di bawah tulisan.</span>
+                </p>
+            @endunless
 
             @if ($chipSaring)
                 <div class="bl-chip-saring">
@@ -373,14 +396,14 @@ Artikel || lemon
                                             <i class="bi bi-tag-fill"></i>{{ $item->category }}
                                         </button>
                                     @endif
-                                    @foreach (array_slice($item->tagDaftar(), 0, 2) as $t)
-                                        <button type="button" class="bl-tanda is-tag" wire:click="$set('tag', @js($t))" title="Saring tag ini">#{{ $t }}</button>
+                                    @foreach (array_slice($item->tagDaftar(), 0, 2) as $i => $t)
+                                        <button type="button" class="bl-tanda is-tag {{ $i === 0 ? '' : 'is-sekunder' }}" wire:click="$set('tag', @js($t))" title="Saring tag ini">#{{ $t }}</button>
                                     @endforeach
                                     <span class="bl-tanda is-baca" title="Dibaca sepanjang masa · 30 hari terakhir">
                                         <i class="bi bi-eye"></i>{{ number_format($item->views, 0, ',', '.') }}
                                         <small style="opacity:.7">· {{ number_format($item->baca30(), 0, ',', '.') }}</small>
                                     </span>
-                                    <span class="bl-tanda is-waktu"><i class="bi bi-hourglass"></i>{{ $item->lamaBaca() }} mnt</span>
+                                    <span class="bl-tanda is-waktu is-sekunder"><i class="bi bi-hourglass"></i>{{ $item->lamaBaca() }} mnt</span>
                                     @if ($mundur)
                                         <span class="bl-tanda is-hitung"><i class="bi bi-clock"></i>tayang {{ $mundur }}</span>
                                     @else
@@ -398,7 +421,7 @@ Artikel || lemon
                                         </span>
                                     @endif
                                     @if ($item->penyunting)
-                                        <span class="bl-tanda is-waktu" title="Terakhir diubah {{ optional($item->updated_at)->locale('id')->translatedFormat('d M Y H:i') }}">
+                                        <span class="bl-tanda is-waktu is-sekunder" title="Terakhir diubah {{ optional($item->updated_at)->locale('id')->translatedFormat('d M Y H:i') }}">
                                             <i class="bi bi-person"></i>{{ \Illuminate\Support\Str::limit($item->penyunting->name, 14) }}
                                         </span>
                                     @endif
@@ -505,6 +528,14 @@ Artikel || lemon
                                     <option value="{{ $nama }}">{{ $nama }}</option>
                                 @endforeach
                             </select>
+                            <input type="text" class="dsb-isian bl-pilih is-sempit" wire:model="tagMassal"
+                                placeholder="Tag…" maxlength="40" aria-label="Tag untuk aksi massal">
+                            <button type="button" class="bl-btn" wire:click="massalTagTambah" title="Tambahkan tag ini ke semua yang dicentang">
+                                <i class="bi bi-plus-lg"></i><span>Tag</span>
+                            </button>
+                            <button type="button" class="bl-btn" wire:click="massalTagLepas" title="Lepas tag ini dari semua yang dicentang">
+                                <i class="bi bi-dash-lg"></i><span>Tag</span>
+                            </button>
                         @endif
                         @if ($bolehHapus)
                             <button type="button" class="bl-btn is-bahaya pcek-konfirmasi" data-action="massalHapus"

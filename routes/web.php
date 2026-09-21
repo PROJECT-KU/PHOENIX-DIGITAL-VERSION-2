@@ -197,7 +197,12 @@ Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blo
 // Didaftarkan SEBELUM /blog/{post}: kalau tidak, "feed.xml" ditangkap sebagai
 // slug artikel dan umpannya tidak pernah terjangkau.
 Route::get('/blog/feed.xml', \App\Http\Controllers\BlogFeedController::class)->name('blog.feed');
-Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
+Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)
+    ->name('blog.show')
+    // Alamat artikel sering salah ketik atau terpotong saat disalin ke pesan.
+    // 404 polos membuat orang menutup tab; halaman ini menawarkan judul yang
+    // mirip supaya mereka tetap sampai ke tulisan yang dicari.
+    ->missing(fn (\Illuminate\Http\Request $request) => app(\App\Http\Controllers\BlogTidakDitemukanController::class)($request));
 Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 // Preview invoice DIPINDAH ke grup 'permission:view_pesananrsc' di bawah.
 // Sebelumnya terdaftar di blok publik tanpa auth sama sekali, sehingga siapa

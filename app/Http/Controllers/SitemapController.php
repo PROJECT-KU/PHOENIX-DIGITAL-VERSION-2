@@ -11,8 +11,11 @@ class SitemapController extends Controller
     public function __invoke(): Response
     {
         $urls = [];
-        $add = function (string $loc, string $priority = '0.7', string $freq = 'weekly') use (&$urls) {
-            $urls[] = ['loc' => $loc, 'priority' => $priority, 'freq' => $freq];
+        // $lastmod opsional: hanya diisi untuk halaman yang punya waktu
+        // perubahan sungguhan. Menebak tanggal untuk halaman statis justru
+        // membuat sinyalnya tidak bisa dipercaya.
+        $add = function (string $loc, string $priority = '0.7', string $freq = 'weekly', ?string $lastmod = null) use (&$urls) {
+            $urls[] = ['loc' => $loc, 'priority' => $priority, 'freq' => $freq, 'lastmod' => $lastmod];
         };
 
         // Halaman utama
@@ -36,17 +39,44 @@ class SitemapController extends Controller
         });
 
         // Artikel blog yang sudah terbit
-        BlogPost::published()->select('slug')->orderByDesc('published_at')->chunk(500, function ($chunk) use ($add) {
+        BlogPost::published()->select('slug', 'updated_at')->orderByDesc('published_at')->chunk(500, function ($chunk) use ($add) {
             foreach ($chunk as $post) {
-                $add(route('blog.show', $post->slug), '0.6', 'weekly');
+                $add(route('blog.show', $post->slug), '0.6', 'weekly', optional($post->updated_at)->toAtomString());
             }
         });
+
+        // Halaman kategori & tag blog — keduanya halaman nyata yang bisa
+        // dibuka, jadi pantas diketahui mesin pencari.
+        BlogPost::published()
+            ->whereNotNull('category')->where('category', '!=', '')
+            ->selectRaw('category, MAX(updated_at) as diubah')
+            ->groupBy('category')
+            ->get()
+            ->each(fn ($baris) => $add(
+                route('blog.index', ['kategori' => $baris->category]),
+                '0.5',
+                'weekly',
+                $baris->diubah ? \Illuminate\Support\Carbon::parse($baris->diubah)->toAtomString() : null
+            ));
+
+        BlogPost::published()->whereNotNull('tags')->get(['tags', 'updated_at'])
+            ->flatMap(fn ($p) => collect($p->tagDaftar())->map(fn ($t) => ['tag' => $t, 'diubah' => $p->updated_at]))
+            ->groupBy('tag')
+            ->each(function ($baris, $tag) use ($add) {
+                $add(
+                    route('blog.index', ['tag' => $tag]),
+                    '0.4',
+                    'weekly',
+                    optional($baris->max('diubah'))->toAtomString()
+                );
+            });
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
         foreach ($urls as $u) {
             $xml .= '  <url>'
                 .'<loc>'.htmlspecialchars($u['loc'], ENT_XML1).'</loc>'
+                .($u['lastmod'] ? '<lastmod>'.$u['lastmod'].'</lastmod>' : '')
                 .'<changefreq>'.$u['freq'].'</changefreq>'
                 .'<priority>'.$u['priority'].'</priority>'
                 .'</url>'."\n";
