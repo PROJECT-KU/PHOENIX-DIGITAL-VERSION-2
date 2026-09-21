@@ -133,8 +133,20 @@ Data Pesanan RSC || lemon
                     </div>
                 </div>
 
+                {{-- Jumlah saringan selain pencarian yang sedang aktif — ditampilkan
+                     di tombol buka-tutup ponsel supaya saringan yang tersembunyi
+                     tetap ketahuan sedang bekerja. --}}
+                @php
+                    $jumlahSaringLain = count(array_filter([
+                        filled($statusFilter), filled($filterMonth), filled($filterYear),
+                        filled($akunFilter), filled($picFilter), filled($masaFilter),
+                    ]));
+                @endphp
                 <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-isi">
+                    {{-- Di ponsel enam saringan di bawah pencarian disembunyikan di
+                         balik satu tombol (pola yang sama dengan Task Saya). Desktop
+                         & tablet tidak terpengaruh (lihat .rsc-saring-lanjut). --}}
+                    <div class="dsb-kartu-isi rsc-saring-kartu" x-data="{ buka: false }" x-bind:class="{ 'is-buka': buka }">
                         <div class="rsc-saring">
                             <div class="dsb-medan rsc-medan-cari">
                                 <label class="dsb-label" for="rsc-cari">Cari</label>
@@ -150,6 +162,14 @@ Data Pesanan RSC || lemon
                                 </div>
                             </div>
 
+                            <button type="button" class="rsc-saring-tombol" x-on:click="buka = ! buka"
+                                x-bind:aria-expanded="buka.toString()" aria-controls="rsc-saring-lanjut">
+                                <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
+                                @if ($jumlahSaringLain)<span class="rsc-saring-jumlah">{{ $jumlahSaringLain }} aktif</span>@endif
+                                <i class="bi bi-chevron-down rsc-saring-panah"></i>
+                            </button>
+
+                            <div class="rsc-saring-lanjut" id="rsc-saring-lanjut">
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="rsc-status">Status</label>
                                 <select id="rsc-status" class="dsb-isian" wire:model.live="statusFilter">
@@ -213,6 +233,7 @@ Data Pesanan RSC || lemon
                                     <option value="lewat">Sudah lewat</option>
                                 </select>
                             </div>
+                            </div>{{-- /.rsc-saring-lanjut --}}
                         </div>
 
                         @if ($adaSaringan)

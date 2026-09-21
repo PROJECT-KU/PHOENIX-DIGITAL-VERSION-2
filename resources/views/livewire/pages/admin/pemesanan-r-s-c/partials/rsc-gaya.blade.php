@@ -14,6 +14,35 @@
         .rsc-saring { grid-template-columns: minmax(0, 1fr); }
         .rsc-medan-cari { grid-column: auto; }
     }
+    /* Buka-tutup saringan KHUSUS ponsel (pola yang sama dengan Task Saya).
+       Di layar lebar pembungkusnya display: contents — medan-medannya tetap
+       anak kisi .rsc-saring, jadi susunan desktop & tablet tidak berubah,
+       dan tombolnya tidak pernah tampil. */
+    .rsc-saring-lanjut { display: contents; }
+    .rsc-saring-tombol { display: none; }
+    @media (max-width: 575.98px) {
+        .rsc-saring-tombol {
+            display: flex; align-items: center; gap: 8px;
+            min-height: 44px; padding: 0 14px; border-radius: 12px;
+            border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff;
+            color: #334155; font-size: .88rem; font-weight: 700; text-align: left; cursor: pointer;
+        }
+        .rsc-saring-tombol > .bi-sliders { color: #7c3aed; }
+        .rsc-saring-jumlah {
+            padding: 2px 9px; border-radius: 999px; background: #f5f3ff; color: #6d28d9;
+            font-size: .74rem; font-weight: 700;
+        }
+        .rsc-saring-panah { margin-left: auto; color: #94a3b8; transition: transform .2s ease; }
+        .rsc-saring-kartu.is-buka .rsc-saring-panah { transform: rotate(180deg); }
+
+        /* Tertutup: enam medan & kaki saringan disembunyikan. */
+        .rsc-saring-kartu:not(.is-buka) .rsc-saring-lanjut,
+        .rsc-saring-kartu:not(.is-buka) .rsc-saring-kaki { display: none; }
+        .rsc-saring-kartu.is-buka .rsc-saring-lanjut { display: grid; gap: 12px; }
+    }
+    @media (max-width: 575.98px) and (prefers-reduced-motion: reduce) {
+        .rsc-saring-panah { transition: none; }
+    }
     .rsc-saring-kaki {
         display: flex; align-items: center; justify-content: space-between;
         flex-wrap: wrap; gap: 12px;
