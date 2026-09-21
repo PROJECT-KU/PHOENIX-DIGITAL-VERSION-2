@@ -876,6 +876,10 @@
             padding: 4px 8px; gap: 5px; white-space: normal; text-align: center; line-height: 1.2;
         }
         .dsb-chip-deret.is-sepasang > .is-samar { grid-column: 1 / -1; }
+        /* Pasangan yang panjang isinya timpang (mis. "2026" + "21 Sep – 20
+           Okt 2026"): pil kiri selebar isinya, pil kanan mengisi sisanya. */
+        .dsb-chip-deret.is-sepasang.is-kanan-lebar { grid-template-columns: auto 1fr; }
+        .dsb-chip-deret.is-sepasang.is-kanan-lebar > .dsb-chip:first-child { padding-inline: 10px; }
 
         .dsb-segar-grup { display: flex; margin: 10px 0 0; }
         .dsb-segar-grup > .dsb-segar { flex: 1 1 0; justify-content: center; min-height: 36px; }

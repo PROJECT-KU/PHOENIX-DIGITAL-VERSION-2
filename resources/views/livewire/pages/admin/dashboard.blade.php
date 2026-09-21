@@ -866,9 +866,13 @@ Dashboard || lemon
                     <div class="dsb-kepala-teks">
                         <span class="dsb-kicker">Analisis</span>
                         <h2 class="dsb-judul">Grafik &amp; Tren</h2>
-                        <div class="dsb-chip-deret">
+                        {{-- is-sepasang is-kanan-lebar: di ponsel pil tahun & pil periode
+                             sebaris; tahun selebar isinya, periode mengisi sisanya dan
+                             hanya boleh patah tepat di tanda "–". --}}
+                        @php $belahPeriode = explode(' – ', $periodeLabel, 2); @endphp
+                        <div class="dsb-chip-deret is-sepasang is-kanan-lebar">
                             <span class="dsb-chip"><i class="bi bi-calendar3"></i>{{ now()->year }}</span>
-                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i><span>@if (count($belahPeriode) === 2)<span class="text-nowrap">{{ $belahPeriode[0] }} –</span> <span class="text-nowrap">{{ $belahPeriode[1] }}</span>@else{{ $periodeLabel }}@endif</span></span>
                             <span class="dsb-chip is-samar">Arus setahun, cara bayar, tren harian, dan produk terlaris</span>
                         </div>
                     </div>
