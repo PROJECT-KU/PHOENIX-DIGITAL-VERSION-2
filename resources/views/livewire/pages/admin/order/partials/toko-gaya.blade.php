@@ -92,7 +92,11 @@
     /* HP: dua tombol kepala daftar berjajar satu baris, bukan bertumpuk. */
     @media (max-width: 575.98px) {
         .pt-hero-daftar .dsb-hero-aksi { flex-wrap: nowrap; gap: 8px; }
-        .pt-hero-daftar .dsb-hero-aksi .dsb-tombol { min-width: 0; padding-left: 10px; padding-right: 10px; }
+        /* Padding 14px (bukan 10px): dengan label yang dipendekkan, tombol
+           punya ruang bernapas di kiri-kanan dan teks tidak lagi menempel
+           atau meluber keluar tepinya. overflow: hidden sebagai jaring kalau
+           huruf di perangkat diperbesar lewat pengaturan aksesibilitas. */
+        .pt-hero-daftar .dsb-hero-aksi .dsb-tombol { min-width: 0; padding-left: 14px; padding-right: 14px; overflow: hidden; }
         .pt-hp-sembunyi { display: none; }
     }
 

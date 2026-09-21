@@ -67,7 +67,10 @@ Data Pesanan || lemon
                 @endif
                 @if ($bolehBuatPesanan)
                     <a wire:navigate href="{{ route('admin.pesanantoko.create') }}" class="dsb-tombol is-utama">
-                        <i class="bi bi-plus-lg"></i><span>Tambah Pesanan</span>
+                        {{-- Di HP "Pesanan" disembunyikan (pola sama dengan "Unduh Excel"
+                             → "Excel"): setengah lebar baris tidak muat untuk teks
+                             penuh, dan teksnya meluber keluar tombol tanpa margin. --}}
+                        <i class="bi bi-plus-lg"></i><span>Tambah<span class="pt-hp-sembunyi"> Pesanan</span></span>
                     </a>
                 @endif
             </div>
