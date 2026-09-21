@@ -215,8 +215,13 @@
                pada basis 260px ikonnya terdorong sendirian ke baris pertama. */
             .bt-judul { flex: 1 1 150px; }
             .bt-ikon { flex-basis: 44px; height: 44px; border-radius: 13px; font-size: 1.2rem; }
-            .bt-aksi { width: 100%; }
-            .bt-aksi .bt-btn { flex: 1 1 auto; justify-content: center; }
+            /* Dua kolom sama lebar: lencana + Jeda di baris pertama, Pasang
+               skrip + Token baru di baris kedua. Tak ada yang tertinggal
+               sendirian dengan sisi kanan kosong. Kalau jumlahnya ganjil,
+               yang terakhir mengambil satu baris penuh. */
+            .bt-aksi { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+            .bt-aksi > .bt-btn, .bt-aksi > .bt-lampu { justify-content: center; min-width: 0; }
+            .bt-aksi > :last-child:nth-child(odd) { grid-column: 1 / -1; }
             .bt-pantau-kepala, .bt-pantau-isi { padding-inline: 16px; }
             .bt-pantau-kepala h6 { flex: 1 1 100%; }
         }
@@ -253,17 +258,19 @@
                             @endif
                         </small>
                     </div>
-                    @if ($dipasang)
-                        @if ($dijeda)
-                            <span class="bt-lampu jeda">Dijeda</span>
-                        @elseif ($aktif)
-                            <span class="bt-lampu on">Aktif</span>
-                        @else
-                            <span class="bt-lampu off">Tidak aktif</span>
-                        @endif
-                    @endif
+                    {{-- Lencana status DI DALAM deretan tombol, bukan saudaranya.
+                         Sebagai saudara, di ponsel deretan tombol mengambil baris
+                         penuh dan lencananya tertinggal sendirian di baris atas
+                         dengan sisi kanan kosong. --}}
                     <div class="bt-aksi">
                         @if ($dipasang)
+                            @if ($dijeda)
+                                <span class="bt-lampu jeda">Dijeda</span>
+                            @elseif ($aktif)
+                                <span class="bt-lampu on">Aktif</span>
+                            @else
+                                <span class="bt-lampu off">Tidak aktif</span>
+                            @endif
                             <button type="button" class="bt-btn" wire:click="alihkanJeda">
                                 <i class="bi {{ $dijeda ? 'bi-play-fill' : 'bi-pause-fill' }}"></i> {{ $dijeda ? 'Lanjutkan' : 'Jeda' }}
                             </button>
