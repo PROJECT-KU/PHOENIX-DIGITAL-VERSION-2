@@ -263,6 +263,21 @@ Detail Pesanan || lemon
     .pcek-alat .pcek-link-box { flex: 1 1 320px; min-width: 0; margin: 0 !important; }
     .pcek-link-ic { display: inline-flex; align-items: center; padding: 0 0 0 .75rem; color: #94a3b8; background: #f8fafc; }
     .pcek-alat-tombol { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* HP: ubin kuota cuma ~60px isinya — label huruf besar berjarak lebar
+       ("TERPAKAI") terpatah jadi "TERPAKA / I". Labelnya dikecilkan dan tidak
+       boleh turun baris. Tombol alat (Ingatkan sisa, Tambah Bonus, Selesaikan)
+       dibuat dua kolom sama lebar; tombol ganjil terakhir selebar penuh. */
+    @media (max-width: 575.98px) {
+        .pcek-kuota-angka { gap: 8px; }
+        .pcek-kuota-angka > div { padding: 10px 9px; min-width: 0; }
+        .pcek-kuota-angka span { font-size: .62rem; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pcek-alat-tombol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+        .pcek-alat-tombol > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+        .pt-detail .pcek .pcek-alat-tombol .pcek-btn { min-width: 0; padding: 0 10px; }
+    }
+    @media (max-width: 359.98px) {
+        .pt-detail .pcek .pcek-alat-tombol .pcek-btn { padding: 0 6px; gap: 4px; font-size: .74rem; }
+    }
     .pt-detail .pcek .pcek-btn.wa { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .pt-detail .pcek .pcek-btn.wa:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
     .pcek-daftar-kepala { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 10px; }
