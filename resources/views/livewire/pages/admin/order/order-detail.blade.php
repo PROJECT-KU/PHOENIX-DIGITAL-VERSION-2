@@ -392,6 +392,11 @@ Detail Pesanan || lemon
     .pt-detail .detail-info-card { margin-bottom: 0 !important; display: flex; flex-direction: column; }
     .pt-pembeli-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 16px; }
     .pt-pembeli-aksi:empty { display: none; }
+    /* HP: dua tombol hubungi pembeli berbagi satu baris, tidak bertumpuk. */
+    @media (max-width: 575.98px) {
+        .pt-pembeli-aksi { flex-wrap: nowrap; }
+        .pt-pembeli-aksi > .dsb-tombol { flex: 1 1 0; min-width: 0; justify-content: center; padding-left: 10px; padding-right: 10px; }
+    }
     .pt-tombol-wa i.bi { color: #16a34a; }
     @media (hover: hover) and (pointer: fine) {
         .pt-detail .detail-info-card:hover, .pt-detail > .card:hover { border-color: #dfe5ee !important; box-shadow: 0 10px 24px rgba(15, 23, 42, .05) !important; }
@@ -503,6 +508,22 @@ Detail Pesanan || lemon
         .pt-detail .items-table thead th:last-child { background: #f8fafc; }
     }
     .pt-detail .items-table thead th:last-child { border-radius: 0 10px 10px 0; }
+    /* HP: enam tombol aksi sebaris (~235px) menutupi kolom Produk, admin tidak
+       bisa melihat apa yang dipesan. Tombol dijadikan 3 per baris (~140px) dan
+       kolom Produk dipersempit supaya namanya tetap terbaca di samping aksi. */
+    @media (max-width: 575.98px) {
+        .pt-detail .items-table .pt-sel-aksi { padding-left: 10px !important; padding-right: 10px !important; }
+        .pt-detail .pt-sel-aksi .pt-aksi-deret { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; }
+        .pt-detail .items-table .pt-sel-produk { min-width: 130px; }
+        /* Lencana panduan/ebook/add-on boleh turun baris agar tidak melebarkan
+           kolom Produk sampai tertutup kolom Aksi. */
+        .pt-detail .items-table .pt-sel-produk .badge { white-space: normal; text-align: left; line-height: 1.35; }
+        .pt-detail .items-table .pt-sel-produk .pt-catatan { max-width: 240px; }
+    }
+    @media (max-width: 359.98px) {
+        .pt-detail .pt-sel-aksi .pt-aksi-deret { grid-template-columns: repeat(3, 30px); gap: 5px; }
+        .pt-detail .pt-sel-aksi .btn { width: 30px; height: 30px; font-size: .82rem; }
+    }
     .pt-detail .summary-card { background: #fff !important; border: 1px solid var(--dsb-tepi) !important; box-shadow: none !important; border-radius: 16px !important; }
     .pt-detail .summary-card .summary-total { background: #f0fdf4; border-radius: 12px; padding: 12px 14px !important; margin-top: 8px; border: 1px solid #bbf7d0; }
 
@@ -960,12 +981,12 @@ Detail Pesanan || lemon
                 <div class="pt-pembeli-aksi">
                     @if ($pblAdaWa)
                         <a href="https://api.whatsapp.com/send?phone={{ $pblWa }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut is-mungil pt-tombol-wa" style="--ikon: #16a34a">
-                            <i class="bi bi-whatsapp"></i><span>Chat WhatsApp</span>
+                            <i class="bi bi-whatsapp"></i><span><span class="pt-hp-sembunyi">Chat </span>WhatsApp</span>
                         </a>
                     @endif
                     @if ($pblBolehLihat)
                         <a wire:navigate href="{{ route('admin.customer.show', $pbl) }}" class="dsb-tombol is-lembut is-mungil">
-                            <i class="bi bi-person-lines-fill"></i><span>Lihat Pelanggan</span>
+                            <i class="bi bi-person-lines-fill"></i><span><span class="pt-hp-sembunyi">Lihat </span>Pelanggan</span>
                         </a>
                     @endif
                 </div>
