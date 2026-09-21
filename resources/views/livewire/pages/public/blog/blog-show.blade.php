@@ -3,6 +3,28 @@
 @endsection
 
 <div class="ph-article" style="--kb: {{ $ragam['warna'] }}">
+    {{-- Pita pratinjau: hanya muncul untuk admin yang membuka draf atau
+         artikel terjadwal. Pengunjung biasa tidak pernah sampai ke sini
+         (BlogShow memanggil abort 404). --}}
+    @if ($pratinjau)
+        <div class="blgd-pratinjau">
+            <i class="bi bi-eye-fill"></i>
+            <span>
+                <b>Pratinjau</b> — artikel ini belum tayang untuk pengunjung.
+                Kunjungan Anda tidak ikut dihitung sebagai pembaca.
+            </span>
+        </div>
+        <style>
+            .blgd-pratinjau {
+                display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+                margin: 0 0 18px; padding: 12px 16px; border-radius: 14px;
+                background: #fef3c7; border: 1px solid #fde68a; color: #92400e;
+                font-size: .88rem; line-height: 1.5;
+            }
+            .blgd-pratinjau i { font-size: 1rem; }
+        </style>
+    @endif
+
     <style>
         .ph-article { --o: var(--ph-orange, #f26522); --a: var(--ph-amber, #fba919); --ink: var(--ph-ink, #23272f);
             --muted: var(--ph-muted, #6b7280); --soft: var(--ph-soft, #fff8f1); --line: var(--ph-line, #f1e6d8);

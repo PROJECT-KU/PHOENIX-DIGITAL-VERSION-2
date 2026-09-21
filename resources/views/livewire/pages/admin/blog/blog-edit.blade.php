@@ -17,15 +17,19 @@ Sunting Artikel || lemon
                         <span class="dsb-lencana {{ $lencana }}"><i class="bi {{ $ikonKeadaan }}"></i>{{ $keadaan }}</span>
                         <span class="dsb-lencana is-abu"><i class="bi bi-eye"></i>{{ number_format($post->views, 0, ',', '.') }} dibaca</span>
                         <span class="dsb-lencana is-abu"><i class="bi bi-hourglass"></i>{{ $post->lamaBaca() }} menit baca</span>
+                        @if ($post->is_featured)
+                            <span class="dsb-lencana is-ungu"><i class="bi bi-pin-angle-fill"></i>Disematkan</span>
+                        @endif
                     </span>
                 </p>
             </div>
             <div class="dsb-hero-aksi">
-                @if ($keadaan === 'Terbit')
-                    <a href="{{ route('blog.show', $post->slug) }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #2563eb">
-                        <i class="bi bi-box-arrow-up-right"></i><span>Lihat publik</span>
-                    </a>
-                @endif
+                {{-- Draf & artikel terjadwal kini bisa dibuka sebagai pratinjau
+                     (hanya oleh admin), jadi tombolnya selalu ada. --}}
+                <a href="{{ route('blog.show', $post->slug) }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #2563eb">
+                    <i class="bi {{ $keadaan === 'Terbit' ? 'bi-box-arrow-up-right' : 'bi-eye' }}"></i>
+                    <span>{{ $keadaan === 'Terbit' ? 'Lihat publik' : 'Pratinjau' }}</span>
+                </a>
                 <a wire:navigate href="{{ route('admin.blog.index') }}" class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Daftar Artikel</span>
                 </a>

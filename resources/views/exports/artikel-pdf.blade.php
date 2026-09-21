@@ -16,6 +16,13 @@
         td { border-bottom: 1px solid #eef2f7; padding: 6px 5px; vertical-align: top; }
         .kecil { color: #64748b; font-size: 8px; }
         .tengah { text-align: center; }
+        /* Mode "ikut isi": tiap artikel satu blok, bukan satu baris tabel —
+           isi artikel tidak pernah muat di dalam sel selebar kolom. */
+        .naskah { page-break-inside: avoid; border-bottom: 1px solid #eef2f7; padding: 10px 0; }
+        .naskah h2 { margin: 0 0 3px; font-size: 12px; }
+        .naskah .meta { margin: 0 0 6px; font-size: 8px; color: #64748b; }
+        .naskah .ringkasan { margin: 0 0 6px; font-size: 9px; color: #334155; font-style: italic; }
+        .naskah .isi { margin: 0; font-size: 9px; line-height: 1.55; text-align: justify; white-space: pre-line; }
     </style>
 </head>
 <body>
@@ -32,6 +39,28 @@
         @endif
     </div>
 
+@if ($ikutIsi)
+    @forelse ($artikel as $a)
+        <div class="naskah">
+            <h2>{{ $a->title }}</h2>
+            <p class="meta">
+                /blog/{{ $a->slug }} ·
+                {{ $a->category ?: 'tanpa kategori' }} ·
+                {{ $a->trashed() ? 'Di tong sampah' : $a->keadaan()[0] }} ·
+                {{ optional($a->published_at)->format('d/m/Y H:i') ?: 'belum tayang' }} ·
+                {{ number_format((int) $a->views, 0, ',', '.') }} dibaca ·
+                {{ $a->lamaBaca() }} menit baca
+            </p>
+            @if ($a->excerpt)
+                <p class="ringkasan">{{ $a->excerpt }}</p>
+            @endif
+            <p class="isi">{{ trim(preg_replace('/\n{3,}/', "\n\n", html_entity_decode(strip_tags(preg_replace('/<\/(p|div|h[1-6]|li|blockquote)>/i', "\n\n", $a->body))))) }}</p>
+        </div>
+    @empty
+        <p class="tengah kecil" style="padding: 18px;">Tidak ada artikel untuk saringan ini.</p>
+    @endforelse
+@else
+
     <table>
         <thead>
             <tr>
@@ -40,6 +69,7 @@
                 <th style="width: 13%;">Status</th>
                 <th style="width: 15%;">Tayang</th>
                 <th style="width: 9%;">Dibaca</th>
+                <th style="width: 9%;">30 hari</th>
                 <th>Penulis</th>
             </tr>
         </thead>
@@ -51,15 +81,17 @@
                         <div class="kecil">/blog/{{ $a->slug }}</div>
                     </td>
                     <td>{{ $a->category ?: '-' }}</td>
-                    <td>{{ $a->keadaan()[0] }}</td>
+                    <td>{{ $a->trashed() ? 'Di tong sampah' : $a->keadaan()[0] }}</td>
                     <td>{{ optional($a->published_at)->format('d/m/Y H:i') ?: '-' }}</td>
                     <td>{{ number_format((int) $a->views, 0, ',', '.') }}</td>
+                    <td>{{ number_format($a->baca30(), 0, ',', '.') }}</td>
                     <td>{{ $a->author ?: '-' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="tengah kecil" style="padding: 18px;">Tidak ada artikel untuk saringan ini.</td></tr>
+                <tr><td colspan="7" class="tengah kecil" style="padding: 18px;">Tidak ada artikel untuk saringan ini.</td></tr>
             @endforelse
         </tbody>
     </table>
+@endif
 </body>
 </html>

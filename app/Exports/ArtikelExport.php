@@ -12,10 +12,10 @@ use Maatwebsite\Excel\Concerns\FromView;
  */
 class ArtikelExport implements FromView
 {
-    public function __construct(protected Collection $artikel) {}
+    public function __construct(protected Collection $artikel, protected bool $ikutIsi = false) {}
 
     public function view(): View
     {
-        return view('exports.artikel', ['artikel' => $this->artikel]);
+        return view('exports.artikel', ['artikel' => $this->artikel, 'ikutIsi' => $this->ikutIsi]);
     }
 }

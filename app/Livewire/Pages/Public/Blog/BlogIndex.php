@@ -48,6 +48,9 @@ class BlogIndex extends Component
                 });
             })
             ->when($this->category !== '', fn ($q) => $q->where('category', $this->category))
+            // Artikel yang disematkan admin naik ke atas; sisanya tetap urut
+            // tanggal seperti sebelumnya.
+            ->orderByDesc('is_featured')
             ->orderByDesc('published_at')
             ->orderByDesc('id');
 
@@ -55,10 +58,15 @@ class BlogIndex extends Component
         // Terbit" + 8 kartu (dua baris penuh), tanpa kartu yatim di baris akhir.
         $posts = $query->paginate(12);
 
-        // Artikel unggulan (terbaru) hanya di halaman pertama tanpa filter.
+        // Artikel utama halaman blog: yang disematkan admin bila ada, kalau
+        // tidak yang terbaru. Hanya di halaman pertama tanpa saringan.
         $featured = null;
         if ($this->search === '' && $this->category === '' && $this->getPage() === 1) {
-            $featured = BlogPost::published()->orderByDesc('published_at')->orderByDesc('id')->first();
+            $featured = BlogPost::published()
+                ->orderByDesc('is_featured')
+                ->orderByDesc('published_at')
+                ->orderByDesc('id')
+                ->first();
         }
 
         // Artikel utama & "Baru Terbit" diambil dari halaman yang sama lalu

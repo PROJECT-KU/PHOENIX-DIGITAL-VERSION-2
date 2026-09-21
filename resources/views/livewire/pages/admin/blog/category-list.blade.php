@@ -40,13 +40,30 @@ Kategori Artikel || lemon
                         <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian"><i class="bi bi-x-lg"></i></button>
                     @endif
                 </div>
-                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="search,gotoPage,nextPage,previousPage">
+                <select class="dsb-isian bl-pilih" wire:model.live="urut" aria-label="Urutkan kategori">
+                    <option value="nama">Nama A-Z</option>
+                    <option value="jumlah">Paling banyak artikel</option>
+                </select>
+
+                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="search,urut,gotoPage,nextPage,previousPage">
                     <span class="dsb-putar is-kecil"></span>Memuat…
                 </span>
             </div>
         </section>
 
-        <section class="bl-wadah">
+        <div class="bl-kat-kerangka" wire:loading.grid wire:target="search,urut,gotoPage,nextPage,previousPage">
+            @for ($i = 0; $i < 6; $i++)
+                <div>
+                    <span class="bl-tulang is-ubin"></span>
+                    <span class="bl-kat-isi">
+                        <span class="bl-tulang" style="width: 60%"></span>
+                        <span class="bl-tulang" style="width: 35%"></span>
+                    </span>
+                </div>
+            @endfor
+        </div>
+
+        <section class="bl-wadah" wire:loading.class="bl-sembunyi" wire:target="search,urut,gotoPage,nextPage,previousPage">
             @if ($categories->isEmpty())
                 <div class="dsb-kartu">
                     <div class="dsb-kosong">
@@ -63,19 +80,51 @@ Kategori Artikel || lemon
                             @if ($editingId === $item->id)
                                 <span class="bl-kat-ikon"><i class="bi bi-pencil"></i></span>
                                 <input type="text" class="dsb-isian @error('editingName') is-galat @enderror"
-                                    wire:model="editingName" wire:keydown.enter="saveEdit" wire:keydown.escape="cancelEdit" autofocus>
+                                    wire:model="editingName" wire:keydown.enter="saveEdit" wire:keydown.escape="cancelEdit" autofocus
+                                    aria-label="Nama kategori">
                                 <div class="bl-kat-aksi">
-                                    <button type="button" class="bl-btn bl-btn-ikon is-terbit" wire:click="saveEdit" title="Simpan nama"><i class="bi bi-check-lg"></i></button>
+                                    <button type="button" class="bl-btn bl-btn-ikon is-terbit" wire:click="saveEdit" title="Simpan perubahan"><i class="bi bi-check-lg"></i></button>
                                     <button type="button" class="bl-btn bl-btn-ikon" wire:click="cancelEdit" title="Batal"><i class="bi bi-x-lg"></i></button>
                                 </div>
                                 @error('editingName') <span class="bl-galat" style="flex: 1 1 100%;">{{ $message }}</span> @enderror
+
+                                <div class="bl-kat-baris">
+                                    <input type="text" class="dsb-isian @error('editingDescription') is-galat @enderror"
+                                        wire:model="editingDescription" maxlength="255"
+                                        placeholder="Deskripsi singkat kategori (dipakai halaman kategori di blog)"
+                                        aria-label="Deskripsi kategori">
+                                    @error('editingDescription') <span class="bl-galat">{{ $message }}</span> @enderror
+
+                                    @php $lain = $this->kategoriLain($item->id); @endphp
+                                    @if ($lain)
+                                        <div class="bl-tag-isi">
+                                            <select class="dsb-isian" wire:model.live="gabungKe" aria-label="Gabungkan ke kategori lain">
+                                                <option value="">Gabungkan ke kategori lain…</option>
+                                                @foreach ($lain as $nama)
+                                                    <option value="{{ $nama }}">{{ $nama }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="button" class="bl-btn pcek-konfirmasi" @disabled($gabungKe === '')
+                                                data-action="gabungkanTerpilih"
+                                                data-title="Gabungkan kategori?"
+                                                data-text="Semua artikel dipindah ke kategori tujuan, lalu kategori ini dihapus. Artikelnya sendiri tidak terhapus."
+                                                data-confirm="Ya, gabungkan" data-icon="warning"
+                                                title="Gabungkan kategori ini ke kategori tujuan"><i class="bi bi-sign-merge-left"></i><span>Gabungkan</span></button>
+                                        </div>
+                                    @endif
+                                </div>
                             @else
                                 <span class="bl-kat-ikon"><i class="bi bi-tag-fill"></i></span>
                                 <div class="bl-kat-teks">
                                     <b>{{ $item->name }}</b>
                                     <small>{{ $dipakai }} artikel</small>
+                                    @if ($item->description)
+                                        <p class="bl-kat-ket">{{ $item->description }}</p>
+                                    @endif
                                 </div>
                                 <div class="bl-kat-aksi">
+                                    <a wire:navigate href="{{ route('admin.blog.index', ['category' => $item->name]) }}"
+                                        class="bl-btn bl-btn-ikon" title="Kelola artikel kategori ini"><i class="bi bi-journals"></i></a>
                                     <a href="{{ route('blog.index', ['kategori' => $item->name]) }}" target="_blank" rel="noopener"
                                         class="bl-btn bl-btn-ikon" title="Lihat kategori ini di blog publik"><i class="bi bi-box-arrow-up-right"></i></a>
                                     @if ($bolehUbah)

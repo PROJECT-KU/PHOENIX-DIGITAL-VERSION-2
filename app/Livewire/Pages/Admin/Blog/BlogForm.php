@@ -41,6 +41,26 @@ class BlogForm extends Component
 
     public $mode = 'create';
 
+    /** Slug diketik sendiri; kalau false slug mengikuti judul (hanya saat membuat). */
+    public bool $slugManual = false;
+
+    public array $tags = [];
+
+    public string $tagBaru = '';
+
+    public $cover_alt = '';
+
+    /** Ringkasan & meta diketik sendiri, bukan disusun otomatis. */
+    public bool $seoManual = false;
+
+    /** Hasil periksa tautan: [['url' => ..., 'keadaan' => ..., 'pesan' => ...]] */
+    public array $tautanPeriksa = [];
+
+    public bool $sudahPeriksaTautan = false;
+
+    /** Ditandai saat simpan otomatis berhasil — dibaca tampilan untuk pesan kecil. */
+    public ?string $simpanOtomatisPada = null;
+
     public function mount()
     {
         if ($this->post) {
@@ -54,7 +74,15 @@ class BlogForm extends Component
             $this->published_at = $this->post->published_at?->format('Y-m-d\TH:i');
             $this->meta_title = $this->post->meta_title;
             $this->meta_description = $this->post->meta_description;
+            $this->tags = $this->post->tagDaftar();
+            $this->cover_alt = $this->post->cover_alt ?? '';
             $this->mode = 'edit';
+            // Slug artikel yang sudah ada TIDAK ikut berubah saat judul diubah;
+            // mengubah URL yang sudah tayang memutus tautan dan peringkatnya.
+            $this->slugManual = true;
+            // Kalau ringkasan/meta-nya sudah pernah disunting orang, jangan
+            // ditimpa penyusun otomatis.
+            $this->seoManual = filled($this->post->meta_description) || filled($this->post->excerpt);
         }
     }
 
@@ -62,16 +90,167 @@ class BlogForm extends Component
     {
         // Slug otomatis mengikuti judul saat MEMBUAT artikel (tak perlu input manual).
         // Saat mengedit, slug lama dipertahankan agar URL/SEO tidak berubah.
-        if ($this->mode === 'create') {
+        if ($this->mode === 'create' && ! $this->slugManual) {
             $this->slug = Str::slug($value);
         }
     }
 
+    public function updatedSlug($value): void
+    {
+        // Apa pun yang diketik dirapikan jadi slug yang sah, supaya URL tidak
+        // pernah berisi spasi atau tanda baca.
+        $this->slug = Str::slug((string) $value);
+        $this->slugManual = true;
+    }
+
+    /** Kembalikan slug mengikuti judul lagi. */
+    public function slugIkutJudul(): void
+    {
+        $this->slugManual = false;
+        $this->slug = Str::slug((string) $this->title);
+    }
+
     public function updatedBody(): void
     {
-        // Isi ringkasan & SEO otomatis begitu ada isi artikel (kalau masih kosong).
-        if (trim((string) $this->excerpt) === '' && $this->plainText((string) $this->body) !== '') {
+        // Isi ringkasan & SEO otomatis begitu ada isi artikel (kalau masih
+        // kosong) — kecuali admin memilih mengetiknya sendiri.
+        if (! $this->seoManual && trim((string) $this->excerpt) === '' && $this->plainText((string) $this->body) !== '') {
             $this->generateSeo();
+        }
+
+        // Hasil periksa tautan jadi basi begitu isinya berubah.
+        $this->sudahPeriksaTautan = false;
+    }
+
+    // ===== Tag =====
+
+    public function tambahTag(): void
+    {
+        $nama = trim($this->tagBaru);
+        $this->tagBaru = '';
+
+        if ($nama === '' || mb_strlen($nama) > 40) {
+            return;
+        }
+
+        foreach ($this->tags as $ada) {
+            if (mb_strtolower($ada) === mb_strtolower($nama)) {
+                return;
+            }
+        }
+
+        if (count($this->tags) >= 8) {
+            $this->dispatch('swal-error', message: 'Maksimal 8 tag per artikel.');
+
+            return;
+        }
+
+        $this->tags[] = $nama;
+    }
+
+    public function hapusTag(int $i): void
+    {
+        unset($this->tags[$i]);
+        $this->tags = array_values($this->tags);
+    }
+
+    // ===== Hitungan langsung saat menulis =====
+
+    public function getJumlahKataProperty(): int
+    {
+        $teks = $this->plainText((string) $this->body);
+
+        return $teks === '' ? 0 : count(preg_split('/\s+/u', $teks, -1, PREG_SPLIT_NO_EMPTY));
+    }
+
+    public function getLamaBacaProperty(): int
+    {
+        return max(1, (int) ceil($this->jumlahKata / 200));
+    }
+
+    /**
+     * Daftar periksa kelengkapan artikel.
+     *
+     * Ditaruh di layar supaya yang kurang ketahuan SEBELUM menekan Simpan,
+     * bukan lewat pesan galat sesudahnya.
+     */
+    public function getKelengkapanProperty(): array
+    {
+        $metaPanjang = mb_strlen(trim((string) $this->meta_description));
+
+        return [
+            ['label' => 'Judul minimal 5 huruf', 'ok' => mb_strlen(trim((string) $this->title)) >= 5, 'wajib' => true],
+            ['label' => 'Isi artikel minimal 300 kata', 'ok' => $this->jumlahKata >= 300, 'wajib' => false],
+            ['label' => 'Kategori dipilih', 'ok' => filled($this->category), 'wajib' => false],
+            ['label' => 'Gambar sampul', 'ok' => (bool) ($this->cover || $this->existingCover), 'wajib' => false],
+            ['label' => 'Teks alternatif sampul', 'ok' => filled($this->cover_alt), 'wajib' => false],
+            ['label' => 'Minimal satu tag', 'ok' => count($this->tags) > 0, 'wajib' => false],
+            ['label' => 'Meta description 120–155 huruf', 'ok' => $metaPanjang >= 120 && $metaPanjang <= 155, 'wajib' => false],
+        ];
+    }
+
+    // ===== Periksa tautan =====
+
+    /**
+     * Cari tautan di isi artikel lalu periksa satu per satu.
+     *
+     * Tautan internal diperiksa ke basis data sendiri; tautan luar lewat
+     * permintaan HEAD singkat. Hanya berisi alamat yang admin tulis sendiri —
+     * tidak ada data pelanggan yang ikut keluar.
+     */
+    public function periksaTautan(): void
+    {
+        $this->tautanPeriksa = [];
+        $this->sudahPeriksaTautan = true;
+
+        preg_match_all('/href=["\']([^"\']+)["\']/i', (string) $this->body, $m);
+        $alamat = array_values(array_unique(array_filter($m[1] ?? [], fn ($u) => ! str_starts_with($u, '#'))));
+
+        // Batas 20: memeriksa ratusan tautan membuat permintaan menggantung
+        // sampai habis waktu, dan yang menekan tombolnya menyimpulkan rusak.
+        foreach (array_slice($alamat, 0, 20) as $url) {
+            $this->tautanPeriksa[] = $this->periksaSatuTautan($url);
+        }
+    }
+
+    private function periksaSatuTautan(string $url): array
+    {
+        $bersih = trim(html_entity_decode($url));
+
+        if (str_starts_with($bersih, 'mailto:') || str_starts_with($bersih, 'tel:')) {
+            return ['url' => $bersih, 'keadaan' => 'lewat', 'pesan' => 'Bukan tautan web'];
+        }
+
+        // Tautan internal ke artikel lain: cukup dicek ke basis data sendiri.
+        $jalur = parse_url($bersih, PHP_URL_PATH) ?: '';
+        $tuanRumah = parse_url($bersih, PHP_URL_HOST);
+        $sendiri = parse_url(config('app.url'), PHP_URL_HOST);
+
+        if ((! $tuanRumah || $tuanRumah === $sendiri) && str_starts_with($jalur, '/blog/')) {
+            $slug = trim(substr($jalur, 6), '/');
+            $ada = BlogPost::where('slug', $slug)->exists();
+
+            return [
+                'url' => $bersih,
+                'keadaan' => $ada ? 'baik' : 'rusak',
+                'pesan' => $ada ? 'Artikel ditemukan' : 'Artikel dengan slug ini tidak ada',
+            ];
+        }
+
+        if (! $tuanRumah) {
+            return ['url' => $bersih, 'keadaan' => 'ragu', 'pesan' => 'Tautan relatif — tidak diperiksa'];
+        }
+
+        try {
+            $res = \Illuminate\Support\Facades\Http::timeout(4)->withoutVerifying()->head($bersih);
+
+            return [
+                'url' => $bersih,
+                'keadaan' => $res->successful() || $res->redirect() ? 'baik' : 'rusak',
+                'pesan' => 'Jawaban '.$res->status(),
+            ];
+        } catch (\Throwable $e) {
+            return ['url' => $bersih, 'keadaan' => 'rusak', 'pesan' => 'Tidak bisa dihubungi'];
         }
     }
 
@@ -88,8 +267,17 @@ class BlogForm extends Component
         $this->meta_title = Str::limit(trim((string) $this->title), 65, '');
     }
 
-    public function save()
+    /**
+     * @param  string|null  $sebagai  'draft' atau 'published' — dipakai dua
+     *                                tombol simpan supaya statusnya tidak
+     *                                harus diubah dulu di panel kanan.
+     */
+    public function save(?string $sebagai = null)
     {
+        if (in_array($sebagai, ['draft', 'published'], true)) {
+            $this->status = $sebagai;
+        }
+
         $rules = [
             'title' => 'required|string|min:5|max:180',
             'slug' => 'nullable|string|max:200',
@@ -101,6 +289,9 @@ class BlogForm extends Component
             'meta_title' => 'nullable|string|max:180',
             'meta_description' => 'nullable|string|max:300',
             'cover' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:5120',
+            'cover_alt' => 'nullable|string|max:180',
+            'tags' => 'nullable|array|max:8',
+            'tags.*' => 'string|max:40',
         ];
 
         $this->validate($rules);
@@ -109,7 +300,8 @@ class BlogForm extends Component
         // yang jadi base64 raksasa) → disimpan sebagai file WEBP ringan + lazy-load.
         $this->body = app(BlogImageService::class)->processBodyImages($this->body);
 
-        // Ringkasan & meta SEO otomatis (readonly di form) — pastikan selalu terisi.
+        // Ringkasan & meta SEO otomatis — pastikan selalu terisi, termasuk
+        // saat admin memilih mengetiknya sendiri lalu membiarkannya kosong.
         $plain = $this->plainText((string) $this->body);
         if (trim((string) $this->excerpt) === '') {
             $this->excerpt = $this->pickInterestingSentence($plain, 200);
@@ -129,6 +321,55 @@ class BlogForm extends Component
         }
 
         return $this->updatePost();
+    }
+
+    /**
+     * Simpan diam-diam sebagai draf, tanpa berpindah halaman.
+     *
+     * Dipanggil berkala dari layar saat ada perubahan. Artikel yang belum
+     * pernah disimpan DIBUATKAN dulu sebagai draf, lalu formulirnya berpindah
+     * ke mode sunting di tempat — tanpa itu tulisan panjang yang belum sempat
+     * disimpan hilang begitu tab tertutup.
+     */
+    public function simpanOtomatis(): void
+    {
+        // Terlalu kosong untuk disimpan; menyimpan artikel kosong hanya
+        // menumpuk draf sampah.
+        if (mb_strlen(trim((string) $this->title)) < 5 && $this->jumlahKata < 20) {
+            return;
+        }
+
+        $isi = [
+            'title' => trim($this->title) ?: 'Tanpa judul',
+            'category' => $this->category ? trim($this->category) : null,
+            'tags' => $this->tags ?: null,
+            'excerpt' => $this->excerpt ? trim($this->excerpt) : null,
+            'body' => (string) $this->body,
+            'cover_alt' => $this->cover_alt ? trim($this->cover_alt) : null,
+            'meta_title' => $this->meta_title ?: null,
+            'meta_description' => $this->meta_description ?: null,
+        ];
+
+        if ($this->mode === 'create') {
+            $post = BlogPost::create($isi + [
+                'slug' => BlogPost::makeSlug($this->slug ?: $isi['title']),
+                // Simpan otomatis SELALU draf. Menerbitkan tulisan yang belum
+                // selesai tanpa diminta jauh lebih merugikan daripada hilang.
+                'status' => 'draft',
+                'published_at' => null,
+                'author' => 'admin',
+            ]);
+
+            $this->post = $post;
+            $this->slug = $post->slug;
+            $this->mode = 'edit';
+            $this->slugManual = true;
+        } else {
+            $this->post->update($isi);
+        }
+
+        $this->simpanOtomatisPada = now()->format('H:i');
+        $this->dispatch('artikel-tersimpan-otomatis');
     }
 
     private function storeCover(): ?string
@@ -195,6 +436,8 @@ class BlogForm extends Component
                 'cover' => $filename,
                 'status' => $this->status,
                 'published_at' => $this->resolvePublishedAt(),
+                'cover_alt' => $this->cover_alt ? trim($this->cover_alt) : null,
+                'tags' => $this->tags ?: null,
                 'meta_title' => $this->meta_title ?: null,
                 'meta_description' => $this->meta_description ?: null,
                 // Statis "admin", bukan nama akun yang login: halaman publik
@@ -221,6 +464,8 @@ class BlogForm extends Component
                 'body' => $this->body,
                 'status' => $this->status,
                 'published_at' => $this->resolvePublishedAt(),
+                'cover_alt' => $this->cover_alt ? trim($this->cover_alt) : null,
+                'tags' => $this->tags ?: null,
                 'meta_title' => $this->meta_title ?: null,
                 'meta_description' => $this->meta_description ?: null,
             ];

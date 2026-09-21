@@ -12,18 +12,28 @@ class BlogShow extends Component
 {
     public BlogPost $post;
 
+    /** Benar bila yang membuka adalah admin yang sedang melihat draf. */
+    public bool $pratinjau = false;
+
     public function mount(BlogPost $post)
     {
-        // Hanya artikel terbit yang boleh diakses publik.
-        if ($post->status !== 'published'
-            || ($post->published_at && $post->published_at->isFuture())) {
-            abort(404);
+        $belumTayang = $post->status !== 'published'
+            || ($post->published_at && $post->published_at->isFuture());
+
+        if ($belumTayang) {
+            // Draf & artikel terjadwal tetap tertutup untuk publik, tetapi
+            // boleh dibuka oleh admin sebagai PRATINJAU — tanpa itu satu-
+            // satunya cara melihat hasilnya adalah menerbitkannya dulu.
+            abort_unless(auth()->user()?->hasPermission('view_blog'), 404);
+
+            $this->pratinjau = true;
         }
 
         $this->post = $post;
 
-        // Hitung tampilan (tanpa mengganggu updated_at).
-        BlogPost::whereKey($post->id)->update(['views' => $post->views + 1]);
+        if (! $this->pratinjau && $this->layakDihitung($post)) {
+            $post->catatBaca();
+        }
 
         // SEO dinamis — dibaca partials/seo.blade.php.
         $title = $post->meta_title ?: $post->title;
@@ -56,6 +66,48 @@ class BlogShow extends Component
             ],
             'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => route('blog.show', $post->slug)],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Apakah kunjungan ini pantas menambah hitungan baca.
+     *
+     * Sebelumnya setiap pemuatan halaman dihitung — termasuk muat ulang
+     * berkali-kali, kunjungan admin sendiri, dan perayap mesin pencari —
+     * sehingga "paling dibaca" tidak bisa dipercaya.
+     *
+     * Penandanya disimpan di sesi peramban, bukan di basis data: tidak ada
+     * jejak siapa membaca apa yang ikut tersimpan.
+     */
+    private function layakDihitung(BlogPost $post): bool
+    {
+        if (auth()->hasUser()) {
+            return false;
+        }
+
+        $agen = strtolower((string) request()->userAgent());
+        foreach (['bot', 'crawl', 'spider', 'slurp', 'preview', 'facebookexternalhit', 'headless'] as $tanda) {
+            if (str_contains($agen, $tanda)) {
+                return false;
+            }
+        }
+
+        $kunci = 'blog_dibaca';
+        $sudah = (array) session()->get($kunci, []);
+        $batas = now()->getTimestamp() - 6 * 3600;
+
+        // Buang catatan lama supaya sesi tidak menggemuk tanpa batas.
+        $sudah = array_filter($sudah, fn ($waktu) => $waktu > $batas);
+
+        if (isset($sudah[$post->id])) {
+            session()->put($kunci, $sudah);
+
+            return false;
+        }
+
+        $sudah[$post->id] = now()->getTimestamp();
+        session()->put($kunci, $sudah);
+
+        return true;
     }
 
     public function render()

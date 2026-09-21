@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Blog;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -18,15 +19,32 @@ class CategoryList extends Component
 
     public string $editingName = '';
 
+    public string $editingDescription = '';
+
+    /** Nama kategori tujuan saat menggabungkan. */
+    public string $gabungKe = '';
+
+    /** nama | jumlah */
+    public string $urut = 'nama';
+
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedUrut(): void
+    {
+        if (! in_array($this->urut, ['nama', 'jumlah'], true)) {
+            $this->urut = 'nama';
+        }
+
         $this->resetPage();
     }
 
     /**
      * Dipanggil dari popup SweetAlert (input nama kategori).
      */
-    public function createCategory($name): void
+    public function createCategory($name, $description = null): void
     {
         if (! auth()->user()->hasPermission('create_blog')) {
             $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menambah kategori.');
@@ -51,6 +69,7 @@ class CategoryList extends Component
         BlogCategory::create([
             'name' => $name,
             'slug' => BlogCategory::makeSlug($name),
+            'description' => filled($description) ? Str::limit(trim((string) $description), 255, '') : null,
         ]);
 
         $this->dispatch('swal-success', message: 'Kategori berhasil ditambahkan.');
@@ -65,11 +84,12 @@ class CategoryList extends Component
 
         $this->editingId = $cat->id;
         $this->editingName = $cat->name;
+        $this->editingDescription = (string) $cat->description;
     }
 
     public function cancelEdit(): void
     {
-        $this->reset('editingId', 'editingName');
+        $this->reset('editingId', 'editingName', 'editingDescription', 'gabungKe');
     }
 
     public function saveEdit(): void
@@ -89,7 +109,8 @@ class CategoryList extends Component
 
         $data = $this->validate([
             'editingName' => 'required|string|min:2|max:60|unique:blog_categories,name,'.$cat->id,
-        ], [], ['editingName' => 'nama kategori']);
+            'editingDescription' => 'nullable|string|max:255',
+        ], [], ['editingName' => 'nama kategori', 'editingDescription' => 'deskripsi kategori']);
 
         $old = $cat->name;
         $new = trim($data['editingName']);
@@ -97,6 +118,7 @@ class CategoryList extends Component
         $cat->update([
             'name' => $new,
             'slug' => BlogCategory::makeSlug($new, $cat->id),
+            'description' => filled($data['editingDescription'] ?? null) ? trim($data['editingDescription']) : null,
         ]);
 
         // Ikut memperbarui nama kategori di semua artikel yang memakainya.
@@ -106,6 +128,53 @@ class CategoryList extends Component
 
         $this->cancelEdit();
         $this->dispatch('swal-success', message: 'Kategori berhasil diperbarui.');
+    }
+
+    /**
+     * Gabungkan satu kategori ke kategori lain.
+     *
+     * Semua artikel dipindah lebih dulu, baru kategori asalnya dihapus —
+     * urutan sebaliknya meninggalkan artikel tanpa kategori bila prosesnya
+     * gagal di tengah.
+     */
+    public function gabungkan(int $dariId, string $keNama): void
+    {
+        if (! auth()->user()->hasPermission('edit_blog')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah kategori.');
+
+            return;
+        }
+
+        $dari = BlogCategory::find($dariId);
+        $ke = BlogCategory::where('name', trim($keNama))->first();
+
+        if (! $dari || ! $ke || $dari->id === $ke->id) {
+            $this->dispatch('swal-error', message: 'Kategori tujuan tidak ditemukan.');
+
+            return;
+        }
+
+        $jumlah = BlogPost::withTrashed()->where('category', $dari->name)->update(['category' => $ke->name]);
+        $dari->delete();
+        $this->cancelEdit();
+
+        $this->dispatch('swal-success', message: $jumlah.' artikel dipindah ke "'.$ke->name.'", kategori "'.$dari->name.'" dihapus.');
+    }
+
+    /** Gabungkan kategori yang sedang disunting ke kategori yang dipilih. */
+    public function gabungkanTerpilih(): void
+    {
+        if (! $this->editingId || $this->gabungKe === '') {
+            return;
+        }
+
+        $this->gabungkan($this->editingId, $this->gabungKe);
+    }
+
+    /** Nama kategori lain — untuk pilihan tujuan penggabungan. */
+    public function kategoriLain(int $kecualiId): array
+    {
+        return BlogCategory::where('id', '!=', $kecualiId)->orderBy('name')->pluck('name')->all();
     }
 
     public function delete(int $id): void
@@ -142,8 +211,20 @@ class CategoryList extends Component
             ->pluck('c', 'category');
 
         $categories = BlogCategory::query()
-            ->when($this->search !== '', fn ($q) => $q->where('name', 'like', '%'.$this->search.'%'))
-            ->orderBy('name')->paginate(10);
+            ->when($this->search !== '', fn ($q) => $q->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('description', 'like', '%'.$this->search.'%'))
+            ->orderBy('name')
+            ->paginate(12);
+
+        // Urut menurut jumlah artikel dilakukan sesudah halaman diambil:
+        // jumlahnya berasal dari tabel artikel, bukan kolom di kategori.
+        if ($this->urut === 'jumlah') {
+            $categories->setCollection(
+                $categories->getCollection()
+                    ->sortByDesc(fn ($c) => (int) ($counts[$c->name] ?? 0))
+                    ->values()
+            );
+        }
 
         return view('livewire.pages.admin.blog.category-list', [
             'categories' => $categories,
