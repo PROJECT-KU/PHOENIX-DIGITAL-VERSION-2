@@ -1726,3 +1726,83 @@ it('riwayat menampilkan sepuluh versi lalu bisa dibuka seluruhnya', function () 
     $t->set('semuaRevisi', true);
     expect($t->instance()->riwayat)->toHaveCount(14);
 });
+
+// ===================== Keutuhan komponen =====================
+
+/**
+ * Komponen Livewire WAJIB menghasilkan satu elemen akar — juga pada
+ * permintaan PEMBARUAN, bukan cuma saat halaman dimuat penuh.
+ *
+ * Pernah terjadi: partial gaya ber-@once disertakan dari dalam formulir.
+ * Saat halaman dimuat penuh ia sudah dipakai induknya sehingga tidak keluar
+ * apa-apa, tetapi begitu Livewire merender komponen itu SENDIRIAN, @once
+ * menyala lagi dan <style> jadi elemen akar pertama. Livewire memorf elemen
+ * gaya itu, dan seluruh formulir lenyap dari layar begitu satu huruf
+ * diketik.
+ */
+function akarKomponen(string $html): array
+{
+    $dom = new DOMDocument;
+    libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="utf-8"?><body>'.$html.'</body>', LIBXML_NOERROR);
+    libxml_clear_errors();
+
+    $akar = [];
+    foreach ($dom->getElementsByTagName('body')->item(0)->childNodes as $simpul) {
+        if ($simpul->nodeType === XML_ELEMENT_NODE) {
+            $akar[] = $simpul->nodeName;
+        }
+    }
+
+    return $akar;
+}
+
+it('formulir artikel tetap utuh setelah satu huruf diketik', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Judul Awal']);
+
+    $html = Livewire::test(BlogForm::class, ['post' => $p])->set('title', 'Judul Awal Diketik')->html();
+
+    expect(akarKomponen($html))->toBe(['form'])
+        // Isinya benar-benar formulirnya, bukan sisa elemen lain.
+        ->and($html)->toContain('bl-form');
+});
+
+it('semua komponen blog menghasilkan satu elemen akar saat diperbarui', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Untuk Diperiksa', 'status' => 'published', 'published_at' => now()->subDay()]);
+    BlogCategory::create(['name' => 'Panduan', 'slug' => 'panduan']);
+
+    $komponen = [
+        'BlogList' => fn () => Livewire::test(BlogList::class)->set('search', 'a'),
+        'BlogForm' => fn () => Livewire::test(BlogForm::class, ['post' => $p])->set('title', 'Diubah'),
+        'BlogCreate' => fn () => Livewire::test(\App\Livewire\Pages\Admin\Blog\BlogCreate::class),
+        'BlogEdit' => fn () => Livewire::test(BlogEdit::class, ['post' => $p]),
+        'CategoryList' => fn () => Livewire::test(CategoryList::class)->set('search', 'a'),
+        'BlogIndex' => fn () => Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class)->set('search', 'a'),
+        'BlogShow' => fn () => Livewire::test(\App\Livewire\Pages\Public\Blog\BlogShow::class, ['post' => $p]),
+    ];
+
+    foreach ($komponen as $nama => $jalankan) {
+        expect(akarKomponen($jalankan()->html()))->toHaveCount(1, $nama.' punya lebih dari satu elemen akar');
+    }
+});
+
+it('gaya artikel tetap sampai ke halaman sunting lewat induknya', function () {
+    // Lewat HTTP, jadi perannya harus benar-benar bernama "admin":
+    // grup rute admin dijaga middleware checkrole:admin,admin-mimin.
+    $peran = \App\Models\Role::create(['name' => 'admin', 'description' => 'uji']);
+    foreach (['view_blog', 'edit_blog'] as $nama) {
+        $izin = \App\Models\Permission::firstOrCreate(['name' => $nama], ['display_name' => $nama, 'group' => 'uji', 'description' => 'uji']);
+        $peran->permissions()->attach($izin->id);
+    }
+    $this->actingAs(\App\Models\User::factory()->create(['role_id' => $peran->id, 'status' => 'active']));
+    $p = artikel(['title' => 'Cek Gaya', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    $halaman = $this->get('/admin/blog/'.$p->slug.'/edit')->assertOk()->getContent();
+
+    // Formulir tidak lagi menyertakan gayanya sendiri; induknya yang membawa.
+    expect($halaman)->toContain('.bl-form {')
+        ->toContain('.bl-panel-judul')
+        ->toContain('class="blog-editor');
+});

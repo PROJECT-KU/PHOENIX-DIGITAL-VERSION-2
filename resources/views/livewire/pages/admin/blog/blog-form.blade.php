@@ -3,8 +3,15 @@
      dalam wire:ignore dengan #editor-body dan input tersembunyi #body,
      pemilih kategori tetap .open-cat-picker, unggahan sampul tetap
      #coverInput. --}}
-@include('livewire.pages.admin.partials.dasbor-gaya')
-@include('livewire.pages.admin.blog.partials.artikel-gaya')
+{{-- Gaya SENGAJA tidak disertakan di sini.
+
+     Komponen Livewire harus punya SATU elemen akar. Partial gaya dibungkus
+     @once, yang hanya berlaku dalam satu permintaan: saat halaman dimuat
+     penuh ia sudah dipakai induk (blog-create / blog-edit) sehingga tidak
+     keluar apa-apa di sini, tetapi pada permintaan PEMBARUAN Livewire
+     komponen ini dirender sendirian — @once menyala lagi dan <style>-nya
+     menjadi elemen akar PERTAMA. Livewire lalu memorf elemen gaya itu dan
+     seluruh formulirnya lenyap dari layar begitu satu huruf diketik. --}}
 
 @php
     $kelengkapan = $this->kelengkapan;
@@ -891,6 +898,8 @@
 </style>
 @endpush
 
+@push('scripts')
+
 <!--================== SWEET ALERT IMAGE UPLOAD ==================-->
 <script>
     if (typeof window.showGlossyPreview !== 'function') {
@@ -1058,3 +1067,4 @@
     })();
 </script>
 <!--================== END POPUP KATEGORI ==================-->
+@endpush
