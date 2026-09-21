@@ -10,6 +10,8 @@ Data Pesanan || lemon
         $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
         $jumlahLanjut = $this->jumlahSaringanLanjut();
         $adaSaringan = $search || $filterMonth || $filterYear || $jumlahLanjut;
+        // Lencana tombol "Saringan lainnya" (ponsel): semua saringan di balik tombol itu.
+        $jumlahSaringHp = ($filterMonth ? 1 : 0) + ($filterYear ? 1 : 0) + $jumlahLanjut;
         $bolehUbahPesanan = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
         $bolehBuatPesanan = (bool) auth()->user()?->hasPermission('create_pemesanantoko');
         $tabAkun = $this->tabItem();
@@ -114,8 +116,12 @@ Data Pesanan || lemon
                     </div>
                 </div>
 
+                {{-- Di ponsel hanya pencarian yang tampil; bulan, tahun, saringan
+                     lanjutan, urutan & baris di balik satu tombol supaya daftar
+                     pesanan tidak jauh digulir. Desktop tidak terpengaruh (lihat
+                     .pt-saring-hp di toko-gaya). --}}
                 <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-isi">
+                    <div class="dsb-kartu-isi pt-saring-kartu" x-data="{ bukaHp: false }" x-bind:class="{ 'is-buka': bukaHp }">
                         <div class="pt-saring">
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="pt-cari">Cari</label>
@@ -130,6 +136,13 @@ Data Pesanan || lemon
                                     @endif
                                 </div>
                             </div>
+                            <button type="button" class="pt-saring-tombol" x-on:click="bukaHp = ! bukaHp"
+                                x-bind:aria-expanded="bukaHp.toString()" aria-controls="pt-saring-hp">
+                                <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
+                                @if ($jumlahSaringHp)<span class="pt-saring-jumlah">{{ $jumlahSaringHp }} aktif</span>@endif
+                                <i class="bi bi-chevron-down pt-saring-panah"></i>
+                            </button>
+                            <div class="pt-saring-hp" id="pt-saring-hp">
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="pt-bulan">Bulan</label>
                                 <select id="pt-bulan" class="dsb-isian" wire:model.live="filterMonth">
@@ -148,6 +161,7 @@ Data Pesanan || lemon
                                     @endforeach
                                 </select>
                             </div>
+                            </div>{{-- /.pt-saring-hp --}}
                         </div>
 
                         {{-- Saringan lanjutan: terbuka sendiri bila ada yang aktif. --}}

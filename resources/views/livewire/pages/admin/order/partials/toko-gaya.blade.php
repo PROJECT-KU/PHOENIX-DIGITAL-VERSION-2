@@ -112,6 +112,34 @@
         margin-top: 14px; padding-top: 13px; border-top: 1px solid #f1f5f9;
     }
     .pt-saring-kaki .dsb-kartu-sub { display: inline-flex; align-items: center; gap: 7px; }
+    /* Buka-tutup saringan KHUSUS ponsel (pola Task Saya). Di layar lebar
+       pembungkus bulan & tahun memakai display: contents — keduanya tetap
+       anak grid .pt-saring, jadi susunan desktop tidak berubah, dan tombolnya
+       tidak pernah tampil. */
+    .pt-saring-hp { display: contents; }
+    .pt-saring-tombol { display: none; }
+    @media (max-width: 575.98px) {
+        .pt-saring-tombol {
+            grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;
+            min-height: 44px; padding: 0 14px; border-radius: 12px;
+            border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff;
+            color: #334155; font-size: .88rem; font-weight: 700; text-align: left; cursor: pointer;
+        }
+        .pt-saring-tombol > .bi-sliders { color: #7c3aed; }
+        .pt-saring-jumlah {
+            padding: 2px 9px; border-radius: 999px; background: #f5f3ff; color: #6d28d9;
+            font-size: .74rem; font-weight: 700;
+        }
+        .pt-saring-panah { margin-left: auto; color: #94a3b8; transition: transform .2s ease; }
+        .pt-saring-kartu.is-buka .pt-saring-panah { transform: rotate(180deg); }
+        /* Tertutup: bulan, tahun, saringan lanjutan + urutan, dan kaki disembunyikan. */
+        .pt-saring-kartu:not(.is-buka) .pt-saring-hp,
+        .pt-saring-kartu:not(.is-buka) .pt-lanjutan,
+        .pt-saring-kartu:not(.is-buka) .pt-saring-kaki { display: none; }
+    }
+    @media (max-width: 575.98px) and (prefers-reduced-motion: reduce) {
+        .pt-saring-panah { transition: none; }
+    }
 
     /* ===== Tabel ===== */
     .pt-tautan { text-decoration: none; color: inherit; }
