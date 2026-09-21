@@ -59,7 +59,11 @@ Dashboard || lemon
         {{-- ================== SAPAAN ================== --}}
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
-                <h1 class="dsb-salam">{{ $salam }}, {{ $namaDepan }} 👋</h1>
+                {{-- Nama dan lambaian dilekatkan: dengan spasi biasa peramban boleh
+                     memotong baris tepat sebelum emoji, sehingga di ponsel 👋
+                     jatuh sendirian di baris bawah. Sekarang keduanya selalu
+                     berpindah baris bersama. --}}
+                <h1 class="dsb-salam">{{ $salam }}, <span class="dsb-salam-nama">{{ $namaDepan }}&nbsp;👋</span></h1>
                 <p class="dsb-hero-ket">
                     <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     <span class="d-block">Ringkasan gaji, pinjaman, dan agenda Anda</span>

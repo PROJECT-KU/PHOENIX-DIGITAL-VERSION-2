@@ -42,7 +42,9 @@ it('dasbor karyawan tampil dengan kerangka baru', function () {
     $this->actingAs($user)->get('/admin/dashboard')
         ->assertOk()
         ->assertSee('class="dsb-hero"', false)
-        ->assertSee(', Dewi', false)
+        // Nama & lambaian dilekatkan dalam satu span supaya 👋 tidak jatuh
+        // sendirian ke baris bawah di ponsel.
+        ->assertSee('<span class="dsb-salam-nama">Dewi&nbsp;👋</span>', false)
         ->assertSee('Gaji &amp; Pinjaman', false)
         // Salam dari jam server, bukan skrip peramban yang membaca jam laptop.
         ->assertDontSee('getGreeting', false);

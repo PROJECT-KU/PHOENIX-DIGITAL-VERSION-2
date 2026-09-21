@@ -56,7 +56,11 @@ Dashboard || lemon
         {{-- ================== SAPAAN & AKSI CEPAT ================== --}}
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
-                <h1 class="dsb-salam">{{ $salam }}, {{ $namaDepan }} 👋</h1>
+                {{-- Nama dan lambaian dilekatkan: dengan spasi biasa peramban boleh
+                     memotong baris tepat sebelum emoji, sehingga di ponsel 👋
+                     jatuh sendirian di baris bawah. Sekarang keduanya selalu
+                     berpindah baris bersama. --}}
+                <h1 class="dsb-salam">{{ $salam }}, <span class="dsb-salam-nama">{{ $namaDepan }}&nbsp;👋</span></h1>
                 <p class="dsb-hero-ket">
                     <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     <span class="d-block">
@@ -65,19 +69,25 @@ Dashboard || lemon
                              halaman dimuat, bukan mengalir sendiri. Tanpa jam ini,
                              tab yang dibiarkan terbuka semalaman terbaca seolah
                              masih menunjukkan keadaan sekarang. --}}
-                        <span class="dsb-segar" title="Angka di halaman ini dihitung saat halaman dimuat">
-                            <i class="bi bi-clock-history"></i>Data per {{ now()->locale('id')->translatedFormat('H:i') }}
+                        {{-- Penanda jam dan tombol muat ulang SATU PASANG, dibungkus
+                             supaya tidak pernah terpisah baris. Tanpa pembungkus,
+                             di ponsel tombolnya jatuh sendirian ke baris bawah
+                             dengan sisi kanan kosong. --}}
+                        <span class="dsb-segar-grup">
+                            <span class="dsb-segar" title="Angka di halaman ini dihitung saat halaman dimuat">
+                                <i class="bi bi-clock-history"></i>Data per {{ now()->locale('id')->translatedFormat('H:i') }}
+                            </span>
+                            {{-- Tombolnya ADA karena jamnya ada: memberi tahu angka
+                                 sudah basi tanpa memberi cara menyegarkannya hanya
+                                 memindahkan pekerjaan ke admin (cari tombol reload
+                                 peramban, dan kehilangan posisi gulir). --}}
+                            <button type="button" class="dsb-segar is-tombol" wire:click="muatUlang"
+                                wire:loading.attr="disabled" wire:target="muatUlang"
+                                title="Hitung ulang semua angka di halaman ini">
+                                <span class="dsb-segar-isi" wire:loading.remove.inline-flex wire:target="muatUlang"><i class="bi bi-arrow-clockwise"></i>Muat ulang</span>
+                                <span class="dsb-segar-isi" wire:loading.inline-flex wire:target="muatUlang"><span class="dsb-putar is-kecil"></span>Memuat…</span>
+                            </button>
                         </span>
-                        {{-- Tombolnya ADA karena jamnya ada: memberi tahu angka
-                             sudah basi tanpa memberi cara menyegarkannya hanya
-                             memindahkan pekerjaan ke admin (cari tombol reload
-                             peramban, dan kehilangan posisi gulir). --}}
-                        <button type="button" class="dsb-segar is-tombol" wire:click="muatUlang"
-                            wire:loading.attr="disabled" wire:target="muatUlang"
-                            title="Hitung ulang semua angka di halaman ini">
-                            <span class="dsb-segar-isi" wire:loading.remove.inline-flex wire:target="muatUlang"><i class="bi bi-arrow-clockwise"></i>Muat ulang</span>
-                            <span class="dsb-segar-isi" wire:loading.inline-flex wire:target="muatUlang"><span class="dsb-putar is-kecil"></span>Memuat…</span>
-                        </button>
                     </span>
                 </p>
             </div>

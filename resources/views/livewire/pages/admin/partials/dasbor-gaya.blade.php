@@ -276,6 +276,16 @@
     }
     .dsb-hero-ket { color: var(--dsb-redup); font-size: .9rem; margin: 0; line-height: 1.55; }
 
+    /* Nama + 👋 tidak pernah dipisah baris (lihat catatan di dasbor). */
+    .dsb-salam-nama { white-space: nowrap; }
+
+    /* Penanda "Data per" + tombol "Muat ulang" berpindah baris BERSAMA. */
+    .dsb-segar-grup {
+        display: inline-flex; align-items: center; gap: 6px;
+        margin-left: 6px; vertical-align: middle; white-space: nowrap;
+    }
+    .dsb-segar-grup > .dsb-segar { margin-left: 0; }
+
     .dsb-segar {
         display: inline-flex; align-items: center; gap: 5px; margin-left: 6px;
         padding: 2px 9px; border-radius: 999px;
@@ -833,6 +843,15 @@
     @media (max-width: 991.98px), (pointer: coarse) {
         .dsb-segar.is-tombol { min-height: 36px; padding-inline: 12px; }
         .dsb-baris-aksi { min-height: 36px; padding-inline: 13px; }
+    }
+
+    /* Di ponsel pasangan "Data per" + "Muat ulang" mendapat barisnya sendiri
+       dan mengisi lebar penuh dalam dua bagian sama besar — tidak ada lagi
+       tombol yang berdiri sendirian dengan sisi kanan kosong. Penanda jamnya
+       disamakan tingginya dengan tombol supaya terbaca sepasang. */
+    @media (max-width: 575.98px) {
+        .dsb-segar-grup { display: flex; margin: 10px 0 0; }
+        .dsb-segar-grup > .dsb-segar { flex: 1 1 0; justify-content: center; min-height: 36px; }
     }
     .dsb-putar.is-kecil { width: 11px; height: 11px; border-width: 1.5px; }
 
