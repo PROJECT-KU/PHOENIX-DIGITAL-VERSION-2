@@ -194,6 +194,9 @@ Route::get('/layanan', \App\Livewire\Pages\Public\Services\ServicesPage::class)-
 Route::get('/lacak-pesanan', \App\Livewire\Pages\Public\ShopPage\TrackOrder::class)->name('track-order');
 Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)->name('wishlist');
 Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blog.index');
+// Didaftarkan SEBELUM /blog/{post}: kalau tidak, "feed.xml" ditangkap sebagai
+// slug artikel dan umpannya tidak pernah terjangkau.
+Route::get('/blog/feed.xml', \App\Http\Controllers\BlogFeedController::class)->name('blog.feed');
 Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
 Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 // Preview invoice DIPINDAH ke grup 'permission:view_pesananrsc' di bawah.

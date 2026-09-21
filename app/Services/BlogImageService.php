@@ -133,6 +133,38 @@ class BlogImageService
     }
 
     /**
+     * Lengkapi gambar di isi artikel yang belum punya atribut alt.
+     *
+     * Gambar tanpa alt tidak terbaca pembaca layar dan tidak bermakna apa-apa
+     * bagi mesin pencari. Judul artikel bukan teks alternatif yang ideal,
+     * tetapi jauh lebih baik daripada kosong — dan admin tetap bisa
+     * menuliskannya sendiri lewat editor.
+     */
+    public function lengkapiAltGambar(string $html, string $judul): string
+    {
+        if (trim($html) === '') {
+            return $html;
+        }
+
+        $judul = trim(strip_tags($judul)) ?: 'Gambar artikel';
+        $nomor = 0;
+
+        return preg_replace_callback('/<img\b[^>]*>/i', function ($m) use ($judul, &$nomor) {
+            $nomor++;
+
+            // Yang sudah punya alt (termasuk alt="") dibiarkan: alt kosong
+            // adalah cara baku menandai gambar hiasan.
+            if (preg_match('/\salt\s*=/i', $m[0])) {
+                return $m[0];
+            }
+
+            $teks = $nomor === 1 ? $judul : $judul.' — gambar '.$nomor;
+
+            return preg_replace('/<img\b/i', '<img alt="'.e($teks).'"', $m[0], 1);
+        }, $html) ?? $html;
+    }
+
+    /**
      * Apakah body masih mengandung gambar base64 (perlu diproses)?
      */
     public function bodyHasBase64(string $html): bool

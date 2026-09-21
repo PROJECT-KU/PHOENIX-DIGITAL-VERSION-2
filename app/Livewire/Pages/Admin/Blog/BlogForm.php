@@ -61,6 +61,22 @@ class BlogForm extends Component
     /** Ditandai saat simpan otomatis berhasil — dibaca tampilan untuk pesan kecil. */
     public ?string $simpanOtomatisPada = null;
 
+    public $unpublish_at = '';
+
+    public $focus_keyword = '';
+
+    /**
+     * Cap waktu artikel saat formulir dibuka.
+     *
+     * Dipakai mendeteksi bentrok: kalau di basis data sudah lebih baru, ada
+     * orang lain yang menyimpan lebih dulu dan menimpanya akan menghapus
+     * pekerjaan orang itu tanpa jejak.
+     */
+    public ?string $capWaktu = null;
+
+    /** Diisi saat bentrok terdeteksi; tampilan menawarkan timpa atau batal. */
+    public bool $bentrok = false;
+
     public function mount()
     {
         if ($this->post) {
@@ -76,6 +92,10 @@ class BlogForm extends Component
             $this->meta_description = $this->post->meta_description;
             $this->tags = $this->post->tagDaftar();
             $this->cover_alt = $this->post->cover_alt ?? '';
+            $this->unpublish_at = $this->post->unpublish_at?->format('Y-m-d\TH:i');
+            $this->focus_keyword = $this->post->focus_keyword ?? '';
+            $this->capWaktu = (string) $this->post->updated_at;
+            $this->post->tandaiDibuka();
             $this->mode = 'edit';
             // Slug artikel yang sudah ada TIDAK ikut berubah saat judul diubah;
             // mengubah URL yang sudah tayang memutus tautan dan peringkatnya.
@@ -186,6 +206,7 @@ class BlogForm extends Component
             ['label' => 'Teks alternatif sampul', 'ok' => filled($this->cover_alt), 'wajib' => false],
             ['label' => 'Minimal satu tag', 'ok' => count($this->tags) > 0, 'wajib' => false],
             ['label' => 'Meta description 120–155 huruf', 'ok' => $metaPanjang >= 120 && $metaPanjang <= 155, 'wajib' => false],
+            ['label' => 'Kata kunci fokus terisi', 'ok' => filled($this->focus_keyword), 'wajib' => false],
         ];
     }
 
@@ -292,13 +313,25 @@ class BlogForm extends Component
             'cover_alt' => 'nullable|string|max:180',
             'tags' => 'nullable|array|max:8',
             'tags.*' => 'string|max:40',
+            'focus_keyword' => 'nullable|string|max:80',
+            'unpublish_at' => 'nullable|date|after:published_at',
         ];
 
         $this->validate($rules);
 
+        // Ada yang menyimpan lebih dulu sejak formulir ini dibuka.
+        if ($this->mode === 'edit' && ! $this->bentrok && $this->adaBentrok()) {
+            $this->bentrok = true;
+            $this->dispatch('swal-error', message: 'Artikel ini baru saja diubah orang lain. Periksa dulu sebelum menimpanya.');
+
+            return null;
+        }
+
         // Kompres juga gambar yang tertanam di ISI artikel (mis. hasil paste ke editor
         // yang jadi base64 raksasa) → disimpan sebagai file WEBP ringan + lazy-load.
-        $this->body = app(BlogImageService::class)->processBodyImages($this->body);
+        $gambar = app(BlogImageService::class);
+        $this->body = $gambar->processBodyImages($this->body);
+        $this->body = $gambar->lengkapiAltGambar($this->body, (string) $this->title);
 
         // Ringkasan & meta SEO otomatis — pastikan selalu terisi, termasuk
         // saat admin memilih mengetiknya sendiri lalu membiarkannya kosong.
@@ -321,6 +354,134 @@ class BlogForm extends Component
         }
 
         return $this->updatePost();
+    }
+
+    /** Sudah ada yang menyimpan artikel ini sejak formulir dibuka? */
+    private function adaBentrok(): bool
+    {
+        if (! $this->post || ! $this->capWaktu) {
+            return false;
+        }
+
+        return (string) $this->post->fresh()?->updated_at !== $this->capWaktu;
+    }
+
+    /** Timpa saja — dipakai tombol "Tetap simpan" saat bentrok. */
+    public function timpaSaja()
+    {
+        $this->bentrok = false;
+        $this->capWaktu = (string) $this->post?->fresh()?->updated_at;
+
+        return $this->save();
+    }
+
+    public function batalkanBentrok(): void
+    {
+        $this->bentrok = false;
+        $this->capWaktu = (string) $this->post?->fresh()?->updated_at;
+    }
+
+    /**
+     * Perpanjang penanda "sedang dibuka".
+     *
+     * Dipanggil berkala dari layar. Penandanya kedaluwarsa sendiri, jadi tab
+     * yang ditutup paksa tidak mengunci artikel selamanya.
+     */
+    public function jagaKunci(): void
+    {
+        $this->post?->tandaiDibuka();
+    }
+
+    /** Siapa yang sedang membuka artikel ini selain saya — null bila tidak ada. */
+    public function getDipegangProperty(): ?string
+    {
+        $segar = $this->post?->fresh();
+
+        return $segar && $segar->dipegangOrangLain()
+            ? ($segar->pembuka?->name ?: 'admin lain')
+            : null;
+    }
+
+    /**
+     * Angka baca 30 hari terakhir, satu nilai per hari.
+     *
+     * Ditaruh di layar sunting karena di sinilah keputusannya diambil: mau
+     * diperbarui atau dibiarkan. Hari tanpa baris dihitung nol, supaya
+     * grafiknya tidak memampatkan hari-hari sepi.
+     */
+    public function getGrafikBacaProperty(): array
+    {
+        if (! $this->post) {
+            return [];
+        }
+
+        $baris = $this->post->bacaHarian()
+            ->where('tanggal', '>=', now()->subDays(29)->toDateString())
+            ->pluck('jumlah', 'tanggal');
+
+        $deret = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $hari = now()->subDays($i)->toDateString();
+            $kunci = $baris->keys()->first(fn ($k) => str_starts_with((string) $k, $hari));
+            $deret[] = (int) ($kunci === null ? 0 : $baris[$kunci]);
+        }
+
+        return $deret;
+    }
+
+    /** Riwayat versi artikel ini. */
+    public function getRiwayatProperty()
+    {
+        return $this->post ? $this->post->revisi()->with('penyunting')->take(10)->get() : collect();
+    }
+
+    /**
+     * Kembalikan isi ke salah satu versi lama.
+     *
+     * Status, jadwal, dan sampul TIDAK ikut dikembalikan: memulihkan tulisan
+     * tidak boleh diam-diam menerbitkan atau menurunkan artikel.
+     */
+    public function pulihkanRevisi(int $id): void
+    {
+        $revisi = $this->post?->revisi()->whereKey($id)->first();
+
+        if (! $revisi) {
+            return;
+        }
+
+        $this->post->catatRevisi();
+
+        $this->title = $revisi->title;
+        $this->excerpt = (string) $revisi->excerpt;
+        $this->body = (string) $revisi->body;
+
+        $this->dispatch('isi-dipulihkan', isi: (string) $revisi->body);
+        $this->dispatch('swal-success', message: 'Isi dikembalikan ke versi '.$revisi->created_at->locale('id')->translatedFormat('d M Y H:i').'. Tekan simpan untuk menyimpannya.');
+    }
+
+    /**
+     * Pemeriksaan kata kunci fokus.
+     *
+     * Bukan skor ajaib — hanya empat tempat yang memang menentukan apakah
+     * sebuah halaman terbaca sebagai jawaban atas kata kunci itu.
+     */
+    public function getPeriksaKunciProperty(): array
+    {
+        $kunci = mb_strtolower(trim((string) $this->focus_keyword));
+
+        if ($kunci === '') {
+            return [];
+        }
+
+        $isi = mb_strtolower($this->plainText((string) $this->body));
+        $awal = mb_substr($isi, 0, 300);
+
+        return [
+            ['label' => 'Muncul di judul', 'ok' => str_contains(mb_strtolower((string) $this->title), $kunci)],
+            ['label' => 'Muncul di alamat artikel', 'ok' => str_contains(mb_strtolower((string) $this->slug), Str::slug($kunci))],
+            ['label' => 'Muncul di paragraf awal', 'ok' => str_contains($awal, $kunci)],
+            ['label' => 'Muncul di meta description', 'ok' => str_contains(mb_strtolower((string) $this->meta_description), $kunci)],
+        ];
     }
 
     /**
@@ -350,6 +511,14 @@ class BlogForm extends Component
             'meta_description' => $this->meta_description ?: null,
         ];
 
+        // Saat bentrok, simpan otomatis DIAM: menulis diam-diam ke artikel
+        // yang baru diubah orang lain persis hal yang mau dicegah.
+        if ($this->mode === 'edit' && ($this->bentrok || $this->adaBentrok())) {
+            $this->bentrok = true;
+
+            return;
+        }
+
         if ($this->mode === 'create') {
             $post = BlogPost::create($isi + [
                 'slug' => BlogPost::makeSlug($this->slug ?: $isi['title']),
@@ -358,15 +527,21 @@ class BlogForm extends Component
                 'status' => 'draft',
                 'published_at' => null,
                 'author' => 'admin',
+                // Ditandai belum pernah disimpan sengaja — inilah yang boleh
+                // dipangkas kalau ditinggalkan berbulan-bulan.
+                'disimpan_manual' => false,
             ]);
 
             $this->post = $post;
             $this->slug = $post->slug;
             $this->mode = 'edit';
             $this->slugManual = true;
+            $this->post->tandaiDibuka();
         } else {
             $this->post->update($isi);
         }
+
+        $this->capWaktu = (string) $this->post->fresh()->updated_at;
 
         $this->simpanOtomatisPada = now()->format('H:i');
         $this->dispatch('artikel-tersimpan-otomatis');
@@ -438,6 +613,9 @@ class BlogForm extends Component
                 'published_at' => $this->resolvePublishedAt(),
                 'cover_alt' => $this->cover_alt ? trim($this->cover_alt) : null,
                 'tags' => $this->tags ?: null,
+                'unpublish_at' => $this->unpublish_at ?: null,
+                'focus_keyword' => $this->focus_keyword ? trim($this->focus_keyword) : null,
+                'disimpan_manual' => true,
                 'meta_title' => $this->meta_title ?: null,
                 'meta_description' => $this->meta_description ?: null,
                 // Statis "admin", bukan nama akun yang login: halaman publik
@@ -466,6 +644,9 @@ class BlogForm extends Component
                 'published_at' => $this->resolvePublishedAt(),
                 'cover_alt' => $this->cover_alt ? trim($this->cover_alt) : null,
                 'tags' => $this->tags ?: null,
+                'unpublish_at' => $this->unpublish_at ?: null,
+                'focus_keyword' => $this->focus_keyword ? trim($this->focus_keyword) : null,
+                'disimpan_manual' => true,
                 'meta_title' => $this->meta_title ?: null,
                 'meta_description' => $this->meta_description ?: null,
             ];
@@ -477,7 +658,17 @@ class BlogForm extends Component
                 $data['cover'] = $this->storeCover();
             }
 
+            // Riwayat dicatat SEBELUM ditimpa — yang dicari orang saat ingin
+            // kembali adalah versi yang barusan tergantikan.
+            $this->post->catatRevisi();
+
+            $slugLama = $this->post->slug;
             $this->post->update($data);
+
+            // Alamat lama tetap hidup supaya tautan yang sudah beredar tidak
+            // mati begitu slug diubah.
+            $this->post->catatAlamatLama($slugLama);
+            $this->post->lepasTandaDibuka();
 
             session()->flash('successUpdated', 'Perubahan artikel berhasil disimpan!');
 

@@ -22,7 +22,23 @@
                 font-size: .88rem; line-height: 1.5;
             }
             .blgd-pratinjau i { font-size: 1rem; }
-        </style>
+    
+        /* ===== Tag artikel ===== */
+        .ph-article .blgd-tag {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+            margin: 26px 0 0; padding-top: 22px; border-top: 1px solid var(--line);
+        }
+        .ph-article .blgd-tag-label {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .84rem; font-weight: 700; color: var(--muted);
+        }
+        .ph-article .blgd-tag-pil {
+            padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line);
+            background: var(--soft); color: var(--muted); font-size: .84rem; font-weight: 600;
+            text-decoration: none; transition: border-color .15s ease, color .15s ease, background .15s ease;
+        }
+        .ph-article .blgd-tag-pil:hover { border-color: var(--kb); background: #fff; color: var(--ink); }
+    </style>
     @endif
 
     <style>
@@ -354,7 +370,7 @@
                     @php $adaSampul = $post->cover && \Storage::disk('public')->exists('img/blog/'.$post->cover); @endphp
                     <div class="blgd-sampul {{ $adaSampul ? '' : 'is-kosong' }}">
                         @if ($adaSampul)
-                            <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" decoding="async"
+                            <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->cover_alt ?: $post->title }}" decoding="async"
                                 onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                         @endif
                         <div class="blgd-ubin">
@@ -395,6 +411,16 @@
                                  pengunjung. Id jangkar daftar isi ditambahkan SESUDAHNYA. --}}
                             {!! $isi !!}
                         </div>
+
+                        @php $tagArtikel = $post->tagDaftar(); @endphp
+                        @if ($tagArtikel)
+                            <div class="blgd-tag">
+                                <span class="blgd-tag-label"><i class="bi bi-hash"></i>Topik</span>
+                                @foreach ($tagArtikel as $t)
+                                    <a href="{{ route('blog.index', ['tag' => $t]) }}" class="blgd-tag-pil">#{{ $t }}</a>
+                                @endforeach
+                            </div>
+                        @endif
 
                         @php $url = route('blog.show', $post->slug); @endphp
                         <div class="blgd-kaki">
@@ -466,7 +492,7 @@
                             <a href="{{ route('blog.show', $rel->slug) }}" wire:navigate class="blgd-kartu-lain" style="--kb: {{ $rbL['warna'] }}">
                                 <div class="blgd-sampul {{ $adaSampulL ? '' : 'is-kosong' }}">
                                     @if ($adaSampulL)
-                                        <img src="{{ asset('storage/img/blog/' . $rel->cover) }}" alt="{{ $rel->title }}" loading="lazy" decoding="async"
+                                        <img src="{{ asset('storage/img/blog/' . $rel->cover) }}" alt="{{ $rel->cover_alt ?: $rel->title }}" loading="lazy" decoding="async"
                                             onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                                     @endif
                                     <div class="blgd-ubin"><i class="bi {{ $rbL['ikon'] }}"></i></div>

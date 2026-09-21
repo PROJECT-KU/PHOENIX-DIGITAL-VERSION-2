@@ -63,6 +63,12 @@ Artikel || lemon
                     <i class="bi bi-tags"></i><span>Kategori</span>
                 </a>
                 @if ($bolehTulis)
+                    {{-- Impor berkas tulisan (.md/.html/.txt) jadi draf baru. --}}
+                    <label class="dsb-tombol is-lembut bl-impor" style="--ikon: #0e7490" title="Impor berkas .md, .html, atau .txt sebagai draf">
+                        <span wire:loading.remove wire:target="berkasImpor" class="bl-isi-tombol"><i class="bi bi-box-arrow-in-down"></i><span>Impor</span></span>
+                        <span wire:loading.inline-flex wire:target="berkasImpor" class="bl-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Mengimpor…</span></span>
+                        <input type="file" wire:model="berkasImpor" accept=".md,.markdown,.html,.htm,.txt">
+                    </label>
                     <a wire:navigate href="{{ route('admin.blog.create') }}" class="dsb-tombol is-utama">
                         <i class="bi bi-pencil-square"></i><span>Tulis Artikel</span>
                     </a>
@@ -212,6 +218,10 @@ Artikel || lemon
                 </span>
                 <span class="bl-pintasan" aria-hidden="true"><kbd>/</kbd> cari · <kbd>t</kbd> ganti tampilan</span>
             </div>
+
+            @error('berkasImpor')
+                <div class="bl-chip-saring"><span class="bl-galat">{{ $message }}</span></div>
+            @enderror
 
             @if ($chipSaring)
                 <div class="bl-chip-saring">
@@ -381,6 +391,16 @@ Artikel || lemon
                                     @endif
                                     @if ($item->is_featured)
                                         <span class="bl-tanda is-semat"><i class="bi bi-pin-angle-fill"></i>Disematkan</span>
+                                    @endif
+                                    @if ($sampah && $item->deleted_at)
+                                        <span class="bl-tanda is-waktu" title="Waktu artikel ini dibuang">
+                                            <i class="bi bi-trash3"></i>dibuang {{ $item->deleted_at->locale('id')->diffForHumans() }}
+                                        </span>
+                                    @endif
+                                    @if ($item->penyunting)
+                                        <span class="bl-tanda is-waktu" title="Terakhir diubah {{ optional($item->updated_at)->locale('id')->translatedFormat('d M Y H:i') }}">
+                                            <i class="bi bi-person"></i>{{ \Illuminate\Support\Str::limit($item->penyunting->name, 14) }}
+                                        </span>
                                     @endif
                                     @if (! $sampah && $item->mandek())
                                         <span class="bl-tanda is-mandek" title="Sudah lama terbit tanpa pembaca sebulan terakhir"><i class="bi bi-hourglass-bottom"></i>Mandek</span>

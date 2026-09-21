@@ -191,6 +191,25 @@ $jadwalkan('testimoni:bersihkan-arsip --hari=90')->dailyAt('00:25');
 $jadwalkan('ulasan:bersihkan-arsip --hari=90')->dailyAt('00:30');
 
 /*
+ * Tong sampah artikel: tenggang yang sama dengan testimoni & ulasan.
+ * Gambar sampulnya ikut dibuang saat penghapusan permanen.
+ */
+$jadwalkan('artikel:bersihkan-sampah --hari=90')->dailyAt('00:45');
+
+/*
+ * Draf artikel yang lahir dari simpan otomatis lalu ditinggalkan dua bulan.
+ * Hanya dipindah ke TONG SAMPAH, jadi masih bisa dikembalikan 90 hari lagi.
+ */
+$jadwalkan('artikel:bersihkan-draf --hari=60')->dailyAt('00:50');
+
+/*
+ * Hitungan baca harian artikel disimpan ~13 bulan: cukup membandingkan satu
+ * bulan dengan bulan yang sama tahun lalu, tanpa tumbuh selamanya.
+ * Total sepanjang masa tidak terpengaruh (tersimpan di blog_posts.views).
+ */
+$jadwalkan('artikel:pangkas-baca --hari=400')->weeklyOn(1, '01:10');
+
+/*
  * Arsip helpdesk: tiket biasa disimpan 180 hari (bukti percakapan), spam cukup
  * 30 hari. Lampirannya ikut dibuang dari disk privat.
  */

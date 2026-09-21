@@ -5,15 +5,18 @@ namespace App\Livewire\Pages\Admin\Blog;
 use App\Exports\ArtikelExport;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Support\ImporArtikel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 
 class BlogList extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     /** all | published | terjadwal | draft | sampah — tab yang sekaligus kartu hitungan. */
@@ -56,6 +59,9 @@ class BlogList extends Component
 
     /** Sertakan isi artikel di unduhan (bukan hanya metadata). */
     public bool $ikutIsi = false;
+
+    /** Berkas tulisan yang diimpor jadi draf baru. */
+    public $berkasImpor;
 
     public const TAB = ['all', 'published', 'terjadwal', 'draft', 'sampah'];
 
@@ -380,6 +386,47 @@ class BlogList extends Component
         $this->dispatch('swal-success', message: $jumlah.' artikel dikembalikan.');
     }
 
+    // ===== Impor =====
+
+    /**
+     * Impor berkas tulisan (.md / .html / .txt) menjadi draf baru.
+     *
+     * Selalu DRAF: berkas dari luar belum tentu rapi, dan menerbitkannya
+     * langsung berarti pengunjung melihat hasil konversi yang belum diperiksa.
+     */
+    public function updatedBerkasImpor(): void
+    {
+        if (! auth()->user()?->hasPermission('create_blog')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin membuat artikel.');
+            $this->reset('berkasImpor');
+
+            return;
+        }
+
+        $this->validate([
+            'berkasImpor' => 'required|file|max:2048|mimes:md,markdown,html,htm,txt',
+        ], [], ['berkasImpor' => 'berkas artikel']);
+
+        $isi = (string) file_get_contents($this->berkasImpor->getRealPath());
+        $nama = pathinfo($this->berkasImpor->getClientOriginalName(), PATHINFO_FILENAME);
+        $jenis = strtolower($this->berkasImpor->getClientOriginalExtension());
+
+        [$judul, $tubuh] = ImporArtikel::urai($isi, $nama, $jenis);
+
+        $artikel = BlogPost::create([
+            'title' => $judul,
+            'slug' => BlogPost::makeSlug($judul),
+            'body' => $tubuh,
+            'status' => 'draft',
+            'author' => 'admin',
+        ]);
+
+        $this->reset('berkasImpor');
+        session()->flash('successCreated', 'Berkas diimpor sebagai draf. Periksa dan rapikan sebelum diterbitkan.');
+
+        $this->redirectRoute('admin.blog.edit', $artikel, navigate: true);
+    }
+
     // ===== Unduhan =====
 
     public function unduhExcel()
@@ -515,7 +562,10 @@ class BlogList extends Component
                 ->whereNotNull('published_at')->where('published_at', '>', now()))
             ->when($this->filter === 'draft', fn ($q) => $q->where('status', 'draft'))
             ->when($this->category !== '', fn ($q) => $q->where('category', $this->category))
-            ->when($this->tag !== '', fn ($q) => $q->where('tags', 'like', '%"'.$this->tag.'"%'))
+            // whereJsonContains, bukan LIKE '%"tag"%': LIKE ikut mencocokkan
+            // tag yang kebetulan potongan tag lain, dan salah pada tag yang
+            // memuat tanda kutip.
+            ->when($this->tag !== '', fn ($q) => $q->whereJsonContains('tags', $this->tag))
             ->when($this->fUnggulan, fn ($q) => $q->where('is_featured', true))
             // Mandek: sudah lama terbit dan tidak ada baca sama sekali 30 hari
             // terakhir. Dihitung di SQL supaya halaman tidak menembak satu
@@ -530,9 +580,13 @@ class BlogList extends Component
                     $sub->where('title', 'like', $term)
                         ->orWhere('category', 'like', $term)
                         ->orWhere('excerpt', 'like', $term)
-                        ->orWhere('tags', 'like', $term);
+                        ->orWhere('tags', 'like', $term)
+                        // Isi artikel ikut dicari: kalimat yang diingat orang
+                        // biasanya ada di badan tulisan, bukan judulnya.
+                        ->orWhere('body', 'like', $term);
                 });
             })
+            ->with('penyunting:id,name')
             ->withSum(['bacaHarian as baca_30' => fn ($q) => $q->where('tanggal', '>=', $awal)], 'jumlah')
             // Artikel yang disematkan selalu di atas, apa pun urutannya.
             ->orderByDesc('is_featured')

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -35,18 +36,49 @@ class BlogPost extends Model
         'cover_alt',
         'is_featured',
         'updated_by',
+        'unpublish_at',
+        'focus_keyword',
+        'disimpan_manual',
+        'dibuka_oleh',
+        'dibuka_pada',
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
+        'unpublish_at' => 'datetime',
+        'dibuka_pada' => 'datetime',
         'views' => 'integer',
         'tags' => 'array',
         'is_featured' => 'boolean',
+        'disimpan_manual' => 'boolean',
     ];
+
+    /** Berapa lama penanda "sedang dibuka" dianggap masih berlaku (menit). */
+    public const MENIT_KUNCI = 3;
 
     public function bacaHarian(): HasMany
     {
         return $this->hasMany(BlogPostRead::class, 'blog_post_id');
+    }
+
+    public function revisi(): HasMany
+    {
+        return $this->hasMany(BlogPostRevision::class, 'blog_post_id')->latest('id');
+    }
+
+    public function pengalihan(): HasMany
+    {
+        return $this->hasMany(BlogPostRedirect::class, 'blog_post_id');
+    }
+
+    public function penyunting(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function pembuka(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dibuka_oleh');
     }
 
     protected static function booted(): void
@@ -69,6 +101,104 @@ class BlogPost extends Model
     }
 
     /**
+     * Slug yang diminta pengunjung — bisa berbeda dari slug artikel bila
+     * alamatnya sudah pernah diubah. Dibaca BlogShow untuk mengalihkan.
+     */
+    public ?string $slugDiminta = null;
+
+    /**
+     * Cari artikel menurut slug; kalau tidak ketemu, telusuri alamat lamanya.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $artikel = $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+
+        if (! $artikel) {
+            $alih = BlogPostRedirect::where('slug_lama', $value)->first();
+            $artikel = $alih?->post;
+        }
+
+        if ($artikel) {
+            $artikel->slugDiminta = (string) $value;
+        }
+
+        return $artikel;
+    }
+
+    /**
+     * Simpan keadaan isi SEKARANG sebagai satu versi riwayat.
+     *
+     * Dipanggil sebelum perubahan ditulis, jadi yang tersimpan adalah versi
+     * yang akan tergantikan — itulah yang dicari orang saat ingin kembali.
+     */
+    public function catatRevisi(): void
+    {
+        $this->revisi()->create([
+            'user_id' => auth()->id(),
+            'title' => $this->title,
+            'excerpt' => $this->excerpt,
+            'body' => $this->body,
+        ]);
+
+        // Buang yang paling lama supaya tabelnya tidak tumbuh tanpa batas.
+        $sisa = $this->revisi()->pluck('id')->slice(BlogPostRevision::BATAS);
+        if ($sisa->isNotEmpty()) {
+            BlogPostRevision::whereIn('id', $sisa)->delete();
+        }
+    }
+
+    /** Catat bahwa alamat lama ini masih mengarah ke artikel ini. */
+    public function catatAlamatLama(string $slugLama): void
+    {
+        if ($slugLama === '' || $slugLama === $this->slug) {
+            return;
+        }
+
+        // Alamat yang kini dipakai artikel ini tidak boleh jadi pengalihan
+        // ke dirinya sendiri (mis. slug ditukar bolak-balik).
+        BlogPostRedirect::where('slug_lama', $this->slug)->delete();
+
+        BlogPostRedirect::updateOrCreate(
+            ['slug_lama' => $slugLama],
+            ['blog_post_id' => $this->getKey()]
+        );
+    }
+
+    /** Tandai artikel sedang dibuka oleh pengguna yang sedang login. */
+    public function tandaiDibuka(): void
+    {
+        if (! auth()->hasUser()) {
+            return;
+        }
+
+        static::whereKey($this->getKey())->update([
+            'dibuka_oleh' => auth()->id(),
+            'dibuka_pada' => now(),
+        ]);
+    }
+
+    public function lepasTandaDibuka(): void
+    {
+        if ($this->dibuka_oleh && auth()->id() === $this->dibuka_oleh) {
+            static::whereKey($this->getKey())->update(['dibuka_oleh' => null, 'dibuka_pada' => null]);
+        }
+    }
+
+    /**
+     * Sedang dibuka orang lain yang masih aktif?
+     *
+     * Penandanya sengaja kedaluwarsa sendiri: tab yang ditutup paksa tidak
+     * boleh mengunci artikel selamanya.
+     */
+    public function dipegangOrangLain(): bool
+    {
+        return $this->dibuka_oleh
+            && $this->dibuka_oleh !== auth()->id()
+            && $this->dibuka_pada
+            && $this->dibuka_pada->gt(now()->subMinutes(self::MENIT_KUNCI));
+    }
+
+    /**
      * Hanya artikel yang sudah dipublikasikan & waktunya sudah tiba.
      */
     public function scopePublished(Builder $query): Builder
@@ -77,6 +207,12 @@ class BlogPost extends Model
             ->where(function ($q) {
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
+            })
+            // Artikel yang sudah lewat waktu berhenti tayang diperlakukan
+            // seperti belum terbit, tanpa mengubah statusnya di basis data.
+            ->where(function ($q) {
+                $q->whereNull('unpublish_at')
+                    ->orWhere('unpublish_at', '>', now());
             });
     }
 
@@ -99,9 +235,18 @@ class BlogPost extends Model
             return ['Draf', 'is-kuning', '#d97706', 'bi-pencil-square'];
         }
 
-        return $this->published_at && $this->published_at->isFuture()
-            ? ['Terjadwal', 'is-biru', '#2563eb', 'bi-clock-history']
-            : ['Terbit', 'is-hijau', '#16a34a', 'bi-globe2'];
+        if ($this->published_at && $this->published_at->isFuture()) {
+            return ['Terjadwal', 'is-biru', '#2563eb', 'bi-clock-history'];
+        }
+
+        // Statusnya masih published, tapi waktunya sudah lewat — pengunjung
+        // tidak lagi melihatnya, jadi layar admin pun tidak boleh bilang
+        // "Terbit".
+        if ($this->unpublish_at && $this->unpublish_at->isPast()) {
+            return ['Berakhir', 'is-abu', '#64748b', 'bi-slash-circle'];
+        }
+
+        return ['Terbit', 'is-hijau', '#16a34a', 'bi-globe2'];
     }
 
     /** Perkiraan lama baca (menit) — nama Indonesia untuk readingMinutes(). */
@@ -259,8 +404,10 @@ class BlogPost extends Model
             'published_at' => null,
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
+            'focus_keyword' => $this->focus_keyword,
             'views' => 0,
             'is_featured' => false,
+            'disimpan_manual' => true,
             'author' => 'admin',
         ]);
     }

@@ -20,6 +20,12 @@ Sunting Artikel || lemon
                         @if ($post->is_featured)
                             <span class="dsb-lencana is-ungu"><i class="bi bi-pin-angle-fill"></i>Disematkan</span>
                         @endif
+                        {{-- Jejak internal. Halaman publik tetap menulis "admin". --}}
+                        @if ($post->penyunting)
+                            <span class="dsb-lencana is-abu" title="Terakhir diubah {{ optional($post->updated_at)->locale('id')->translatedFormat('d F Y H:i') }}">
+                                <i class="bi bi-person"></i>diubah {{ $post->penyunting->name }}
+                            </span>
+                        @endif
                     </span>
                 </p>
             </div>

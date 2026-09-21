@@ -365,6 +365,60 @@
     .bl-kat-ket { margin: 3px 0 0; font-size: .78rem; line-height: 1.5; color: #94a3b8; }
     .bl-kat-baris { flex: 1 1 100%; display: grid; gap: 8px; }
 
+
+    /* ===== Pita peringatan formulir (bentrok / sedang dibuka) ===== */
+    .bl-pita { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; padding: 12px 15px; border-radius: 14px; font-size: .86rem; line-height: 1.55; margin-bottom: 14px; }
+    .bl-pita i { flex: 0 0 auto; margin-top: 2px; font-size: 1rem; }
+    .bl-pita-teks { flex: 1 1 220px; min-width: 0; }
+    .bl-pita b { display: block; }
+    .bl-pita.is-kunci { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .bl-pita.is-bentrok { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .bl-pita .bl-btn { height: 32px; }
+
+    /* ===== Riwayat versi ===== */
+    .bl-riwayat { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .bl-riwayat li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 11px; border-radius: 11px; background: #f8fafc; border: 1px solid #eef2f7; }
+    .bl-riwayat-teks { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+    .bl-riwayat-teks b { display: block; font-size: .82rem; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bl-riwayat-teks small { display: block; font-size: .74rem; color: #94a3b8; }
+    .bl-riwayat .bl-btn { flex: 0 0 auto; height: 30px; padding: 0 10px; font-size: .74rem; }
+
+    /* ===== Grafik baca 30 hari ===== */
+    .bl-grafik { display: block; width: 100%; height: 56px; }
+    .bl-grafik-garis { fill: none; stroke: #7c3aed; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .bl-grafik-isi { fill: rgba(124, 58, 237, .12); stroke: none; }
+    .bl-grafik-ket { display: flex; justify-content: space-between; margin-top: 6px; font-size: .72rem; color: #94a3b8; }
+
+    /* ===== Kata kunci fokus ===== */
+    .bl-kunci-periksa { display: grid; gap: 6px; margin: 9px 0 0; padding: 0; list-style: none; }
+    .bl-kunci-periksa li { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: #475569; }
+    .bl-kunci-periksa .is-ok { color: #16a34a; }
+    .bl-kunci-periksa .is-kurang { color: #cbd5e1; }
+
+    /* ===== Penanda belum tersimpan ===== */
+    .bl-simpan-ket.is-kotor { color: #b45309; font-weight: 700; }
+    .bl-titik-kotor { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+
+    /* ===== Impor ===== */
+    .bl-impor { position: relative; overflow: hidden; }
+    .bl-impor input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* ===== Tab bar: satu baris yang bisa digeser di ponsel ===== */
+    @media (max-width: 575.98px) {
+        .bl-status {
+            flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory;
+            margin-inline: -16px; padding-inline: 16px; padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .bl-status::-webkit-scrollbar { display: none; }
+        .bl-status-btn { flex: 0 0 auto; min-width: 132px; scroll-snap-align: start; }
+        .bl-status-teks span { white-space: nowrap; }
+    }
+
+    /* ===== Tautan hasil periksa ===== */
+    .bl-tautan-daftar a { color: #4338ca; text-decoration: none; overflow-wrap: anywhere; }
+    .bl-tautan-daftar a:hover { text-decoration: underline; }
+
     /* ===== Fokus papan tik ===== */
     .bl-btn:focus-visible, .bl-status-btn:focus-visible, .bl-chip-lepas:focus-visible,
     .bl-ringkas-blok:focus-visible, .bl-halaman .page-link:focus-visible, .bl-tanda.is-kategori:focus-visible {

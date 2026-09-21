@@ -1,3 +1,9 @@
+@push('styles')
+    {{-- Penemuan otomatis umpan: pembaca RSS menemukannya tanpa perlu
+         ditunjukkan alamatnya. --}}
+    <link rel="alternate" type="application/rss+xml" title="Blog Phoenix Digital" href="{{ route('blog.feed') }}">
+@endpush
+
 @section('title')
 Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
 @endsection
@@ -305,6 +311,47 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
             .ph-blog .blg-baris .blg-ubin i { --u: 34px; }
             .ph-blog .blg-sorot { margin-bottom: 44px; }
         }
+
+        .ph-blog .blg-rss {
+            display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+            padding: 8px 13px; border-radius: 999px; border: 1px solid var(--ph-line, #f1e6d8);
+            background: #fff; color: var(--ph-muted, #6b7280); font-size: .84rem; font-weight: 700;
+            text-decoration: none;
+        }
+        .ph-blog .blg-rss:hover { border-color: #f59e0b; color: #b45309; }
+        .ph-blog .blg-rss i { color: #f59e0b; }
+
+        /* ===== Bilah tag (topik) ===== */
+        .ph-blog .blg-tagbar {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+            margin: -6px 0 18px; padding: 0 2px;
+        }
+        .ph-blog .blg-tagbar-label {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .82rem; font-weight: 700; color: var(--ph-muted, #6b7280);
+        }
+        .ph-blog .blg-tag {
+            padding: 5px 12px; border-radius: 999px; border: 1px solid var(--ph-line, #f1e6d8);
+            background: #fff; color: var(--ph-muted, #6b7280); font-size: .82rem; font-weight: 600;
+            cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease;
+        }
+        .ph-blog .blg-tag:hover { border-color: var(--ph-orange, #f26522); color: var(--ph-ink, #23272f); }
+        .ph-blog .blg-tag.is-aktif {
+            border-color: transparent; color: #fff;
+            background: var(--ph-grad, linear-gradient(135deg, #fba919 0%, #f26522 100%));
+        }
+        .ph-blog .blg-tag.is-lepas { border-style: dashed; }
+        .ph-blog .blg-ket-kategori {
+            display: flex; align-items: flex-start; gap: 8px; margin: -6px 0 18px;
+            padding: 11px 15px; border-radius: 14px;
+            background: var(--ph-soft, #fff8f1); border: 1px solid var(--ph-line, #f1e6d8);
+            color: var(--ph-muted, #6b7280); font-size: .88rem; line-height: 1.55;
+        }
+        .ph-blog .blg-ket-kategori i { color: var(--ph-orange, #f26522); margin-top: 2px; }
+        @media (max-width: 575.98px) {
+            .ph-blog .blg-tagbar { gap: 6px; }
+            .ph-blog .blg-tag { font-size: .78rem; padding: 4px 10px; }
+        }
     </style>
 
     {{-- Header (seragam dengan halaman About) --}}
@@ -335,6 +382,10 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                         <button type="button" class="clr" wire:click="$set('search', '')" aria-label="Hapus pencarian"><i class="bi bi-x-circle-fill"></i></button>
                     @endif
                 </div>
+                <a class="blg-rss" href="{{ route('blog.feed') }}" target="_blank" rel="noopener"
+                    title="Langganan lewat pembaca RSS">
+                    <i class="bi bi-rss-fill"></i><span>RSS</span>
+                </a>
                 @if ($categories->isNotEmpty())
                     <span class="blg-pemisah"></span>
                     <div class="blg-topik">
@@ -351,7 +402,25 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                 @endif
             </div>
 
-            <div class="blg-hasil" wire:loading.class="is-memuat" wire:target="search,category,filterCategory,resetFilter,gotoPage,nextPage,previousPage">
+            {{-- Bilah tag: topik yang lebih tajam daripada kategori. Hanya tag
+                 yang benar-benar dipakai artikel terbit yang muncul. --}}
+            @if ($tagDipakai)
+                <div class="blg-tagbar">
+                    <span class="blg-tagbar-label"><i class="bi bi-hash"></i>Topik</span>
+                    @foreach ($tagDipakai as $t)
+                        <button type="button" class="blg-tag {{ $tag === $t ? 'is-aktif' : '' }}" wire:click="pilihTag(@js($t))">#{{ $t }}</button>
+                    @endforeach
+                    @if ($tag)
+                        <button type="button" class="blg-tag is-lepas" wire:click="$set('tag', '')"><i class="bi bi-x-lg"></i> Lepas</button>
+                    @endif
+                </div>
+            @endif
+
+            @if ($ketKategori)
+                <p class="blg-ket-kategori"><i class="bi bi-info-circle"></i> {{ $ketKategori }}</p>
+            @endif
+
+            <div class="blg-hasil" wire:loading.class="is-memuat" wire:target="search,category,tag,pilihTag,filterCategory,resetFilter,gotoPage,nextPage,previousPage">
             {{-- Sorotan: artikel utama + "Baru Terbit" --}}
             @if ($featured)
                 @php
@@ -362,7 +431,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                     <a href="{{ route('blog.show', $featured->slug) }}" wire:navigate class="blg-utama" style="--kb: {{ $rbF['warna'] }}">
                         <div class="blg-sampul {{ $adaSampulF ? '' : 'is-kosong' }}">
                             @if ($adaSampulF)
-                                <img src="{{ asset('storage/img/blog/' . $featured->cover) }}" alt="{{ $featured->title }}" decoding="async"
+                                <img src="{{ asset('storage/img/blog/' . $featured->cover) }}" alt="{{ $featured->cover_alt ?: $featured->title }}" decoding="async"
                                     onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                             @endif
                             <div class="blg-ubin"><i class="bi {{ $rbF['ikon'] }}"></i></div>
@@ -403,7 +472,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                                         <a href="{{ route('blog.show', $post->slug) }}" wire:navigate class="blg-baris" style="--kb: {{ $rbS['warna'] }}">
                                             <div class="blg-sampul {{ $adaSampulS ? '' : 'is-kosong' }}">
                                                 @if ($adaSampulS)
-                                                    <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" loading="lazy" decoding="async"
+                                                    <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->cover_alt ?: $post->title }}" loading="lazy" decoding="async"
                                                         onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                                                 @endif
                                                 <div class="blg-ubin"><i class="bi {{ $rbS['ikon'] }}"></i></div>
@@ -531,7 +600,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                         <a href="{{ route('blog.show', $post->slug) }}" wire:navigate class="blg-kartu" style="--kb: {{ $rb['warna'] }}">
                             <div class="blg-sampul {{ $adaSampul ? '' : 'is-kosong' }}">
                                 @if ($adaSampul)
-                                    <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" loading="lazy" decoding="async"
+                                    <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->cover_alt ?: $post->title }}" loading="lazy" decoding="async"
                                         onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                                 @endif
                                 <div class="blg-ubin"><i class="bi {{ $rb['ikon'] }}"></i></div>

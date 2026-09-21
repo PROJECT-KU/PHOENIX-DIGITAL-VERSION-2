@@ -16,9 +16,43 @@
     // Perbandingan ">" di dalam direktif membuat Livewire melewatkan penanda
     // morph-nya, jadi hasilnya dihitung di sini sebagai boolean.
     $adaRusak = $rusak !== 0;
+    $dipegang = $mode === 'edit' ? $this->dipegang : null;
+    $periksaKunci = $this->periksaKunci;
+    $grafik = $mode === 'edit' ? $this->grafikBaca : [];
+    $puncakGrafik = $grafik ? max(max($grafik), 1) : 1;
+    $adaGrafik = array_sum($grafik) !== 0;
+    $riwayat = $mode === 'edit' ? $this->riwayat : collect();
 @endphp
 
-<form wire:submit.prevent="save" class="blog-editor dsb">
+<form wire:submit.prevent="save" class="blog-editor dsb"
+    @if ($mode === 'edit') wire:poll.60s="jagaKunci" @endif>
+
+    {{-- Dua admin di artikel yang sama. Penandanya kedaluwarsa sendiri
+         setelah beberapa menit, jadi tab yang ditutup paksa tidak mengunci
+         artikel selamanya. --}}
+    @if ($dipegang)
+        <div class="bl-pita is-kunci">
+            <i class="bi bi-people-fill"></i>
+            <span class="bl-pita-teks">
+                <b>{{ $dipegang }} sedang membuka artikel ini.</b>
+                Kalau kalian menyimpan bersamaan, yang terakhir menimpa yang lebih dulu.
+            </span>
+        </div>
+    @endif
+
+    @if ($bentrok)
+        <div class="bl-pita is-bentrok">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span class="bl-pita-teks">
+                <b>Artikel ini baru saja diubah orang lain.</b>
+                Menyimpan sekarang akan menimpa perubahan mereka. Buka artikelnya di tab lain untuk
+                memeriksa dulu, atau tetap simpan kalau memang versi Anda yang benar.
+            </span>
+            <button type="button" class="bl-btn is-bahaya" wire:click="timpaSaja"><i class="bi bi-arrow-repeat"></i><span>Tetap simpan</span></button>
+            <button type="button" class="bl-btn" wire:click="batalkanBentrok"><i class="bi bi-x"></i><span>Batal</span></button>
+        </div>
+    @endif
+
     <div class="bl-form">
         {{-- ============ KOLOM UTAMA: ISI ARTIKEL ============ --}}
         <div class="bl-form-utama">
@@ -122,6 +156,26 @@
                     </label>
 
                     <label class="bl-medan">
+                        <span>Kata kunci fokus</span>
+                        <input type="text" wire:model.live.debounce.600ms="focus_keyword"
+                            class="dsb-isian @error('focus_keyword') is-galat @enderror"
+                            placeholder="Mis. cara cek plagiasi skripsi" maxlength="80">
+                        @error('focus_keyword') <span class="bl-galat">{{ $message }}</span> @enderror
+                        @if ($periksaKunci)
+                            <ul class="bl-kunci-periksa">
+                                @foreach ($periksaKunci as $k)
+                                    <li>
+                                        <i class="bi {{ $k['ok'] ? 'bi-check-circle-fill is-ok' : 'bi-circle is-kurang' }}"></i>
+                                        <span>{{ $k['label'] }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <span class="bl-bantu"><i class="bi bi-info-circle me-1"></i>Satu kata kunci yang ingin dimenangkan artikel ini. Diperiksa keberadaannya di judul, alamat, paragraf awal, dan meta description.</span>
+                        @endif
+                    </label>
+
+                    <label class="bl-medan">
                         <span>Meta Title — judul di Google</span>
                         <input type="text" wire:model.live.debounce.600ms="meta_title" @readonly(! $seoManual)
                             class="dsb-isian {{ $seoManual ? '' : 'is-kunci' }} @error('meta_title') is-galat @enderror"
@@ -188,7 +242,7 @@
                                 <li>
                                     <i class="bi {{ $t['keadaan'] === 'baik' ? 'bi-check-circle-fill is-baik' : ($t['keadaan'] === 'rusak' ? 'bi-x-circle-fill is-rusak' : 'bi-dash-circle is-ragu') }}"></i>
                                     <span>
-                                        {{ \Illuminate\Support\Str::limit($t['url'], 90) }}
+                                        <a href="{{ $t['url'] }}" target="_blank" rel="noopener">{{ \Illuminate\Support\Str::limit($t['url'], 90) }}</a>
                                         <small>{{ $t['pesan'] }}</small>
                                     </span>
                                 </li>
@@ -224,6 +278,83 @@
                 </div>
             </section>
 
+            @if ($mode === 'edit')
+                <section class="dsb-kartu">
+                    <div class="dsb-kartu-isi">
+                        <div class="bl-panel-judul">
+                            <span class="bl-panel-ikon" style="background: #eef2ff; color: #4338ca;"><i class="bi bi-graph-up"></i></span>
+                            <span>
+                                <b>Dibaca 30 hari</b>
+                                <small>{{ number_format(array_sum($grafik), 0, ',', '.') }} kali · total {{ number_format((int) $post->views, 0, ',', '.') }}</small>
+                            </span>
+                        </div>
+
+                        @if ($adaGrafik)
+                            {{-- SVG dirakit langsung dari angka: tidak perlu pustaka
+                                 grafik untuk 30 batang, dan aset Vite tidak ikut
+                                 terdeploy. --}}
+                            <svg class="bl-grafik" viewBox="0 0 300 56" preserveAspectRatio="none" role="img"
+                                aria-label="Grafik jumlah baca 30 hari terakhir">
+                                @php
+                                    $titik = [];
+                                    foreach ($grafik as $i => $nilai) {
+                                        $x = count($grafik) < 2 ? 0 : round($i * (300 / (count($grafik) - 1)), 2);
+                                        $y = round(52 - ($nilai / $puncakGrafik) * 46, 2);
+                                        $titik[] = $x.','.$y;
+                                    }
+                                    $garis = implode(' ', $titik);
+                                @endphp
+                                <polygon class="bl-grafik-isi" points="0,56 {{ $garis }} 300,56"></polygon>
+                                <polyline class="bl-grafik-garis" points="{{ $garis }}"></polyline>
+                            </svg>
+                            <div class="bl-grafik-ket">
+                                <span>{{ now()->subDays(29)->locale('id')->translatedFormat('d M') }}</span>
+                                <span>puncak {{ number_format($puncakGrafik, 0, ',', '.') }}/hari</span>
+                                <span>hari ini</span>
+                            </div>
+                        @else
+                            <p class="bl-bantu" style="margin: 0;"><i class="bi bi-info-circle me-1"></i>Belum ada pembaca dalam 30 hari terakhir.</p>
+                        @endif
+                    </div>
+                </section>
+
+                <section class="dsb-kartu">
+                    <div class="dsb-kartu-isi">
+                        <div class="bl-panel-judul">
+                            <span class="bl-panel-ikon" style="background: #f8fafc; color: #64748b;"><i class="bi bi-clock-history"></i></span>
+                            <span>
+                                <b>Riwayat versi</b>
+                                <small>Isi sebelum tiap penyimpanan, {{ \App\Models\BlogPostRevision::BATAS }} versi terakhir.</small>
+                            </span>
+                        </div>
+
+                        @if ($riwayat->isEmpty())
+                            <p class="bl-bantu" style="margin: 0;"><i class="bi bi-info-circle me-1"></i>Belum ada versi tersimpan. Versi pertama dicatat saat Anda menyimpan perubahan berikutnya.</p>
+                        @else
+                            <ul class="bl-riwayat">
+                                @foreach ($riwayat as $r)
+                                    <li wire:key="revisi-{{ $r->id }}">
+                                        <span class="bl-riwayat-teks">
+                                            <b>{{ $r->title }}</b>
+                                            <small>
+                                                {{ $r->created_at->locale('id')->translatedFormat('d M Y H:i') }}
+                                                · {{ number_format($r->jumlahKata(), 0, ',', '.') }} kata
+                                                @if ($r->penyunting) · {{ \Illuminate\Support\Str::limit($r->penyunting->name, 16) }} @endif
+                                            </small>
+                                        </span>
+                                        <button type="button" class="bl-btn pcek-konfirmasi"
+                                            data-action="pulihkanRevisi" data-arg="{{ $r->id }}"
+                                            data-title="Kembalikan ke versi ini?"
+                                            data-text="Judul, ringkasan, dan isi diganti dengan versi tersebut. Status, jadwal, dan sampul tidak ikut berubah, dan perubahannya baru permanen setelah Anda menekan simpan."
+                                            data-confirm="Ya, kembalikan" data-icon="question">Pulihkan</button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                </section>
+            @endif
+
             <section class="dsb-kartu">
                 <div class="dsb-kartu-isi">
                     <div class="bl-panel-judul">
@@ -243,11 +374,18 @@
                         @error('status') <span class="bl-galat">{{ $message }}</span> @enderror
                     </label>
 
-                    <label class="bl-medan" style="margin-bottom: 0;">
+                    <label class="bl-medan">
                         <span><i class="bi bi-calendar-event me-1" style="color: #2563eb;"></i>Jadwalkan terbit</span>
                         <input type="datetime-local" wire:model.defer="published_at" class="dsb-isian @error('published_at') is-galat @enderror">
                         @error('published_at') <span class="bl-galat">{{ $message }}</span> @enderror
                         <span class="bl-bantu"><i class="bi bi-info-circle me-1"></i>Isi waktu di masa depan untuk menjadwalkan. Dikosongkan berarti tampil begitu dipublikasikan.</span>
+                    </label>
+
+                    <label class="bl-medan" style="margin-bottom: 0;">
+                        <span><i class="bi bi-slash-circle me-1" style="color: #64748b;"></i>Berhenti tayang</span>
+                        <input type="datetime-local" wire:model.defer="unpublish_at" class="dsb-isian @error('unpublish_at') is-galat @enderror">
+                        @error('unpublish_at') <span class="bl-galat">{{ $message }}</span> @enderror
+                        <span class="bl-bantu"><i class="bi bi-info-circle me-1"></i>Untuk tulisan yang ada masa berlakunya (mis. promo). Lewat waktu ini artikel hilang dari halaman blog tanpa perlu diturunkan manual.</span>
                     </label>
                 </div>
             </section>
@@ -379,6 +517,11 @@
                         <i class="bi bi-cloud"></i><span>Draf tersimpan otomatis setiap ada perubahan.</span>
                     @endif
                 </div>
+                {{-- Penanda "belum tersimpan" dinyalakan JS begitu ada ketikan,
+                     supaya keadaannya terlihat tanpa menunggu simpan otomatis. --}}
+                <div class="bl-simpan-ket is-kotor bl-sembunyi" data-bl-kotor>
+                    <span class="bl-titik-kotor"></span><span>Ada perubahan yang belum tersimpan.</span>
+                </div>
 
                 <a wire:navigate href="{{ route('admin.blog.index') }}" class="bl-tautan" style="display:inline-block;margin-top:10px;">Kembali ke daftar artikel</a>
             </div>
@@ -436,8 +579,17 @@
     let jedaSimpan = null;
     let sedangSimpan = false;
 
+    const ketKotor = document.querySelector('[data-bl-kotor]');
+    const ketSimpan = document.querySelector('[data-bl-simpan-ket]');
+
+    function tampilkanKeadaan() {
+        ketKotor?.classList.toggle('bl-sembunyi', !berubah);
+        ketSimpan?.classList.toggle('bl-sembunyi', berubah);
+    }
+
     function tandaiBerubah() {
         berubah = true;
+        tampilkanKeadaan();
         clearTimeout(jedaSimpan);
         // 20 detik sesudah ketikan berhenti — bukan tiap ketukan, supaya
         // tidak membanjiri server dengan permintaan.
@@ -450,6 +602,7 @@
         try {
             await $wire.simpanOtomatis();
             berubah = false;
+            tampilkanKeadaan();
         } catch (e) {
             // Gagal menyimpan bukan alasan mengganggu yang sedang menulis;
             // peringatan sebelum menutup halaman tetap menjaganya.
@@ -466,7 +619,19 @@
         });
     }
 
-    $wire.on('artikel-tersimpan-otomatis', () => { berubah = false; });
+    $wire.on('artikel-tersimpan-otomatis', () => { berubah = false; tampilkanKeadaan(); });
+
+    // Isi dikembalikan dari riwayat: editor harus ikut berganti, kalau tidak
+    // yang terlihat masih versi lama dan penyimpanan berikutnya menimpanya lagi.
+    $wire.on('isi-dipulihkan', (e) => {
+        const isi = Array.isArray(e) ? e[0]?.isi : e?.isi;
+        if (typeof isi !== 'string') return;
+        quillBody.setContents([]);
+        quillBody.clipboard.dangerouslyPasteHTML(isi);
+        hiddenBody.value = isi;
+        berubah = true;
+        tampilkanKeadaan();
+    });
 
     window.addEventListener('beforeunload', function (e) {
         if (!berubah) return;
@@ -477,7 +642,9 @@
     // Setelah disimpan sungguhan halamannya berpindah; penanda dilepas dulu
     // supaya tidak muncul dialog "yakin keluar?" padahal sudah tersimpan.
     document.addEventListener('livewire:navigating', () => { berubah = false; }, { once: false });
-    wadahForm?.addEventListener('submit', () => { berubah = false; });
+    wadahForm?.addEventListener('submit', () => { berubah = false; tampilkanKeadaan(); });
+
+    tampilkanKeadaan();
 </script>
 @endscript
 

@@ -6,6 +6,8 @@ use App\Models\BlogPost;
 use App\Support\DaftarIsiArtikel;
 use App\Support\HtmlSanitizer;
 use App\Support\RagamBlog;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\RedirectResponse;
 use Livewire\Component;
 
 class BlogShow extends Component
@@ -17,8 +19,23 @@ class BlogShow extends Component
 
     public function mount(BlogPost $post)
     {
+        // Alamat lama tetap hidup: dialihkan permanen ke alamat yang baru,
+        // supaya tautan yang sudah beredar tidak mati dan peringkatnya pindah.
+        if ($post->slugDiminta && $post->slugDiminta !== $post->slug) {
+            // Dilempar sebagai respons, bukan "return redirect()": Livewire
+            // membungkus redirect dari mount menjadi 302, padahal pemindahan
+            // alamat permanen harus 301 supaya peringkatnya ikut pindah.
+            // RedirectResponse langsung, bukan helper redirect(): di dalam
+            // komponen Livewire helper itu mengembalikan Redirector milik
+            // Livewire yang selalu berakhir 302.
+            throw new HttpResponseException(
+                new RedirectResponse(route('blog.show', $post->slug), 301)
+            );
+        }
+
         $belumTayang = $post->status !== 'published'
-            || ($post->published_at && $post->published_at->isFuture());
+            || ($post->published_at && $post->published_at->isFuture())
+            || ($post->unpublish_at && $post->unpublish_at->isPast());
 
         if ($belumTayang) {
             // Draf & artikel terjadwal tetap tertutup untuk publik, tetapi
@@ -112,22 +129,46 @@ class BlogShow extends Component
 
     public function render()
     {
-        $related = BlogPost::published()
-            ->where('id', '!=', $this->post->id)
-            ->when($this->post->category, fn ($q) => $q->where('category', $this->post->category))
-            ->orderByDesc('published_at')
-            ->take(3)
-            ->get();
+        // Artikel terkait disusun berlapis: yang berbagi TAG lebih dulu
+        // (penanda topik paling tajam), lalu sekategori, lalu yang terbaru.
+        $tag = $this->post->tagDaftar();
+        $related = collect();
 
-        // Kalau kategori sama tak cukup, lengkapi dengan artikel terbaru lainnya.
-        if ($related->count() < 3) {
-            $extra = BlogPost::published()
+        if ($tag) {
+            $related = BlogPost::published()
                 ->where('id', '!=', $this->post->id)
-                ->whereNotIn('id', $related->pluck('id'))
+                ->where(function ($q) use ($tag) {
+                    foreach ($tag as $t) {
+                        $q->orWhereJsonContains('tags', $t);
+                    }
+                })
                 ->orderByDesc('published_at')
-                ->take(3 - $related->count())
+                ->take(3)
                 ->get();
-            $related = $related->concat($extra);
+        }
+
+        if ($related->count() < 3 && $this->post->category) {
+            $related = $related->concat(
+                BlogPost::published()
+                    ->where('id', '!=', $this->post->id)
+                    ->where('category', $this->post->category)
+                    ->whereNotIn('id', $related->pluck('id'))
+                    ->orderByDesc('published_at')
+                    ->take(3 - $related->count())
+                    ->get()
+            );
+        }
+
+        // Kalau masih kurang, lengkapi dengan artikel terbaru lainnya.
+        if ($related->count() < 3) {
+            $related = $related->concat(
+                BlogPost::published()
+                    ->where('id', '!=', $this->post->id)
+                    ->whereNotIn('id', $related->pluck('id'))
+                    ->orderByDesc('published_at')
+                    ->take(3 - $related->count())
+                    ->get()
+            );
         }
 
         // Isi disaring dulu, BARU diberi id jangkar untuk daftar isi — penyaring

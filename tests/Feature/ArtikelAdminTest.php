@@ -793,3 +793,421 @@ it('unduhan bisa menyertakan isi artikel dan mengikuti yang dicentang', function
 
     Livewire::test(BlogList::class)->set('ikutIsi', true)->call('unduhPdf')->assertFileDownloaded();
 });
+
+// ===================== Alamat lama & berhenti tayang =====================
+
+it('mengubah slug menyisakan pengalihan dari alamat lama', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Judul Awal', 'status' => 'published', 'published_at' => now()->subDay()]);
+    $slugLama = $p->slug;
+
+    Livewire::test(BlogForm::class, ['post' => $p])
+        ->set('slug', 'alamat-yang-baru')
+        ->call('save');
+
+    expect($p->refresh()->slug)->toBe('alamat-yang-baru')
+        ->and(\App\Models\BlogPostRedirect::where('slug_lama', $slugLama)->exists())->toBeTrue();
+
+    // Alamat lama tidak mati: dialihkan permanen ke yang baru.
+    $this->get('/blog/'.$slugLama)
+        ->assertStatus(301)
+        ->assertRedirect(route('blog.show', 'alamat-yang-baru'));
+});
+
+it('alamat yang dipakai sekarang tidak pernah jadi pengalihan ke dirinya sendiri', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Bolak Balik']);
+    $awal = $p->slug;
+
+    $t = Livewire::test(BlogForm::class, ['post' => $p]);
+    $t->set('slug', 'alamat-sementara')->call('save');
+
+    $p->refresh();
+    Livewire::test(BlogForm::class, ['post' => $p])->set('slug', $awal)->call('save');
+
+    expect(\App\Models\BlogPostRedirect::where('slug_lama', $awal)->exists())->toBeFalse()
+        ->and(\App\Models\BlogPostRedirect::where('slug_lama', 'alamat-sementara')->exists())->toBeTrue();
+});
+
+it('artikel yang lewat waktu berhenti tayang hilang dari publik', function () {
+    $habis = artikel([
+        'title' => 'Promo Sudah Lewat',
+        'status' => 'published',
+        'published_at' => now()->subDays(10),
+        'unpublish_at' => now()->subDay(),
+    ]);
+    $aktif = artikel(['title' => 'Masih Tayang', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    expect($habis->keadaan()[0])->toBe('Berakhir')
+        ->and(BlogPost::published()->pluck('title')->all())->toBe(['Masih Tayang']);
+
+    $this->get(route('blog.show', $habis->slug))->assertNotFound();
+    $this->get(route('blog.show', $aktif->slug))->assertOk();
+});
+
+it('waktu berhenti tayang harus sesudah waktu terbit', function () {
+    $this->actingAs(adminArtikel());
+
+    Livewire::test(BlogForm::class)
+        ->set('title', 'Artikel Berjadwal')
+        ->set('body', '<p>'.str_repeat('kata ', 80).'</p>')
+        ->set('published_at', now()->addDays(5)->format('Y-m-d\TH:i'))
+        ->set('unpublish_at', now()->addDay()->format('Y-m-d\TH:i'))
+        ->call('save')
+        ->assertHasErrors('unpublish_at');
+});
+
+// ===================== Riwayat versi & bentrok =====================
+
+it('riwayat mencatat isi sebelum ditimpa dan bisa dipulihkan', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Versi Satu', 'body' => '<p>'.str_repeat('awal ', 60).'</p>']);
+
+    Livewire::test(BlogForm::class, ['post' => $p])
+        ->set('title', 'Versi Dua')
+        ->set('body', '<p>'.str_repeat('baru ', 60).'</p>')
+        ->call('save');
+
+    $revisi = $p->refresh()->revisi()->first();
+
+    expect($p->title)->toBe('Versi Dua')
+        ->and($revisi->title)->toBe('Versi Satu')
+        ->and($revisi->body)->toContain('awal');
+
+    // Memulihkan mengisi formulir, bukan langsung menyimpan.
+    $t = Livewire::test(BlogForm::class, ['post' => $p->fresh()])->call('pulihkanRevisi', $revisi->id);
+
+    expect($t->get('title'))->toBe('Versi Satu');
+    $t->call('save');
+    expect($p->refresh()->title)->toBe('Versi Satu');
+});
+
+it('riwayat dibatasi dua puluh versi terakhir', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel();
+
+    for ($i = 0; $i < 25; $i++) {
+        $p->catatRevisi();
+    }
+
+    expect($p->revisi()->count())->toBe(\App\Models\BlogPostRevision::BATAS);
+});
+
+it('memulihkan versi lama tidak mengubah status atau jadwal artikel', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Asli', 'status' => 'published', 'published_at' => now()->subDay()]);
+    $p->catatRevisi();
+
+    Livewire::test(BlogForm::class, ['post' => $p])
+        ->call('pulihkanRevisi', $p->revisi()->first()->id)
+        ->call('save');
+
+    expect($p->refresh()->status)->toBe('published')
+        ->and($p->published_at)->not->toBeNull();
+});
+
+it('menyimpan ditahan bila artikel sudah diubah orang lain lebih dulu', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Diperebutkan']);
+
+    $t = Livewire::test(BlogForm::class, ['post' => $p]);
+
+    // Orang lain menyimpan duluan.
+    $p->forceFill(['title' => 'Diubah Orang Lain', 'updated_at' => now()->addMinute()])->save();
+
+    $t->set('title', 'Versi Saya')->call('save')->assertSet('bentrok', true);
+    expect($p->refresh()->title)->toBe('Diubah Orang Lain');
+
+    // Tetap simpan kalau memang versinya yang benar.
+    $t->call('timpaSaja');
+    expect($p->refresh()->title)->toBe('Versi Saya');
+});
+
+it('simpan otomatis diam saja saat bentrok', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel(['title' => 'Jangan Ditimpa', 'body' => '<p>'.str_repeat('kata ', 60).'</p>']);
+
+    $t = Livewire::test(BlogForm::class, ['post' => $p]);
+    $p->forceFill(['title' => 'Punya Orang Lain', 'updated_at' => now()->addMinute()])->save();
+
+    $t->set('title', 'Ketikan Saya')->call('simpanOtomatis');
+
+    expect($p->refresh()->title)->toBe('Punya Orang Lain');
+});
+
+it('penanda sedang dibuka kedaluwarsa sendiri', function () {
+    $lain = adminArtikel();
+    $saya = adminArtikel();
+    $p = artikel();
+
+    $this->actingAs($saya);
+
+    $p->forceFill(['dibuka_oleh' => $lain->id, 'dibuka_pada' => now()->subMinute()])->save();
+    expect($p->refresh()->dipegangOrangLain())->toBeTrue();
+
+    $p->forceFill(['dibuka_pada' => now()->subMinutes(30)])->save();
+    expect($p->refresh()->dipegangOrangLain())->toBeFalse();
+
+    // Penanda milik sendiri tidak pernah dianggap milik orang lain.
+    $p->forceFill(['dibuka_oleh' => $saya->id, 'dibuka_pada' => now()])->save();
+    expect($p->refresh()->dipegangOrangLain())->toBeFalse();
+});
+
+// ===================== Sisi publik =====================
+
+it('tag tampil di halaman artikel dan bisa disaring di daftar blog', function () {
+    artikel(['title' => 'Pakai Tag Garansi', 'tags' => ['garansi'], 'status' => 'published', 'published_at' => now()->subDay()]);
+    artikel(['title' => 'Tanpa Tag Sama Sekali', 'status' => 'published', 'published_at' => now()->subDays(2)]);
+
+    $p = BlogPost::where('title', 'Pakai Tag Garansi')->first();
+    $this->get(route('blog.show', $p->slug))->assertOk()->assertSee('#garansi');
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class);
+    expect($t->viewData('tagDipakai'))->toBe(['garansi']);
+
+    $t->call('pilihTag', 'garansi');
+    expect($t->viewData('posts')->pluck('title')->all())->toBe(['Pakai Tag Garansi']);
+
+    // Ditekan lagi melepas saringannya.
+    $t->call('pilihTag', 'garansi');
+    expect($t->viewData('posts'))->toHaveCount(2);
+});
+
+it('artikel terkait mengutamakan yang berbagi tag', function () {
+    $utama = artikel(['title' => 'Induk', 'category' => 'Umum', 'tags' => ['turnitin'], 'status' => 'published', 'published_at' => now()->subDays(5)]);
+    artikel(['title' => 'Se-Tag', 'category' => 'Lain', 'tags' => ['turnitin'], 'status' => 'published', 'published_at' => now()->subDays(4)]);
+    artikel(['title' => 'Sekategori Saja', 'category' => 'Umum', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Blog\BlogShow::class, ['post' => $utama]);
+
+    expect($t->viewData('related')->first()->title)->toBe('Se-Tag');
+});
+
+it('teks alternatif sampul dipakai di halaman publik', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    \Illuminate\Support\Facades\Storage::disk('public')->put('img/blog/sampul.webp', 'x');
+
+    $p = artikel([
+        'title' => 'Artikel Bersampul',
+        'cover' => 'sampul.webp',
+        'cover_alt' => 'Ilustrasi akun premium di layar ponsel',
+        'status' => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+
+    $this->get(route('blog.show', $p->slug))
+        ->assertOk()
+        ->assertSee('Ilustrasi akun premium di layar ponsel', false);
+});
+
+it('deskripsi kategori muncul saat daftar blog disaring kategori itu', function () {
+    BlogCategory::create(['name' => 'Panduan', 'slug' => 'panduan', 'description' => 'Langkah praktis memakai layanan kami.']);
+    artikel(['title' => 'Satu Panduan', 'category' => 'Panduan', 'status' => 'published', 'published_at' => now()->subDay()]);
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class)->set('category', 'Panduan');
+
+    expect($t->viewData('ketKategori'))->toBe('Langkah praktis memakai layanan kami.');
+    $t->assertSee('Langkah praktis memakai layanan kami.');
+});
+
+it('pencarian menjangkau isi artikel, bukan hanya judul', function () {
+    $this->actingAs(adminArtikel());
+    artikel([
+        'title' => 'Judul Biasa',
+        'body' => '<p>Di dalam tulisan ini ada kata rahasiadalamtubuh yang dicari.</p>',
+        'status' => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+    artikel(['title' => 'Artikel Lain', 'status' => 'published', 'published_at' => now()->subDays(2)]);
+
+    expect(Livewire::test(BlogList::class)->set('search', 'rahasiadalamtubuh')->viewData('posts')->pluck('title')->all())
+        ->toBe(['Judul Biasa']);
+
+    expect(Livewire::test(\App\Livewire\Pages\Public\Blog\BlogIndex::class)->set('search', 'rahasiadalamtubuh')->viewData('posts')->pluck('title')->all())
+        ->toBe(['Judul Biasa']);
+});
+
+it('umpan rss memuat artikel terbit saja', function () {
+    artikel(['title' => 'Artikel Terbit', 'status' => 'published', 'published_at' => now()->subDay()]);
+    artikel(['title' => 'Masih Draf']);
+
+    $this->get(route('blog.feed'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/rss+xml; charset=UTF-8')
+        ->assertSee('Artikel Terbit')
+        ->assertDontSee('Masih Draf');
+});
+
+it('alamat feed tidak ditangkap sebagai slug artikel', function () {
+    expect(route('blog.feed'))->toEndWith('/blog/feed.xml');
+
+    $this->get('/blog/feed.xml')->assertOk();
+});
+
+// ===================== Impor =====================
+
+it('impor berkas markdown membuat draf baru', function () {
+    $this->actingAs(adminArtikel());
+
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+        'panduan-impor.md',
+        "# Panduan Hasil Impor\n\nParagraf **pertama** artikel.\n\n## Bagian Dua\n\n- satu\n- dua\n"
+    );
+
+    Livewire::test(BlogList::class)->set('berkasImpor', $berkas);
+
+    $p = BlogPost::where('title', 'Panduan Hasil Impor')->first();
+
+    expect($p)->not->toBeNull()
+        // Selalu draf: hasil konversi belum tentu rapi.
+        ->and($p->status)->toBe('draft')
+        ->and($p->body)->toContain('<strong>pertama</strong>')
+        ->and($p->body)->toContain('<h2>Bagian Dua</h2>')
+        ->and($p->body)->toContain('<li>satu</li>')
+        // Judul dari "# ..." tidak ikut tertulis dua kali di dalam isi.
+        ->and($p->body)->not->toContain('Panduan Hasil Impor');
+});
+
+it('impor menolak jenis berkas yang tidak didukung', function () {
+    $this->actingAs(adminArtikel());
+
+    $berkas = \Illuminate\Http\UploadedFile::fake()->create('gambar.png', 10, 'image/png');
+
+    Livewire::test(BlogList::class)->set('berkasImpor', $berkas)->assertHasErrors('berkasImpor');
+
+    expect(BlogPost::count())->toBe(0);
+});
+
+it('tanpa izin membuat artikel, impor ditolak', function () {
+    $this->actingAs(adminArtikel(['view_blog']));
+
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent('catatan.md', "# Apa Saja\n\nIsi.\n");
+
+    Livewire::test(BlogList::class)->set('berkasImpor', $berkas);
+
+    expect(BlogPost::count())->toBe(0);
+});
+
+// ===================== Alt gambar & kata kunci =====================
+
+it('gambar di isi artikel yang belum punya alt dilengkapi saat disimpan', function () {
+    $this->actingAs(adminArtikel());
+
+    Livewire::test(BlogForm::class)
+        ->set('title', 'Artikel Dengan Gambar')
+        ->set('body', '<p><img src="/a.webp"><img src="/b.webp" alt="sudah ada"><img src="/c.webp" alt=""></p>'.str_repeat('<p>kata kata</p>', 20))
+        ->call('save', 'draft');
+
+    $isi = BlogPost::where('title', 'Artikel Dengan Gambar')->value('body');
+
+    expect($isi)->toContain('alt="Artikel Dengan Gambar"')
+        // Yang sudah punya alt tidak disentuh — termasuk alt kosong yang
+        // memang cara baku menandai gambar hiasan.
+        ->and($isi)->toContain('alt="sudah ada"')
+        ->and(substr_count($isi, 'alt='))->toBe(3);
+});
+
+it('kata kunci fokus diperiksa di empat tempat yang menentukan', function () {
+    $this->actingAs(adminArtikel());
+
+    $t = Livewire::test(BlogForm::class)
+        ->set('seoManual', true)
+        ->set('title', 'Cara Cek Plagiasi Skripsi')
+        ->set('body', '<p>Cara cek plagiasi skripsi yang benar dimulai dari sini.</p>')
+        ->set('meta_description', 'Ringkasan tanpa kata itu.')
+        ->set('focus_keyword', 'cek plagiasi skripsi');
+
+    $hasil = collect($t->instance()->periksaKunci)->pluck('ok', 'label');
+
+    expect($hasil['Muncul di judul'])->toBeTrue()
+        ->and($hasil['Muncul di alamat artikel'])->toBeTrue()
+        ->and($hasil['Muncul di paragraf awal'])->toBeTrue()
+        ->and($hasil['Muncul di meta description'])->toBeFalse();
+});
+
+it('grafik baca menyusun tiga puluh hari termasuk hari tanpa pembaca', function () {
+    $this->actingAs(adminArtikel());
+    $p = artikel();
+    $p->bacaHarian()->create(['tanggal' => now()->toDateString(), 'jumlah' => 9]);
+    $p->bacaHarian()->create(['tanggal' => now()->subDays(5)->toDateString(), 'jumlah' => 4]);
+
+    $grafik = Livewire::test(BlogForm::class, ['post' => $p])->instance()->grafikBaca;
+
+    expect($grafik)->toHaveCount(30)
+        ->and(end($grafik))->toBe(9)
+        ->and($grafik[24])->toBe(4)
+        ->and(array_sum($grafik))->toBe(13);
+});
+
+// ===================== Pemangkasan terjadwal =====================
+
+it('tong sampah dipangkas setelah tenggangnya lewat, berikut sampulnya', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    \Illuminate\Support\Facades\Storage::disk('public')->put('img/blog/tua.webp', 'x');
+
+    $tua = artikel(['title' => 'Lama Di Sampah', 'cover' => 'tua.webp']);
+    $tua->delete();
+    $tua->forceFill(['deleted_at' => now()->subDays(120)])->saveQuietly();
+
+    $baru = artikel(['title' => 'Baru Dibuang']);
+    $baru->delete();
+
+    $this->artisan('artikel:bersihkan-sampah --hari=90')->assertSuccessful();
+
+    expect(BlogPost::withTrashed()->find($tua->id))->toBeNull()
+        ->and(BlogPost::withTrashed()->find($baru->id))->not->toBeNull();
+
+    \Illuminate\Support\Facades\Storage::disk('public')->assertMissing('img/blog/tua.webp');
+});
+
+it('mode kering tidak menghapus apa pun', function () {
+    $p = artikel();
+    $p->delete();
+    $p->forceFill(['deleted_at' => now()->subDays(200)])->saveQuietly();
+
+    $this->artisan('artikel:bersihkan-sampah --hari=90 --kering')->assertSuccessful();
+
+    expect(BlogPost::withTrashed()->count())->toBe(1);
+});
+
+it('hitungan baca harian yang terlalu tua dipangkas tanpa menyentuh total', function () {
+    $p = artikel(['views' => 500]);
+    $p->bacaHarian()->create(['tanggal' => now()->subDays(500)->toDateString(), 'jumlah' => 300]);
+    $p->bacaHarian()->create(['tanggal' => now()->subDays(10)->toDateString(), 'jumlah' => 5]);
+
+    $this->artisan('artikel:pangkas-baca --hari=400')->assertSuccessful();
+
+    expect(\App\Models\BlogPostRead::count())->toBe(1)
+        ->and($p->refresh()->views)->toBe(500);
+});
+
+it('draf hasil simpan otomatis yang terbengkalai dibuang ke tong sampah', function () {
+    $otomatis = artikel(['title' => 'Draf Terbengkalai']);
+    $otomatis->forceFill(['disimpan_manual' => false, 'updated_at' => now()->subDays(90)])->saveQuietly();
+
+    $sengaja = artikel(['title' => 'Draf Disimpan Sengaja']);
+    $sengaja->forceFill(['updated_at' => now()->subDays(90)])->saveQuietly();
+
+    $this->artisan('artikel:bersihkan-draf --hari=60')->assertSuccessful();
+
+    // Dibuang ke TONG SAMPAH, bukan dihapus — masih bisa dikembalikan.
+    expect(BlogPost::find($otomatis->id))->toBeNull()
+        ->and(BlogPost::onlyTrashed()->find($otomatis->id))->not->toBeNull()
+        ->and(BlogPost::find($sengaja->id))->not->toBeNull();
+});
+
+it('artikel hasil simpan manual tidak pernah ikut terpangkas', function () {
+    $this->actingAs(adminArtikel());
+
+    Livewire::test(BlogForm::class)
+        ->set('title', 'Disimpan Dengan Sengaja')
+        ->set('body', '<p>'.str_repeat('kata ', 80).'</p>')
+        ->call('save', 'draft');
+
+    $p = BlogPost::where('title', 'Disimpan Dengan Sengaja')->first();
+    $p->forceFill(['updated_at' => now()->subDays(365)])->saveQuietly();
+
+    $this->artisan('artikel:bersihkan-draf --hari=60')->assertSuccessful();
+
+    expect(BlogPost::find($p->id))->not->toBeNull();
+});
