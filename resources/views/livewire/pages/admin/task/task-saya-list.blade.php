@@ -443,10 +443,45 @@ Task Saya || lemon
            dulu membuat satu papan kendali terbaca berantakan. Pada flex,
            medan di baris terakhir melar mengisi sisa ruangnya. */
         .ts-saring-rak { display: flex; flex-wrap: wrap; gap: 12px; }
-        .ts-saring-rak > .dsb-medan { flex: 1 1 190px; }
+        /* .ts-saring-lanjut > .dsb-medan ikut disebut: medan-medan itu kini
+           berada di dalam pembungkus buka-tutup (display: contents di layar
+           lebar). Tanpanya mereka kehilangan flex-nya dan hanya selebar isi,
+           sehingga medan terakhir jatuh sendirian ke baris kedua. */
+        .ts-saring-rak > .dsb-medan, .ts-saring-lanjut > .dsb-medan { flex: 1 1 190px; }
         .ts-medan-cari { flex: 2 1 320px; }
         @media (max-width: 575.98px) {
-            .ts-saring-rak > .dsb-medan, .ts-medan-cari { flex: 1 1 100%; }
+            .ts-saring-rak > .dsb-medan, .ts-saring-lanjut > .dsb-medan, .ts-medan-cari { flex: 1 1 100%; }
+        }
+        /* Buka-tutup saringan KHUSUS ponsel. Di layar lebar pembungkusnya
+           memakai display: contents — medan-medannya tetap anak langsung
+           .ts-saring-rak, jadi susunan flex desktop tidak berubah sama sekali,
+           dan tombolnya tidak pernah tampil. */
+        .ts-saring-lanjut { display: contents; }
+        .ts-saring-tombol { display: none; }
+        @media (max-width: 575.98px) {
+            .ts-saring-tombol {
+                display: flex; align-items: center; gap: 8px; flex: 1 1 100%;
+                min-height: 44px; padding: 0 14px; border-radius: 12px;
+                border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff;
+                color: #334155; font-size: .88rem; font-weight: 700; text-align: left; cursor: pointer;
+            }
+            .ts-saring-tombol > .bi-sliders { color: #7c3aed; }
+            .ts-saring-jumlah {
+                padding: 2px 9px; border-radius: 999px; background: #f5f3ff; color: #6d28d9;
+                font-size: .74rem; font-weight: 700;
+            }
+            .ts-saring-panah { margin-left: auto; color: #94a3b8; transition: transform .2s ease; }
+            .ts-saring-kartu.is-buka .ts-saring-panah { transform: rotate(180deg); }
+
+            /* Tertutup: tujuh medan & kaki saringan disembunyikan. */
+            .ts-saring-kartu:not(.is-buka) .ts-saring-lanjut,
+            .ts-saring-kartu:not(.is-buka) .ts-saring-kaki { display: none; }
+            .ts-saring-kartu.is-buka .ts-saring-lanjut {
+                display: flex; flex-direction: column; gap: 12px; flex: 1 1 100%;
+            }
+        }
+        @media (max-width: 575.98px) and (prefers-reduced-motion: reduce) {
+            .ts-saring-panah { transition: none; }
         }
         .ts-saring-kaki {
             display: flex; align-items: center; justify-content: space-between;
@@ -1026,8 +1061,26 @@ Task Saya || lemon
                     </div>
                 </div>
 
+                {{-- Jumlah saringan selain pencarian yang sedang aktif — ditampilkan
+                     di tombol buka-tutup ponsel supaya saringan yang tersembunyi
+                     tetap ketahuan sedang bekerja. --}}
+                @php
+                    $jumlahSaringLain = count(array_filter([
+                        $saringStatus !== '',
+                        $saringOrang !== '',
+                        $saringKategori !== '',
+                        $saringArah !== 'semua',
+                        $modePeriode !== 'kalender',
+                        (string) $bulan !== '',
+                        (string) $tahun !== '',
+                    ]));
+                @endphp
                 <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-isi">
+                    {{-- Di ponsel tujuh saringan di bawah pencarian disembunyikan di
+                         balik satu tombol: semuanya terbuka berarti hampir satu layar
+                         penuh digulir sebelum daftar task-nya kelihatan. Desktop
+                         tidak terpengaruh (lihat .ts-saring-lanjut). --}}
+                    <div class="dsb-kartu-isi ts-saring-kartu" x-data="{ buka: false }" x-bind:class="{ 'is-buka': buka }">
                         <div class="ts-saring-rak">
                             <div class="dsb-medan ts-medan-cari">
                                 <label class="dsb-label" for="ts-cari">Cari task</label>
@@ -1043,6 +1096,14 @@ Task Saya || lemon
                                 </div>
                             </div>
 
+                            <button type="button" class="ts-saring-tombol" x-on:click="buka = ! buka"
+                                x-bind:aria-expanded="buka.toString()" aria-controls="ts-saring-lanjut">
+                                <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
+                                @if ($jumlahSaringLain)<span class="ts-saring-jumlah">{{ $jumlahSaringLain }} aktif</span>@endif
+                                <i class="bi bi-chevron-down ts-saring-panah"></i>
+                            </button>
+
+                            <div class="ts-saring-lanjut" id="ts-saring-lanjut">
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="ts-status">Status</label>
                                 <select id="ts-status" class="dsb-isian" wire:model.live="saringStatus">
@@ -1113,6 +1174,7 @@ Task Saya || lemon
                                     @endforeach
                                 </select>
                             </div>
+                            </div>{{-- /.ts-saring-lanjut --}}
                         </div>
 
                         @if ($adaSaringan || $bulan || $tahun || $modePeriode !== 'kalender')
