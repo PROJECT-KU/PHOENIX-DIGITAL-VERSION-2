@@ -336,6 +336,21 @@ new class extends Component
             gap: .5rem;
         }
 
+        /* Kelompok lencana (mis. Pesanan Toko: merah "baru" + oranye "segera
+           habis"): selalu di kanan dan tidak pernah terbelah. */
+        #sidebar .sidebar-badge-grup {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-left: auto; flex-shrink: 0;
+        }
+
+        /* Bila teks + lencana tidak muat satu baris, lencananya turun ke
+           baris berikutnya (tetap rata kanan). Tanpa ini lencana yang tak
+           boleh menyusut didorong keluar tepi kanan submenu dan terpotong.
+           Berlaku di SEMUA lebar: menu samping desktop sama lebarnya (300px)
+           dengan laci di ponsel, dan lencana oranye Pesanan Toko terpotong
+           di sana juga. */
+        #sidebar .submenu-link.has-badge { flex-wrap: wrap; row-gap: 4px; }
+
         #sidebar .submenu-item.active>.submenu-link {
             background: linear-gradient(135deg, #84cc16, #4d7c0f);
             color: #fff;
@@ -752,16 +767,21 @@ new class extends Component
                             <a wire:navigate class="submenu-link @if ($pesananTokoBadge || $tokoSegera) has-badge @endif"
                                 href="{{ ! $pesananTokoBadge && $tokoSegera ? route('admin.pesanantoko.index', ['activeTab' => 'segera']) : route('admin.pesanantoko.index') }}">
                                 <span>Pesanan Toko</span>
+                                {{-- Dua lencana DIKELOMPOKKAN: di layar sempit keduanya turun
+                                     baris bersama, bukan lencana kedua didorong keluar tepi
+                                     kanan lalu terpotong. --}}
+                                <span class="sidebar-badge-grup">
                                 @if ($pesananTokoBadge > 0)
-                                <span class="sidebar-badge ms-auto" title="{{ $pesananTokoTitle }}">
+                                <span class="sidebar-badge" title="{{ $pesananTokoTitle }}">
                                     {{ $pesananTokoBadge > 99 ? '99+' : $pesananTokoBadge }}
                                 </span>
                                 @endif
                                 @if ($tokoSegera)
-                                <span class="sidebar-badge sidebar-badge-segera {{ $pesananTokoBadge ? '' : 'ms-auto' }}" title="{{ $tokoSegera }} akun segera habis dan belum diingatkan">
+                                <span class="sidebar-badge sidebar-badge-segera" title="{{ $tokoSegera }} akun segera habis dan belum diingatkan">
                                     <i class="bi bi-alarm"></i>{{ 99 < $tokoSegera ? '99+' : $tokoSegera }}
                                 </span>
                                 @endif
+                                </span>
                             </a>
                         </li>
                         @endif
