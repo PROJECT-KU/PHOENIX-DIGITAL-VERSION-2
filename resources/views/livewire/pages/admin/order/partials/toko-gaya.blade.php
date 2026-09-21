@@ -84,6 +84,19 @@
         .pt-tabel-pesanan tbody td:nth-child(6) { display: none !important; }
         .pt-tabel-pesanan tbody td:nth-child(4) { grid-column: 1; grid-row: 3; }
         .pt-tabel-pesanan tbody td:nth-child(5) { grid-column: 2; grid-row: 3; }
+        /* Lencana pembayaran & status tidak boleh lebih lebar dari kolomnya.
+           min-width: 0 di atas membuat kolom auto boleh menyusut sampai nol
+           saat baris sesak (total besar, huruf ponsel diperbesar) — lencana
+           lalu meluber ke celah 8px dan "Dibatalkan" menempel ke lencana
+           pembayaran. min-content = lebar lencana terlebar, tetap bisa turun
+           baris untuk lencana kedua ("N item batal"). */
+        .pt-tabel-pesanan tbody td:nth-child(4),
+        .pt-tabel-pesanan tbody td:nth-child(5) { min-width: min-content; }
+        /* Layar sangat sempit (< 360px): dua lencana + tombol aksi + total tidak
+           muat sebaris, jadi status turun ke bawah lencana pembayaran. */
+        @media (max-width: 359.98px) {
+            .pt-tabel-pesanan tbody td:nth-child(5) { grid-column: 1 / 3; grid-row: 4; }
+        }
         .pt-tabel-pesanan tbody td:nth-child(7) { grid-column: 3 / 5; grid-row: 3; text-align: right; }
         .pt-tabel-pesanan tbody td.is-kosong { display: none; }
         .pt-tabel-pesanan .dsb-tabel-samar { display: inline-flex !important; font-size: .74rem; }
