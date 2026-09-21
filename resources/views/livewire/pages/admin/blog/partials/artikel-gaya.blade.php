@@ -37,7 +37,10 @@
 
     /* ===== Ringkasan ===== */
     .bl-ringkas { margin-bottom: 14px; }
-    .bl-ringkas-isi { display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); flex-wrap: wrap; }
+    /* stretch, BUKAN center: dengan center tiap kotak setinggi isinya
+       sendiri, sehingga blok yang keterangannya cuma satu baris terlihat
+       lebih pendek daripada tetangganya. */
+    .bl-ringkas-isi { display: flex; align-items: stretch; gap: clamp(14px, 2.4vw, 26px); flex-wrap: wrap; }
     .bl-ringkas-blok { display: flex; align-items: flex-start; gap: 11px; flex: 1 1 250px; min-width: 0; padding: 13px 15px; border-radius: 14px; background: #f8fafc; border: 1px solid #eef2f7; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
     @media (hover: hover) and (pointer: fine) { .bl-ringkas-blok:hover { border-color: #ddd6fe; background: #faf5ff; transform: translateY(-1px); } }
     .bl-ringkas-ikon { flex: 0 0 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 11px; font-size: .95rem; }
