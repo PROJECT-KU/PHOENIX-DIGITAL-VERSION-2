@@ -1,33 +1,37 @@
-
 @section('title')
-Update Artikel Blog || lemon
+Sunting Artikel || lemon
 @stop
-<div class="container-fluid">
-    <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
-        <div class="card-body p-4 d-flex align-items-center">
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 header-action w-100">
-                <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">Update Artikel Blog</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        @php
-                        $breadcrumbs = [
-                        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                        ['name' => 'Blog', 'url' => route('admin.blog.index')],
-                        ['name' => 'Update Artikel'],
-                        ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div>
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.blog.partials.artikel-gaya')
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div class="mt-4">
-                <livewire:pages.admin.blog.blog-form :post="$post" />
+    @php [$keadaan, $lencana, $warna, $ikonKeadaan] = $post->keadaan(); @endphp
+
+    <div class="dsb">
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Sunting Artikel</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">{{ \Illuminate\Support\Str::limit($post->title, 90) }}</span>
+                    <span class="d-block">
+                        <span class="dsb-lencana {{ $lencana }}"><i class="bi {{ $ikonKeadaan }}"></i>{{ $keadaan }}</span>
+                        <span class="dsb-lencana is-abu"><i class="bi bi-eye"></i>{{ number_format($post->views, 0, ',', '.') }} dibaca</span>
+                        <span class="dsb-lencana is-abu"><i class="bi bi-hourglass"></i>{{ $post->lamaBaca() }} menit baca</span>
+                    </span>
+                </p>
             </div>
-        </div>
+            <div class="dsb-hero-aksi">
+                @if ($keadaan === 'Terbit')
+                    <a href="{{ route('blog.show', $post->slug) }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #2563eb">
+                        <i class="bi bi-box-arrow-up-right"></i><span>Lihat publik</span>
+                    </a>
+                @endif
+                <a wire:navigate href="{{ route('admin.blog.index') }}" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                    <i class="bi bi-arrow-left"></i><span>Daftar Artikel</span>
+                </a>
+            </div>
+        </header>
+
+        <livewire:pages.admin.blog.blog-form :post="$post" />
     </div>
 </div>

@@ -31,6 +31,8 @@ function berkasPenandaAdmin(): array
         'task/task-saya-list.blade.php',
         'task/partials/task-*.blade.php',
         'orcha/rab/*.blade.php',
+        'blog/*.blade.php',
+        'blog/partials/*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
 }
 

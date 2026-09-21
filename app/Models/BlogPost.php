@@ -49,6 +49,42 @@ class BlogPost extends Model
     }
 
     /**
+     * [label, kelas lencana, warna, ikon] keadaan artikel.
+     *
+     * "Terbit" dan "Terjadwal" sama-sama berstatus published di basis data —
+     * yang membedakan hanya waktunya sudah tiba atau belum. Dipisahkan di sini
+     * supaya seluruh layar memakai istilah yang sama.
+     */
+    public function keadaan(): array
+    {
+        if ($this->status !== 'published') {
+            return ['Draf', 'is-kuning', '#d97706', 'bi-pencil-square'];
+        }
+
+        return $this->published_at && $this->published_at->isFuture()
+            ? ['Terjadwal', 'is-biru', '#2563eb', 'bi-clock-history']
+            : ['Terbit', 'is-hijau', '#16a34a', 'bi-globe2'];
+    }
+
+    /** Perkiraan lama baca (menit) — nama Indonesia untuk readingMinutes(). */
+    public function lamaBaca(): int
+    {
+        return $this->readingMinutes();
+    }
+
+    /** Alamat gambar sampul, atau null bila berkasnya memang tidak ada. */
+    public function sampulUrl(): ?string
+    {
+        if (! $this->cover) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists('img/blog/'.$this->cover)
+            ? asset('storage/img/blog/'.$this->cover)
+            : null;
+    }
+
+    /**
      * Buat slug unik dari sebuah judul (mengabaikan record $ignoreId saat edit).
      */
     public static function makeSlug(string $title, ?int $ignoreId = null): string

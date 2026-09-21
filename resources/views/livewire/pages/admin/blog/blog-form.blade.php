@@ -1,153 +1,192 @@
-<form wire:submit.prevent="save" class="blog-editor">
-    <div class="row g-4">
-        {{-- ============ KOLOM UTAMA: KONTEN ============ --}}
-        <div class="col-lg-8">
-            <div class="bf-panel mb-4">
-                <div class="bf-panel-head"><i class="bi bi-pencil-square"></i> Konten Artikel</div>
+{{-- Tata letak formulir memakai bahasa rupa dasbor (dsb-*) + gaya artikel
+     (bl-*). Kabel yang sudah jalan SENGAJA tidak disentuh: Quill tetap di
+     dalam wire:ignore dengan #editor-body dan input tersembunyi #body,
+     pemilih kategori tetap .open-cat-picker, unggahan sampul tetap
+     #coverInput. Yang berubah hanya kelas & susunannya. --}}
+@include('livewire.pages.admin.partials.dasbor-gaya')
+@include('livewire.pages.admin.blog.partials.artikel-gaya')
 
-                <label class="form-label fw-bold text-secondary">Judul Artikel <span class="text-danger">*</span></label>
-                <input type="text" wire:model.live.debounce.500ms="title"
-                    class="form-control form-control-lg @error('title') is-invalid @enderror"
-                    placeholder="Contoh: 5 Tips Memilih Akun Premium yang Aman & Bergaransi">
-                @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
-
-                <div class="bf-url mt-2">
-                    <i class="bi bi-link-45deg"></i>
-                    <span class="bf-url-base">phoenixdigitalwarehouse.com/blog/</span>
-                    <span class="bf-url-slug">{{ $slug ?: 'otomatis-dari-judul' }}</span>
-                    <span class="bf-url-auto"><i class="bi bi-magic"></i> otomatis</span>
-                </div>
-
-                <div class="mt-4" wire:ignore>
-                    <label class="form-label fw-bold text-secondary d-flex align-items-center gap-2">
-                        <i class="bi bi-body-text" style="color: var(--ph-orange, #f26522);"></i> Isi Artikel <span class="text-danger">*</span>
-                    </label>
-                    <div class="quill-container" style="height: 430px; overflow: auto;">
-                        <div id="editor-body"></div>
-                    </div>
-                    <small class="text-muted mt-2 d-block" style="font-size:.75rem;"><i class="bi bi-lightbulb me-1"></i> Gunakan Judul (H2/H3), tebal, kutipan &amp; poin agar artikel enak dibaca dan lebih SEO-friendly.</small>
-                    <input type="hidden" wire:model.live.debounce.800ms="body" id="body">
-                </div>
-                @error('body') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
-            </div>
-
-            {{-- Ringkasan & SEO OTOMATIS (readonly) --}}
-            <div class="bf-panel">
-                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-3">
-                    <div>
-                        <div class="bf-panel-head mb-1"><i class="bi bi-magic"></i> Ringkasan &amp; SEO — Otomatis</div>
-                        <p class="text-muted mb-0" style="font-size:.8rem;">Diambil otomatis dari judul &amp; isi artikel (kalimat menarik pilihan). Tak perlu diketik manual.</p>
-                    </div>
-                    <button type="button" wire:click="generateSeo"
-                        class="btn btn-sm btn-outline-primary flex-shrink-0 d-inline-flex align-items-center justify-content-center gap-1 align-self-center align-self-sm-auto"
-                        wire:loading.attr="disabled">
-                        <i class="bi bi-arrow-repeat"></i> <span>Acak lagi</span>
-                    </button>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label fw-semibold text-secondary small mb-1">Ringkasan (Excerpt)</label>
-                        <textarea wire:model="excerpt" rows="2" readonly
-                            class="form-control bg-white" style="cursor:default;"
-                            placeholder="Tulis isi artikel dulu, ringkasan akan dibuat otomatis..."></textarea>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold text-secondary small mb-1">Meta Title (judul di Google)</label>
-                        <input type="text" wire:model="meta_title" readonly
-                            class="form-control bg-white" style="cursor:default;"
-                            placeholder="Otomatis dari judul artikel">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold text-secondary small mb-1">Meta Description (deskripsi di Google)</label>
-                        <textarea wire:model="meta_description" rows="2" readonly
-                            class="form-control bg-white" style="cursor:default;"
-                            placeholder="Otomatis dari isi artikel"></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ============ SIDEBAR: PENGATURAN ============ --}}
-        <div class="col-lg-4">
-            {{-- Publikasi --}}
-            <div class="bf-panel mb-4">
-                <div class="bf-panel-head"><i class="bi bi-send-check"></i> Publikasi</div>
-
-                <label class="form-label fw-semibold text-secondary small">Status <span class="text-danger">*</span></label>
-                <select wire:model.defer="status" class="form-select @error('status') is-invalid @enderror">
-                    <option value="draft">📝 Draf (belum tampil)</option>
-                    <option value="published">🌐 Publikasikan (tampil)</option>
-                </select>
-                @error('status') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-
-                <label class="form-label fw-semibold text-secondary small mt-3"><i class="bi bi-calendar-event me-1"></i> Jadwalkan Terbit</label>
-                <input type="datetime-local" wire:model.defer="published_at"
-                    class="form-control @error('published_at') is-invalid @enderror">
-                @error('published_at') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                <small class="text-muted mt-1 d-block" style="font-size:.75rem;"><i class="bi bi-info-circle me-1"></i> Isi waktu di masa depan untuk menjadwalkan. Kosongkan = tampil saat dipublikasikan.</small>
-            </div>
-
-            {{-- Kategori --}}
-            <div class="bf-panel mb-4">
-                <div class="bf-panel-head"><i class="bi bi-tags"></i> Kategori</div>
-
-                <button type="button"
-                    class="form-select text-start of-picker-btn rounded-3 open-cat-picker"
-                    data-current="{{ $category }}"
-                    data-can-create="{{ auth()->user()->hasPermission('create_blog') ? '1' : '0' }}"
-                    data-can-delete="{{ auth()->user()->hasPermission('delete_blog') ? '1' : '0' }}">
-                    @if ($category)
-                        <span class="d-inline-flex align-items-center gap-1">
-                            <i class="bi bi-tag-fill" style="color: var(--ph-orange, #f26522);"></i>
-                            <span>{{ $category }}</span>
+<form wire:submit.prevent="save" class="blog-editor dsb">
+    <div class="bl-form">
+        {{-- ============ KOLOM UTAMA: ISI ARTIKEL ============ --}}
+        <div class="bl-form-utama">
+            <section class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bl-panel-judul">
+                        <span class="bl-panel-ikon" style="background: #f5f3ff; color: #7c3aed;"><i class="bi bi-pencil-square"></i></span>
+                        <span>
+                            <b>Konten Artikel</b>
+                            <small>Judul dan isi tulisan yang dibaca pengunjung.</small>
                         </span>
-                    @else
-                        <span class="text-muted">Pilih kategori</span>
-                    @endif
-                </button>
-                @error('category') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-            </div>
-
-            {{-- Sampul --}}
-            <div class="bf-panel">
-                <div class="bf-panel-head"><i class="bi bi-card-image"></i> Gambar Sampul <span class="text-muted fw-normal ms-1" style="font-size:.75rem;">(opsional)</span></div>
-
-                <div class="bf-cover-preview mb-3">
-                    @if ($cover && is_object($cover) && !$errors->has('cover'))
-                        <img src="{{ \App\Support\PratinjauUnggahan::url($cover) }}" onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($cover) }}')" title="Klik untuk memperbesar">
-                    @elseif ($existingCover)
-                        <img src="{{ asset('storage/img/blog/' . $existingCover) }}" onclick="showGlossyPreview('{{ asset('storage/img/blog/' . $existingCover) }}')" title="Klik untuk memperbesar">
-                    @else
-                        <div class="bf-cover-empty">
-                            <i class="bi bi-card-image"></i>
-                            <span>Preview sampul (16:9)</span>
-                        </div>
-                    @endif
-                </div>
-
-                <div class="upload-container position-relative">
-                    <input type="file" id="coverInput" wire:model="cover"
-                        class="file-input @error('cover') is-invalid @enderror"
-                        accept="image/png, image/jpeg, image/jpg, image/webp">
-                    <div class="upload-overlay">
-                        <i class="bi bi-cloud-upload fs-4 text-primary"></i>
-                        <span class="text-muted fw-bold">Klik untuk unggah sampul</span>
                     </div>
-                </div>
-                @error('cover') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                <small class="text-muted mt-1 d-block" style="font-size:.75rem;"><i class="bi bi-info-circle me-1"></i> JPG, PNG, WEBP (maks 5MB). Rasio ideal 16:9.</small>
-            </div>
-        </div>
-    </div>
 
-    <div class="mt-4 pt-3 border-top d-flex gap-2">
-        <button type="submit"
-            class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-            style="height: 52px;">
-            <i class="bi bi-check2-circle me-2 fs-5"></i>
-            <span>{{ $this->mode === 'create' ? 'Simpan Artikel' : 'Update Artikel' }}</span>
-        </button>
+                    <label class="bl-medan">
+                        <span>Judul Artikel <em class="bl-wajib">*</em></span>
+                        <input type="text" wire:model.live.debounce.500ms="title"
+                            class="dsb-isian @error('title') is-galat @enderror"
+                            placeholder="Contoh: 5 Tips Memilih Akun Premium yang Aman &amp; Bergaransi">
+                        @error('title') <span class="bl-galat">{{ $message }}</span> @enderror
+                    </label>
+
+                    <div class="bl-url">
+                        <i class="bi bi-link-45deg"></i>
+                        <span>phoenixdigitalwarehouse.com/blog/</span>
+                        <b>{{ $slug ?: 'otomatis-dari-judul' }}</b>
+                        <span class="bl-url-auto"><i class="bi bi-magic"></i>otomatis</span>
+                    </div>
+
+                    <div class="bl-medan" style="margin-top: 16px;" wire:ignore>
+                        <span><i class="bi bi-body-text me-1" style="color: #7c3aed;"></i>Isi Artikel <em class="bl-wajib">*</em></span>
+                        <div class="quill-container" style="height: 430px; overflow: auto;">
+                            <div id="editor-body"></div>
+                        </div>
+                        <span class="bl-bantu"><i class="bi bi-lightbulb me-1"></i>Gunakan Judul (H2/H3), tebal, kutipan &amp; poin agar artikel enak dibaca dan lebih SEO-friendly.</span>
+                        <input type="hidden" wire:model.live.debounce.800ms="body" id="body">
+                    </div>
+                    @error('body') <span class="bl-galat">{{ $message }}</span> @enderror
+                </div>
+            </section>
+
+            {{-- Ringkasan & SEO otomatis (hanya baca) --}}
+            <section class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bl-panel-judul">
+                        <span class="bl-panel-ikon" style="background: #eef2ff; color: #4338ca;"><i class="bi bi-magic"></i></span>
+                        <span>
+                            <b>Ringkasan &amp; SEO</b>
+                            <small>Diambil otomatis dari judul &amp; isi artikel — tak perlu diketik.</small>
+                        </span>
+                        <button type="button" class="bl-btn bl-seo-acak" wire:click="generateSeo" wire:loading.attr="disabled" wire:target="generateSeo">
+                            <span wire:loading.remove wire:target="generateSeo" class="bl-isi-tombol"><i class="bi bi-arrow-repeat"></i><span>Acak lagi</span></span>
+                            <span wire:loading.inline-flex wire:target="generateSeo" class="bl-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyusun…</span></span>
+                        </button>
+                    </div>
+
+                    <label class="bl-medan">
+                        <span>Ringkasan (excerpt)</span>
+                        <textarea wire:model="excerpt" rows="2" readonly class="dsb-isian is-kunci"
+                            placeholder="Tulis isi artikel dulu, ringkasan akan dibuat otomatis…"></textarea>
+                    </label>
+
+                    <label class="bl-medan">
+                        <span>Meta Title — judul di Google</span>
+                        <input type="text" wire:model="meta_title" readonly class="dsb-isian is-kunci" placeholder="Otomatis dari judul artikel">
+                    </label>
+
+                    <label class="bl-medan" style="margin-bottom: 0;">
+                        <span>Meta Description — deskripsi di Google</span>
+                        <textarea wire:model="meta_description" rows="2" readonly class="dsb-isian is-kunci"
+                            placeholder="Otomatis dari isi artikel"></textarea>
+                    </label>
+                </div>
+            </section>
+        </div>
+
+        {{-- ============ SAMPING: PENGATURAN ============ --}}
+        <aside class="bl-form-samping">
+            <section class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bl-panel-judul">
+                        <span class="bl-panel-ikon" style="background: #ecfdf5; color: #15803d;"><i class="bi bi-send-check"></i></span>
+                        <span>
+                            <b>Publikasi</b>
+                            <small>Kapan artikel ini terlihat pengunjung.</small>
+                        </span>
+                    </div>
+
+                    <label class="bl-medan">
+                        <span>Status <em class="bl-wajib">*</em></span>
+                        <select wire:model.defer="status" class="dsb-isian @error('status') is-galat @enderror">
+                            <option value="draft">Draf — belum tampil</option>
+                            <option value="published">Publikasikan — tampil</option>
+                        </select>
+                        @error('status') <span class="bl-galat">{{ $message }}</span> @enderror
+                    </label>
+
+                    <label class="bl-medan" style="margin-bottom: 0;">
+                        <span><i class="bi bi-calendar-event me-1" style="color: #2563eb;"></i>Jadwalkan terbit</span>
+                        <input type="datetime-local" wire:model.defer="published_at" class="dsb-isian @error('published_at') is-galat @enderror">
+                        @error('published_at') <span class="bl-galat">{{ $message }}</span> @enderror
+                        <span class="bl-bantu"><i class="bi bi-info-circle me-1"></i>Isi waktu di masa depan untuk menjadwalkan. Dikosongkan berarti tampil begitu dipublikasikan.</span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bl-panel-judul">
+                        <span class="bl-panel-ikon" style="background: #fff7ed; color: #c2410c;"><i class="bi bi-tags"></i></span>
+                        <span>
+                            <b>Kategori</b>
+                            <small>Mengelompokkan artikel di halaman blog.</small>
+                        </span>
+                    </div>
+
+                    <button type="button" class="bl-pilih-kategori open-cat-picker"
+                        data-current="{{ $category }}"
+                        data-can-create="{{ auth()->user()->hasPermission('create_blog') ? '1' : '0' }}"
+                        data-can-delete="{{ auth()->user()->hasPermission('delete_blog') ? '1' : '0' }}">
+                        @if ($category)
+                            <span class="bl-isi-tombol"><i class="bi bi-tag-fill" style="color: #c2410c;"></i><span>{{ $category }}</span></span>
+                        @else
+                            <span class="bl-pilih-kosong">Pilih kategori</span>
+                        @endif
+                        <i class="bi bi-chevron-down bl-pilih-panah"></i>
+                    </button>
+                    @error('category') <span class="bl-galat">{{ $message }}</span> @enderror
+                </div>
+            </section>
+
+            <section class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bl-panel-judul">
+                        <span class="bl-panel-ikon" style="background: #eff6ff; color: #1d4ed8;"><i class="bi bi-card-image"></i></span>
+                        <span>
+                            <b>Gambar Sampul</b>
+                            <small>Opsional — rasio ideal 16:9, maksimal 5 MB.</small>
+                        </span>
+                    </div>
+
+                    <div class="bl-sampul-pratinjau">
+                        @if ($cover && is_object($cover) && ! $errors->has('cover'))
+                            <img src="{{ \App\Support\PratinjauUnggahan::url($cover) }}" alt="Pratinjau sampul"
+                                onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($cover) }}')" title="Klik untuk memperbesar">
+                        @elseif ($existingCover)
+                            <img src="{{ asset('storage/img/blog/'.$existingCover) }}" alt="Sampul saat ini"
+                                onclick="showGlossyPreview('{{ asset('storage/img/blog/'.$existingCover) }}')" title="Klik untuk memperbesar">
+                        @else
+                            <div class="bl-sampul-kosong is-form">
+                                <i class="bi bi-card-image"></i>
+                                <span>Pratinjau sampul (16:9)</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <label class="bl-unggah">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>Klik untuk unggah sampul</span>
+                        <input type="file" id="coverInput" wire:model="cover" accept="image/png, image/jpeg, image/jpg, image/webp">
+                    </label>
+                    <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="cover" style="margin-top: 10px;">
+                        <span class="dsb-putar is-kecil"></span>Mengunggah gambar…
+                    </span>
+                    @error('cover') <span class="bl-galat">{{ $message }}</span> @enderror
+                    <span class="bl-bantu"><i class="bi bi-info-circle me-1"></i>JPG, PNG, atau WEBP. Gambar besar dikecilkan otomatis saat disimpan.</span>
+                </div>
+            </section>
+
+            <div class="bl-simpan-baris">
+                <button type="submit" class="dsb-tombol is-utama bl-simpan" wire:loading.attr="disabled" wire:target="save">
+                    <span wire:loading.remove wire:target="save" class="bl-isi-tombol">
+                        <i class="bi bi-check2-circle"></i><span>{{ $mode === 'create' ? 'Simpan Artikel' : 'Perbarui Artikel' }}</span>
+                    </span>
+                    <span wire:loading.inline-flex wire:target="save" class="bl-isi-tombol">
+                        <span class="dsb-putar is-kecil"></span><span>Menyimpan…</span>
+                    </span>
+                </button>
+                <a wire:navigate href="{{ route('admin.blog.index') }}" class="bl-btn bl-batal">Batal</a>
+            </div>
+        </aside>
     </div>
 </form>
 
@@ -215,28 +254,8 @@
     .quill-container .ql-toolbar .ql-picker-label.ql-active { color: var(--ph-orange, #f26522) !important; }
     .quill-container .ql-snow .ql-picker-options { border-radius: 10px; border: 1px solid #eef0f7; box-shadow: 0 8px 24px rgba(15, 23, 42, .1); }
 
-    /* Sejajarkan semua ikon bootstrap dengan teks di form artikel (perbaiki baseline) */
+    /* Ikon bootstrap di dalam form disejajarkan dengan teksnya. */
     .blog-editor .bi { vertical-align: -0.125em; line-height: 1; }
-    .blog-editor .bf-panel-head { align-items: center; }
-    .blog-editor .bf-panel-head .bi { vertical-align: middle; }
-
-    /* Panel section form artikel */
-    .bf-panel { background: #f8fafc; border: 1px solid #eef0f7; border-radius: 18px; padding: 1.2rem 1.3rem 1.35rem; }
-    .bf-panel-head { font-weight: 700; color: #334155; font-size: .95rem; margin-bottom: 1rem; display: flex; align-items: center; gap: .55rem; }
-    .bf-panel-head i { color: var(--ph-orange, #f26522); font-size: 1.05rem; }
-    .bf-panel .form-control, .bf-panel .form-select { background: #fff; }
-    .bf-cover-preview { aspect-ratio: 16/9; border-radius: 14px; border: 1px dashed #d9dee8; background: linear-gradient(135deg, #fff3e6, #ffe1c4); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .bf-cover-preview img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-    .bf-cover-empty { color: #ef8b3d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; line-height: 1.2; }
-    .bf-cover-empty i { font-size: 1.8rem; line-height: 1; display: block; }
-    .bf-cover-empty span { font-size: .8rem; }
-    /* Permalink chip */
-    .bf-url { display: inline-flex; align-items: center; gap: .45rem; background: #fff; border: 1px solid #eef0f7; border-radius: 999px; padding: .4rem .5rem .4rem .85rem; font-size: .8rem; max-width: 100%; flex-wrap: wrap; }
-    .bf-url > i.bi-link-45deg { color: var(--ph-orange, #f26522); }
-    .bf-url-base { color: #94a3b8; }
-    .bf-url-slug { color: #334155; font-weight: 700; word-break: break-all; }
-    .bf-url-auto { display: inline-flex; align-items: center; gap: .25rem; background: var(--ph-soft, #fff8f1); color: var(--ph-orange, #f26522); font-weight: 700; font-size: .68rem; text-transform: uppercase; letter-spacing: .03em; padding: .2rem .6rem; border-radius: 999px; }
-    @media (min-width: 992px) { .bf-sticky { position: sticky; top: 90px; } }
 
     /* Select2 disamakan dengan tema form admin */
     .select2-container--default .select2-selection--single,
@@ -253,8 +272,6 @@
     .select2-container--default .select2-results__option--highlighted[aria-selected] { background: var(--ph-orange, #f26522); }
 
     /* ===== Popup pilih/kelola kategori — pola sama persis dengan Penyelesaian Task ===== */
-    .of-picker-btn { cursor: pointer; }
-    .of-picker-btn::after { content: "\F282"; font-family: "bootstrap-icons"; float: right; color: #94a3b8; font-size: .8rem; }
     .of-pick-list { max-height: 320px; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: .4rem; padding: .2rem; }
     .of-pick-item { display: block; width: 100%; text-align: left; border: 1px solid #e6e8f2; background: #fff; border-radius: 12px; padding: .7rem .9rem; font-weight: 600; color: #1e293b; font-size: .92rem; transition: all .15s ease; }
     .of-pick-item:hover { border-color: #6c63ff; background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04)); transform: translateY(-1px); }
