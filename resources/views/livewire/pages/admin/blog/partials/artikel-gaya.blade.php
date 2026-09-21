@@ -253,6 +253,12 @@
     .bl-pilih-panah { margin-left: auto; color: #94a3b8; font-size: .75rem; }
 
     .bl-simpan-baris { display: flex; gap: 10px; align-items: stretch; }
+    .bl-kembali {
+        width: 100%; height: 40px; margin-top: 12px;
+        border-style: dashed; color: #64748b; font-weight: 600;
+    }
+    .bl-kembali:hover { border-style: solid; border-color: #c4b5fd; background: #faf5ff; color: #6d28d9; }
+    .bl-kembali i { font-size: .9rem; }
     .bl-simpan { flex: 1 1 auto; justify-content: center; height: 46px; }
     .bl-batal { flex: 0 0 auto; height: 46px; }
 

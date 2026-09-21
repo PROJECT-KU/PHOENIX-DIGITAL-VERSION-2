@@ -612,7 +612,12 @@
                     <span class="bl-titik-kotor"></span><span>Ada perubahan yang belum tersimpan.</span>
                 </div>
 
-                <a wire:navigate href="{{ route('admin.blog.index') }}" class="bl-tautan" style="display:inline-block;margin-top:10px;">Kembali ke daftar artikel</a>
+                {{-- Tombol, bukan tautan teks bergaris bawah: ia berdiri
+                     sebaris dengan dua tombol simpan di atasnya, jadi
+                     bentuknya harus ikut bahasa yang sama. --}}
+                <a wire:navigate href="{{ route('admin.blog.index') }}" class="bl-btn bl-kembali">
+                    <i class="bi bi-arrow-left"></i><span>Kembali ke daftar artikel</span>
+                </a>
             </div>
         </aside>
     </div>
