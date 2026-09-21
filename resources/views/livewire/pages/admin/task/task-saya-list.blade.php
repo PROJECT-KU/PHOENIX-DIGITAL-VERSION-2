@@ -692,6 +692,15 @@ Task Saya || lemon
         .ts-halaman-ket { color: #6b7280; font-size: .8rem; }
         .ts-halaman-aksi { display: inline-flex; align-items: center; gap: 8px; }
         .ts-halaman-aksi .dsb-tabel-btn:disabled { opacity: .45; cursor: not-allowed; }
+        /* Di ponsel kaki halaman sudah turun jadi dua baris; rata kiri
+           membuat tombol ‹ › menempel di pojok dengan sisa kanan kosong.
+           Keterangan & tombolnya ditengahkan bersama, supaya terbaca satu
+           kesatuan di ujung daftar. */
+        @media (max-width: 575.98px) {
+            .ts-halaman { flex-direction: column; justify-content: center; gap: 10px; }
+            .ts-halaman-ket { text-align: center; }
+            .ts-halaman-aksi { justify-content: center; gap: 12px; }
+        }
 
         /* ===== Sub-baris penerima grup =====
            Task grup adalah SATU pekerjaan untuk beberapa orang. Barisnya tetap
