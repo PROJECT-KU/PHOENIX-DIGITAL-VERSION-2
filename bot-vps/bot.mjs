@@ -119,6 +119,27 @@ function catat(...pesan) {
 
 const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Galat Playwright → kalimat yang berguna di Telegram.
+ *
+ * "page.waitForSelector: Timeout 30000ms exceeded" tidak memberi tahu apa pun
+ * kepada admin yang sedang memegang HP; yang perlu diketahui adalah halaman
+ * layanannya tidak terbuka.
+ */
+function pesanManusia(pesan) {
+    const teks = String(pesan || '').split('\n')[0];
+
+    if (/#orderForm|waitForSelector|Timeout .*exceeded/i.test(teks)) {
+        return 'halaman layanan cek plagiasi tidak terbuka (kemungkinan dimatikan/maintenance)';
+    }
+
+    if (/net::ERR|ECONNREFUSED|ENOTFOUND|503/i.test(teks)) {
+        return 'situsnya tidak bisa dihubungi (' + teks.slice(0, 60) + ')';
+    }
+
+    return teks.slice(0, 160);
+}
+
 /* ================================================================
  | API Phoenix
  * ================================================================ */
@@ -829,7 +850,7 @@ async function kerjakan(ctx, hal, tugas) {
         } catch (e) {
             alasanAlih = e.message || String(e);
             KEADAAN.submitinSiap = false;
-            KEADAAN.submitinPesan = String(alasanAlih).split('\n')[0].slice(0, 160);
+            KEADAAN.submitinPesan = pesanManusia(alasanAlih);
         }
 
         KEADAAN.submitinCekAt = Date.now();
@@ -1136,7 +1157,7 @@ async function submitinSiap(hal) {
         siap = hasil.siap;
         pesan = hasil.siap ? (hasil.paket?.pesan ?? 'siap') : hasil.masalah;
     } catch (e) {
-        pesan = String(e.message || e).split('\n')[0].slice(0, 160);
+        pesan = pesanManusia(e.message || e);
     }
 
     KEADAAN.submitinSiap = siap;
@@ -1292,7 +1313,7 @@ async function jalan() {
         } catch (e) {
             const pesan = String(e.message || e).split('\n')[0];
             KEADAAN.submitinSiap = false;
-            KEADAAN.submitinPesan = pesan.slice(0, 160);
+            KEADAAN.submitinPesan = pesanManusia(pesan);
             KEADAAN.submitinCekAt = Date.now();
             KEADAAN.galatTerakhir = 'submitin.id tidak bisa dibuka: ' + pesan;
             catat('submitin.id tidak bisa dibuka saat mulai:', pesan);
