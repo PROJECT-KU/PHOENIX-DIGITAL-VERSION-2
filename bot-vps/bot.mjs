@@ -975,6 +975,12 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
 
     catat(`submitin.id tidak bisa dipakai (${ringkas}) — dialihkan ke ${cekplagiat.NAMA}`);
 
+    // Kabari Phoenix SEKARANG, bukan nanti saat berkasnya terkirim: kartu di
+    // dasbor pernah tertulis "mengunggah ke submitin.id" padahal koin
+    // cekplagiat sudah terpotong.
+    KEADAAN.penyedia = cekplagiat.NAMA;
+    await api('POST', '/detak', formulir({ tugas: String(tugas.id), penyedia: cekplagiat.NAMA })).catch(() => {});
+
     const hal = await ctx.newPage();
     let berkasKecil = null;
 
@@ -1000,6 +1006,24 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
         }
 
         KEADAAN.penyedia = cekplagiat.NAMA;
+
+        /*
+         * Sudah pernah diunggah? Jangan bayar dua kali.
+         *
+         * Percobaan sebelumnya bisa saja berhasil menekan "Proses dan Unggah"
+         * (koin terpotong) lalu gagal membaca kodenya. Berkasnya dikenali dari
+         * nama penanda PD-… yang unik per unggahan.
+         */
+        const sudahAda = await cekplagiat.cariDokumen(hal, tugas.nama_berkas);
+
+        if (sudahAda) {
+            catat(`${tugas.order_number} sudah pernah diunggah ke ${cekplagiat.NAMA} (${sudahAda}) — hasilnya diambil, koin tidak dipakai lagi.`);
+
+            await api('POST', `/tugas/${tugas.id}/terkirim`, formulir({ kode: 'CP-' + sudahAda }));
+            await tungguHasilCadangan(hal, tugas, sudahAda);
+
+            return;
+        }
 
         const { biaya } = await cekplagiat.isiForm(hal, tugas, dipakai, tugas.nama_berkas);
 
@@ -1036,7 +1060,7 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
         }
 
         catat(`Kirim ke ${cekplagiat.NAMA} untuk ${tugas.order_number} (biaya ${biaya ?? '?'} koin)`);
-        const kode = await cekplagiat.kirim(hal);
+        const kode = await cekplagiat.kirim(hal, tugas.nama_berkas);
 
         await api('POST', `/tugas/${tugas.id}/terkirim`, formulir({ kode: 'CP-' + kode }));
         catat(`Terkirim: ${tugas.order_number} → ${cekplagiat.NAMA} ${kode}`);
@@ -1045,7 +1069,17 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
     } catch (e) {
         if (e.sesiHabis) KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
 
-        return laporGagal(tugas.id, `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`, false, !!e.sesiHabis);
+        /*
+         * Kegagalan SESUDAH tombol ditekan tidak boleh dicoba ulang sendiri:
+         * koinnya sudah terpotong, jadi percobaan berikutnya membayar dua kali
+         * untuk satu pesanan.
+         */
+        return laporGagal(
+            tugas.id,
+            `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`,
+            false,
+            !!e.sesiHabis || !!e.sudahTerkirim,
+        );
     } finally {
         KEADAAN.penyedia = 'submitin.id';
         if (berkasKecil) fs.rmSync(path.dirname(berkasKecil), { recursive: true, force: true });
@@ -1090,7 +1124,7 @@ async function tungguHasilCadangan(hal, tugas, kode) {
         }
 
         if (Date.now() - detak > JEDA_DETAK_MS) {
-            api('POST', '/detak', formulir({ tugas: String(tugas.id) })).catch(() => {});
+            api('POST', '/detak', formulir({ tugas: String(tugas.id), penyedia: KEADAAN.penyedia })).catch(() => {});
             detak = Date.now();
         }
 
@@ -1144,7 +1178,7 @@ async function tungguHasil(ctx, hal, tugas, kode) {
         }
 
         if (Date.now() - detak > JEDA_DETAK_MS) {
-            api('POST', '/detak', formulir({ tugas: String(tugas.id) })).catch(() => {});
+            api('POST', '/detak', formulir({ tugas: String(tugas.id), penyedia: KEADAAN.penyedia })).catch(() => {});
             detak = Date.now();
         }
 

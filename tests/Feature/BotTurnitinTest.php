@@ -781,3 +781,55 @@ it('menyimpan hasil yang datang dengan kode cekplagiat', function () {
     expect($status)->toBe('selesai')
         ->and($up->fresh()->status)->toBe('selesai');
 });
+
+/*
+ * Kartu dasbor harus menyebut penyedia yang BENAR.
+ *
+ * 13 Okt 2026 kartunya tertulis "Bot sedang mengunggah ke submitin.id" padahal
+ * berkasnya sudah masuk cekplagiat.id dan 22 koin sudah terpotong — admin bisa
+ * salah mengira pekerjaannya belum berbiaya.
+ */
+it('menyebut cekplagiat saat bot mengalihkan ke cadangan', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    // Detak dari bot membawa nama penyedianya, sebelum berkas terkirim.
+    BotTurnitin::masihMenunggu($up->fresh(), 'cekplagiat.id');
+
+    expect(BotTurnitin::pengerja($up->fresh())['judul'])
+        ->toBe('Bot sedang mengunggah ke cekplagiat.id');
+});
+
+it('tetap menyebut submitin selama tidak dialihkan', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    expect(BotTurnitin::pengerja($up->fresh())['judul'])
+        ->toBe('Bot sedang mengunggah ke submitin.id');
+
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'SC-9908F2C67897');
+
+    expect(BotTurnitin::pengerja($up->fresh())['judul'])
+        ->toBe('Bot menunggu laporan dari submitin.id');
+});
+
+it('mencatat penyedia dari kode saat berkas terkirim', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A');
+
+    expect($up->fresh()->bot_penyedia)->toBe('cekplagiat.id')
+        ->and(BotTurnitin::pengerja($up->fresh())['judul'])
+        ->toBe('Bot menunggu laporan dari cekplagiat.id');
+});
+
+it('detak tanpa keterangan tidak menghapus penyedia yang sudah tercatat', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::masihMenunggu($up->fresh(), 'cekplagiat.id');
+
+    BotTurnitin::masihMenunggu($up->fresh());
+
+    expect($up->fresh()->bot_penyedia)->toBe('cekplagiat.id');
+});

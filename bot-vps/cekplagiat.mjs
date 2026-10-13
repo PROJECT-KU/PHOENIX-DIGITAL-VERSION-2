@@ -233,9 +233,45 @@ export async function isiForm(hal, tugas, berkasPath, namaBerkas) {
  | Kirim & tunggu hasil
  * ================================================================ */
 
-/** Tekan "Proses dan Unggah"; mengembalikan kode dokumen dari alamat /d/<kode>. */
-export async function kirim(hal) {
-    const pindah = hal.waitForURL(/\/d\/[A-Za-z0-9_-]{6,}/, { timeout: 5 * 60 * 1000 }).catch(() => null);
+/**
+ * Cari dokumen di daftar /d berdasarkan ekor nama berkasnya.
+ *
+ * Dipakai dua kali: sesudah menekan "Proses dan Unggah" (situsnya TIDAK selalu
+ * pindah halaman — dokumennya cuma muncul di daftar), dan SEBELUM mengunggah,
+ * supaya berkas yang sudah pernah dibayar tidak diunggah lagi.
+ *
+ * @returns {Promise<string|null>} kode dokumen, atau null bila belum ada
+ */
+export async function cariDokumen(hal, namaBerkas) {
+    const ekor = namaBerkas.slice(-8);
+
+    if (!/cekplagiat\.id\/d(\/|$|\?)/.test(hal.url())) {
+        await hal.goto(DASBOR, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    } else {
+        await hal.reload({ waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+    }
+    await tidur(2500);
+
+    return hal.evaluate((e) => {
+        const tautan = [...document.querySelectorAll('a[href^="/d/"]')]
+            .filter((a) => a.innerText.includes(e));
+        if (!tautan.length) return null;
+        const cocok = tautan[0].getAttribute('href').match(/^\/d\/(.+)$/);
+
+        return cocok ? cocok[1] : null;
+    }, ekor);
+}
+
+/**
+ * Tekan "Proses dan Unggah" lalu kembalikan kode dokumennya.
+ *
+ * Sesudah tombolnya ditekan KOIN SUDAH TERPOTONG, jadi kegagalan di sini tidak
+ * boleh berujung "unggah lagi": kodenya dikejar sampai ketemu, lewat alamat
+ * halaman maupun lewat daftar dokumen (13 Okt 2026 situsnya tetap di /d dan
+ * 22 koin nyaris terbakar dua kali).
+ */
+export async function kirim(hal, namaBerkas) {
+    const pindah = hal.waitForURL(/\/d\/[A-Za-z0-9_-]{6,}/, { timeout: 90 * 1000 }).catch(() => null);
     const tombol = tombolKirim(hal);
 
     try {
@@ -247,9 +283,20 @@ export async function kirim(hal) {
     await pindah;
 
     const cocok = hal.url().match(/\/d\/([A-Za-z0-9_-]{6,})/);
-    if (!cocok) throw new Error('Sesudah "Proses dan Unggah", cekplagiat.id tidak membuka halaman dokumen.');
+    if (cocok) return cocok[1];
 
-    return cocok[1];
+    // Tidak pindah halaman: cari dokumennya di daftar, beri waktu sampai muncul.
+    for (let i = 0; i < 10; i++) {
+        const kode = await cariDokumen(hal, namaBerkas);
+        if (kode) return kode;
+        await tidur(15000);
+    }
+
+    throw Object.assign(
+        new Error('Berkas sudah dikirim ke cekplagiat.id (koin terpotong) tetapi kode dokumennya tidak ketemu. '
+            + 'Buka https://www.cekplagiat.id/d dan ambil hasilnya manual.'),
+        { sudahTerkirim: true },
+    );
 }
 
 /** Keadaan satu dokumen: selesai/belum, persen, dan apakah berkasnya siap. */

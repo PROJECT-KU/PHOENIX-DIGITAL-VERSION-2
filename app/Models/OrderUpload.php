@@ -51,6 +51,7 @@ class OrderUpload extends Model
         'bot_status',
         'bot_percobaan',
         'bot_tunggu_admin',
+        'bot_penyedia',
         'bot_kode',
         'bot_pesan',
         'bot_diambil_at',

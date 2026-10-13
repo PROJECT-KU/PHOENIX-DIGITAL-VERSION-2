@@ -22,6 +22,9 @@ class BotTurnitinController extends Controller
             'masalah' => ['nullable', 'string', 'max:300'],
             'kuota_habis' => ['nullable', 'boolean'],
             'tugas' => ['nullable', 'string', 'max:40'],
+            // Penyedia yang sedang mengerjakan tugas itu (submitin.id /
+            // cekplagiat.id) supaya kartu dasbor tidak salah menyebut.
+            'penyedia' => ['nullable', 'string', 'max:30'],
         ]);
 
         BotTurnitin::catatDetak($data['masalah'] ?? null);
@@ -31,7 +34,7 @@ class BotTurnitinController extends Controller
         }
 
         if (! empty($data['tugas']) && $up = OrderUpload::find($data['tugas'])) {
-            BotTurnitin::masihMenunggu($up);
+            BotTurnitin::masihMenunggu($up, $data['penyedia'] ?? null);
         }
 
         return response()->json([

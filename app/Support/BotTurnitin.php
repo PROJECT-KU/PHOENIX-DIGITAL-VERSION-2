@@ -363,7 +363,7 @@ class BotTurnitin
                 throw new BotTurnitinDitolak('Unggahan ini tidak sedang menunggu dikirim oleh bot.');
             }
 
-            // Satu kode submitin hanya boleh milik SATU unggahan.
+            // Satu kode penyedia hanya boleh milik SATU unggahan.
             if (OrderUpload::where('bot_kode', $kode)->whereKeyNot($up->id)->exists()) {
                 throw new BotTurnitinDitolak('Kode '.$kode.' sudah tercatat untuk unggahan lain.');
             }
@@ -371,17 +371,37 @@ class BotTurnitin
             $up->update([
                 'bot_status' => self::MENUNGGU_HASIL,
                 'bot_kode' => $kode,
+                // Kodenya sendiri sudah menyebut penyedianya (SC- / CP-).
+                'bot_penyedia' => self::kodeCekplagiat($kode) ? 'cekplagiat.id' : 'submitin.id',
                 'bot_diperbarui_at' => now(),
             ]);
         });
     }
 
     /** Bot masih menunggu hasil — supaya tidak dianggap macet. */
-    public static function masihMenunggu(OrderUpload $up): void
+    public static function masihMenunggu(OrderUpload $up, ?string $penyedia = null): void
     {
-        if (in_array($up->bot_status, [self::DIAMBIL, self::MENUNGGU_HASIL], true)) {
-            $up->update(['bot_diperbarui_at' => now()]);
+        if (! in_array($up->bot_status, [self::DIAMBIL, self::MENUNGGU_HASIL], true)) {
+            return;
         }
+
+        $up->update(array_merge(
+            ['bot_diperbarui_at' => now()],
+            // Penyedia hanya ditimpa bila bot menyebutnya; detak tanpa
+            // keterangan tidak boleh menghapus yang sudah tercatat.
+            $penyedia ? ['bot_penyedia' => Str::limit($penyedia, 30, '')] : [],
+        ));
+    }
+
+    /** Penyedia yang mengerjakan unggahan ini — untuk kalimat di kartu dasbor. */
+    public static function penyedia(OrderUpload $up): string
+    {
+        if ($up->bot_penyedia) {
+            return $up->bot_penyedia;
+        }
+
+        // Sebelum kolomnya terisi, kodenya sudah cukup memberi tahu.
+        return self::kodeCekplagiat((string) $up->bot_kode) ? 'cekplagiat.id' : 'submitin.id';
     }
 
     /**
@@ -644,10 +664,12 @@ class BotTurnitin
                 $belumTerkirim ? ['coba_lagi', 'ambil_alih'] : ['ambil_alih']);
         }
 
+        $penyedia = self::penyedia($up);
+
         return match ($up->bot_status) {
-            self::DIAMBIL => $jadi('bot', 'biru', 'bi-robot', 'Bot sedang mengunggah ke submitin.id',
+            self::DIAMBIL => $jadi('bot', 'biru', 'bi-robot', 'Bot sedang mengunggah ke '.$penyedia,
                 'Tidak perlu dikerjakan manual — laporannya masuk sendiri.', ['ambil_alih'], true),
-            self::MENUNGGU_HASIL => $jadi('bot', 'biru', 'bi-robot', 'Bot menunggu laporan dari submitin.id',
+            self::MENUNGGU_HASIL => $jadi('bot', 'biru', 'bi-robot', 'Bot menunggu laporan dari '.$penyedia,
                 'Tidak perlu dikerjakan manual — laporannya masuk sendiri.', ['ambil_alih'], true),
             self::GAGAL => $jadi('bot', 'merah', 'bi-exclamation-triangle', 'Bot gagal — kerjakan manual',
                 $up->bot_pesan ?: 'Unggah hasilnya sendiri lewat tombol Unggah Hasil.',
