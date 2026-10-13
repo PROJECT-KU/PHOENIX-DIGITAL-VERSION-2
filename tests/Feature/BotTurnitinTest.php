@@ -951,3 +951,36 @@ it('endpoint gagal menerima perintah kembalikan dari bot', function () {
     expect($up->fresh()->bot_status)->toBeNull()
         ->and($up->fresh()->status)->toBe('menunggu');
 });
+
+/*
+ * Tombol "Coba Lagi pakai Bot" tidak boleh merebut pekerjaan yang sedang
+ * berjalan: 13 Okt 2026 tombol itu ditekan tepat saat bot mengunggah ke
+ * cekplagiat, unggahannya lepas, dan laporan "terkirim" ditolak padahal 22
+ * koin sudah terpotong.
+ */
+it('menolak coba-lagi saat bot sedang mengerjakannya', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    expect(BotTurnitin::cobaLagi($up->fresh()))->toBeFalse()
+        ->and($up->fresh()->bot_status)->toBe(BotTurnitin::DIAMBIL);
+});
+
+it('mengizinkan coba-lagi saat bot sudah lama tidak memberi kabar', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    // Bot diam melewati batas macet — admin berhak mengambil alih.
+    $up->update(['bot_diperbarui_at' => now()->subMinutes(BotTurnitin::MACET_MENIT + 1)]);
+
+    expect(BotTurnitin::cobaLagi($up->fresh()))->toBeTrue()
+        ->and($up->fresh()->bot_status)->toBeNull();
+});
+
+it('mengizinkan coba-lagi sesudah bot menyerah', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::gagal($up->fresh(), 'gagal sesuatu', false, true);
+
+    expect(BotTurnitin::cobaLagi($up->fresh()))->toBeTrue();
+});

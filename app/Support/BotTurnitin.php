@@ -818,6 +818,19 @@ class BotTurnitin
             return false;
         }
 
+        /*
+         * Jangan direbut dari bot yang SEDANG mengerjakannya.
+         *
+         * 13 Okt 2026: tombol ini ditekan tepat saat bot mengunggah ke
+         * cekplagiat; unggahan lepas dari bot, lalu laporan "terkirim" ditolak
+         * ("Unggahan ini tidak sedang menunggu dikirim oleh bot") padahal
+         * koinnya sudah terpotong. Yang macet (tak ada kabar lebih dari
+         * MACET_MENIT) tetap boleh diambil alih.
+         */
+        if ($up->bot_status === self::DIAMBIL && ! self::macet($up)) {
+            return false;
+        }
+
         // Tombol admin mengembalikan jatah percobaan otomatis: ia memang
         // dipakai sesudah sebabnya dibereskan (koin diisi, sesi diperbarui).
         $up->update([
