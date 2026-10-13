@@ -1435,8 +1435,8 @@ Detail Pesanan || lemon
                         <span>{{ $pj['ket'] }}</span>
                         @endif
                         @if ($up->bot_kode)
-                        <span>Kode submitin:
-                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                        <span>{{ \App\Support\BotTurnitin::labelKode($up) }}:
+                            <a href="{{ \App\Support\BotTurnitin::tautanKode($up) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
                         </span>
                         @endif
                     </div>

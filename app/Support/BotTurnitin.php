@@ -393,6 +393,29 @@ class BotTurnitin
         ));
     }
 
+    /**
+     * Alamat halaman pesanan di penyedia yang bersangkutan.
+     *
+     * Kode cekplagiat dipakai apa adanya sesudah awalan "CP-" dibuang; id-nya
+     * bisa diawali tanda hubung (`-IJ5abw…`) dan peka huruf besar-kecil.
+     */
+    public static function tautanKode(OrderUpload $up): ?string
+    {
+        if (! $up->bot_kode) {
+            return null;
+        }
+
+        return self::kodeCekplagiat($up->bot_kode)
+            ? 'https://www.cekplagiat.id/d/'.substr($up->bot_kode, 3)
+            : 'https://submitin.id/status?order='.urlencode($up->bot_kode);
+    }
+
+    /** "Kode submitin" / "Kode cekplagiat" — ikut penyedia yang mengerjakan. */
+    public static function labelKode(OrderUpload $up): string
+    {
+        return 'Kode '.str_replace('.id', '', self::penyedia($up));
+    }
+
     /** Penyedia yang mengerjakan unggahan ini — untuk kalimat di kartu dasbor. */
     public static function penyedia(OrderUpload $up): string
     {

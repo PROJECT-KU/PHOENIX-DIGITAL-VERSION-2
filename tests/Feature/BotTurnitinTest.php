@@ -833,3 +833,39 @@ it('detak tanpa keterangan tidak menghapus penyedia yang sudah tercatat', functi
 
     expect($up->fresh()->bot_penyedia)->toBe('cekplagiat.id');
 });
+
+/*
+ * Tautan kode harus menunjuk penyedia yang BENAR.
+ *
+ * 13 Okt 2026 kartu pesanan menulis "Kode submitin: CP--IJ5abw…" dengan tautan
+ * ke submitin.id — diklik tidak akan pernah ketemu, karena pesanannya ada di
+ * cekplagiat.id.
+ */
+it('menautkan kode cekplagiat ke halaman dokumennya', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP--IJ5abwAsyCRqt3ohsvsA');
+
+    $up->refresh();
+
+    // Id cekplagiat boleh diawali tanda hubung dan peka huruf besar-kecil.
+    expect(BotTurnitin::tautanKode($up))->toBe('https://www.cekplagiat.id/d/-IJ5abwAsyCRqt3ohsvsA')
+        ->and(BotTurnitin::labelKode($up))->toBe('Kode cekplagiat');
+});
+
+it('menautkan kode submitin ke halaman status submitin', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'SC-9908F2C67897');
+
+    $up->refresh();
+
+    expect(BotTurnitin::tautanKode($up))->toBe('https://submitin.id/status?order=SC-9908F2C67897')
+        ->and(BotTurnitin::labelKode($up))->toBe('Kode submitin');
+});
+
+it('tanpa kode tidak ada tautan', function () {
+    $up = unggahanBot(pesananPlagiasi());
+
+    expect(BotTurnitin::tautanKode($up->fresh()))->toBeNull();
+});

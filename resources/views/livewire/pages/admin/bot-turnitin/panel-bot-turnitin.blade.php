@@ -387,7 +387,7 @@
                                         · mulai {{ $up->bot_diambil_at?->locale('id')->diffForHumans() ?? '—' }}
                                         · kode:
                                         @if ($up->bot_kode)
-                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                            <a href="{{ \App\Support\BotTurnitin::tautanKode($up) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
                                         @else
                                             belum ada (belum terkirim)
                                         @endif
@@ -434,7 +434,7 @@
                                         Kabar terakhir {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() ?? '—' }}
                                         · kode:
                                         @if ($up->bot_kode)
-                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                            <a href="{{ \App\Support\BotTurnitin::tautanKode($up) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
                                             — sudah terkirim, cek di sana sebelum mengirim ulang
                                         @else
                                             belum ada (belum terkirim ke submitin)
@@ -486,7 +486,7 @@
                                         Selesai {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() ?? '—' }}
                                         · kode:
                                         @if ($up->bot_kode)
-                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                            <a href="{{ \App\Support\BotTurnitin::tautanKode($up) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
                                         @else
                                             —
                                         @endif
