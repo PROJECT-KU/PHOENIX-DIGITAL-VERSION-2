@@ -119,6 +119,10 @@ class BotTurnitinController extends Controller
             'kode' => ['required', 'string', 'max:40'],
             'persen' => ['nullable', 'integer', 'min:0', 'max:100'],
             'berkas' => ['required', 'file', 'max:102400'],
+            // Penyesuaian yang terpaksa dilakukan penyedia cadangan (mis.
+            // saringan berangka yang tidak ada padanannya) — ditampilkan di
+            // kartu supaya admin tahu hasilnya tidak persis setelan pesanan.
+            'catatan' => ['nullable', 'string', 'max:300'],
         ]);
 
         return $this->jalankan(fn () => [
@@ -126,7 +130,8 @@ class BotTurnitinController extends Controller
                 $upload,
                 $data['kode'],
                 $request->file('berkas'),
-                isset($data['persen']) ? (int) $data['persen'] : null
+                isset($data['persen']) ? (int) $data['persen'] : null,
+                $data['catatan'] ?? null,
             ),
         ]);
     }

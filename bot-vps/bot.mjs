@@ -968,12 +968,10 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
         return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}) dan penyedia cadangan dimatikan.`, false, true);
     }
 
-    const tolakSaringan = cekplagiat.periksaSaringan(tugas.filter);
-    if (tolakSaringan) {
-        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). ${tolakSaringan}`, false, true);
-    }
-
     catat(`submitin.id tidak bisa dipakai (${ringkas}) — dialihkan ke ${cekplagiat.NAMA}`);
+
+    const catatanSaringan = cekplagiat.catatanSaringan(tugas.filter);
+    if (catatanSaringan) catat('  ' + catatanSaringan);
 
     // Kabari Phoenix SEKARANG, bukan nanti saat berkasnya terkirim: kartu di
     // dasbor pernah tertulis "mengunggah ke submitin.id" padahal koin
@@ -1088,6 +1086,10 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
 }
 
 async function tungguHasilCadangan(hal, tugas, kode) {
+    // Penyesuaian saringan (kalau ada) ikut dikirim bersama hasil, supaya
+    // tercatat di kartu dasbor — bukan cuma di log VPS.
+    const catatan = cekplagiat.catatanSaringan(tugas.filter);
+
     const mulai = Date.now();
     let detak = Date.now();
 
@@ -1110,6 +1112,7 @@ async function tungguHasilCadangan(hal, tugas, kode) {
             const fd = new FormData();
             fd.append('kode', 'CP-' + kode);
             if (keadaan.persen !== null) fd.append('persen', String(keadaan.persen));
+            if (catatan) fd.append('catatan', catatan);
             fd.append('berkas', new Blob([isi], { type: 'application/pdf' }), `Turnitin-${tugas.order_number}.pdf`);
 
             const r = await api('POST', `/tugas/${tugas.id}/hasil`, fd);

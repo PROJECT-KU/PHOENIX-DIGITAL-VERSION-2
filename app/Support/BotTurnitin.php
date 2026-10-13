@@ -432,7 +432,7 @@ class BotTurnitin
      *
      * @return string 'selesai' | 'perlu_dilengkapi'
      */
-    public static function simpanHasil(OrderUpload $up, string $kode, UploadedFile $pdf, ?int $persenHalaman = null): string
+    public static function simpanHasil(OrderUpload $up, string $kode, UploadedFile $pdf, ?int $persenHalaman = null, ?string $catatan = null): string
     {
         $kode = trim($kode);
         $kode = self::kodeCekplagiat($kode) ? $kode : strtoupper($kode);
@@ -442,7 +442,7 @@ class BotTurnitin
             throw new BotTurnitinDitolak('Berkas yang dikirim bukan PDF.');
         }
 
-        $hasil = DB::transaction(function () use ($up, $kode, $pdf, $persenHalaman) {
+        $hasil = DB::transaction(function () use ($up, $kode, $pdf, $persenHalaman, $catatan) {
             $up = OrderUpload::whereKey($up->id)->lockForUpdate()->firstOrFail();
 
             if ($up->bot_status !== self::MENUNGGU_HASIL || $up->status !== 'diproses') {
@@ -480,7 +480,8 @@ class BotTurnitin
 
             if ($kurang) {
                 $up->bot_status = self::PERLU_DILENGKAPI;
-                $up->bot_pesan = 'Hasil plagiasi sudah diunggah bot. Masih kurang: '.implode(', ', $kurang).'.';
+                $up->bot_pesan = trim(($catatan ? $catatan.' ' : '')
+                    .'Hasil plagiasi sudah diunggah bot. Masih kurang: '.implode(', ', $kurang).'.');
                 $up->save();
 
                 return [self::PERLU_DILENGKAPI, $order, $up];
@@ -489,7 +490,8 @@ class BotTurnitin
             $up->status = 'selesai';
             $up->selesai_at = now();
             $up->bot_status = self::SELESAI;
-            $up->bot_pesan = null;
+            // Selesai, tapi catatan penyesuaian (kalau ada) tetap disimpan.
+            $up->bot_pesan = $catatan ? Str::limit($catatan, 300) : null;
             $up->save();
 
             return [self::SELESAI, $order, $up];
@@ -674,9 +676,15 @@ class BotTurnitin
         $jam = fn (?Carbon $t) => $t ? $t->locale('id')->translatedFormat('d M Y, H:i') : null;
 
         if ($up->status === 'selesai') {
-            return $up->dikerjakan_oleh === 'bot'
-                ? $jadi('bot', 'hijau', 'bi-robot', 'Selesai dikerjakan bot', $jam($up->selesai_at))
-                : $jadi('admin', 'abu', 'bi-person-check', 'Selesai dikerjakan admin', $jam($up->selesai_at));
+            if ($up->dikerjakan_oleh !== 'bot') {
+                return $jadi('admin', 'abu', 'bi-person-check', 'Selesai dikerjakan admin', $jam($up->selesai_at));
+            }
+
+            // Catatan penyesuaian (mis. saringan berangka yang diganti sakelar
+            // cekplagiat) ikut tampil: hasilnya benar, tapi setelannya tidak
+            // persis yang dipesan dan admin berhak tahu.
+            return $jadi('bot', 'hijau', 'bi-robot', 'Selesai dikerjakan bot',
+                trim($jam($up->selesai_at).($up->bot_pesan ? ' · '.$up->bot_pesan : '')));
         }
 
         $belumTerkirim = ! $up->bot_kode;

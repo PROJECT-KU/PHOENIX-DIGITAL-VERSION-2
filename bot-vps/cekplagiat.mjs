@@ -124,20 +124,29 @@ async function setSakelar(hal, awalanId, mau) {
 /**
  * Saringan pelanggan → sakelar cekplagiat.id.
  *
- * Yang memakai ANGKA tidak ada padanannya di sini. Mengirimkannya begitu saja
- * berarti pelanggan menerima setelan yang bukan dibayarnya, jadi tugas seperti
- * itu ditolak supaya dikerjakan admin.
+ * submitin menerima ANGKA (exclude sources < 5%, exclude matches < 10 kata);
+ * cekplagiat hanya punya satu sakelar "Kecualikan kata yang mirip" tanpa kolom
+ * angka. Keputusan 13 Okt 2026: sakelar itu dipakai sebagai padanan terdekat —
+ * menahan pesanannya membuat ±12% antrean menumpuk selama submitin mati —
+ * tetapi penyesuaiannya DICATAT supaya admin tahu ambangnya bukan yang dipesan.
+ *
+ * @returns {string|null} catatan untuk kartu dasbor, atau null bila tidak ada
  */
-export function periksaSaringan(filter) {
+export function catatanSaringan(filter) {
     const f = filter || {};
-    const angka = [];
+    const diminta = [];
 
-    if (f.excl_source) angka.push('Exclude Sources');
-    if (f.excl_match) angka.push('Exclude Matches');
+    if (f.excl_source) {
+        diminta.push(`Exclude Sources < ${f.excl_source.nilai}${f.excl_source.tipe === 'words' ? ' kata' : '%'}`);
+    }
+    if (f.excl_match) {
+        diminta.push(`Exclude Matches < ${f.excl_match.kata} kata`);
+    }
 
-    return angka.length
-        ? `Saringan ${angka.join(' & ')} memakai batas angka yang tidak ada di cekplagiat.id, `
-            + 'jadi pengecekan tidak bisa dipindahkan ke sana. Kerjakan manual.'
+    return diminta.length
+        ? `Dikerjakan lewat cekplagiat.id. ${diminta.join(' & ')} diganti sakelar `
+            + '"Kecualikan kata yang mirip" (cekplagiat.id tidak punya kolom angka), '
+            + 'jadi ambangnya mengikuti bawaan mereka — bukan angka yang dipesan.'
         : null;
 }
 
@@ -224,7 +233,8 @@ export async function isiForm(hal, tugas, berkasPath, namaBerkas) {
     const f = tugas.filter || {};
     await setSakelar(hal, SAKELAR.kutipan, !!f.excl_quotes);
     await setSakelar(hal, SAKELAR.pustaka, !!f.excl_biblio);
-    await setSakelar(hal, SAKELAR.miripKecil, false);
+    // Padanan terdekat untuk exclude sources / exclude matches yang berangka.
+    await setSakelar(hal, SAKELAR.miripKecil, !!(f.excl_source || f.excl_match));
 
     return { biaya: await bacaBiaya(hal) };
 }

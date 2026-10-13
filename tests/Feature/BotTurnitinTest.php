@@ -869,3 +869,35 @@ it('tanpa kode tidak ada tautan', function () {
 
     expect(BotTurnitin::tautanKode($up->fresh()))->toBeNull();
 });
+
+/*
+ * Saringan berangka lewat penyedia cadangan.
+ *
+ * Keputusan 13 Okt 2026: daripada menahan ±12% antrean selama submitin mati,
+ * saringan berangka dikerjakan dengan sakelar terdekat cekplagiat — TAPI
+ * penyesuaiannya wajib tercatat, supaya admin tidak mengira hasilnya memakai
+ * ambang yang dipesan pelanggan.
+ */
+it('mencatat penyesuaian saringan pada hasil yang selesai', function () {
+    $up = unggahanBot(pesananPlagiasi(), ['exclude_kecocokan_kecil' => true, 'ambang_kecocokan_kecil' => 10]);
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A');
+
+    $catatan = 'Exclude Matches < 10 kata diganti sakelar "Kecualikan kata yang mirip".';
+    $status = BotTurnitin::simpanHasil($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A', pdfPalsu(), 5, $catatan);
+
+    expect($status)->toBe('selesai')
+        ->and($up->fresh()->bot_pesan)->toBe($catatan)
+        ->and(BotTurnitin::pengerja($up->fresh())['ket'])->toContain('Kecualikan kata yang mirip');
+});
+
+it('tanpa penyesuaian, keterangan kartu tetap bersih', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'SC-9908F2C67897');
+
+    BotTurnitin::simpanHasil($up->fresh(), 'SC-9908F2C67897', pdfPalsu(), 4);
+
+    expect($up->fresh()->bot_pesan)->toBeNull()
+        ->and(BotTurnitin::pengerja($up->fresh())['ket'])->not->toContain('diganti');
+});
