@@ -270,7 +270,15 @@ export async function isiForm(hal, tugas, berkasPath, namaBerkas) {
  * @returns {Promise<string|null>} kode dokumen, atau null bila belum ada
  */
 export async function cariDokumen(hal, namaBerkas) {
-    const ekor = namaBerkas.slice(-8);
+    /*
+     * Nama LENGKAP, bukan ekornya.
+     *
+     * Daftar /d menampilkan nama berkas utuh (yang terpotong hanya pratinjau di
+     * jendela unggah). Mencocokkan 8 huruf terakhir pernah menyamakan dokumen
+     * milik unggahan lain — nama penanda berakhiran nomor pesanan yang bisa
+     * sama ("…-0012.docx") — sehingga bot memakai kode orang lain dan ditolak
+     * Phoenix (13 Okt 2026). Penanda PD-xxxxxxxx di depan itulah yang unik.
+     */
 
     if (!/cekplagiat\.id\/d(\/|$|\?)/.test(hal.url())) {
         await hal.goto(DASBOR, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -286,7 +294,7 @@ export async function cariDokumen(hal, namaBerkas) {
         const cocok = tautan[0].getAttribute('href').match(/^\/d\/(.+)$/);
 
         return cocok ? cocok[1] : null;
-    }, ekor);
+    }, namaBerkas);
 }
 
 /**
