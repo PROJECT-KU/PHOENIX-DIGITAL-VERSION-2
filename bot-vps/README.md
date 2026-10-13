@@ -37,6 +37,50 @@ Ubuntu 24.04, 1 vCPU / 2 GB). Akses: `ssh vpsbot` dari laptop admin.
 
 Mengembalikan ke aman: ubah `MODE=aman`, lalu restart.
 
+## Penyedia cadangan: cekplagiat.id
+
+Dipakai **otomatis** hanya saat submitin.id tidak bisa dipakai (layanannya 503,
+form tidak muncul, atau paketnya habis). Submitin tetap yang utama karena jauh
+lebih murah. Matikan dengan `CEKPLAGIAT=0` di `.env`.
+
+Yang perlu diketahui sebelum mengandalkannya:
+
+| Hal | submitin.id | cekplagiat.id |
+|---|---|---|
+| Biaya | paket (±Rp5.000/berkas) | **18–22 koin ≈ Rp18.000–22.000/berkas** |
+| Batas berkas | 50 MB | **10 MB** (Phoenix menerima 20 MB → PDF dikecilkan dulu) |
+| Laporan | Turnitin V1 lengkap | **Basic Report** (skor + PDF, tanpa rincian sumber; Advanced "Dalam Perbaikan") |
+| Saringan | kutipan, pustaka, angka sumber/kata | hanya kutipan & pustaka — **tugas dengan batas angka ditolak, dikerjakan admin** |
+| Login | email + sandi (otomatis) | **Google saja** → sesi dititipkan manual, lihat di bawah |
+
+### Menitipkan sesi (sekali, dan diulang kalau sesinya habis)
+
+Bot tidak bisa login Google sendiri. Caranya: admin login di browser biasa,
+lalu cookie `cekplagiat.id`-nya disalin ke VPS sebagai
+`/opt/botturnitin/cekplagiat-cookie.json` (hak akses **600**, milik `bot`).
+Berkas itu setara kunci masuk akun, jadi **tidak pernah masuk repo**
+(sudah di `.gitignore`).
+
+Kalau sesinya habis, bot berhenti sopan dengan pesan "Sesi cekplagiat.id sudah
+habis" dan menunggu cookie baru — tidak pernah menebak sandi.
+
+### Gladi bersih tanpa memakai koin
+
+```bash
+sudo -u bot node /opt/botturnitin/uji-cekplagiat.mjs
+```
+
+Mengisi form dengan dokumen contoh, mencetak sisa koin dan biayanya, memotret
+jendelanya, lalu berhenti **sebelum** "Proses dan Unggah". Koin tidak terpakai
+dan antrean Phoenix tidak disentuh.
+
+### Kalau koinnya kurang
+
+Bot melaporkan kegagalan sekali, lalu **diam 30 menit** sebelum mencoba lagi.
+Tanda "kuota habis" milik Phoenix sengaja TIDAK dipakai untuk ini: tanda itu
+lengket sampai admin membersihkannya, jadi bot akan tetap diam walaupun
+submitin sudah pulih. Isi koin di <https://www.cekplagiat.id/u>.
+
 ## Berkas kebesaran
 
 Submitin menolak berkas **di atas 50 MB**. Bot mengecilkan PDF yang melewati

@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
+import * as cekplagiat from './cekplagiat.mjs';
 
 const AKAR = path.dirname(new URL(import.meta.url).pathname);
 
@@ -64,6 +65,11 @@ const CFG = {
     profil: path.join(AKAR, 'profil'),
     potret: path.join(AKAR, 'potret'),
     sekali: process.argv.includes('--sekali'),
+    // Penyedia cadangan dipakai HANYA saat submitin.id tidak bisa dipakai.
+    // Dimatikan dengan CEKPLAGIAT=0 di .env.
+    cekplagiat: String(env.CEKPLAGIAT ?? '1') !== '0',
+    cekplagiatKoinMin: Math.max(1, parseInt(env.CEKPLAGIAT_KOIN_MIN || '22', 10)),
+    cekplagiatCookie: env.CEKPLAGIAT_COOKIE || path.join(AKAR, 'cekplagiat-cookie.json'),
 };
 
 const BATAS_HASIL_MS = 60 * 60 * 1000;   // laporan harus keluar dalam 60 menit
@@ -80,7 +86,16 @@ const KEADAAN = {
     galatTerakhir: '',
     hari: new Date().toDateString(),
     dijedaLokal: false,
+    penyedia: 'submitin.id',
+    koinCadangan: null,
+    // Cadangan sedang tidak bisa dipakai (koin kurang / sesi habis) sampai
+    // waktu ini. Lihat putaran(): selama submitin juga mati, antrean TIDAK
+    // diambil sama sekali supaya tugas pelanggan tidak digagalkan berulang
+    // tiap menit hanya untuk mencatat sebab yang sama.
+    cadanganDiamSampai: 0,
 };
+
+const JEDA_CADANGAN_MS = 30 * 60 * 1000;
 
 const FORM_URL = 'https://submitin.id/services/plagiarism';
 const LOGIN_URL = 'https://submitin.id/user/login';
@@ -198,6 +213,8 @@ async function lapor() {
         selesai_hari_ini: KEADAAN.selesaiHariIni,
         gagal_hari_ini: KEADAAN.gagalHariIni,
         galat_terakhir: KEADAAN.galatTerakhir.slice(0, 300),
+        penyedia: KEADAAN.penyedia,
+        koin_cadangan: KEADAAN.koinCadangan,
         hidup_detik: Math.round(process.uptime()),
         ...memori,
         ...(disk === null ? {} : { disk_persen: disk }),
@@ -259,19 +276,19 @@ function kataPdf(berkas) {
  * kalau berkurang, hasilnya DIBUANG dan berkas asli yang dipakai. Lebih baik
  * gagal terang-terangan daripada mengirim naskah yang isinya sudah berkurang.
  */
-function kecilkanBerkas(berkas, namaBerkas) {
-    const batas = CFG.batasMb * 1048576;
+function kecilkanBerkas(berkas, namaBerkas, batasMb = CFG.batasMb) {
+    const batas = batasMb * 1048576;
     const awal = fs.statSync(berkas).size;
 
     if (awal <= batas) return { berkas, diubah: false };
 
     if (!/\.pdf$/i.test(namaBerkas)) {
-        throw new Error(`Berkas ${megabyte(awal)} melewati batas ${CFG.batasMb} MB submitin dan bukan PDF, `
+        throw new Error(`Berkas ${megabyte(awal)} melewati batas ${batasMb} MB penyedia dan bukan PDF, `
             + 'jadi tidak bisa dikecilkan otomatis. Kerjakan manual atau minta customer mengirim PDF.');
     }
 
     const kataAsli = kataPdf(berkas);
-    catat(`Berkas ${megabyte(awal)} melebihi batas ${CFG.batasMb} MB — dikecilkan dulu`
+    catat(`Berkas ${megabyte(awal)} melebihi batas ${batasMb} MB — dikecilkan dulu`
         + (kataAsli === null ? '' : ` (teks asli ${kataAsli} kata)`));
 
     // Dari yang paling menjaga mutu ke yang paling agresif; berhenti begitu muat.
@@ -319,7 +336,7 @@ function kecilkanBerkas(berkas, namaBerkas) {
         fs.rmSync(wadah, { recursive: true, force: true });
     }
 
-    throw new Error(`Berkas ${megabyte(awal)} tetap di atas batas ${CFG.batasMb} MB sesudah dikecilkan `
+    throw new Error(`Berkas ${megabyte(awal)} tetap di atas batas ${batasMb} MB sesudah dikecilkan `
         + 'tanpa mengurangi isinya. Kerjakan manual.');
 }
 
@@ -341,6 +358,35 @@ async function bukaBrowser() {
         locale: 'id-ID',
         timezoneId: 'Asia/Jakarta',
     });
+}
+
+/**
+ * Titipkan sesi cekplagiat.id.
+ *
+ * Situs itu HANYA menerima login Google, jadi bot tidak bisa masuk sendiri:
+ * admin login sekali di browser biasa, cookienya disalin ke VPS, dan di sini
+ * dipasang ke profil Chromium. Berkasnya 600 milik user bot dan TIDAK ikut ke
+ * repo — isinya setara kunci masuk akun.
+ */
+async function muatCookieCadangan(ctx) {
+    if (!CFG.cekplagiat) return;
+
+    try {
+        if (!fs.existsSync(CFG.cekplagiatCookie)) {
+            catat('Cadangan cekplagiat.id: berkas cookie belum ada —', CFG.cekplagiatCookie);
+
+            return;
+        }
+
+        const isi = JSON.parse(fs.readFileSync(CFG.cekplagiatCookie, 'utf8'));
+        const cookie = Array.isArray(isi) ? isi : (isi.cookies || []);
+        if (!cookie.length) return;
+
+        await ctx.addCookies(cookie);
+        catat(`Cadangan cekplagiat.id: ${cookie.length} cookie sesi dipasang.`);
+    } catch (e) {
+        catat('Cadangan cekplagiat.id: cookie gagal dipasang —', e.message);
+    }
 }
 
 /**
@@ -757,10 +803,22 @@ async function kerjakan(ctx, hal, tugas) {
     }
 
     try {
-        // 2. Isi form.
-        await keForm(hal);
-        const siap = await periksaSiap(hal);
-        if (!siap.siap) throw Object.assign(new Error(siap.masalah), { kuotaHabis: !!siap.kuotaHabis });
+        // 2. Isi form. Kalau submitin.id sendiri yang tidak bisa dipakai
+        //    (layanannya 503 / form tidak muncul / kuotanya habis), tugasnya
+        //    dialihkan ke penyedia cadangan — bukan dinyatakan gagal.
+        let alasanAlih = null;
+
+        try {
+            await keForm(hal);
+            const siap = await periksaSiap(hal);
+            if (!siap.siap) alasanAlih = siap.masalah;
+        } catch (e) {
+            alasanAlih = e.message || String(e);
+        }
+
+        if (alasanAlih) {
+            return kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
+        }
 
         await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
         await tidur(900);
@@ -841,6 +899,151 @@ async function kerjakan(ctx, hal, tugas) {
     }
 }
 
+/* ================================================================
+ | Penyedia cadangan: cekplagiat.id
+ * ================================================================ */
+
+/**
+ * Satu tugas lewat cekplagiat.id, dipakai saat submitin.id tidak bisa dipakai.
+ *
+ * Berkas customer-nya sudah terunduh dan bernama penanda (bukan nama asli
+ * customer), sama seperti jalur submitin. Pengaman yang dipertahankan:
+ * saringan berangka ditolak, koin diperiksa dua kali (sebelum & sesudah form
+ * terisi), dan mode aman tetap berhenti sebelum tombol terakhir.
+ */
+async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
+    const ringkas = String(alasan).split('\n')[0].slice(0, 120);
+
+    if (!CFG.cekplagiat) {
+        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}) dan penyedia cadangan dimatikan.`);
+    }
+
+    const tolakSaringan = cekplagiat.periksaSaringan(tugas.filter);
+    if (tolakSaringan) {
+        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). ${tolakSaringan}`);
+    }
+
+    catat(`submitin.id tidak bisa dipakai (${ringkas}) — dialihkan ke ${cekplagiat.NAMA}`);
+
+    const hal = await ctx.newPage();
+    let berkasKecil = null;
+
+    try {
+        const siap = await cekplagiat.periksaSiap(hal, CFG.cekplagiatKoinMin);
+        KEADAAN.koinCadangan = siap.koin;
+
+        if (!siap.siap) {
+            KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
+
+            return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). Cadangan juga belum bisa: ${siap.pesan}`);
+        }
+
+        // Batas cekplagiat.id 10 MB — lebih ketat dari 20 MB yang diterima
+        // Phoenix dari pelanggan, jadi pengecilan PDF memang terpakai di sini.
+        let dipakai = berkasPath;
+        try {
+            const hasil = kecilkanBerkas(berkasPath, tugas.nama_berkas, cekplagiat.BATAS_MB);
+            dipakai = hasil.berkas;
+            if (hasil.diubah) berkasKecil = hasil.berkas;
+        } catch (e) {
+            return laporGagal(tugas.id, `Dialihkan ke ${cekplagiat.NAMA}, tetapi berkasnya: ${e.message}`);
+        }
+
+        KEADAAN.penyedia = cekplagiat.NAMA;
+
+        const { biaya } = await cekplagiat.isiForm(hal, tugas, dipakai, tugas.nama_berkas);
+
+        // Koin dibaca lagi SESUDAH form terisi: biayanya baru pasti di sini.
+        if (biaya !== null && siap.koin !== null && biaya > siap.koin) {
+            KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
+
+            /*
+             * Sengaja TIDAK memakai tanda "kuota habis" milik Phoenix: tanda itu
+             * lengket sampai admin menekan "kuota sudah diisi", jadi bot akan
+             * tetap diam walaupun submitin sudah pulih. Kekurangan koin di sini
+             * cukup ditahan di VPS saja.
+             */
+            return laporGagal(
+                tugas.id,
+                `${cekplagiat.NAMA} meminta ${biaya} koin, sisa ${siap.koin}. Isi koin dulu di https://www.cekplagiat.id/u`,
+            );
+        }
+
+        if (CFG.mode !== 'penuh') {
+            const potret = path.join(CFG.potret, `cadangan-${tugas.order_number}-${Date.now()}.png`);
+            await hal.locator('[role=dialog]').first().screenshot({ path: potret }).catch(() => hal.screenshot({ path: potret }));
+            catat('MODE AMAN — form cekplagiat.id terisi tapi TIDAK dikirim. Tangkapan layar:', potret);
+
+            return laporGagal(
+                tugas.id,
+                `Mode aman: form ${cekplagiat.NAMA} sudah terisi lengkap (biaya ${biaya ?? '?'} koin) `
+                    + 'tetapi bot sengaja berhenti sebelum menekan "Proses dan Unggah".',
+            );
+        }
+
+        catat(`Kirim ke ${cekplagiat.NAMA} untuk ${tugas.order_number} (biaya ${biaya ?? '?'} koin)`);
+        const kode = await cekplagiat.kirim(hal);
+
+        await api('POST', `/tugas/${tugas.id}/terkirim`, formulir({ kode: 'CP-' + kode }));
+        catat(`Terkirim: ${tugas.order_number} → ${cekplagiat.NAMA} ${kode}`);
+
+        await tungguHasilCadangan(hal, tugas, kode);
+    } catch (e) {
+        if (e.sesiHabis) KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
+
+        return laporGagal(tugas.id, `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`);
+    } finally {
+        KEADAAN.penyedia = 'submitin.id';
+        if (berkasKecil) fs.rmSync(path.dirname(berkasKecil), { recursive: true, force: true });
+        await hal.close().catch(() => {});
+    }
+}
+
+async function tungguHasilCadangan(hal, tugas, kode) {
+    const mulai = Date.now();
+    let detak = Date.now();
+
+    for (;;) {
+        if (Date.now() - mulai > BATAS_HASIL_MS) {
+            return laporGagal(tugas.id, `Laporan ${cekplagiat.NAMA} ${kode} belum keluar setelah 60 menit.`);
+        }
+
+        const keadaan = await cekplagiat.bacaKeadaan(hal, kode);
+
+        if (keadaan.gagal) {
+            return laporGagal(tugas.id, `${cekplagiat.NAMA} menandai dokumen ${kode} gagal/dibatalkan.`);
+        }
+
+        if (keadaan.selesai) {
+            const isi = await cekplagiat.unduhLaporan(hal);
+            if (!isi) throw new Error('Tombol "Unduh Hasil" ada, tapi berkasnya tidak terambil.');
+            if (isi.subarray(0, 5).toString() !== '%PDF-') throw new Error('Yang terunduh dari cekplagiat.id bukan PDF.');
+
+            const fd = new FormData();
+            fd.append('kode', 'CP-' + kode);
+            if (keadaan.persen !== null) fd.append('persen', String(keadaan.persen));
+            fd.append('berkas', new Blob([isi], { type: 'application/pdf' }), `Turnitin-${tugas.order_number}.pdf`);
+
+            const r = await api('POST', `/tugas/${tugas.id}/hasil`, fd);
+            catat(`SELESAI ${tugas.order_number} (${keadaan.persen ?? '?'}%) lewat ${cekplagiat.NAMA} — `
+                + (r.status === 'selesai' ? 'terkirim ke customer' : 'perlu dilengkapi admin'));
+
+            KEADAAN.selesaiHariIni += 1;
+            KEADAAN.pekerjaan = '';
+            KEADAAN.koinCadangan = await cekplagiat.bacaKoin(hal);
+
+            return;
+        }
+
+        if (Date.now() - detak > JEDA_DETAK_MS) {
+            api('POST', '/detak', formulir({ tugas: String(tugas.id) })).catch(() => {});
+            detak = Date.now();
+        }
+
+        await tidur(JEDA_MUAT_ULANG_MS);
+    }
+}
+
 async function tungguHasil(ctx, hal, tugas, kode) {
     const mulai = Date.now();
     let detak = Date.now();
@@ -901,6 +1104,17 @@ async function tungguHasil(ctx, hal, tugas, kode) {
  | Putaran utama
  * ================================================================ */
 
+/** Submitin bisa dipakai sekarang? Dipakai untuk memutuskan diam atau jalan. */
+async function submitinSiap(hal) {
+    try {
+        await keForm(hal);
+
+        return (await periksaSiap(hal)).siap;
+    } catch {
+        return false;
+    }
+}
+
 async function putaran(ctx, hal) {
     let detak = 0;
 
@@ -932,6 +1146,18 @@ async function putaran(ctx, hal) {
                 await tidur(CFG.jeda);
                 continue;
             }
+
+            if (Date.now() < KEADAAN.cadanganDiamSampai && !(await submitinSiap(hal))) {
+                if (!KEADAAN.sudahLaporDiam) {
+                    catat('submitin.id mati dan cadangan belum bisa dipakai — antrean tidak diambil dulu.');
+                    KEADAAN.sudahLaporDiam = true;
+                }
+
+                await tidur(CFG.jeda);
+                continue;
+            }
+
+            KEADAAN.sudahLaporDiam = false;
 
             const r = await api('GET', '/tugas');
 
@@ -974,10 +1200,31 @@ async function jalan() {
     process.on('SIGTERM', tutup);
     process.on('SIGINT', tutup);
 
+    await muatCookieCadangan(ctx);
+
     try {
-        await keForm(hal);
-        const siap = await periksaSiap(hal);
-        catat('Keadaan awal:', siap.siap ? siap.paket.pesan : siap.masalah);
+        /*
+         * Submitin yang sedang mati TIDAK boleh mematikan bot.
+         *
+         * Sampai 13 Okt 2026 kegagalan di sini melempar sampai ke luar, proses
+         * keluar dengan kode 1, dan systemd menghidupkannya lagi tiap ~50 detik
+         * — 645 kali selama layanan submitin 503. Akibatnya bot juga berhenti
+         * melapor ke Phoenix, jadi pemantau malah berbunyi "VPS mati" dan sebab
+         * yang sebenarnya tidak kelihatan. Sekarang keadaannya cukup dicatat;
+         * putaran utama yang memutuskan tiap tugas mau lewat mana.
+         */
+        try {
+            await keForm(hal);
+            const siap = await periksaSiap(hal);
+            catat('Keadaan awal:', siap.siap ? siap.paket.pesan : siap.masalah);
+        } catch (e) {
+            const pesan = String(e.message || e).split('\n')[0];
+            KEADAAN.galatTerakhir = 'submitin.id tidak bisa dibuka: ' + pesan;
+            catat('submitin.id tidak bisa dibuka saat mulai:', pesan);
+            catat(CFG.cekplagiat
+                ? `Tugas akan dialihkan ke ${cekplagiat.NAMA} selama submitin bermasalah.`
+                : 'Penyedia cadangan dimatikan — antrean menunggu sampai submitin pulih.');
+        }
 
         await putaran(ctx, hal);
     } finally {
