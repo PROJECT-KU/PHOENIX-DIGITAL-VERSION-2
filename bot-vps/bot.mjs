@@ -182,7 +182,7 @@ function formulir(objek) {
     return fd;
 }
 
-async function laporGagal(tugasId, pesan, kuotaHabis = false) {
+async function laporGagal(tugasId, pesan, kuotaHabis = false, tungguAdmin = false) {
     catat('GAGAL:', pesan);
 
     KEADAAN.gagalHariIni += 1;
@@ -193,6 +193,9 @@ async function laporGagal(tugasId, pesan, kuotaHabis = false) {
         await api('POST', `/tugas/${tugasId}/gagal`, formulir({
             pesan: String(pesan).slice(0, 480),
             kuota_habis: kuotaHabis ? '1' : '0',
+            // Phoenix mencoba ulang sendiri kegagalan biasa; yang ini tidak
+            // akan pernah berhasil tanpa admin, jadi ditandai.
+            tunggu_admin: tungguAdmin ? '1' : '0',
         }));
     } catch (e) {
         catat('Laporan gagal tidak terkirim:', e.message);
@@ -887,6 +890,8 @@ async function kerjakan(ctx, hal, tugas) {
                 'Mode aman: form submitin sudah terisi lengkap dan lolos semua pemeriksaan, '
                     + 'tetapi bot sengaja berhenti sebelum menekan "Gunakan Paket". '
                     + 'Ubah MODE=penuh di server untuk menjalankannya sungguhan.',
+                false,
+                true,
             );
         }
 
@@ -960,12 +965,12 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
     const ringkas = String(alasan).split('\n')[0].slice(0, 120);
 
     if (!CFG.cekplagiat) {
-        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}) dan penyedia cadangan dimatikan.`);
+        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}) dan penyedia cadangan dimatikan.`, false, true);
     }
 
     const tolakSaringan = cekplagiat.periksaSaringan(tugas.filter);
     if (tolakSaringan) {
-        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). ${tolakSaringan}`);
+        return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). ${tolakSaringan}`, false, true);
     }
 
     catat(`submitin.id tidak bisa dipakai (${ringkas}) — dialihkan ke ${cekplagiat.NAMA}`);
@@ -980,7 +985,7 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
         if (!siap.siap) {
             KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
 
-            return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). Cadangan juga belum bisa: ${siap.pesan}`);
+            return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). Cadangan juga belum bisa: ${siap.pesan}`, false, true);
         }
 
         // Batas cekplagiat.id 10 MB — lebih ketat dari 20 MB yang diterima
@@ -991,7 +996,7 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
             dipakai = hasil.berkas;
             if (hasil.diubah) berkasKecil = hasil.berkas;
         } catch (e) {
-            return laporGagal(tugas.id, `Dialihkan ke ${cekplagiat.NAMA}, tetapi berkasnya: ${e.message}`);
+            return laporGagal(tugas.id, `Dialihkan ke ${cekplagiat.NAMA}, tetapi berkasnya: ${e.message}`, false, true);
         }
 
         KEADAAN.penyedia = cekplagiat.NAMA;
@@ -1011,6 +1016,8 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
             return laporGagal(
                 tugas.id,
                 `${cekplagiat.NAMA} meminta ${biaya} koin, sisa ${siap.koin}. Isi koin dulu di https://www.cekplagiat.id/u`,
+                false,
+                true,
             );
         }
 
@@ -1023,6 +1030,8 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
                 tugas.id,
                 `Mode aman: form ${cekplagiat.NAMA} sudah terisi lengkap (biaya ${biaya ?? '?'} koin) `
                     + 'tetapi bot sengaja berhenti sebelum menekan "Proses dan Unggah".',
+                false,
+                true,
             );
         }
 
@@ -1036,7 +1045,7 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
     } catch (e) {
         if (e.sesiHabis) KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
 
-        return laporGagal(tugas.id, `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`);
+        return laporGagal(tugas.id, `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`, false, !!e.sesiHabis);
     } finally {
         KEADAAN.penyedia = 'submitin.id';
         if (berkasKecil) fs.rmSync(path.dirname(berkasKecil), { recursive: true, force: true });

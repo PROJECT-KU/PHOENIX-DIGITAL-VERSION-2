@@ -49,6 +49,8 @@ class OrderUpload extends Model
         // Bot Turnitin (lihat App\Support\BotTurnitin)
         'dikerjakan_oleh',
         'bot_status',
+        'bot_percobaan',
+        'bot_tunggu_admin',
         'bot_kode',
         'bot_pesan',
         'bot_diambil_at',
@@ -70,6 +72,8 @@ class OrderUpload extends Model
         'exclude_sumber_kecil' => 'boolean',
         'exclude_kecocokan_kecil' => 'boolean',
         'ambang_kecocokan_kecil' => 'integer',
+        'bot_percobaan' => 'integer',
+        'bot_tunggu_admin' => 'boolean',
         'bot_diambil_at' => 'datetime',
         'bot_diperbarui_at' => 'datetime',
         'diproses_at' => 'datetime',

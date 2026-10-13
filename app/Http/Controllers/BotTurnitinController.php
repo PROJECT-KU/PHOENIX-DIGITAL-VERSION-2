@@ -133,9 +133,17 @@ class BotTurnitinController extends Controller
         $data = $request->validate([
             'pesan' => ['required', 'string', 'max:500'],
             'kuota_habis' => ['nullable', 'boolean'],
+            // Kegagalan yang jelas butuh manusia (koin kurang, sesi penyedia
+            // habis, saringan tanpa padanan) — jangan dicoba ulang sendiri.
+            'tunggu_admin' => ['nullable', 'boolean'],
         ]);
 
-        return $this->jalankan(fn () => BotTurnitin::gagal($upload, $data['pesan'], (bool) ($data['kuota_habis'] ?? false)));
+        return $this->jalankan(fn () => BotTurnitin::gagal(
+            $upload,
+            $data['pesan'],
+            (bool) ($data['kuota_habis'] ?? false),
+            (bool) ($data['tunggu_admin'] ?? false),
+        ));
     }
 
     private function jalankan(callable $aksi): JsonResponse

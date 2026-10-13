@@ -646,3 +646,138 @@ it('detail pesanan: dokumen gagal sebelum terkirim bisa diserahkan lagi ke bot',
 
     expect($up->fresh())->status->toBe('menunggu')->bot_status->toBeNull();
 });
+
+/*
+ * ----------------------------------------------------------------------
+ * Percobaan ulang otomatis
+ *
+ * Aturannya sempit dengan sengaja: hanya kegagalan SEBELUM berkas terkirim ke
+ * penyedia yang boleh diulang sendiri, supaya satu pesanan tidak pernah
+ * dibayar dua kali (sekali cek di cekplagiat.id ±22 koin ≈ Rp22.000).
+ * ----------------------------------------------------------------------
+ */
+
+it('mengambil ulang sendiri kegagalan sebelum berkas terkirim', function () {
+    $up = unggahanBot(pesananPlagiasi());
+
+    // Diambil bot, lalu gagal sebelum sempat terkirim ke penyedia.
+    BotTurnitin::ambilTugas();
+    $up->refresh();
+    expect($up->bot_percobaan)->toBe(1);
+
+    BotTurnitin::gagal($up, 'submitin 503, cadangan juga menolak sesaat');
+    $up->refresh();
+    expect($up->bot_status)->toBe(BotTurnitin::GAGAL)
+        ->and($up->bot_kode)->toBeNull();
+
+    // Jeda belum lewat: jangan diambil dulu.
+    expect(BotTurnitin::ambilTugas())->toBeNull();
+
+    // Sesudah jedanya lewat, bot mengambilnya lagi tanpa tombol admin.
+    $up->update(['bot_diperbarui_at' => now()->subMinutes(BotTurnitin::JEDA_COBA_LAGI_MENIT + 1)]);
+
+    expect(BotTurnitin::ambilTugas()?->id)->toBe($up->id);
+    expect($up->fresh()->bot_percobaan)->toBe(2);
+});
+
+it('berhenti mencoba sesudah batas percobaan', function () {
+    $up = unggahanBot(pesananPlagiasi());
+
+    for ($i = 0; $i < BotTurnitin::MAKS_PERCOBAAN; $i++) {
+        BotTurnitin::ambilTugas();
+        BotTurnitin::gagal($up->fresh(), 'gagal sementara');
+        $up->update(['bot_diperbarui_at' => now()->subMinutes(BotTurnitin::JEDA_COBA_LAGI_MENIT + 1)]);
+    }
+
+    expect($up->fresh()->bot_percobaan)->toBe(BotTurnitin::MAKS_PERCOBAAN)
+        ->and(BotTurnitin::ambilTugas())->toBeNull();
+});
+
+it('tidak pernah mengulang kegagalan sesudah berkas terkirim', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    // Sudah terkirim ke penyedia (kode sudah dicatat) lalu gagal menunggu hasil.
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-abc123');
+    BotTurnitin::gagal($up->fresh(), 'laporan tidak keluar sesudah 60 menit');
+
+    $up->update(['bot_diperbarui_at' => now()->subHours(3)]);
+
+    // Mengulang berarti membayar dua kali untuk pesanan yang sama.
+    expect(BotTurnitin::ambilTugas())->toBeNull()
+        ->and($up->fresh()->bot_kode)->toBe('CP-abc123');
+});
+
+it('tidak mengulang kegagalan yang ditandai butuh admin', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    BotTurnitin::gagal($up->fresh(), 'Koin cekplagiat.id tinggal 2, butuh 22', false, true);
+    $up->update(['bot_diperbarui_at' => now()->subHours(3)]);
+
+    expect($up->fresh()->bot_tunggu_admin)->toBeTrue()
+        ->and(BotTurnitin::ambilTugas())->toBeNull();
+});
+
+it('tombol admin mengembalikan jatah percobaan otomatis', function () {
+    $up = unggahanBot(pesananPlagiasi());
+
+    for ($i = 0; $i < BotTurnitin::MAKS_PERCOBAAN; $i++) {
+        BotTurnitin::ambilTugas();
+        BotTurnitin::gagal($up->fresh(), 'Koin kurang', false, true);
+        $up->update(['bot_diperbarui_at' => now()->subMinutes(BotTurnitin::JEDA_COBA_LAGI_MENIT + 1)]);
+    }
+
+    expect(BotTurnitin::cobaLagi($up->fresh()))->toBeTrue();
+
+    $up->refresh();
+    expect($up->bot_percobaan)->toBe(0)
+        ->and($up->bot_tunggu_admin)->toBeFalse()
+        ->and(BotTurnitin::ambilTugas()?->id)->toBe($up->id);
+});
+
+/*
+ * Kode dari penyedia cadangan.
+ *
+ * Phoenix dulu hanya mengenal pola submitin (SC-…), jadi tiap pengecekan lewat
+ * cekplagiat.id akan ditolak TEPAT SESUDAH berkasnya terkirim — saat koinnya
+ * sudah terpakai. Huruf besar-kecil id cekplagiat juga tidak boleh diubah:
+ * halaman hasilnya beralamat /d/<id> dan peka huruf.
+ */
+it('menerima kode cekplagiat apa adanya, tanpa mengubah huruf', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A');
+
+    expect($up->fresh()->bot_kode)->toBe('CP-KehPDS2I2lMfIyC1Zue6A')
+        ->and($up->fresh()->bot_status)->toBe(BotTurnitin::MENUNGGU_HASIL);
+});
+
+it('tetap menyeragamkan huruf kode submitin', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'sc-9908f2c67897');
+
+    expect($up->fresh()->bot_kode)->toBe('SC-9908F2C67897');
+});
+
+it('menolak kode yang tidak dikenali kedua penyedia', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    expect(fn () => BotTurnitin::tandaiTerkirim($up->fresh(), 'XX-123'))
+        ->toThrow(\App\Support\BotTurnitinDitolak::class);
+});
+
+it('menyimpan hasil yang datang dengan kode cekplagiat', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A');
+
+    $status = BotTurnitin::simpanHasil($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A', pdfPalsu(), 4);
+
+    expect($status)->toBe('selesai')
+        ->and($up->fresh()->status)->toBe('selesai');
+});

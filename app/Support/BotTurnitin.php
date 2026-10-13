@@ -47,6 +47,15 @@ class BotTurnitin
 
     public const GAGAL = 'gagal';
 
+    /**
+     * Percobaan ulang otomatis — hanya untuk kegagalan SEBELUM berkas terkirim
+     * ke penyedia, jadi satu pesanan tidak pernah dibayar dua kali. Kegagalan
+     * sesudah terkirim, dan yang ditandai butuh admin, tetap menunggu tombol.
+     */
+    public const MAKS_PERCOBAAN = 2;
+
+    public const JEDA_COBA_LAGI_MENIT = 10;
+
     public const PERLU_DILENGKAPI = 'perlu_dilengkapi';
 
     public const MANUAL = 'manual';
@@ -161,6 +170,19 @@ class BotTurnitin
         return Setting::get(self::KUNCI_MASALAH) ?: null;
     }
 
+    /** Kode dari penyedia cadangan (huruf besar-kecilnya berarti). */
+    public static function kodeCekplagiat(string $kode): bool
+    {
+        return str_starts_with(strtoupper($kode), 'CP-');
+    }
+
+    /** Kode yang dikenali: submitin (SC-…) atau cekplagiat (CP-…). */
+    public static function kodeDikenali(string $kode): bool
+    {
+        return (bool) preg_match('/^SC-[A-Z0-9]{6,32}$/', $kode)
+            || (bool) preg_match('/^CP-[A-Za-z0-9_-]{6,40}$/', $kode);
+    }
+
     /** @return array{pesan: string, at: string}|null */
     public static function kuotaHabis(): ?array
     {
@@ -212,8 +234,20 @@ class BotTurnitin
             $calon = OrderUpload::query()
                 ->where('jenis', 'plagiasi')
                 ->where('status', 'menunggu')
-                ->whereNull('bot_status')
                 ->whereNotNull('path')
+                ->where(function ($q) {
+                    // Belum pernah disentuh bot …
+                    $q->whereNull('bot_status')
+                        // … atau gagal sebelum berkasnya terkirim, masih di bawah
+                        // batas percobaan, sudah melewati jeda, dan bukan jenis
+                        // kegagalan yang butuh admin.
+                        ->orWhere(fn ($r) => $r
+                            ->where('bot_status', self::GAGAL)
+                            ->whereNull('bot_kode')
+                            ->where('bot_tunggu_admin', false)
+                            ->where('bot_percobaan', '<', self::MAKS_PERCOBAAN)
+                            ->where('bot_diperbarui_at', '<=', now()->subMinutes(self::JEDA_COBA_LAGI_MENIT)));
+                })
                 ->whereHas('order', fn ($q) => $q->whereIn('status', ['paid', 'processing', 'completed']))
                 ->orderBy('created_at')
                 ->lockForUpdate()
@@ -230,6 +264,7 @@ class BotTurnitin
                 'bot_status' => self::DIAMBIL,
                 'bot_kode' => null,
                 'bot_pesan' => null,
+                'bot_percobaan' => (int) $calon->bot_percobaan + 1,
                 'bot_diambil_at' => now(),
                 'bot_diperbarui_at' => now(),
             ]);
@@ -297,13 +332,23 @@ class BotTurnitin
         ];
     }
 
-    /** Skrip melaporkan form sudah terkirim dan submitin memberi kode order. */
+    /**
+     * Bot melaporkan berkas sudah terkirim dan penyedia memberi kode order.
+     *
+     * Dua bentuk kode, karena penyedianya dua:
+     *   - `SC-XXXXXX…`  submitin.id — huruf besar semua, jadi boleh diseragamkan.
+     *   - `CP-<id>`     cekplagiat.id — id dokumennya BESAR-kecil berpengaruh
+     *                   (alamatnya /d/<id>), jadi huruf aslinya dipertahankan.
+     *                   Menyeragamkannya membuat halaman hasilnya tidak bisa
+     *                   dibuka lagi.
+     */
     public static function tandaiTerkirim(OrderUpload $up, string $kode): void
     {
-        $kode = strtoupper(trim($kode));
+        $kode = trim($kode);
+        $kode = self::kodeCekplagiat($kode) ? $kode : strtoupper($kode);
 
-        if (! preg_match('/^SC-[A-Z0-9]{6,32}$/', $kode)) {
-            throw new BotTurnitinDitolak('Kode order submitin tidak dikenali: '.$kode);
+        if (! self::kodeDikenali($kode)) {
+            throw new BotTurnitinDitolak('Kode order penyedia tidak dikenali: '.$kode);
         }
 
         DB::transaction(function () use ($up, $kode) {
@@ -346,7 +391,8 @@ class BotTurnitin
      */
     public static function simpanHasil(OrderUpload $up, string $kode, UploadedFile $pdf, ?int $persenHalaman = null): string
     {
-        $kode = strtoupper(trim($kode));
+        $kode = trim($kode);
+        $kode = self::kodeCekplagiat($kode) ? $kode : strtoupper($kode);
 
         $kepala = (string) @file_get_contents($pdf->getRealPath(), false, null, 0, 5);
         if ($kepala !== '%PDF-') {
@@ -425,9 +471,9 @@ class BotTurnitin
      * dikembalikan ke antrean admin; yang sudah terkirim tetap 'diproses'
      * (laporannya mungkin masih keluar di submitin — kodenya disimpan).
      */
-    public static function gagal(OrderUpload $up, string $pesan, bool $kuotaHabis = false): void
+    public static function gagal(OrderUpload $up, string $pesan, bool $kuotaHabis = false, bool $tungguAdmin = false): void
     {
-        DB::transaction(function () use ($up, $pesan, $kuotaHabis) {
+        DB::transaction(function () use ($up, $pesan, $kuotaHabis, $tungguAdmin) {
             $up = OrderUpload::whereKey($up->id)->lockForUpdate()->firstOrFail();
 
             if (! in_array($up->bot_status, [self::DIAMBIL, self::MENUNGGU_HASIL], true)) {
@@ -455,6 +501,7 @@ class BotTurnitin
             $up->update(array_merge([
                 'bot_status' => self::GAGAL,
                 'bot_pesan' => Str::limit($pesan, 480),
+                'bot_tunggu_admin' => $tungguAdmin,
                 'bot_diperbarui_at' => now(),
             ], $belumTerkirim ? [
                 'status' => 'menunggu',
@@ -682,12 +729,16 @@ class BotTurnitin
             return false;
         }
 
+        // Tombol admin mengembalikan jatah percobaan otomatis: ia memang
+        // dipakai sesudah sebabnya dibereskan (koin diisi, sesi diperbarui).
         $up->update([
             'status' => 'menunggu',
             'diproses_at' => null,
             'dikerjakan_oleh' => null,
             'bot_status' => null,
             'bot_pesan' => null,
+            'bot_percobaan' => 0,
+            'bot_tunggu_admin' => false,
             'bot_diambil_at' => null,
             'bot_diperbarui_at' => null,
         ]);
