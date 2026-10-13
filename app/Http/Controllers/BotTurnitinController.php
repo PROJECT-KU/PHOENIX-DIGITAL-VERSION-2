@@ -144,7 +144,14 @@ class BotTurnitinController extends Controller
             // Kegagalan yang jelas butuh manusia (koin kurang, sesi penyedia
             // habis, saringan tanpa padanan) — jangan dicoba ulang sendiri.
             'tunggu_admin' => ['nullable', 'boolean'],
+            // Halangan di luar dokumennya (mis. koin cadangan habis):
+            // dikembalikan ke antrean, bukan dinyatakan gagal.
+            'kembalikan' => ['nullable', 'boolean'],
         ]);
+
+        if (! empty($data['kembalikan'])) {
+            return $this->jalankan(fn () => BotTurnitin::kembalikanKeAntrean($upload, $data['pesan']));
+        }
 
         return $this->jalankan(fn () => BotTurnitin::gagal(
             $upload,

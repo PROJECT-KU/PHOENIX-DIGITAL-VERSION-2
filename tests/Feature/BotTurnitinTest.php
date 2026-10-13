@@ -901,3 +901,53 @@ it('tanpa penyesuaian, keterangan kartu tetap bersih', function () {
     expect($up->fresh()->bot_pesan)->toBeNull()
         ->and(BotTurnitin::pengerja($up->fresh())['ket'])->not->toContain('diganti');
 });
+
+/*
+ * Koin cadangan habis → TIDAK butuh tombol admin.
+ *
+ * Halangannya bukan pada dokumennya, jadi unggahan dikembalikan ke antrean
+ * apa adanya. Begitu admin mengisi koin, bot mengambilnya lagi sendiri.
+ */
+it('mengembalikan unggahan ke antrean saat koin cadangan habis', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    expect($up->fresh()->bot_status)->toBe(BotTurnitin::DIAMBIL);
+
+    BotTurnitin::kembalikanKeAntrean($up->fresh(), 'Menunggu koin cekplagiat.id: sisa 2, butuh 22');
+
+    $up->refresh();
+
+    expect($up->status)->toBe('menunggu')
+        ->and($up->bot_status)->toBeNull()
+        ->and($up->bot_tunggu_admin)->toBeFalse()
+        // Jatah percobaan dikembalikan: percobaan tadi belum sempat berjalan.
+        ->and($up->bot_percobaan)->toBe(0)
+        // Dan bot boleh mengambilnya lagi tanpa admin menekan apa pun.
+        ->and(BotTurnitin::ambilTugas()?->id)->toBe($up->id);
+});
+
+it('tidak pernah mengembalikan unggahan yang berkasnya sudah terkirim', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'CP-KehPDS2I2lMfIyC1Zue6A');
+
+    // Mengembalikannya berarti berkas yang sudah dibayar diunggah lagi.
+    BotTurnitin::kembalikanKeAntrean($up->fresh(), 'koin habis');
+
+    expect($up->fresh()->bot_status)->toBe(BotTurnitin::MENUNGGU_HASIL)
+        ->and($up->fresh()->bot_kode)->toBe('CP-KehPDS2I2lMfIyC1Zue6A');
+});
+
+it('endpoint gagal menerima perintah kembalikan dari bot', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::ambilTugas();
+
+    $this->postJson("/api/bot-turnitin/tugas/{$up->id}/gagal", [
+        'pesan' => 'Menunggu koin cekplagiat.id',
+        'kembalikan' => '1',
+    ], tokenBot())->assertOk();
+
+    expect($up->fresh()->bot_status)->toBeNull()
+        ->and($up->fresh()->status)->toBe('menunggu');
+});

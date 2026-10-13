@@ -516,6 +516,42 @@ class BotTurnitin
      * dikembalikan ke antrean admin; yang sudah terkirim tetap 'diproses'
      * (laporannya mungkin masih keluar di submitin — kodenya disimpan).
      */
+    /**
+     * Kembalikan unggahan ke antrean tanpa dihitung gagal.
+     *
+     * Dipakai saat halangannya BUKAN pada dokumennya — mis. koin penyedia
+     * cadangan habis. Begitu admin mengisi koin, bot mengambilnya lagi sendiri
+     * tanpa perlu menekan "Coba Lagi pakai Bot", dan jatah percobaan otomatis
+     * dikembalikan karena percobaan tadi memang belum sempat berjalan.
+     */
+    public static function kembalikanKeAntrean(OrderUpload $up, string $alasan): void
+    {
+        DB::transaction(function () use ($up) {
+            $up = OrderUpload::whereKey($up->id)->lockForUpdate()->firstOrFail();
+
+            // Sesudah berkasnya terkirim, mengembalikannya ke antrean berarti
+            // membayar dua kali — itu tidak pernah boleh.
+            if ($up->bot_status !== self::DIAMBIL || $up->bot_kode) {
+                return;
+            }
+
+            $up->update([
+                'status' => 'menunggu',
+                'diproses_at' => null,
+                'dikerjakan_oleh' => null,
+                'bot_status' => null,
+                'bot_pesan' => null,
+                'bot_percobaan' => 0,
+                'bot_tunggu_admin' => false,
+                'bot_diambil_at' => null,
+                'bot_diperbarui_at' => now(),
+            ]);
+        });
+
+        // Alasannya tetap terlihat di panel bot & peringatan Telegram.
+        self::catatDetak($alasan);
+    }
+
     public static function gagal(OrderUpload $up, string $pesan, bool $kuotaHabis = false, bool $tungguAdmin = false): void
     {
         DB::transaction(function () use ($up, $pesan, $kuotaHabis, $tungguAdmin) {

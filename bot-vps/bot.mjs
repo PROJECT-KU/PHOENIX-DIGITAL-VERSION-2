@@ -107,6 +107,9 @@ const JEDA_CADANGAN_MS = 30 * 60 * 1000;
 const JEDA_CADANGAN_SEBENTAR_MS = 5 * 60 * 1000;
 const SELANG_PANTAU_SUBMITIN_MS = 10 * 60 * 1000;
 const SELANG_PANTAU_KOIN_MS = 30 * 60 * 1000;
+// Saat koinnya sedang kurang, dipantau lebih rapat supaya pengisian ulang
+// cepat terdeteksi dan antrean langsung jalan lagi.
+const SELANG_PANTAU_KOIN_SIBUK_MS = 3 * 60 * 1000;
 
 const FORM_URL = 'https://submitin.id/services/plagiarism';
 const LOGIN_URL = 'https://submitin.id/user/login';
@@ -202,6 +205,28 @@ async function laporGagal(tugasId, pesan, kuotaHabis = false, tungguAdmin = fals
         }));
     } catch (e) {
         catat('Laporan gagal tidak terkirim:', e.message);
+    }
+}
+
+/**
+ * Kembalikan tugas ke antrean — halangannya bukan pada dokumennya.
+ *
+ * Dipakai saat koin cekplagiat habis: begitu admin mengisi koin, bot
+ * mengambilnya lagi SENDIRI, tanpa menekan "Coba Lagi pakai Bot".
+ */
+async function kembalikanKeAntrean(tugasId, pesan) {
+    catat('Dikembalikan ke antrean:', pesan);
+
+    KEADAAN.galatTerakhir = String(pesan);
+    KEADAAN.pekerjaan = '';
+
+    try {
+        await api('POST', `/tugas/${tugasId}/gagal`, formulir({
+            pesan: String(pesan).slice(0, 480),
+            kembalikan: '1',
+        }));
+    } catch (e) {
+        catat('Pengembalian ke antrean tidak terkirim:', e.message);
     }
 }
 
@@ -996,6 +1021,15 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
             KEADAAN.cadanganDiamSampai = Date.now()
                 + (siap.koin === null ? JEDA_CADANGAN_SEBENTAR_MS : JEDA_CADANGAN_MS);
 
+            /*
+             * Koin habis bukan salah dokumennya: dikembalikan ke antrean supaya
+             * begitu admin mengisi koin, bot mengerjakannya SENDIRI. Halangan
+             * lain (sesi habis dll) tetap butuh admin.
+             */
+            if (siap.koin !== null && siap.koin < CFG.cekplagiatKoinMin) {
+                return kembalikanKeAntrean(tugas.id, `Menunggu koin ${cekplagiat.NAMA}: ${siap.pesan}`);
+            }
+
             return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). Cadangan juga belum bisa: ${siap.pesan}`, false, true);
         }
 
@@ -1042,11 +1076,10 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
              * tetap diam walaupun submitin sudah pulih. Kekurangan koin di sini
              * cukup ditahan di VPS saja.
              */
-            return laporGagal(
+            return kembalikanKeAntrean(
                 tugas.id,
-                `${cekplagiat.NAMA} meminta ${biaya} koin, sisa ${siap.koin}. Isi koin dulu di https://www.cekplagiat.id/u`,
-                false,
-                true,
+                `Menunggu koin ${cekplagiat.NAMA}: butuh ${biaya} koin, sisa ${siap.koin}. `
+                    + 'Isi di https://www.cekplagiat.id/u — bot melanjutkan sendiri sesudah terisi.',
             );
         }
 
@@ -1246,13 +1279,24 @@ async function pantauPenyedia(ctx, hal) {
         }
     }
 
-    if (CFG.cekplagiat && Date.now() - KEADAAN.koinCekAt > SELANG_PANTAU_KOIN_MS) {
+    const selangKoin = KEADAAN.koinCadangan !== null && KEADAAN.koinCadangan < CFG.cekplagiatKoinMin
+        ? SELANG_PANTAU_KOIN_SIBUK_MS
+        : SELANG_PANTAU_KOIN_MS;
+
+    if (CFG.cekplagiat && Date.now() - KEADAAN.koinCekAt > selangKoin) {
         KEADAAN.koinCekAt = Date.now();
         const halCp = await ctx.newPage();
 
         try {
             await cekplagiat.keDasbor(halCp);
             KEADAAN.koinCadangan = await cekplagiat.bacaKoin(halCp);
+
+            // Koin sudah cukup lagi? Jangan tunggu sisa jeda — lanjut sekarang.
+            if (KEADAAN.koinCadangan !== null && KEADAAN.koinCadangan >= CFG.cekplagiatKoinMin
+                && KEADAAN.cadanganDiamSampai > Date.now()) {
+                catat(`Koin ${cekplagiat.NAMA} sudah ${KEADAAN.koinCadangan} — antrean dilanjutkan sekarang.`);
+                KEADAAN.cadanganDiamSampai = 0;
+            }
         } catch (e) {
             KEADAAN.koinCadangan = null;
             catat('Koin cekplagiat.id tidak terbaca:', String(e.message || e).split('\n')[0].slice(0, 120));
