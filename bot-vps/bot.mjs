@@ -856,7 +856,13 @@ async function kerjakan(ctx, hal, tugas) {
         KEADAAN.submitinCekAt = Date.now();
 
         if (alasanAlih) {
-            return kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
+            /*
+             * WAJIB `await`: tanpa itu `finally` di bawah menghapus berkas
+             * customer begitu promise dibuat, sedangkan penyedia cadangan baru
+             * mulai memakainya — persis kegagalan "ENOENT: no such file or
+             * directory, stat '/tmp/PD-…'" pada 13 Okt 2026.
+             */
+            return await kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
         }
 
         await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
