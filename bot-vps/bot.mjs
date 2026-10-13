@@ -93,9 +93,17 @@ const KEADAAN = {
     // diambil sama sekali supaya tugas pelanggan tidak digagalkan berulang
     // tiap menit hanya untuk mencatat sebab yang sama.
     cadanganDiamSampai: 0,
+    // Keadaan KEDUA penyedia, supaya agen Telegram bisa menyebut sebabnya
+    // ("submitin 503, cadangan siap") tanpa harus membuka VPS.
+    submitinSiap: null,
+    submitinPesan: '',
+    submitinCekAt: 0,
+    koinCekAt: 0,
 };
 
 const JEDA_CADANGAN_MS = 30 * 60 * 1000;
+const SELANG_PANTAU_SUBMITIN_MS = 10 * 60 * 1000;
+const SELANG_PANTAU_KOIN_MS = 30 * 60 * 1000;
 
 const FORM_URL = 'https://submitin.id/services/plagiarism';
 const LOGIN_URL = 'https://submitin.id/user/login';
@@ -215,6 +223,9 @@ async function lapor() {
         galat_terakhir: KEADAAN.galatTerakhir.slice(0, 300),
         penyedia: KEADAAN.penyedia,
         koin_cadangan: KEADAAN.koinCadangan,
+        submitin_siap: KEADAAN.submitinSiap === null ? null : (KEADAAN.submitinSiap ? 1 : 0),
+        submitin_pesan: KEADAAN.submitinPesan.slice(0, 200),
+        cadangan_aktif: CFG.cekplagiat ? 1 : 0,
         hidup_detik: Math.round(process.uptime()),
         ...memori,
         ...(disk === null ? {} : { disk_persen: disk }),
@@ -812,9 +823,16 @@ async function kerjakan(ctx, hal, tugas) {
             await keForm(hal);
             const siap = await periksaSiap(hal);
             if (!siap.siap) alasanAlih = siap.masalah;
+
+            KEADAAN.submitinSiap = siap.siap;
+            KEADAAN.submitinPesan = siap.siap ? (siap.paket?.pesan ?? 'siap') : siap.masalah;
         } catch (e) {
             alasanAlih = e.message || String(e);
+            KEADAAN.submitinSiap = false;
+            KEADAAN.submitinPesan = String(alasanAlih).split('\n')[0].slice(0, 160);
         }
+
+        KEADAAN.submitinCekAt = Date.now();
 
         if (alasanAlih) {
             return kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
@@ -1104,14 +1122,63 @@ async function tungguHasil(ctx, hal, tugas, kode) {
  | Putaran utama
  * ================================================================ */
 
-/** Submitin bisa dipakai sekarang? Dipakai untuk memutuskan diam atau jalan. */
+/**
+ * Submitin bisa dipakai sekarang? Sekalian dicatat ke KEADAAN supaya laporan
+ * ke Telegram bisa menyebut keadaan KEDUA penyedia, bukan cuma "bot hidup".
+ */
 async function submitinSiap(hal) {
+    let siap = false;
+    let pesan = '';
+
     try {
         await keForm(hal);
+        const hasil = await periksaSiap(hal);
+        siap = hasil.siap;
+        pesan = hasil.siap ? (hasil.paket?.pesan ?? 'siap') : hasil.masalah;
+    } catch (e) {
+        pesan = String(e.message || e).split('\n')[0].slice(0, 160);
+    }
 
-        return (await periksaSiap(hal)).siap;
-    } catch {
-        return false;
+    KEADAAN.submitinSiap = siap;
+    KEADAAN.submitinPesan = pesan;
+    KEADAAN.submitinCekAt = Date.now();
+
+    return siap;
+}
+
+/**
+ * Pantauan berkala saat bot sedang menganggur.
+ *
+ * Tanpa ini laporan ke Telegram hanya berubah waktu ada pesanan, jadi submitin
+ * yang mati (atau pulih) baru ketahuan saat ada pelanggan — terlambat.
+ * Submitin dicek tiap 10 menit, koin cadangan tiap 30 menit; keduanya cuma satu
+ * kali buka halaman, jadi ringan untuk VPS 1 vCPU.
+ */
+async function pantauPenyedia(ctx, hal) {
+    if (Date.now() - KEADAAN.submitinCekAt > SELANG_PANTAU_SUBMITIN_MS) {
+        const sebelum = KEADAAN.submitinSiap;
+        const sekarang = await submitinSiap(hal);
+
+        if (sebelum !== null && sebelum !== sekarang) {
+            catat(sekarang
+                ? 'submitin.id PULIH — tugas kembali lewat submitin.'
+                : `submitin.id bermasalah: ${KEADAAN.submitinPesan}`);
+        }
+    }
+
+    if (CFG.cekplagiat && Date.now() - KEADAAN.koinCekAt > SELANG_PANTAU_KOIN_MS) {
+        KEADAAN.koinCekAt = Date.now();
+        const halCp = await ctx.newPage();
+
+        try {
+            await cekplagiat.keDasbor(halCp);
+            KEADAAN.koinCadangan = await cekplagiat.bacaKoin(halCp);
+        } catch (e) {
+            KEADAAN.koinCadangan = null;
+            catat('Koin cekplagiat.id tidak terbaca:', String(e.message || e).split('\n')[0].slice(0, 120));
+        } finally {
+            await halCp.close().catch(() => {});
+        }
     }
 }
 
@@ -1147,7 +1214,9 @@ async function putaran(ctx, hal) {
                 continue;
             }
 
-            if (Date.now() < KEADAAN.cadanganDiamSampai && !(await submitinSiap(hal))) {
+            await pantauPenyedia(ctx, hal);
+
+            if (Date.now() < KEADAAN.cadanganDiamSampai && !KEADAAN.submitinSiap) {
                 if (!KEADAAN.sudahLaporDiam) {
                     catat('submitin.id mati dan cadangan belum bisa dipakai — antrean tidak diambil dulu.');
                     KEADAAN.sudahLaporDiam = true;
@@ -1216,9 +1285,15 @@ async function jalan() {
         try {
             await keForm(hal);
             const siap = await periksaSiap(hal);
+            KEADAAN.submitinSiap = siap.siap;
+            KEADAAN.submitinPesan = siap.siap ? siap.paket.pesan : siap.masalah;
+            KEADAAN.submitinCekAt = Date.now();
             catat('Keadaan awal:', siap.siap ? siap.paket.pesan : siap.masalah);
         } catch (e) {
             const pesan = String(e.message || e).split('\n')[0];
+            KEADAAN.submitinSiap = false;
+            KEADAAN.submitinPesan = pesan.slice(0, 160);
+            KEADAAN.submitinCekAt = Date.now();
             KEADAAN.galatTerakhir = 'submitin.id tidak bisa dibuka: ' + pesan;
             catat('submitin.id tidak bisa dibuka saat mulai:', pesan);
             catat(CFG.cekplagiat

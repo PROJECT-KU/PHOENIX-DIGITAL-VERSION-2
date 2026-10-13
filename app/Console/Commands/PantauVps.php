@@ -25,6 +25,9 @@ class PantauVps extends Command
     /** Kuota di bawah ini dianggap menipis. */
     private const KUOTA_MENIPIS = 3;
 
+    /** Sekali cek plagiarisme di cekplagiat.id memakan 22 koin. */
+    private const KOIN_SEKALI_CEK = 22;
+
     public function handle(TelegramClient $telegram): int
     {
         $masalah = $this->periksa();
@@ -88,8 +91,30 @@ class PantauVps extends Command
             return $masalah;
         }
 
+        /*
+         * submitin = penyedia UTAMA. Matinya layanan di sana berarti tiap
+         * pengecekan berpindah ke cadangan yang ±4x lebih mahal, jadi wajib
+         * dikabarkan — bukan hanya dicatat di log VPS. (6–13 Okt 2026 submitin
+         * 503 selama seminggu tanpa satu pun peringatan.)
+         */
+        if (array_key_exists('submitin_siap', $data) && $data['submitin_siap'] !== null && ! $data['submitin_siap']) {
+            $masalah['submitin'] = 'submitin.id tidak bisa dipakai: '
+                .mb_strimwidth((string) ($data['submitin_pesan'] ?? '-'), 0, 160, '…')
+                .(empty($data['cadangan_aktif']) ? '' : ' Pengecekan dialihkan ke cekplagiat.id (±4x lebih mahal).');
+        }
+
+        // Cadangan tanpa koin = tidak ada jalan sama sekali saat submitin mati.
+        if (! empty($data['cadangan_aktif'])) {
+            $koin = $data['koin_cadangan'] ?? null;
+
+            if ($koin !== null && $koin < self::KOIN_SEKALI_CEK) {
+                $masalah['koin'] = 'Koin cekplagiat.id tinggal '.$koin.', sekali cek butuh '
+                    .self::KOIN_SEKALI_CEK.'. Isi di https://www.cekplagiat.id/u';
+            }
+        }
+
         $kuota = $data['kuota'] ?? null;
-        if ($kuota !== null && $kuota <= self::KUOTA_MENIPIS) {
+        if ($kuota !== null && $kuota <= self::KUOTA_MENIPIS && ! isset($masalah['submitin'])) {
             $masalah['kuota'] = $kuota <= 0
                 ? 'Kuota paket submitin HABIS — pengecekan berhenti sampai paket diisi.'
                 : 'Kuota paket submitin tinggal '.$kuota.'x.';
@@ -116,6 +141,8 @@ class PantauVps extends Command
         return [
             'mati' => 'VPS bot melapor lagi',
             'kuota' => 'kuota submitin sudah aman',
+            'submitin' => 'submitin.id bisa dipakai lagi',
+            'koin' => 'koin cekplagiat.id sudah aman',
             'disk' => 'disk VPS lega lagi',
             'gagal' => 'tidak ada kegagalan baru',
             'mode' => 'bot kembali ke mode penuh',

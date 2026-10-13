@@ -223,10 +223,40 @@ class AksiAgen
         $mode = $data['mode'] ?? '?';
         $baris[] = 'Mode        : '.($mode === 'penuh' ? 'PENUH (mengerjakan pesanan)' : strtoupper($mode).' (tidak mengambil antrean)');
 
-        if (isset($data['kuota_teks']) || isset($data['kuota'])) {
-            $sisa = $data['kuota'] ?? null;
-            $tanda = $sisa !== null && $sisa <= 3 ? '⚠️ ' : '';
-            $baris[] = 'Kuota       : '.$tanda.($data['kuota_teks'] ?? $sisa.'x tersisa');
+        /*
+         * Dua penyedia disebut terpisah: submitin yang utama (paketnya murah)
+         * dan cekplagiat yang hanya dipakai kalau submitin tidak bisa. Tanpa
+         * ini, "bot hidup" tetap terbaca aman padahal submitin mati seminggu —
+         * persis yang terjadi 6–13 Okt 2026.
+         */
+        $sisa = $data['kuota'] ?? null;
+        $siapSubmitin = $data['submitin_siap'] ?? null;
+        $tandaSubmitin = match (true) {
+            $siapSubmitin === null || $siapSubmitin === '' => '',
+            (bool) $siapSubmitin => '✅ ',
+            default => '❌ ',
+        };
+
+        if ($siapSubmitin !== null && ! $siapSubmitin) {
+            $baris[] = 'submitin    : '.$tandaSubmitin.($data['submitin_pesan'] ?? 'tidak bisa dipakai');
+        } else {
+            // Kuota menipis tetap diberi tanda, seperti sebelum ada cadangan.
+            $tandaKuota = $sisa !== null && $sisa <= 3 ? '⚠️ ' : $tandaSubmitin;
+            $baris[] = 'submitin    : '.$tandaKuota
+                .($data['kuota_teks'] ?? ($sisa === null ? 'siap' : $sisa.'x tersisa'));
+        }
+
+        if (! empty($data['cadangan_aktif'])) {
+            $koin = $data['koin_cadangan'] ?? null;
+            $baris[] = 'cekplagiat  : '.match (true) {
+                $koin === null => '— koin belum terbaca (cadangan)',
+                $koin < 22 => '⚠️ koin '.$koin.' — kurang untuk sekali cek (butuh 22)',
+                default => '✅ koin '.$koin.' (cadangan)',
+            };
+        }
+
+        if (($data['penyedia'] ?? '') !== '' && $data['penyedia'] !== 'submitin.id') {
+            $baris[] = 'Sedang pakai: '.$data['penyedia'];
         }
 
         if (isset($data['pekerjaan']) && $data['pekerjaan'] !== '') {

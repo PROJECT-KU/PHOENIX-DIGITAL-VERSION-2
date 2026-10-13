@@ -16,6 +16,14 @@ beforeEach(function () {
     BotTurnitin::lupakanSkema();
 });
 
+/** Teks peringatan bot:pantau-vps (mode kering, tidak mengirim ke Telegram). */
+function peringatanVps(): string
+{
+    \Illuminate\Support\Facades\Artisan::call('bot:pantau-vps', ['--kering' => true]);
+
+    return \Illuminate\Support\Facades\Artisan::output();
+}
+
 function tokenVps(): array
 {
     return ['Authorization' => 'Bearer '.BotTurnitin::buatToken(), 'Accept' => 'application/json'];
@@ -163,4 +171,133 @@ it('mode bukan penuh ikut diperingatkan', function () {
     LaporanVps::simpan(['mode' => 'aman', 'kuota' => 19]);
 
     $this->artisan('bot:pantau-vps --kering')->expectsOutputToContain('tidak dalam mode penuh')->assertSuccessful();
+});
+
+/*
+ * ----------------------------------------------------------------------
+ * Dua penyedia: submitin (utama) & cekplagiat (cadangan)
+ *
+ * 6–13 Okt 2026 submitin mati 503 selama SEMINGGU tanpa satu pun peringatan:
+ * pemantau hanya tahu "bot melapor / tidak", jadi bot yang rajin melapor tapi
+ * tidak bisa mengerjakan apa pun tetap terbaca sehat. Tes ini menjaga supaya
+ * keadaan tiap penyedia benar-benar sampai ke Telegram.
+ * ----------------------------------------------------------------------
+ */
+
+it('menyimpan keadaan kedua penyedia dari laporan VPS', function () {
+    $this->postJson('/api/bot-turnitin/lapor', [
+        'mode' => 'penuh',
+        'penyedia' => 'cekplagiat.id',
+        'koin_cadangan' => 44,
+        'submitin_siap' => false,
+        'submitin_pesan' => 'Form submitin tidak lengkap (layanan 503)',
+        'cadangan_aktif' => true,
+    ], tokenVps())->assertOk();
+
+    $data = LaporanVps::terakhir();
+
+    expect($data['submitin_siap'])->toBeFalse()
+        ->and($data['koin_cadangan'])->toBe(44)
+        ->and($data['penyedia'])->toBe('cekplagiat.id');
+});
+
+it('menyebut submitin mati dan sisa koin cadangan di pesan /vps', function () {
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => false,
+        'submitin_pesan' => 'Form submitin tidak lengkap (layanan 503)',
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 2,
+        'penyedia' => 'cekplagiat.id',
+    ]);
+
+    $pesan = (new ReflectionMethod(AksiAgen::class, 'vps'))->getClosure() ? null : null;
+    $m = new ReflectionMethod(AksiAgen::class, 'vps');
+    $m->setAccessible(true);
+    $teks = $m->invoke(null);
+
+    expect($teks)->toContain('submitin    : ❌')
+        ->and($teks)->toContain('layanan 503')
+        // Koin kurang dari sekali cek (22) harus kelihatan sebagai peringatan,
+        // bukan angka polos yang mudah terlewat.
+        ->and($teks)->toContain('⚠️ koin 2')
+        ->and($teks)->toContain('Sedang pakai: cekplagiat.id');
+});
+
+it('menampilkan kuota submitin seperti biasa saat submitin sehat', function () {
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => true,
+        'kuota' => 19,
+        'kuota_teks' => 'Paket Standard: 19x tersisa',
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 44,
+        'penyedia' => 'submitin.id',
+    ]);
+
+    $m = new ReflectionMethod(AksiAgen::class, 'vps');
+    $m->setAccessible(true);
+    $teks = $m->invoke(null);
+
+    expect($teks)->toContain('submitin    : ✅')
+        ->and($teks)->toContain('19x tersisa')
+        ->and($teks)->toContain('cekplagiat  : ✅ koin 44')
+        // Penyedia yang dipakai hanya disebut kalau BUKAN submitin.
+        ->and($teks)->not->toContain('Sedang pakai');
+});
+
+it('memperingatkan saat submitin mati, lalu saat pulih', function () {
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => false,
+        'submitin_pesan' => 'Form submitin tidak lengkap (layanan 503)',
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 44,
+    ]);
+
+    // Teks diperiksa utuh: dua expectsOutputToContain berurutan dicocokkan ke
+    // baris yang berbeda, bukan ke pesan yang sama.
+    expect(peringatanVps())
+        ->toContain('submitin.id tidak bisa dipakai')
+        ->toContain('dialihkan ke cekplagiat.id');
+
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => true,
+        'kuota' => 19,
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 44,
+    ]);
+
+    expect(peringatanVps())->toContain('Pulih: submitin.id bisa dipakai lagi');
+});
+
+it('memperingatkan koin cadangan kurang untuk sekali cek', function () {
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => true,
+        'kuota' => 19,
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 2,
+    ]);
+
+    $this->artisan('bot:pantau-vps', ['--kering' => true])
+        ->expectsOutputToContain('Koin cekplagiat.id tinggal 2')
+        ->assertSuccessful();
+});
+
+it('tidak berbunyi dua kali untuk sebab yang sama saat submitin mati', function () {
+    // Kuota submitin 0 adalah AKIBAT layanannya mati, bukan masalah terpisah.
+    LaporanVps::simpan([
+        'mode' => 'penuh',
+        'submitin_siap' => false,
+        'submitin_pesan' => 'Form submitin tidak lengkap (layanan 503)',
+        'kuota' => 0,
+        'cadangan_aktif' => true,
+        'koin_cadangan' => 44,
+    ]);
+
+    $this->artisan('bot:pantau-vps', ['--kering' => true])
+        ->doesntExpectOutputToContain('Kuota paket submitin HABIS')
+        ->assertSuccessful();
 });

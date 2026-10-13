@@ -77,6 +77,12 @@ class BotTurnitinController extends Controller
             'gagal_hari_ini' => ['nullable', 'integer', 'min:0'],
             'pekerjaan' => ['nullable', 'string', 'max:60'],
             'galat_terakhir' => ['nullable', 'string', 'max:300'],
+            // Keadaan kedua penyedia: submitin (utama) & cekplagiat (cadangan).
+            'penyedia' => ['nullable', 'string', 'max:40'],
+            'koin_cadangan' => ['nullable', 'integer', 'min:0', 'max:1000000'],
+            'submitin_siap' => ['nullable', 'boolean'],
+            'submitin_pesan' => ['nullable', 'string', 'max:200'],
+            'cadangan_aktif' => ['nullable', 'boolean'],
         ]);
 
         \App\Support\LaporanVps::simpan($data);
