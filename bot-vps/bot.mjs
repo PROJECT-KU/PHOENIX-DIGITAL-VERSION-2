@@ -102,6 +102,9 @@ const KEADAAN = {
 };
 
 const JEDA_CADANGAN_MS = 30 * 60 * 1000;
+// Gangguan sesaat (halaman belum ter-render, jaringan) tidak pantas membuat
+// antrean berhenti setengah jam — cukup beberapa menit.
+const JEDA_CADANGAN_SEBENTAR_MS = 5 * 60 * 1000;
 const SELANG_PANTAU_SUBMITIN_MS = 10 * 60 * 1000;
 const SELANG_PANTAU_KOIN_MS = 30 * 60 * 1000;
 
@@ -987,7 +990,11 @@ async function kerjakanCadangan(ctx, tugas, berkasPath, alasan) {
         KEADAAN.koinCadangan = siap.koin;
 
         if (!siap.siap) {
-            KEADAAN.cadanganDiamSampai = Date.now() + JEDA_CADANGAN_MS;
+            // Koin terbaca tapi kurang = butuh admin mengisi (jeda panjang).
+            // Koin TIDAK terbaca = kemungkinan gangguan sesaat (jeda pendek),
+            // jangan sampai antrean berhenti setengah jam karena halaman lambat.
+            KEADAAN.cadanganDiamSampai = Date.now()
+                + (siap.koin === null ? JEDA_CADANGAN_SEBENTAR_MS : JEDA_CADANGAN_MS);
 
             return laporGagal(tugas.id, `submitin.id tidak bisa dipakai (${ringkas}). Cadangan juga belum bisa: ${siap.pesan}`, false, true);
         }

@@ -57,6 +57,10 @@ export async function keDasbor(hal) {
     }
     await tidur(1500);
 
+    // Halamannya React: isinya baru muncul sesudah skripnya jalan. Di VPS
+    // 1 vCPU itu bisa beberapa detik, jadi ditunggu — bukan ditebak.
+    await hal.waitForSelector('a[href="/u"]', { state: 'attached', timeout: 30000 }).catch(() => {});
+
     if (/auth=required/.test(hal.url()) || !/cekplagiat\.id\/d/.test(hal.url())) {
         throw Object.assign(
             new Error('Sesi cekplagiat.id sudah habis — perlu login Google ulang lalu cookienya dititipkan lagi ke VPS.'),
@@ -65,12 +69,25 @@ export async function keDasbor(hal) {
     }
 }
 
-/** Sisa koin dari tautan "N Koin" di kepala halaman. */
-export async function bacaKoin(hal) {
-    const teks = await hal.locator('a[href="/u"]').first().innerText().catch(() => '');
-    const angka = parseInt(String(teks).replace(/[^\d]/g, ''), 10);
+/**
+ * Sisa koin dari tautan "N Koin" di kepala halaman.
+ *
+ * Ditunggu sampai angkanya benar-benar muncul: pernah terbaca kosong sekali
+ * (13 Okt 2026 19.00) hanya karena halamannya belum selesai dirender, dan bot
+ * langsung berhenti mengambil antrean selama 30 menit.
+ */
+export async function bacaKoin(hal, tungguMs = 20000) {
+    const batas = Date.now() + tungguMs;
 
-    return Number.isNaN(angka) ? null : angka;
+    for (;;) {
+        const teks = await hal.locator('a[href="/u"]').first().innerText().catch(() => '');
+        const angka = parseInt(String(teks).replace(/[^\d]/g, ''), 10);
+
+        if (!Number.isNaN(angka)) return angka;
+        if (Date.now() > batas) return null;
+
+        await tidur(1500);
+    }
 }
 
 /**
