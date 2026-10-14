@@ -598,6 +598,14 @@ async function periksaSiap(hal) {
         };
     }
 
+    // V1 yang diutamakan; kalau submitin sudah mencabutnya, V2 masih lebih
+    // murah daripada penyedia cadangan. Tidak ada keduanya = tidak bisa dipakai.
+    const adaV1 = await hal.locator('[data-engine="v1"]').count().catch(() => 0);
+    const adaV2 = await hal.locator('[data-engine="v2"]').count().catch(() => 0);
+    if (! adaV1 && ! adaV2) {
+        return { siap: false, masalah: 'submitin.id tidak menyediakan Turnitin V1 maupun V2.' };
+    }
+
     const saldo = await bacaSaldo(hal);
 
     // Disimpan untuk laporan ke Telegram: "kuota" kini = berapa dokumen lagi
@@ -614,6 +622,32 @@ async function periksaSiap(hal) {
  | Mengisi form
  * ================================================================ */
 
+/**
+ * Pilih versi Turnitin yang tersedia: V1 lebih dulu, lalu V2.
+ *
+ * @returns {Promise<'v1'|'v2'>}
+ */
+async function pilihVersi(hal) {
+    const nilai = () => hal.locator('#plagiarismEngine').inputValue().catch(() => '');
+
+    for (const mau of ['v1', 'v2']) {
+        if (! (await hal.locator(`[data-engine="${mau}"]`).count().catch(() => 0))) continue;
+
+        // Menekan kartu yang SUDAH aktif pernah membuat klik menggantung.
+        if ((await nilai()) !== mau) {
+            await domKlik(hal, `.plat-card[data-engine="${mau}"], input[name="_plat_ui"][value="${mau}"]`).catch(() => {});
+            await tidur(500);
+        }
+
+        if ((await nilai()) === mau) return mau;
+    }
+
+    throw Object.assign(
+        new Error('submitin.id tidak menyediakan Turnitin V1 maupun V2'),
+        { alihkan: true },
+    );
+}
+
 async function isiForm(hal, tugas, berkasPath, namaBerkas) {
     await hal.waitForSelector('#orderForm', { timeout: 30000 });
 
@@ -624,17 +658,15 @@ async function isiForm(hal, tugas, berkasPath, namaBerkas) {
         await tidur(600);
     }
 
-    // Turnitin V1 — biasanya SUDAH terpilih sejak halaman dibuka, jadi kartunya
-    // hanya ditekan bila memang belum. Menekan yang sudah aktif pernah membuat
-    // klik menggantung sampai batas waktu.
-    if ((await hal.locator('#plagiarismEngine').inputValue().catch(() => '')) !== 'v1') {
-        await domKlik(hal, '.plat-card[data-engine="v1"], input[name="_plat_ui"][value="v1"]').catch(() => {});
-        await tidur(500);
-    }
-
-    if ((await hal.locator('#plagiarismEngine').inputValue().catch(() => '')) !== 'v1') {
-        throw new Error('Gagal memilih Turnitin V1');
-    }
+    /*
+     * Versi Turnitin: V1 dulu, baru V2.
+     *
+     * 14 Okt 2026 submitin.id mencabut kartu V1 dan menyisakan V2 (Rp 19.900).
+     * V2 masih lebih murah daripada penyedia cadangan (±Rp 22.000), jadi
+     * urutannya V1 → V2 → cadangan. Versi yang dipakai dicatat supaya admin
+     * tahu hasilnya bukan tampilan V1.
+     */
+    const versi = await pilihVersi(hal);
 
     // Buang berkas sisa percobaan sebelumnya, lalu masukkan berkas tugas.
     const hapus = hal.locator('#fpRemove');
@@ -710,17 +742,25 @@ async function isiForm(hal, tugas, berkasPath, namaBerkas) {
      */
     const saldo = await bacaSaldo(hal);
     if (!saldo.ada || saldo.habis) {
-        throw Object.assign(new Error(saldo.pesan), { kuotaHabis: true });
+        // Saldo kurang: pesanan tidak digantung — dikerjakan lewat cadangan.
+        throw Object.assign(new Error(saldo.pesan), { kuotaHabis: true, alihkan: true });
     }
-    if (saldo.mati) throw new Error('Metode "Gunakan Saldo" tidak bisa dipilih untuk pesanan ini');
+    if (saldo.mati) {
+        throw Object.assign(
+            new Error('Metode "Gunakan Saldo" tidak bisa dipilih untuk pesanan ini'),
+            { alihkan: true },
+        );
+    }
 
     await hal.locator('#payMethods [data-pm="wallet"]').first().evaluate((el) => el.click());
     await tidur(800);
 
     const metode = await hal.locator('#payMethodType').inputValue().catch(() => '');
-    if (metode !== 'wallet') throw new Error('Gagal memilih "Gunakan Saldo"');
+    if (metode !== 'wallet') {
+        throw Object.assign(new Error('Gagal memilih "Gunakan Saldo" di submitin.id'), { alihkan: true });
+    }
 
-    return saldo;
+    return { saldo, versi };
 }
 
 /*
@@ -781,7 +821,12 @@ async function setNilai(hal, sel, nilai) {
 async function periksaSebelumKirim(hal, namaBerkas) {
     const salah = [];
 
-    if ((await hal.locator('#plagiarismEngine').inputValue().catch(() => '')) !== 'v1') salah.push('bukan Turnitin V1');
+    const versiTerpilih = await hal.locator('#plagiarismEngine').inputValue().catch(() => '');
+    const adaV1 = await hal.locator('[data-engine="v1"]').count().catch(() => 0);
+
+    // V1 wajib dipakai selama kartunya masih ada; V2 hanya boleh saat V1 dicabut.
+    if (! ['v1', 'v2'].includes(versiTerpilih)) salah.push('versi Turnitin tidak dikenali');
+    else if (adaV1 && versiTerpilih !== 'v1') salah.push('V1 tersedia tetapi yang terpilih V2');
     if ((await hal.locator('#payMethodType').inputValue().catch(() => '')) !== 'wallet') salah.push('metode bayar bukan Saldo');
 
     const saldo = await bacaSaldo(hal);
@@ -930,8 +975,13 @@ async function kerjakan(ctx, hal, tugas) {
             return await kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
         }
 
-        await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
+        const { versi } = await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
         await tidur(900);
+
+        // Hasil V2 beda tampilan dengan V1 yang biasa dikirim ke pelanggan.
+        const catatanVersi = versi === 'v2'
+            ? 'Dikerjakan dengan Turnitin V2 (tampilan baru) karena submitin.id sudah mencabut V1.'
+            : null;
 
         const tombol = await periksaSebelumKirim(hal, tugas.nama_berkas);
 
@@ -1002,7 +1052,7 @@ async function kerjakan(ctx, hal, tugas) {
         catat(`Terkirim: ${tugas.order_number} → ${kode}`);
 
         // 6. Tunggu laporannya keluar.
-        await tungguHasil(ctx, hal, tugas, kode);
+        await tungguHasil(ctx, hal, tugas, kode, catatanVersi);
     } catch (e) {
         // Halangan yang khusus submitin (mis. saringan yang mereka cabut):
         // tugasnya dipindahkan, bukan dinyatakan gagal.
@@ -1215,7 +1265,7 @@ async function tungguHasilCadangan(hal, tugas, kode) {
     }
 }
 
-async function tungguHasil(ctx, hal, tugas, kode) {
+async function tungguHasil(ctx, hal, tugas, kode, catatan = null) {
     const mulai = Date.now();
     let detak = Date.now();
 
@@ -1230,23 +1280,46 @@ async function tungguHasil(ctx, hal, tugas, kode) {
             return laporGagal(tugas.id, `Halaman status ${kode} tidak memuat penanda ${tugas.penanda}. Hasil tidak diambil.`);
         }
 
-        if (await hal.locator('.badge-failed, .badge-refund').count()) {
-            return laporGagal(tugas.id, `submitin.id menandai pesanan ${kode} gagal/refund.`);
-        }
-
         const siap = await hal.locator('a, button').filter({ hasText: /unduh\s+plagiasi/i }).count();
+
+        /*
+         * Laporan yang SUDAH ada selalu menang.
+         *
+         * 14 Okt 2026 halaman status Turnitin V2 membuat bot melaporkan
+         * "gagal/refund" padahal pesanannya Selesai 23% dengan tombol unduh
+         * siap: penanda .badge-failed/.badge-refund ikut ada di DOM meski tidak
+         * terlihat. Jadi penandanya hanya dipercaya bila BENAR-BENAR tampak,
+         * dan hanya diperiksa saat laporannya memang belum keluar.
+         */
+        if (!siap) {
+            const ditolak = await hal.locator('.badge-failed, .badge-refund')
+                .evaluateAll((daftar) => daftar.some((e) => e.offsetParent !== null))
+                .catch(() => false);
+
+            if (ditolak) {
+                return laporGagal(tugas.id, `submitin.id menandai pesanan ${kode} gagal/refund.`);
+            }
+        }
 
         if (siap) {
             const isi = await unduhLaporan(hal, ctx);
             if (!isi) throw new Error('Tombol "Unduh Plagiasi" ada, tapi alamat berkasnya tidak dikenali.');
             if (isi.subarray(0, 5).toString() !== '%PDF-') throw new Error('Yang terunduh bukan PDF.');
 
+            // V1 memakai .sim-value; V2 hanya menuliskannya sebagai teks besar
+            // di bawah "SIMILARITY SCORE".
             const persenTeks = await hal.locator('.sim-value').first().textContent().catch(() => '');
-            const persen = parseInt(String(persenTeks).replace(/[^\d]/g, ''), 10);
+            let persen = parseInt(String(persenTeks).replace(/[^\d]/g, ''), 10);
+
+            if (Number.isNaN(persen)) {
+                const cocok = teks.replace(/\s+/g, ' ').match(/SIMILARITY SCORE\s*(\d{1,3})\s*%/i);
+                if (cocok) persen = parseInt(cocok[1], 10);
+            }
 
             const fd = new FormData();
             fd.append('kode', kode);
             if (!Number.isNaN(persen)) fd.append('persen', String(persen));
+            if (catatan) fd.append('catatan', catatan);
             fd.append('berkas', new Blob([isi], { type: 'application/pdf' }), `Turnitin-${tugas.order_number}.pdf`);
 
             const r = await api('POST', `/tugas/${tugas.id}/hasil`, fd);
