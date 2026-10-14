@@ -13,7 +13,7 @@
  *   3. isi form submitin: Turnitin V1 + filter pilihan customer,
  *   4. PERIKSA metode bayar = paket Standard. Bukan paket → BERHENTI.
  *      Bot tidak pernah memilih QRIS maupun Saldo.
- *   5. klik "Gunakan Paket", catat kode SC-… ke Phoenix,
+ *   5. klik "Bayar dengan Saldo", catat kode SC-… ke Phoenix,
  *   6. tunggu di halaman status sampai "Unduh Plagiasi" muncul,
  *   7. cocokkan penanda, unduh PDF, kirim ke Phoenix.
  *
@@ -56,7 +56,7 @@ const CFG = {
     token: env.PHOENIX_TOKEN || '',
     email: env.SUBMITIN_EMAIL || '',
     sandi: env.SUBMITIN_PASSWORD || '',
-    // 'aman' = berhenti tepat sebelum menekan "Gunakan Paket" lalu menyimpan
+    // 'aman' = berhenti tepat sebelum menekan "Bayar dengan Saldo" lalu menyimpan
     // tangkapan layar. Dipakai untuk uji pertama supaya kuota tidak terpakai.
     mode: (env.MODE || 'aman').toLowerCase(),
     jeda: Math.max(15, parseInt(env.JEDA_DETIK || '60', 10)) * 1000,
@@ -486,7 +486,7 @@ async function pastikanLogin(hal) {
 /**
  * Tutup pop-up promo submitin.
  *
- * Modal promo menutupi form dan bisa menelan klik "Gunakan Paket" — satu-satunya
+ * Modal promo menutupi form dan bisa menelan klik "Bayar dengan Saldo" — satu-satunya
  * klik yang benar-benar memakai kuota. Kotak "Jangan tampilkan lagi" ikut
  * dicentang supaya tidak muncul lagi di profil browser ini.
  */
@@ -543,37 +543,39 @@ async function keForm(hal) {
  * Angka "Total Bayar" SENGAJA tidak dipakai sebagai pengaman: submitin tetap
  * menampilkan harga per dokumen (Rp 5.000) walau dibayar dengan paket.
  */
-async function bacaPaket(hal) {
+async function bacaSaldo(hal) {
     return hal.evaluate(() => {
-        const label = Array.from(document.querySelectorAll('#payMethods .pay-method-label[data-pm="package"]'))
-            .find((l) => /standard/i.test(l.textContent));
+        const label = document.querySelector('#payMethods [data-pm="wallet"]');
 
-        if (!label) return { ada: false, pesan: 'Paket Standard tidak ada di akun submitin.id.' };
+        if (!label) return { ada: false, pesan: 'Metode "Gunakan Saldo" tidak ada di halaman submitin.id.' };
 
-        const teks = label.textContent.replace(/\s+/g, ' ');
-        const sisaM = teks.match(/(\d+)\s*x\s*tersisa/i);
-        const tglM = teks.match(/s\/d\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
-        const sisa = sisaM ? parseInt(sisaM[1], 10) : null;
+        const angka = (t) => {
+            const m = String(t).replace(/\s+/g, ' ').match(/Rp\s*([\d.]+)/i);
 
-        let kedaluwarsa = false;
-        if (tglM) {
-            kedaluwarsa = new Date(+tglM[3], +tglM[2] - 1, +tglM[1], 23, 59, 59) < new Date();
-        }
+            return m ? parseInt(m[1].replace(/\./g, ''), 10) : null;
+        };
 
+        const saldo = angka(label.textContent);
+        const ringkas = document.querySelector('#orderForm')?.innerText.replace(/\s+/g, ' ') || '';
+        const hargaM = ringkas.match(/Harga per dokumen\s*Rp\s*([\d.]+)/i);
+        const harga = hargaM ? parseInt(hargaM[1].replace(/\./g, ''), 10) : null;
         const mati = label.classList.contains('pm-disabled');
-        const habis = sisa === 0 || kedaluwarsa || (mati && sisa !== null && sisa < 1);
+        const cukup = saldo !== null && harga !== null && saldo >= harga;
+        const bisa = harga ? Math.floor((saldo ?? 0) / harga) : null;
 
         return {
             ada: true,
-            sisa,
-            kedaluwarsa,
+            saldo,
+            harga,
             mati,
-            habis,
-            id: label.getAttribute('data-pkg-id') || '',
-            pesan: habis
-                ? 'Paket Standard ' + (kedaluwarsa ? 'sudah kedaluwarsa' : 'habis')
-                    + (tglM ? ` (s/d ${tglM[1]}/${tglM[2]}/${tglM[3]})` : '') + '.'
-                : 'Paket Standard: ' + (sisa === null ? '?' : sisa) + 'x tersisa',
+            habis: !cukup,
+            bisa,
+            pesan: saldo === null
+                ? 'Saldo submitin.id tidak terbaca.'
+                : (cukup
+                    ? 'Saldo Rp ' + saldo.toLocaleString('id-ID') + ' (±' + bisa + ' dokumen)'
+                    : 'Saldo submitin.id Rp ' + saldo.toLocaleString('id-ID')
+                        + ' kurang dari harga per dokumen' + (harga ? ' Rp ' + harga.toLocaleString('id-ID') : '') + '.'),
         };
     });
 }
@@ -596,15 +598,16 @@ async function periksaSiap(hal) {
         };
     }
 
-    const paket = await bacaPaket(hal);
+    const saldo = await bacaSaldo(hal);
 
-    // Disimpan untuk laporan ke Telegram, apa pun hasilnya.
-    KEADAAN.kuota = paket.ada ? paket.sisa : 0;
-    KEADAAN.kuotaTeks = paket.pesan;
+    // Disimpan untuk laporan ke Telegram: "kuota" kini = berapa dokumen lagi
+    // yang sanggup dibayar saldonya.
+    KEADAAN.kuota = saldo.ada ? (saldo.bisa ?? 0) : 0;
+    KEADAAN.kuotaTeks = saldo.pesan;
 
-    if (!paket.ada || paket.habis) return { siap: false, masalah: paket.pesan, kuotaHabis: true };
+    if (!saldo.ada || saldo.habis) return { siap: false, masalah: saldo.pesan, kuotaHabis: true };
 
-    return { siap: true, paket };
+    return { siap: true, paket: saldo };
 }
 
 /* ================================================================
@@ -669,6 +672,18 @@ async function isiForm(hal, tugas, berkasPath, namaBerkas) {
     await setCentang(hal, 'input[name="excl_biblio"]', !!f.excl_biblio);
     await setCentang(hal, 'input[name="excl_quotes"]', !!f.excl_quotes);
 
+    /*
+     * 14 Okt 2026 submitin.id MENONAKTIFKAN Exclude Sources (kotaknya ada tapi
+     * disabled). Pesanan yang memintanya tidak bisa dikerjakan di sini —
+     * dialihkan ke penyedia cadangan, bukan digagalkan.
+     */
+    if (f.excl_source && await hal.locator('#exclSourceChk').first().evaluate((el) => el.disabled).catch(() => false)) {
+        throw Object.assign(
+            new Error('submitin.id menonaktifkan saringan Exclude Sources'),
+            { alihkan: true },
+        );
+    }
+
     await setCentang(hal, '#exclSourceChk', !!f.excl_source);
     if (f.excl_source) {
         await tidur(300);
@@ -686,23 +701,26 @@ async function isiForm(hal, tugas, berkasPath, namaBerkas) {
         await setNilai(hal, '#exclMatchWords', f.excl_match.kata);
     }
 
-    // Paket Standard — satu-satunya metode bayar yang boleh dipakai bot.
-    const paket = await bacaPaket(hal);
-    if (!paket.ada || paket.habis) {
-        throw Object.assign(new Error(paket.pesan), { kuotaHabis: true });
+    /*
+     * "Gunakan Saldo" — satu-satunya metode bayar yang boleh dipakai bot.
+     *
+     * 14 Okt 2026 submitin.id menghapus Paket Standard; yang tersisa QRIS dan
+     * Saldo. QRIS berarti menunggu pembayaran manual, jadi bot tidak pernah
+     * memilihnya: saldo dulu yang diisi admin, bot hanya memakainya.
+     */
+    const saldo = await bacaSaldo(hal);
+    if (!saldo.ada || saldo.habis) {
+        throw Object.assign(new Error(saldo.pesan), { kuotaHabis: true });
     }
-    if (paket.mati) throw new Error('Paket Standard tidak bisa dipilih untuk pesanan ini');
+    if (saldo.mati) throw new Error('Metode "Gunakan Saldo" tidak bisa dipilih untuk pesanan ini');
 
-    await hal.locator('#payMethods .pay-method-label[data-pm="package"]')
-        .filter({ hasText: /standard/i }).first().evaluate((el) => el.click());
+    await hal.locator('#payMethods [data-pm="wallet"]').first().evaluate((el) => el.click());
     await tidur(800);
 
     const metode = await hal.locator('#payMethodType').inputValue().catch(() => '');
-    const idPaket = await hal.locator('#payPackageId').inputValue().catch(() => '0');
+    if (metode !== 'wallet') throw new Error('Gagal memilih "Gunakan Saldo"');
 
-    if (metode !== 'package' || idPaket === '0') throw new Error('Gagal memilih paket Standard');
-
-    return paket;
+    return saldo;
 }
 
 /*
@@ -756,22 +774,30 @@ async function periksaSebelumKirim(hal, namaBerkas) {
     const salah = [];
 
     if ((await hal.locator('#plagiarismEngine').inputValue().catch(() => '')) !== 'v1') salah.push('bukan Turnitin V1');
-    if ((await hal.locator('#payMethodType').inputValue().catch(() => '')) !== 'package') salah.push('metode bayar bukan paket');
+    if ((await hal.locator('#payMethodType').inputValue().catch(() => '')) !== 'wallet') salah.push('metode bayar bukan Saldo');
 
-    const idPaket = await hal.locator('#payPackageId').inputValue().catch(() => '0');
-    if (idPaket === '0') salah.push('paket belum terpilih');
+    const saldo = await bacaSaldo(hal);
+    if (!saldo.ada || saldo.habis) salah.push(saldo.pesan);
 
-    const paket = await bacaPaket(hal);
-    const terpilihStandard = await hal.locator('#payMethods .pay-method-label[data-pm="package"]')
-        .filter({ hasText: /standard/i }).first()
-        .evaluate((el) => el.classList.contains('is-selected')).catch(() => false);
+    // Total yang akan dipotong harus masuk akal: ada angkanya, dan tidak
+    // melebihi saldo. Nol pun ditolak — berarti berkasnya belum terhitung.
+    const ringkas = (await hal.locator('#orderForm').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    const totalM = ringkas.match(/Total Bayar\s*Rp\s*([\d.]+)/i);
+    const total = totalM ? parseInt(totalM[1].replace(/\./g, ''), 10) : null;
 
-    if (!paket.ada || !terpilihStandard || idPaket !== paket.id) salah.push('yang terpilih bukan paket Standard');
+    if (total === null) salah.push('Total Bayar tidak terbaca');
+    else if (total <= 0) salah.push('Total Bayar Rp 0 — berkasnya belum terhitung');
+    else if (saldo.saldo !== null && total > saldo.saldo) {
+        salah.push(`Total Bayar Rp ${total.toLocaleString('id-ID')} melebihi saldo Rp ${saldo.saldo.toLocaleString('id-ID')}`);
+    }
 
     const tombol = hal.locator('#payBtn');
     const teksTombol = (await tombol.textContent().catch(() => '')) || '';
-    if (!/gunakan\s+paket/i.test(teksTombol)) {
-        salah.push('tombol bukan "Gunakan Paket" (bot tidak membayar dengan QRIS/Saldo)');
+
+    // Tombolnya ikut berubah jadi "Bayar dengan QRIS" bila metodenya salah —
+    // ini pengaman terakhir supaya bot tidak pernah membuat tagihan QRIS.
+    if (!/saldo/i.test(teksTombol) || /qris/i.test(teksTombol)) {
+        salah.push(`tombol berbunyi "${teksTombol.trim().slice(0, 40)}" (bot hanya boleh "Bayar dengan Saldo")`);
     }
 
     const adaBerkas = await hal.evaluate((n) => document.body.innerText.includes(n), namaBerkas);
@@ -916,7 +942,7 @@ async function kerjakan(ctx, hal, tugas) {
             return laporGagal(
                 tugas.id,
                 'Mode aman: form submitin sudah terisi lengkap dan lolos semua pemeriksaan, '
-                    + 'tetapi bot sengaja berhenti sebelum menekan "Gunakan Paket". '
+                    + 'tetapi bot sengaja berhenti sebelum menekan "Bayar dengan Saldo". '
                     + 'Ubah MODE=penuh di server untuk menjalankannya sungguhan.',
                 false,
                 true,
@@ -924,7 +950,7 @@ async function kerjakan(ctx, hal, tugas) {
         }
 
         // 4. Kirim. Dicatat sebelum klik supaya tidak pernah terkirim dua kali.
-        catat('Klik "Gunakan Paket" untuk', tugas.order_number);
+        catat('Klik "Bayar dengan Saldo" untuk', tugas.order_number);
         await tutupPromo(hal);
 
         const pindah = hal.waitForURL(/\/status\?order=/i, { timeout: 10 * 60 * 1000 }).catch(() => null);
@@ -948,7 +974,7 @@ async function kerjakan(ctx, hal, tugas) {
         if (!kode) {
             return laporGagal(
                 tugas.id,
-                'Setelah "Gunakan Paket", submitin.id membuka ' + hal.url().split('?')[0]
+                'Setelah "Bayar dengan Saldo", submitin.id membuka ' + hal.url().split('?')[0]
                     + ' (bukan halaman status). Cek riwayat pesanan submitin untuk ' + tugas.penanda + '.',
             );
         }
@@ -970,6 +996,12 @@ async function kerjakan(ctx, hal, tugas) {
         // 6. Tunggu laporannya keluar.
         await tungguHasil(ctx, hal, tugas, kode);
     } catch (e) {
+        // Halangan yang khusus submitin (mis. saringan yang mereka cabut):
+        // tugasnya dipindahkan, bukan dinyatakan gagal.
+        if (e.alihkan) {
+            return await kerjakanCadangan(ctx, tugas, berkasPath, e.message || String(e));
+        }
+
         return laporGagal(tugas.id, e.message || String(e), !!e.kuotaHabis);
     } finally {
         fs.rmSync(berkasPath, { force: true });
