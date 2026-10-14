@@ -738,7 +738,15 @@ async function domKlik(hal, sel) {
 
 async function setCentang(hal, sel, mau) {
     const hasil = await hal.locator(sel).first().evaluate((el, mauCentang) => {
-        if (el.disabled) return 'nonaktif';
+        /*
+         * Kotak yang dinonaktifkan submitin TIDAK masalah selama keadaannya
+         * sudah sesuai yang diminta — mis. Exclude Sources yang mereka cabut
+         * 14 Okt 2026: kotaknya mati dan tidak tercentang, dan memang itu yang
+         * kita mau untuk pesanan tanpa saringan tersebut. Dulu ini dianggap
+         * gagal, sehingga pesanan biasa pun ikut tertolak.
+         */
+        if (el.disabled) return el.checked === mauCentang ? 'ok' : 'nonaktif';
+
         if (el.checked !== mauCentang) el.click();
 
         return el.checked === mauCentang ? 'ok' : 'gagal';
