@@ -569,7 +569,7 @@ it('tidak menyebut akun yang masih aktif atau yang dibatalkan', function () {
         ->assertDontSee('akun habis');
 });
 
-it('tidak menyebut akun habis yang sudah diperpanjang', function () {
+it('tetap menyebut akun habis yang sudah diperpanjang, tetapi ditandai', function () {
     $this->actingAs(tokoAdmin());
     $produk = Product::create(['nama_akun' => 'Netflix']);
     $lama = tokoPesanan([], ['end_date' => today()->subDay()], $produk);
@@ -584,5 +584,29 @@ it('tidak menyebut akun habis yang sudah diperpanjang', function () {
         $produk,
     );
 
-    Livewire::test(OrderList::class)->assertDontSee('Akun habis:');
+    /*
+     * Tab "Akun Habis" sengaja menyembunyikan yang sudah dibeli ulang supaya
+     * pelanggannya tidak diingatkan lagi. Di kolom Status justru sebaliknya:
+     * menyembunyikannya membuat admin mengira akunnya masih aktif
+     * (INV-20260905-0001, 15 Okt 2026).
+     */
+    Livewire::test(OrderList::class)
+        ->assertSee('Akun habis: Netflix')
+        ->assertSee('diperpanjang');
+});
+
+it('tab Akun Habis tetap mengecualikan yang sudah diperpanjang', function () {
+    // Lencana di kolom Status melaporkan apa adanya, tetapi tab untuk
+    // menindaklanjuti (kirim WA) tidak boleh ikut berubah.
+    $this->actingAs(tokoAdmin());
+    $produk = Product::create(['nama_akun' => 'Spotify']);
+    $lama = tokoPesanan([], ['end_date' => today()->subDay()], $produk);
+    $lama->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+    tokoPesanan(['customer_id' => $lama->customer_id, 'status' => 'paid'], ['end_date' => today()->addMonth()], $produk);
+
+    // Diperiksa dari isi tabnya, bukan seluruh halaman: nama produk juga
+    // muncul di dropdown saringan.
+    $isiTab = Livewire::test(OrderList::class)->set('activeTab', 'habis')->viewData('habisItems');
+
+    expect($isiTab->pluck('product_name'))->not->toContain('Spotify');
 });

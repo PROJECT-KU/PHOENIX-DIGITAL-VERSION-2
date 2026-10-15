@@ -372,18 +372,24 @@ Data Pesanan || lemon
                                                              (yang sudah diperpanjang tidak ikut). --}}
                                                         @php
                                                             $akunHabis = $order->items->filter(fn ($it) => isset($idAkunHabis[$it->id]));
+                                                            // Yang pelanggannya sudah membeli ulang tetap disebut, tetapi
+                                                            // nadanya abu-abu: tidak ada yang perlu ditindaklanjuti.
+                                                            $perluTindak = $akunHabis->filter(fn ($it) => $idAkunHabis[$it->id] === 'habis');
+                                                            $namaAkun = fn ($it) => $it->product_name ?: $it->product?->nama_akun ?: 'Akun';
                                                             $namaHabis = $akunHabis
-                                                                ->map(fn ($it) => ($it->product_name ?: $it->product?->nama_akun ?: 'Akun')
-                                                                    .($it->end_date ? ' (s/d '.$it->end_date->locale('id')->translatedFormat('d M Y').')' : ''))
+                                                                ->map(fn ($it) => $namaAkun($it)
+                                                                    .($it->end_date ? ' (s/d '.$it->end_date->locale('id')->translatedFormat('d M Y').')' : '')
+                                                                    .($idAkunHabis[$it->id] === 'diperpanjang' ? ' — sudah diperpanjang' : ''))
                                                                 ->implode(', ');
                                                         @endphp
                                                         @if ($akunHabis->isNotEmpty())
-                                                            <span class="dsb-lencana is-merah pt-lencana-kecil" title="Masa aktif sudah lewat: {{ $namaHabis }}">
+                                                            <span class="dsb-lencana {{ $perluTindak->isNotEmpty() ? 'is-merah' : 'is-abu' }} pt-lencana-kecil"
+                                                                title="Masa aktif sudah lewat: {{ $namaHabis }}">
                                                                 <i class="bi bi-hourglass-bottom"></i>
                                                                 @if ($akunHabis->count() === 1)
-                                                                    Akun habis: {{ \Illuminate\Support\Str::limit($akunHabis->first()->product_name ?: $akunHabis->first()->product?->nama_akun ?: 'akun', 28) }}
+                                                                    Akun habis: {{ \Illuminate\Support\Str::limit($namaAkun($akunHabis->first()), 28) }}{{ $perluTindak->isEmpty() ? ' · diperpanjang' : '' }}
                                                                 @else
-                                                                    {{ $akunHabis->count() }} akun habis
+                                                                    {{ $akunHabis->count() }} akun habis{{ $perluTindak->isEmpty() ? ' · diperpanjang' : '' }}
                                                                 @endif
                                                             </span>
                                                         @endif

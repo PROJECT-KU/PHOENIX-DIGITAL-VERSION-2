@@ -377,12 +377,18 @@ class OrderList extends Component
     /**
      * Item yang masa aktif akunnya SUDAH HABIS pada pesanan yang sedang tampil.
      *
-     * Aturannya sama persis dengan tab "Akun Habis" (termasuk mengecualikan
-     * yang sudah diperpanjang), tetapi dihitung SEKALI untuk seluruh halaman:
-     * memeriksanya per baris berarti satu subkueri per pesanan.
+     * BERBEDA dengan tab "Akun Habis": di sini yang dilaporkan adalah KEADAAN
+     * APA ADANYA. Tab itu sengaja menyembunyikan akun yang sudah diperpanjang
+     * supaya pelanggannya tidak diingatkan lagi lewat WA — tetapi di kolom
+     * Status justru itulah yang membuat admin bingung: pesanan lama yang
+     * akunnya jelas habis hanya tertulis "Selesai" (INV-20260905-0001,
+     * 15 Okt 2026). Jadi keduanya tetap disebut, hanya dibedakan nadanya.
+     *
+     * Dihitung SEKALI untuk seluruh halaman; per baris berarti satu subkueri
+     * per pesanan.
      *
      * @param  \Illuminate\Support\Collection|array  $orders
-     * @return array<string, true> id item, siap dipakai isset() di Blade
+     * @return array<string, 'habis'|'diperpanjang'> id item => keadaannya
      */
     public function idItemAkunHabis($orders): array
     {
@@ -392,19 +398,30 @@ class OrderList extends Component
             return [];
         }
 
-        return OrderItem::query()
-            ->whereIn('order_id', $ids)
+        $habis = fn ($q) => $q->whereIn('order_id', $ids)
             ->where('delivery_status', '!=', 'cancelled')
-            ->tap(fn ($x) => PengingatPerpanjangan::scopeBelumDiperpanjang($x))
-            ->where(function ($q) {
-                $q->where('subscription_status', 'habis')
-                    ->orWhere(function ($q2) {
-                        $q2->whereNotNull('end_date')->where('end_date', '<', now());
+            ->where(function ($w) {
+                $w->where('subscription_status', 'habis')
+                    ->orWhere(function ($w2) {
+                        $w2->whereNotNull('end_date')->where('end_date', '<', now());
                     });
-            })
+            });
+
+        $semua = OrderItem::query()->tap($habis)->pluck('id');
+
+        if ($semua->isEmpty()) {
+            return [];
+        }
+
+        // Yang masih perlu ditindaklanjuti (pelanggannya belum membeli ulang).
+        $belumDiperpanjang = OrderItem::query()
+            ->tap($habis)
+            ->tap(fn ($x) => PengingatPerpanjangan::scopeBelumDiperpanjang($x))
             ->pluck('id')
-            ->flip()
-            ->map(fn () => true)
+            ->flip();
+
+        return $semua
+            ->mapWithKeys(fn ($id) => [$id => $belumDiperpanjang->has($id) ? 'habis' : 'diperpanjang'])
             ->all();
     }
 
