@@ -918,6 +918,47 @@ async function kerjakan(ctx, hal, tugas) {
     catat(`Mengerjakan ${tugas.order_number} (${tugas.penanda})`);
     KEADAAN.pekerjaan = tugas.order_number;
 
+    /*
+     * Sudah pernah dikirim & dibayar? Jangan diulang.
+     *
+     * Phoenix menyertakan bot_kode pada tugas yang sedang menunggu hasil (mis.
+     * bot restart di tengah jalan, atau laporannya salah dibaca sebagai gagal).
+     * Dulu kode itu diabaikan, jadi bot mengunggah lagi dan membayar dua kali.
+     * Sekarang ia langsung melanjutkan ke halaman hasilnya.
+     */
+    if (tugas.bot_kode) {
+        const kodeCp = /^CP-/i.test(tugas.bot_kode);
+        catat(`${tugas.order_number} sudah terkirim (${tugas.bot_kode}) — langsung menunggu hasilnya, tanpa bayar lagi.`);
+
+        if (kodeCp) {
+            const halCp = await ctx.newPage();
+
+            try {
+                KEADAAN.penyedia = cekplagiat.NAMA;
+                await cekplagiat.keDasbor(halCp);
+                await tungguHasilCadangan(halCp, tugas, tugas.bot_kode.slice(3));
+            } catch (e) {
+                return laporGagal(tugas.id, `Lewat ${cekplagiat.NAMA}: ${e.message || String(e)}`, false, true);
+            } finally {
+                KEADAAN.penyedia = 'submitin.id';
+                await halCp.close().catch(() => {});
+            }
+
+            return;
+        }
+
+        try {
+            await hal.goto(`https://submitin.id/status?order=${encodeURIComponent(tugas.bot_kode)}`,
+                { waitUntil: 'domcontentloaded', timeout: 60000 });
+            await pastikanLogin(hal);
+            await tungguHasil(ctx, hal, tugas, tugas.bot_kode);
+        } catch (e) {
+            return laporGagal(tugas.id, `Menunggu hasil ${tugas.bot_kode}: ${e.message || String(e)}`, false, true);
+        }
+
+        return;
+    }
+
     // 1. Unduh berkas customer dari Phoenix.
     let isi;
     try {
