@@ -203,6 +203,9 @@
     }
     .pt-isi-tombol { display: inline-flex; align-items: center; gap: 8px; }
     .pt-lencana-kecil { display: inline-flex; margin-top: 4px; font-size: .66rem; }
+    /* Keterangan masa aktif selalu mulai baris baru di bawah lencana status,
+       bukan berdempetan di sampingnya. */
+    .pt-lencana-bawah { display: flex; width: fit-content; margin-top: 4px; }
 
     /* ===== Linimasa riwayat pesanan ===== */
     .pt-riwayat { list-style: none; margin: 0; padding: 0; position: relative; }

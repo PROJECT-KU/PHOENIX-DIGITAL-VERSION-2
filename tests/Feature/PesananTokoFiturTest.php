@@ -543,6 +543,8 @@ it('menyebut akun yang masa aktifnya habis beserta namanya di daftar pesanan', f
 
     Livewire::test(OrderList::class)
         ->assertSee('Akun habis: Canva Pro 1 Bulan')
+        // Merah (danger): masa aktifnya habis dan belum dibeli ulang.
+        ->assertSee('dsb-lencana is-merah pt-lencana-kecil pt-lencana-bawah', escape: false)
         // Status aslinya tetap tampil; lencana ini hanya penjelas tambahan.
         ->assertSee('Selesai');
 });
@@ -590,9 +592,12 @@ it('tetap menyebut akun habis yang sudah diperpanjang, tetapi ditandai', functio
      * menyembunyikannya membuat admin mengira akunnya masih aktif
      * (INV-20260905-0001, 15 Okt 2026).
      */
+    // Biru (info) untuk yang sudah diperpanjang, bukan merah: tidak ada yang
+    // perlu dikerjakan admin.
     Livewire::test(OrderList::class)
         ->assertSee('Akun habis: Netflix')
-        ->assertSee('diperpanjang');
+        ->assertSee('diperpanjang')
+        ->assertSee('dsb-lencana is-biru pt-lencana-kecil pt-lencana-bawah', escape: false);
 });
 
 it('tab Akun Habis tetap mengecualikan yang sudah diperpanjang', function () {

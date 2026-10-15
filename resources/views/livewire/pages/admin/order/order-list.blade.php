@@ -372,8 +372,8 @@ Data Pesanan || lemon
                                                              (yang sudah diperpanjang tidak ikut). --}}
                                                         @php
                                                             $akunHabis = $order->items->filter(fn ($it) => isset($idAkunHabis[$it->id]));
-                                                            // Yang pelanggannya sudah membeli ulang tetap disebut, tetapi
-                                                            // nadanya abu-abu: tidak ada yang perlu ditindaklanjuti.
+                                                            // Merah = habis & perlu ditindaklanjuti. Biru = habis tetapi
+                                                            // pelanggannya sudah membeli ulang: kabar, bukan tugas.
                                                             $perluTindak = $akunHabis->filter(fn ($it) => $idAkunHabis[$it->id] === 'habis');
                                                             $namaAkun = fn ($it) => $it->product_name ?: $it->product?->nama_akun ?: 'Akun';
                                                             $namaHabis = $akunHabis
@@ -383,7 +383,7 @@ Data Pesanan || lemon
                                                                 ->implode(', ');
                                                         @endphp
                                                         @if ($akunHabis->isNotEmpty())
-                                                            <span class="dsb-lencana {{ $perluTindak->isNotEmpty() ? 'is-merah' : 'is-abu' }} pt-lencana-kecil"
+                                                            <span class="dsb-lencana {{ $perluTindak->isNotEmpty() ? 'is-merah' : 'is-biru' }} pt-lencana-kecil pt-lencana-bawah"
                                                                 title="Masa aktif sudah lewat: {{ $namaHabis }}">
                                                                 <i class="bi bi-hourglass-bottom"></i>
                                                                 @if ($akunHabis->count() === 1)
