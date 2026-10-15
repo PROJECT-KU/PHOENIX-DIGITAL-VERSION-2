@@ -527,3 +527,62 @@ it('templat catatan pelanggan "maks. 2 perangkat" ditambahkan sekali klik, tidak
         ->and(substr_count($t->get('accountNotes'), $teks))->toBe(1);
     $t->assertSee('sudah ditambahkan');
 });
+
+/*
+ * ----------------------------------------------------------------------
+ * Akun habis disebut di kolom Status
+ *
+ * "Selesai" saja membuat admin mengira pesanannya masih berjalan, lalu harus
+ * membuka satu per satu untuk tahu akun mana yang masa aktifnya sudah lewat.
+ * ----------------------------------------------------------------------
+ */
+
+it('menyebut akun yang masa aktifnya habis beserta namanya di daftar pesanan', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan([], ['product_name' => 'Canva Pro 1 Bulan', 'end_date' => today()->subDay()]);
+
+    Livewire::test(OrderList::class)
+        ->assertSee('Akun habis: Canva Pro 1 Bulan')
+        // Status aslinya tetap tampil; lencana ini hanya penjelas tambahan.
+        ->assertSee('Selesai');
+});
+
+it('menghitung beberapa akun habis dalam satu pesanan', function () {
+    $this->actingAs(tokoAdmin());
+    $order = tokoPesanan([], ['product_name' => 'Akun A', 'end_date' => today()->subDay()]);
+    OrderItem::create([
+        'order_id' => $order->id, 'product_id' => Product::create(['nama_akun' => 'Akun B'])->id,
+        'product_name' => 'Akun B', 'duration_type' => 'bulan', 'duration_value' => 1,
+        'price' => 1, 'quantity' => 1, 'subtotal' => 1, 'end_date' => today()->subDays(3),
+    ]);
+
+    Livewire::test(OrderList::class)->assertSee('2 akun habis');
+});
+
+it('tidak menyebut akun yang masih aktif atau yang dibatalkan', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan([], ['product_name' => 'Masih Aktif', 'end_date' => today()->addDays(5)]);
+    tokoPesanan([], ['product_name' => 'Sudah Batal', 'end_date' => today()->subDay(), 'delivery_status' => 'cancelled']);
+
+    Livewire::test(OrderList::class)
+        ->assertDontSee('Akun habis:')
+        ->assertDontSee('akun habis');
+});
+
+it('tidak menyebut akun habis yang sudah diperpanjang', function () {
+    $this->actingAs(tokoAdmin());
+    $produk = Product::create(['nama_akun' => 'Netflix']);
+    $lama = tokoPesanan([], ['end_date' => today()->subDay()], $produk);
+    // created_at tidak ikut lewat create(), jadi dimundurkan di sini —
+    // syaratnya "dibeli SESUDAH pesanan lama".
+    $lama->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+
+    // Pelanggan yang sama membeli produk yang sama sesudahnya dan sudah dibayar.
+    tokoPesanan(
+        ['customer_id' => $lama->customer_id, 'status' => 'paid'],
+        ['end_date' => today()->addMonth()],
+        $produk,
+    );
+
+    Livewire::test(OrderList::class)->assertDontSee('Akun habis:');
+});

@@ -374,6 +374,40 @@ class OrderList extends Component
             ->paginate($this->perHalaman);
     }
 
+    /**
+     * Item yang masa aktif akunnya SUDAH HABIS pada pesanan yang sedang tampil.
+     *
+     * Aturannya sama persis dengan tab "Akun Habis" (termasuk mengecualikan
+     * yang sudah diperpanjang), tetapi dihitung SEKALI untuk seluruh halaman:
+     * memeriksanya per baris berarti satu subkueri per pesanan.
+     *
+     * @param  \Illuminate\Support\Collection|array  $orders
+     * @return array<string, true> id item, siap dipakai isset() di Blade
+     */
+    public function idItemAkunHabis($orders): array
+    {
+        $ids = collect($orders)->pluck('id')->all();
+
+        if (! $ids) {
+            return [];
+        }
+
+        return OrderItem::query()
+            ->whereIn('order_id', $ids)
+            ->where('delivery_status', '!=', 'cancelled')
+            ->tap(fn ($x) => PengingatPerpanjangan::scopeBelumDiperpanjang($x))
+            ->where(function ($q) {
+                $q->where('subscription_status', 'habis')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('end_date')->where('end_date', '<', now());
+                    });
+            })
+            ->pluck('id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
+    }
+
     /** Tab berbasis item (satu baris = satu akun), bukan pesanan. */
     public function tabItem(): bool
     {
@@ -453,8 +487,11 @@ class OrderList extends Component
             $years = collect([now()->year]);
         }
 
+        $daftarPesanan = $this->tabItem() ? null : $this->orders;
+
         return view('livewire.pages.admin.order.order-list', [
-            'orders' => $this->tabItem() ? null : $this->orders,
+            'orders' => $daftarPesanan,
+            'idAkunHabis' => $daftarPesanan ? $this->idItemAkunHabis($daftarPesanan->items()) : [],
             'habisItems' => $this->activeTab === 'habis' ? $this->habisItems : null,
             'segeraItems' => $this->activeTab === 'segera' ? $this->segeraItems : null,
             'produkPilihan' => Product::whereIn('id', OrderItem::query()->select('product_id')->distinct())
