@@ -206,6 +206,9 @@
     /* Keterangan masa aktif selalu mulai baris baru di bawah lencana status,
        bukan berdempetan di sampingnya. */
     .pt-lencana-bawah { display: flex; width: fit-content; margin-top: 4px; }
+    /* Di lencana biru (sudah dibeli ulang) penanda masa aktifnya tetap merah;
+       di lencana merah ia mewarisi warna lencananya sendiri. */
+    .pt-lencana-bawah .pt-habis-tegas { color: #b91c1c; font-weight: 800; }
 
     /* ===== Linimasa riwayat pesanan ===== */
     .pt-riwayat { list-style: none; margin: 0; padding: 0; position: relative; }

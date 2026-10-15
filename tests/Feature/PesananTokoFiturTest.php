@@ -542,7 +542,7 @@ it('menyebut akun yang masa aktifnya habis beserta namanya di daftar pesanan', f
     tokoPesanan([], ['product_name' => 'Canva Pro 1 Bulan', 'end_date' => today()->subDay()]);
 
     Livewire::test(OrderList::class)
-        ->assertSee('Akun habis: Canva Pro 1 Bulan')
+        ->assertSee('<span class="pt-habis-tegas">Akun habis</span>: Canva Pro 1 Bulan', escape: false)
         // Merah (danger): masa aktifnya habis dan belum dibeli ulang.
         ->assertSee('dsb-lencana is-merah pt-lencana-kecil pt-lencana-bawah', escape: false)
         // Status aslinya tetap tampil; lencana ini hanya penjelas tambahan.
@@ -567,8 +567,9 @@ it('tidak menyebut akun yang masih aktif atau yang dibatalkan', function () {
     tokoPesanan([], ['product_name' => 'Sudah Batal', 'end_date' => today()->subDay(), 'delivery_status' => 'cancelled']);
 
     Livewire::test(OrderList::class)
-        ->assertDontSee('Akun habis:')
-        ->assertDontSee('akun habis');
+        // Yang diperiksa tag-nya, bukan nama kelasnya: kelas itu juga ada di
+        // blok CSS yang selalu ikut dirender.
+        ->assertDontSee('<span class="pt-habis-tegas">', escape: false);
 });
 
 it('tetap menyebut akun habis yang sudah diperpanjang, tetapi ditandai', function () {
@@ -595,9 +596,11 @@ it('tetap menyebut akun habis yang sudah diperpanjang, tetapi ditandai', functio
     // Biru (info) untuk yang sudah diperpanjang, bukan merah: tidak ada yang
     // perlu dikerjakan admin.
     Livewire::test(OrderList::class)
-        ->assertSee('Akun habis: Netflix')
+        ->assertSee('<span class="pt-habis-tegas">Akun habis</span>: Netflix', escape: false)
         ->assertSee('diperpanjang')
-        ->assertSee('dsb-lencana is-biru pt-lencana-kecil pt-lencana-bawah', escape: false);
+        ->assertSee('dsb-lencana is-biru pt-lencana-kecil pt-lencana-bawah', escape: false)
+        // Kata "Akun habis" tetap merah walau lencananya biru.
+        ->assertSee('<span class="pt-habis-tegas">Akun habis</span>', escape: false);
 });
 
 it('tab Akun Habis tetap mengecualikan yang sudah diperpanjang', function () {

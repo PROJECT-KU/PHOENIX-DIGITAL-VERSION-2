@@ -386,11 +386,13 @@ Data Pesanan || lemon
                                                             <span class="dsb-lencana {{ $perluTindak->isNotEmpty() ? 'is-merah' : 'is-biru' }} pt-lencana-kecil pt-lencana-bawah"
                                                                 title="Masa aktif sudah lewat: {{ $namaHabis }}">
                                                                 <i class="bi bi-hourglass-bottom"></i>
-                                                                @if ($akunHabis->count() === 1)
-                                                                    Akun habis: {{ \Illuminate\Support\Str::limit($namaAkun($akunHabis->first()), 28) }}{{ $perluTindak->isEmpty() ? ' · diperpanjang' : '' }}
-                                                                @else
-                                                                    {{ $akunHabis->count() }} akun habis{{ $perluTindak->isEmpty() ? ' · diperpanjang' : '' }}
-                                                                @endif
+                                                                {{-- Kata "akun habis" SELALU merah, juga di lencana biru:
+                                                                     yang biru itu kabar bahwa pelanggannya sudah membeli
+                                                                     ulang, bukan berarti akun lamanya masih hidup. --}}
+                                                                {{-- Seluruh teks dibungkus SATU elemen: .dsb-lencana memakai
+                                                                     flex dengan gap, jadi teks yang terpisah-pisah akan
+                                                                     diberi jarak ("Akun habis : Nama"). --}}
+                                                                <span>@if ($akunHabis->count() === 1)<span class="pt-habis-tegas">Akun habis</span>: {{ \Illuminate\Support\Str::limit($namaAkun($akunHabis->first()), 28) }}@else<span class="pt-habis-tegas">{{ $akunHabis->count() }} akun habis</span>@endif{{ $perluTindak->isEmpty() ? ' · diperpanjang' : '' }}</span>
                                                             </span>
                                                         @endif
                                                     @endif
