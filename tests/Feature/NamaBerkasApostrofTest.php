@@ -61,3 +61,49 @@ it('jalur folder pada titipan dibuang, hanya nama berkasnya yang dipakai', funct
 it('titipan kosong atau spasi saja diabaikan', function () {
     expect(namaTersimpan('asli.docx', '   '))->toBe('asli.docx');
 });
+
+/*
+ * ----------------------------------------------------------------------
+ * Sisi peramban
+ *
+ * Perbaikannya ada di peramban, jadi yang dijaga di sini: skrip pembersihnya
+ * ikut terkirim, dan tiap layar unggah benar-benar memanggilnya. Layar yang
+ * lupa memanggil akan kembali ditolak firewall dengan 403 (kambuh 17 Okt 2026
+ * di modal unggah hasil, INV-20261017-0008).
+ * ----------------------------------------------------------------------
+ */
+
+it('layout admin menyertakan pembersih nama berkas', function () {
+    $layout = file_get_contents(resource_path('views/livewire/layout/templateindex.blade.php'));
+
+    expect($layout)->toContain('window.amankanNamaBerkas')
+        // Karakter selain huruf/angka/spasi/._()- diganti, termasuk apostrof.
+        ->and($layout)->toContain("replace(/[^A-Za-z0-9 ._()\\-]/g, '-')")
+        ->and($layout)->toContain('new DataTransfer()');
+});
+
+it('layar unggah memanggil pembersih itu saat berkas dipilih', function () {
+    $layar = [
+        'bukti pembayaran' => 'views/livewire/pages/admin/order/bukti-pembayaran.blade.php',
+        'buat pesanan' => 'views/livewire/pages/admin/order/order-form.blade.php',
+    ];
+
+    foreach ($layar as $nama => $jalur) {
+        $isi = file_get_contents(resource_path($jalur));
+
+        // Layar yang lupa memanggilnya akan kembali ditolak firewall.
+        expect(str_contains($isi, 'change.capture="window.amankanNamaBerkas'))
+            ->toBeTrue("layar {$nama} belum memanggil pembersih nama berkas");
+    }
+
+    // Modal unggah hasil punya salinannya sendiri karena juga menitipkan nama asli.
+    expect(file_get_contents(resource_path('views/livewire/pages/admin/order/order-detail.blade.php')))
+        ->toContain('x-on:change.capture="amankanNamaBerkas($event)"')
+        ->toContain("namaAsliHasil.' + kunci");
+});
+
+it('halaman unggah pelanggan tetap memakai pembersihnya sendiri', function () {
+    expect(file_get_contents(resource_path('views/livewire/pages/public/shop-page/jasa-cek-page.blade.php')))
+        ->toContain('amankanNamaBerkas')
+        ->toContain('new DataTransfer()');
+});

@@ -620,6 +620,37 @@
 </div>
 
 @push('scripts')
+    {{-- Pembersih nama berkas, dipakai semua layar admin yang mengunggah.
+
+         Firewall Hostinger (ModSecurity) memutus unggahan multipart yang NAMA
+         berkasnya memuat apostrof dengan HTTP 403 — sebelum Laravel jalan, jadi
+         Livewire hanya berkata "failed to upload" tanpa jejak di log sama sekali
+         (22 Agu 2026 di halaman /cek, kambuh 17 Okt 2026 saat unggah hasil).
+
+         Yang dibersihkan hanya NAMA berkasnya; isinya tidak disentuh. Layar yang
+         perlu menampilkan nama asli ke pelanggan menitipkannya lebih dulu lewat
+         properti Livewire sendiri (lihat modal unggah hasil di order-detail). --}}
+    <script>
+        window.amankanNamaBerkas = function (e) {
+            const input = e && e.target;
+            if (!input || input.type !== 'file' || !input.files || !input.files.length) return;
+
+            const berkas = input.files[0];
+            const bersih = berkas.name.replace(/[^A-Za-z0-9 ._()\-]/g, '-');
+            if (bersih === berkas.name) return;
+
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(new File([berkas], bersih, {
+                    type: berkas.type,
+                    lastModified: berkas.lastModified,
+                }));
+                input.files = dt.files;
+            } catch (err) {
+                /* Peramban lawas tanpa DataTransfer: biarkan apa adanya. */
+            }
+        };
+    </script>
     {{-- Konfirmasi hapus SERAGAM untuk seluruh layar admin.
 
          Dipasang di layout, bukan disalin ke tiap halaman. Sebelumnya

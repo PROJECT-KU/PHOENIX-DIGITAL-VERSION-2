@@ -287,8 +287,13 @@ Unggah Bukti Pembayaran || lemon
                              Penanda itu sempat terlihat sebelum admin memilih apa pun
                              dan justru membingungkan. Umpan baliknya kini pratinjau
                              gambar, yang muncul seketika begitu berkas dipilih. --}}
+                        {{-- Nama berkas dibersihkan sebelum diunggah: firewall Hostinger
+                             menolak nama berapostrof dengan HTTP 403 sebelum Laravel
+                             jalan. Bukti pembayaran hanya menyimpan jalurnya, jadi
+                             namanya tidak perlu dititipkan. --}}
                         <div class="bp-drop"
                             x-data="{ pratinjau: null, nama: null }"
+                            x-on:change.capture="window.amankanNamaBerkas && window.amankanNamaBerkas($event)"
                             x-on:pratinjau-bersih.window="pratinjau = null; nama = null">
                             <input type="file" wire:model="bukti" accept="image/*"
                                 x-on:change="const f = $event.target.files[0];

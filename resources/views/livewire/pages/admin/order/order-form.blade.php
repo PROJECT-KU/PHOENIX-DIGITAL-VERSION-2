@@ -941,7 +941,10 @@
                 <p class="text-muted mb-3" style="font-size:.88rem;">
                     Metode <b class="text-dark">{{ $payment_method === 'transfer' ? 'Transfer Bank' : 'QRIS Statis' }}</b> memerlukan bukti pembayaran sebelum pesanan dibuat &amp; masuk ke detail.
                 </p>
+                {{-- Lihat catatan di bukti-pembayaran.blade.php: nama berapostrof
+                     ditolak firewall sebelum permintaannya tiba di Laravel. --}}
                 <div wire:loading.class="opacity-50" wire:target="bukti"
+                    x-data x-on:change.capture="window.amankanNamaBerkas && window.amankanNamaBerkas($event)"
                     style="border:1.5px dashed #d6d9e6; border-radius:14px; padding:20px; text-align:center; position:relative; background:#fbfcff;">
                     <input type="file" wire:model="bukti" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
                     <i class="bi bi-cloud-arrow-up" style="font-size:1.8rem; color:#7c3aed;"></i>
