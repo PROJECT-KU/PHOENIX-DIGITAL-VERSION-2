@@ -1637,9 +1637,42 @@ Detail Pesanan || lemon
                 @php $upGanti = $up->status === 'selesai'; @endphp
                 <div class="ts-modal-back" wire:click="tutupUploadHasil"></div>
                 <div class="ts-modal" wire:key="adm-hasilform-{{ $up->id }}">
+                {{-- Nama berkas dibersihkan SEBELUM diunggah.
+
+                     Firewall Hostinger (ModSecurity) memutus unggahan yang nama
+                     berkasnya memuat apostrof dengan HTTP 403, sebelum Laravel
+                     jalan: Livewire hanya berkata "failed to upload" dan tidak
+                     ada jejak apa pun di log (17 Okt 2026, INV-20261017-0008).
+                     Nama aslinya dititipkan ke $wire agar nama yang dilihat dan
+                     diunduh pelanggan tetap seperti aslinya. --}}
                 <div class="ts-modal-card dsb is-datar pcek pcek-jendela" role="dialog" aria-modal="true"
                     aria-label="Unggah hasil pengecekan" tabindex="-1"
-                    x-on:keydown.escape.window="$wire.tutupUploadHasil()">
+                    x-on:keydown.escape.window="$wire.tutupUploadHasil()"
+                    x-data="{
+                        amankanNamaBerkas(e) {
+                            const input = e.target;
+                            if (!input || input.type !== 'file' || !input.files || !input.files.length) return;
+
+                            const berkas = input.files[0];
+                            const kunci = (input.getAttribute('wire:model') || '').trim();
+                            if (kunci) this.$wire.set('namaAsliHasil.' + kunci, berkas.name, false);
+
+                            const bersih = berkas.name.replace(/[^A-Za-z0-9 ._()\-]/g, '-');
+                            if (bersih === berkas.name) return;
+
+                            try {
+                                const dt = new DataTransfer();
+                                dt.items.add(new File([berkas], bersih, {
+                                    type: berkas.type,
+                                    lastModified: berkas.lastModified,
+                                }));
+                                input.files = dt.files;
+                            } catch (err) {
+                                /* Peramban lawas tanpa DataTransfer: biarkan apa adanya. */
+                            }
+                        },
+                    }"
+                    x-on:change.capture="amankanNamaBerkas($event)">
                     <div class="dsb-jendela-kepala">
                         <span class="dsb-ikon is-kecil" style="--c: {{ $upGanti ? '#d97706' : '#16a34a' }}"><i class="bi {{ $upGanti ? 'bi-arrow-repeat' : 'bi-cloud-arrow-up' }}"></i></span>
                         <span class="dsb-jendela-teks">

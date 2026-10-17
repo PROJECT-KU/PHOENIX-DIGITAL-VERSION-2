@@ -376,3 +376,65 @@ it('pengguna tanpa izin ubah pesanan tidak bisa menyelesaikan catatan', function
 
     expect($item->fresh()->processing_notes)->toBe('super ai error diganti chatgpt');
 });
+
+/*
+ * ----------------------------------------------------------------------
+ * Nama berkas berapostrof
+ *
+ * Firewall Hostinger menolak unggahan yang NAMA berkasnya memuat apostrof
+ * dengan HTTP 403 — sebelum Laravel jalan, jadi gejalanya hanya "failed to
+ * upload" tanpa jejak di log (17 Okt 2026, INV-20261017-0008). Peramban
+ * mengganti namanya jadi versi bersih dan menitipkan nama aslinya; yang
+ * disimpan tetap nama asli supaya unduhan pelanggan tidak berubah.
+ * ----------------------------------------------------------------------
+ */
+
+it('menyimpan nama asli berapostrof walau berkasnya diunggah dengan nama bersih', function () {
+    Storage::fake('local');
+    $order = orderBayar('qris_dinamis', 'paid');
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Cek Plagiasi Turnitin', 'butuh_file' => 1, 'harga_perbulan' => 5000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Cek Plagiasi Turnitin',
+        'quantity' => 1, 'price' => 5000, 'subtotal' => 5000, 'duration_value' => 1, 'duration_type' => 'kali',
+    ]);
+    $up = \App\Models\OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'plagiasi', 'nama_asli' => 'naskah.docx', 'status' => 'diproses',
+    ]);
+
+    Livewire::test(OrderDetail::class, ['order' => $order->fresh()])
+        ->call('bukaUploadHasil', $up->id)
+        // Yang sampai ke server: nama yang sudah dibersihkan peramban …
+        ->set('hasilFile', \Illuminate\Http\UploadedFile::fake()->create('Experts- Views-Berlianto.pdf', 20, 'application/pdf'))
+        // … dan titipan nama aslinya.
+        ->set('namaAsliHasil.hasilFile', "Experts' Views-Berlianto.pdf")
+        ->set('persentaseInput', 12)
+        ->call('simpanHasil')
+        ->assertHasNoErrors();
+
+    expect($up->fresh()->hasil_nama)->toBe("Experts' Views-Berlianto.pdf");
+});
+
+it('titipan nama tidak bisa memalsukan jenis berkas atau menembus folder', function () {
+    Storage::fake('local');
+    $order = orderBayar('qris_dinamis', 'paid');
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Cek Plagiasi Turnitin', 'butuh_file' => 1, 'harga_perbulan' => 5000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Cek Plagiasi Turnitin',
+        'quantity' => 1, 'price' => 5000, 'subtotal' => 5000, 'duration_value' => 1, 'duration_type' => 'kali',
+    ]);
+    $up = \App\Models\OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'plagiasi', 'nama_asli' => 'naskah.docx', 'status' => 'diproses',
+    ]);
+
+    Livewire::test(OrderDetail::class, ['order' => $order->fresh()])
+        ->call('bukaUploadHasil', $up->id)
+        ->set('hasilFile', \Illuminate\Http\UploadedFile::fake()->create('bersih.pdf', 20, 'application/pdf'))
+        // Titipan berisi jalur folder ala Windows + ekstensi palsu.
+        ->set('namaAsliHasil.hasilFile', 'C:\\Users\\admin\\..\\rahasia.php')
+        ->set('persentaseInput', 5)
+        ->call('simpanHasil')
+        ->assertHasNoErrors();
+
+    // Ekstensi SELALU dari berkas yang benar-benar terunggah, jalurnya dibuang.
+    expect($up->fresh()->hasil_nama)->toBe('rahasia.pdf');
+});

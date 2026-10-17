@@ -39,6 +39,20 @@ class OrderDetail extends Component
     /** Hasil cek AI (PDF) + persentasenya. */
     public $hasilAiFile;
 
+    /**
+     * Nama ASLI berkas hasil, dititipkan peramban sebelum berkasnya dibersihkan.
+     *
+     * Firewall Hostinger (ModSecurity) menolak unggahan yang NAMA berkasnya
+     * memuat apostrof dengan HTTP 403 — sebelum Laravel jalan, jadi gejalanya
+     * hanya "The hasilAiFile failed to upload." tanpa jejak di log (terjadi
+     * 17 Okt 2026 pada INV-20261017-0008, namanya memuat "Experts'").
+     * Peramban mengganti nama berkasnya dengan versi bersih; nama asli dikirim
+     * ke sini supaya yang dilihat & diunduh pelanggan tidak berubah.
+     *
+     * @var array<string, string>
+     */
+    public array $namaAsliHasil = [];
+
     public $persentaseAiInput = null;
 
     public bool $persenAiTerbacaOtomatis = false;
@@ -552,7 +566,7 @@ class OrderDetail extends Component
 
     private function resetFormHasil(): void
     {
-        $this->reset('hasilFile', 'persentaseInput', 'hasilAiFile', 'persentaseAiInput', 'hasilDocxFile', 'aiBawahAmbang');
+        $this->reset('hasilFile', 'persentaseInput', 'hasilAiFile', 'persentaseAiInput', 'hasilDocxFile', 'aiBawahAmbang', 'namaAsliHasil');
         $this->persenTerbacaOtomatis = false;
         $this->persenGagalBaca = false;
         $this->persenAiTerbacaOtomatis = false;
@@ -648,6 +662,32 @@ class OrderDetail extends Component
     }
 
     /** Simpan file hasil + persen (dikonfirmasi admin) → status selesai. */
+    /**
+     * Nama yang disimpan: titipan nama asli bila ada, selain itu nama berkas
+     * yang benar-benar terunggah.
+     *
+     * Titipan datang dari peramban, jadi diperlakukan sebagai masukan yang
+     * TIDAK dipercaya: ekstensinya selalu dari berkas terunggah (agar jenis
+     * berkas tak bisa dipalsukan) dan jalur foldernya dibuang — backslash
+     * disamakan dulu dengan garis miring karena pathinfo() di Linux tidak
+     * menganggapnya pemisah folder.
+     */
+    private function namaBerkasHasil(string $kunci, $file): string
+    {
+        $terunggah = $file->getClientOriginalName();
+        $asli = trim((string) ($this->namaAsliHasil[$kunci] ?? ''));
+
+        if ($asli === '') {
+            return $terunggah;
+        }
+
+        $ext = pathinfo($terunggah, PATHINFO_EXTENSION);
+        $dasar = pathinfo(str_replace(['\\', "\0"], ['/', ''], $asli), PATHINFO_FILENAME);
+        $dasar = trim(mb_substr($dasar, 0, 150));
+
+        return $dasar === '' ? $terunggah : $dasar.($ext ? '.'.$ext : '');
+    }
+
     public function simpanHasil(SyncCashFlowAction $syncCashFlow): void
     {
         if (! $this->uploadAktifId) {
@@ -709,7 +749,7 @@ class OrderDetail extends Component
         // 1) Hasil cek plagiasi
         if ($this->hasilFile) {
             $data['hasil_path'] = $this->hasilFile->store($folder, 'local');
-            $data['hasil_nama'] = $this->hasilFile->getClientOriginalName();
+            $data['hasil_nama'] = $this->namaBerkasHasil('hasilFile', $this->hasilFile);
             $data['hasil_ukuran'] = $this->hasilFile->getSize();
             $data['hasil_mime'] = $this->hasilFile->getMimeType();
         }
@@ -718,7 +758,7 @@ class OrderDetail extends Component
         if ($this->hasilAiFile) {
             $this->hapusBerkasLama($up->hasil_ai_path);
             $data['hasil_ai_path'] = $this->hasilAiFile->store($folder, 'local');
-            $data['hasil_ai_nama'] = $this->hasilAiFile->getClientOriginalName();
+            $data['hasil_ai_nama'] = $this->namaBerkasHasil('hasilAiFile', $this->hasilAiFile);
             $data['hasil_ai_ukuran'] = $this->hasilAiFile->getSize();
             $data['hasil_ai_mime'] = $this->hasilAiFile->getMimeType();
         }
@@ -727,7 +767,7 @@ class OrderDetail extends Component
         if ($this->hasilDocxFile) {
             $this->hapusBerkasLama($up->hasil_docx_path);
             $data['hasil_docx_path'] = $this->hasilDocxFile->store($folder, 'local');
-            $data['hasil_docx_nama'] = $this->hasilDocxFile->getClientOriginalName();
+            $data['hasil_docx_nama'] = $this->namaBerkasHasil('hasilDocxFile', $this->hasilDocxFile);
             $data['hasil_docx_ukuran'] = $this->hasilDocxFile->getSize();
             $data['hasil_docx_mime'] = $this->hasilDocxFile->getMimeType();
         }
