@@ -12,6 +12,7 @@ Jejak Audit Orcha || lemon
     @php
         $jumlahSaringan = $this->jumlahSaringan();
         $adaSaringan = $jumlahSaringan > 0;
+        $jumlahLanjut = $this->jumlahSaringanLanjut();
 
         /*
          | Rupa per JENIS aksi: ikon + warna.
@@ -105,118 +106,119 @@ Jejak Audit Orcha || lemon
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi">
-                        <div class="ja-saring">
-                            {{-- Kotak carinya partial BERSAMA seluruh Orcha, bukan buatan
-                                 halaman ini: bentuk dan perilakunya (termasuk tombol
-                                 pengosong) harus satu di semua layar. Yang disesuaikan di
-                                 sini hanya rupanya, lewat .ja-saring di bawah. --}}
-                            <div class="dsb-medan ja-medan-cari">
-                                <label class="dsb-label">Cari</label>
-                                @include('livewire.pages.admin.orcha.partials.cari', [
-                                    'petunjuk' => 'Kode pesanan, nama admin, atau isi perubahan…',
-                                ])
-                            </div>
+                        {{-- Satu baris, tiga kotak.
 
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ja-admin">Admin</label>
-                                <select id="ja-admin" class="dsb-isian" wire:model.live="filterAdmin">
+                             Sebelumnya bilah ini enam medan berlabel plus sederet
+                             tombol rentang plus satu baris kaki — tiga susun yang
+                             memenuhi layar sebelum satu pun catatan terbaca, dan
+                             terbaca seperti formulir yang harus diisi dulu.
+
+                             Yang tersisa di depan cuma yang ditanyakan tiap hari:
+                             apa, siapa, kapan. Labelnya pun dilepas — pilihan
+                             pertama tiap kotak ("Semua admin", "Kapan saja") sudah
+                             menyebut dirinya sendiri, jadi label di atasnya hanya
+                             mengulang dengan huruf kecil. --}}
+                        <div x-data="{ lain: {{ $jumlahLanjut ? 'true' : 'false' }} }">
+                            <div class="ja-saring">
+                                {{-- Kotak carinya partial BERSAMA seluruh Orcha, bukan buatan
+                                     halaman ini: bentuk dan perilakunya (termasuk tombol
+                                     pengosong) harus satu di semua layar. Yang disesuaikan di
+                                     sini hanya rupanya, lewat .ja-saring di bawah. --}}
+                                <div class="ja-medan-cari">
+                                    @include('livewire.pages.admin.orcha.partials.cari', [
+                                        'petunjuk' => 'Cari kode pesanan atau nama admin…',
+                                    ])
+                                </div>
+
+                                <select class="dsb-isian ja-pilih" wire:model.live="filterAdmin"
+                                    aria-label="Saring menurut admin">
                                     <option value="">Semua admin</option>
                                     @foreach ($pilihanAdmin as $nama)
                                         <option value="{{ $nama }}">{{ $nama }}</option>
                                     @endforeach
                                 </select>
-                            </div>
 
-                            {{-- "Siapa saja yang pernah menyentuh pembayaran?" dijawab di
-                                 sini, bukan dengan menebak kata di kotak cari. --}}
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ja-aksi">Jenis perubahan</label>
-                                <select id="ja-aksi" class="dsb-isian" wire:model.live="filterAksi">
-                                    <option value="">Semua jenis</option>
-                                    @foreach ($pilihanAksi as $aksi)
-                                        <option value="{{ $aksi }}">{{ $aksi }}</option>
+                                {{-- SATU kotak menggantikan "Dari", "Sampai", dan tiga
+                                     tombol pintasan. Pertanyaannya memang "pekan lalu",
+                                     bukan "tanggal berapa tujuh hari lalu" — dan yang
+                                     terakhir itu yang dulu harus dihitung sendiri. --}}
+                                <select class="dsb-isian ja-pilih" wire:model.live="rentang"
+                                    aria-label="Saring menurut waktu">
+                                    <option value="">Kapan saja</option>
+                                    @foreach ($this::RENTANG_CEPAT as $kunci => [$label, $mundur])
+                                        <option value="{{ $kunci }}">{{ $label }}</option>
                                     @endforeach
+                                    <option value="{{ $this::PILIH_SENDIRI }}">Pilih tanggal sendiri…</option>
                                 </select>
-                            </div>
 
-                            {{-- Rentang tanggal, bukan satu tanggal.
-
-                                 Pertanyaan audit hampir selalu berbentuk rentang — "pekan
-                                 lalu", "sejak pengembaliannya diajukan" — dan satu tanggal
-                                 memaksa menelusuri hari demi hari. --}}
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ja-dari">Dari</label>
-                                <input id="ja-dari" type="date" class="dsb-isian" wire:model.live="dari">
-                            </div>
-
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ja-sampai">Sampai</label>
-                                <input id="ja-sampai" type="date" class="dsb-isian" wire:model.live="sampai">
-                            </div>
-
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ja-ip">Alamat IP</label>
-                                <input id="ja-ip" type="text" class="dsb-isian" placeholder="mis. 103.10."
-                                    wire:model.live.debounce.500ms="filterIp">
-                            </div>
-                        </div>
-
-                        {{-- Pintasan rentang: pertanyaan audit hampir selalu "pekan lalu",
-                             bukan dua tanggal yang diketik satu per satu. Yang terisi tetap
-                             kedua medan tanggalnya, jadi pilihannya kelihatan & bisa diubah. --}}
-                        <div class="ja-cepat">
-                            <span class="dsb-label">Rentang cepat</span>
-                            <div class="ja-cepat-deret">
-                                @foreach ($this::RENTANG_CEPAT as $kunci => [$label, $mundur])
-                                    @php
-                                        $aktif = $dari === now()->subDays($mundur)->toDateString()
-                                            && $sampai === now()->toDateString();
-                                    @endphp
-                                    <button type="button" wire:click="rentangCepat('{{ $kunci }}')"
-                                        wire:loading.attr="disabled" wire:target="rentangCepat"
-                                        class="dsb-chip ja-chip-tombol {{ $aktif ? 'is-aktif' : '' }}">
-                                        {{ $label }}
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div class="ja-saring-kaki">
-                            <span class="dsb-kartu-sub">
-                                <i class="bi bi-funnel"></i>
-                                @if ($adaSaringan)
-                                    {{ $jumlahSaringan }} saringan aktif — daftar & unduhan mengikutinya
-                                @else
-                                    Belum ada saringan; unduhan memuat seluruh catatan
-                                @endif
-                            </span>
-
-                            <span class="ja-saring-aksi">
-                                <span class="dsb-medan ja-medan-baris">
-                                    <label class="dsb-label" for="ja-baris">Baris</label>
-                                    <select id="ja-baris" class="dsb-isian" wire:model.live="baris">
-                                        @foreach ($this::PILIHAN_BARIS as $n)
-                                            <option value="{{ $n }}">{{ $n }}</option>
-                                        @endforeach
-                                    </select>
-                                </span>
+                                {{-- Dua saringan sisanya menjawab pertanyaan yang nyata,
+                                     tetapi bukan pertanyaan harian. Dibiarkan terbuka,
+                                     keduanya menambah dua kotak yang tak pernah disentuh
+                                     ke layar setiap orang. Terbuka sendiri bila sedang
+                                     aktif: daftar yang pendek tanpa sebab yang terlihat
+                                     adalah data yang hilang, di mata yang membukanya. --}}
+                                <button type="button" x-on:click="lain = ! lain"
+                                    class="dsb-tombol is-lembut ja-tombol-lain" style="--ikon: #64748b">
+                                    <i class="bi bi-sliders"></i><span>Saringan lain</span>
+                                    @if ($jumlahLanjut)
+                                        <span class="ja-lencana">{{ $jumlahLanjut }}</span>
+                                    @endif
+                                    <i class="bi bi-chevron-down ja-panah" x-bind:class="lain ? 'is-buka' : ''"></i>
+                                </button>
 
                                 {{-- Yang diunduh SELURUH hasil saringan, bukan halaman yang
                                      terlihat: audit yang dilampirkan ke laporan tidak boleh
                                      terpotong di baris terakhir tanpa ada yang menyadarinya. --}}
                                 <button type="button" wire:click="unduhCsv" wire:loading.attr="disabled"
-                                    wire:target="unduhCsv" class="dsb-tombol is-lembut" style="--ikon: #16a34a">
-                                    <i class="bi bi-filetype-csv" wire:loading.remove wire:target="unduhCsv"></i>
+                                    wire:target="unduhCsv" class="dsb-tombol is-lembut" style="--ikon: #16a34a"
+                                    title="Unduh semua catatan yang sedang tersaring, bukan halaman ini saja">
+                                    <i class="bi bi-download" wire:loading.remove wire:target="unduhCsv"></i>
                                     <span class="dsb-putar" wire:loading wire:target="unduhCsv"></span>
-                                    <span>Unduh CSV</span>
+                                    <span>Unduh</span>
                                 </button>
 
                                 @if ($adaSaringan)
-                                    <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
-                                        <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                    <button type="button" wire:click="bersihkanSaringan"
+                                        class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                        title="Kembali menampilkan seluruh catatan">
+                                        <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
                                     </button>
                                 @endif
-                            </span>
+                            </div>
+
+                            {{-- Dua medan tanggal hanya muncul kalau memang dimintanya. --}}
+                            @if ($rentang === $this::PILIH_SENDIRI)
+                                <div class="ja-saring ja-saring-lipat">
+                                    <div class="dsb-medan">
+                                        <label class="dsb-label" for="ja-dari">Dari tanggal</label>
+                                        <input id="ja-dari" type="date" class="dsb-isian" wire:model.live="dari">
+                                    </div>
+
+                                    <div class="dsb-medan">
+                                        <label class="dsb-label" for="ja-sampai">Sampai tanggal</label>
+                                        <input id="ja-sampai" type="date" class="dsb-isian" wire:model.live="sampai">
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="ja-saring ja-saring-lipat" x-show="lain" x-cloak>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="ja-aksi">Jenis perubahan</label>
+                                    <select id="ja-aksi" class="dsb-isian" wire:model.live="filterAksi">
+                                        <option value="">Semua jenis perubahan</option>
+                                        @foreach ($pilihanAksi as $aksi)
+                                            <option value="{{ $aksi }}">{{ $aksi }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="ja-ip">Alamat IP</label>
+                                    <input id="ja-ip" type="text" class="dsb-isian" placeholder="mis. 103.10."
+                                        wire:model.live.debounce.500ms="filterIp">
+                                    <span class="dsb-kartu-sub">Untuk memeriksa akses dari luar kantor</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -227,7 +229,7 @@ Jejak Audit Orcha || lemon
         <section class="dsb-bagian">
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12" wire:loading.class="dsb-sedang-muat"
-                    wire:target="cari,filterAdmin,dari,sampai,bersihkanSaringan,bersihkanCari,keHalaman">
+                    wire:target="cari,filterAdmin,filterAksi,filterIp,rentang,dari,sampai,baris,bersihkanSaringan,bersihkanCari,keHalaman">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-clock-history"></i></span>
@@ -389,6 +391,21 @@ Jejak Audit Orcha || lemon
                     @endif
 
                     <div class="ja-halaman">
+                        {{-- "Berapa baris" adalah pertanyaan yang baru muncul SETELAH
+                             daftarnya terbaca, jadi tempatnya di kaki tabel bersama
+                             nomor halaman — bukan di bilah saringan di atas, tempat
+                             ia jadi kotak keenam yang harus dilewati mata setiap kali
+                             halaman dibuka. --}}
+                        <label class="ja-baris">
+                            <span>Tampilkan</span>
+                            <select class="dsb-isian" wire:model.live="baris" aria-label="Jumlah baris per halaman">
+                                @foreach ($this::PILIHAN_BARIS as $n)
+                                    <option value="{{ $n }}">{{ $n }}</option>
+                                @endforeach
+                            </select>
+                            <span>baris</span>
+                        </label>
+
                         @include('livewire.pages.admin.orcha.partials.paginasi')
                     </div>
                 </div>
@@ -397,11 +414,46 @@ Jejak Audit Orcha || lemon
     </div>
 
     <style>
-        /* Saringan: satu baris di layar lebar, melipat sendiri saat sempit.
-           Kotak cari dua kali lebih lebar — isinya kalimat, bukan pilihan. */
-        .ja-saring { display: flex; flex-wrap: wrap; gap: 12px; }
-        .ja-saring > .dsb-medan { flex: 1 1 180px; min-width: 0; }
-        .ja-saring > .ja-medan-cari { flex: 2 1 320px; }
+        /* Satu baris di layar lebar, melipat sendiri saat sempit. Kotak cari
+           melar; dua kotak pilihan selebar isinya; tombol tetap seukurannya. */
+        .ja-saring { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .ja-saring > .ja-medan-cari { flex: 1 1 260px; min-width: 0; }
+        .ja-saring > .ja-pilih { flex: 0 1 auto; width: auto; min-width: 150px; max-width: 220px; }
+        .ja-saring .dsb-tombol { flex: 0 0 auto; }
+
+        /* Baris lipatan (tanggal sendiri, saringan lain) menjorok sedikit dan
+           dipisah garis tipis: terbaca sebagai lanjutan baris di atasnya,
+           bukan bilah kedua yang berdiri sendiri. */
+        .ja-saring-lipat {
+            /* flex-start, bukan flex-end: satu medan yang punya keterangan di
+               bawahnya akan mendorong labelnya sendiri turun, dan dua label
+               yang tidak sebaris terbaca seperti salah susun. */
+            align-items: flex-start; margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .ja-saring-lipat > .dsb-medan { flex: 1 1 200px; min-width: 0; max-width: 320px; }
+        .ja-saring-lipat .dsb-kartu-sub { display: block; margin-top: 5px; }
+
+        /* Lencana angka di tombolnya: berapa saringan yang sedang aktif di
+           balik lipatan. Tanpa ini, menutup panel berarti menyembunyikan sebab
+           daftarnya pendek. */
+        .ja-tombol-lain { cursor: pointer; }
+        .ja-lencana {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 19px; height: 19px; padding: 0 6px; border-radius: 999px;
+            background: #4f46e5; color: #fff; font-size: .68rem; font-weight: 800;
+        }
+        .ja-panah { font-size: .7rem; color: #94a3b8; transition: transform .18s ease; }
+        .ja-panah.is-buka { transform: rotate(180deg); }
+
+        /* Di ponsel kotak cari mengambil barisnya sendiri dan dua kotak pilihan
+           berbagi baris berikutnya. Tanpa ini keduanya melipat sendiri-sendiri
+           — empat baris untuk tiga pertanyaan, di layar yang paling sempit. */
+        @media (max-width: 575.98px) {
+            .ja-saring > .ja-medan-cari { flex: 1 1 100%; }
+            .ja-saring > .ja-pilih { flex: 1 1 140px; min-width: 0; max-width: none; }
+            .ja-saring-lipat > .dsb-medan { max-width: none; }
+        }
 
         /* Kotak cari bersama memakai .form-control Bootstrap. Di sebelah medan
            lemon ia terbaca sebagai cacat: tingginya beda, sudutnya beda. Yang
@@ -419,12 +471,6 @@ Jejak Audit Orcha || lemon
             position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
             color: #94a3b8; pointer-events: none; z-index: 2;
         }
-
-        .ja-saring-kaki {
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-            gap: 12px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #f1f5f9;
-        }
-        .ja-saring-kaki .dsb-kartu-sub { display: inline-flex; align-items: center; gap: 7px; }
 
         /* Nama admin: inisial berwarna + nama, sejajar di tengah. */
         .ja-admin { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; color: var(--dsb-tinta, #1c1f26); }
@@ -444,19 +490,6 @@ Jejak Audit Orcha || lemon
             border-radius: 8px; padding: 2px 8px; white-space: nowrap;
         }
 
-        /* Pintasan rentang. Yang terpilih berwarna penuh supaya terbaca
-           sebagai keadaan, bukan sekadar tombol yang barusan ditekan. */
-        .ja-cepat { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
-        .ja-cepat .dsb-label { margin: 0; }
-        .ja-cepat-deret { display: flex; gap: 7px; flex-wrap: wrap; }
-        .ja-chip-tombol { cursor: pointer; border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff; }
-        .ja-chip-tombol:hover { border-color: #c7d2fe; color: #4338ca; }
-        .ja-chip-tombol.is-aktif { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; font-weight: 700; }
-
-        .ja-saring-aksi { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
-        .ja-medan-baris { min-width: 0; }
-        .ja-medan-baris .dsb-isian { width: auto; min-width: 84px; }
-
         /* Pemisah hari: satu baris tipis, bukan kartu — ia penanda, bukan isi. */
         .ja-hari td {
             background: #f8fafc; color: var(--dsb-redup, #6b7280);
@@ -475,8 +508,17 @@ Jejak Audit Orcha || lemon
         .ja-kode.is-tautan:hover { background: #eef2ff; }
         .ja-kode.is-tautan i { font-size: .7rem; }
 
-        .ja-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
+        .ja-halaman {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+            gap: 10px; padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9;
+        }
         .ja-halaman > * { margin-bottom: 0 !important; }
+
+        .ja-baris {
+            display: inline-flex; align-items: center; gap: 7px; margin: 0;
+            color: var(--dsb-redup, #6b7280); font-size: .8rem; white-space: nowrap;
+        }
+        .ja-baris .dsb-isian { width: auto; min-width: 72px; padding-top: 6px; padding-bottom: 6px; }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu bertumpuk,
            aturan yang sama dengan daftar lemon lain. */

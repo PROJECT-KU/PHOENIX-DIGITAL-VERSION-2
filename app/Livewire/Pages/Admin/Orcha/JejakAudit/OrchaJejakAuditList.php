@@ -60,9 +60,67 @@ class OrchaJejakAuditList extends Component
     /** Rentang cepat: pertanyaan audit hampir selalu "pekan lalu", bukan tanggal persis. */
     public const RENTANG_CEPAT = [
         'hari-ini' => ['Hari ini', 0],
-        '7-hari' => ['7 hari', 6],
-        '30-hari' => ['30 hari', 29],
+        '7-hari' => ['7 hari terakhir', 6],
+        '30-hari' => ['30 hari terakhir', 29],
     ];
+
+    /**
+     * Pilihan "Waktu" — SATU kotak yang menggantikan dua medan tanggal plus
+     * sederet tombol pintasan.
+     *
+     * Sebelumnya admin dihadapkan pada "Dari", "Sampai", dan tiga tombol
+     * rentang cepat sekaligus: lima benda untuk satu pertanyaan, dan dua di
+     * antaranya menuntut ia tahu tanggal berapa tujuh hari lalu. Kini
+     * tanggalnya hanya muncul kalau ia memang memilih menentukannya sendiri.
+     *
+     * TIDAK ikut di alamat: yang dibagikan tetap dari/sampai, dan nilai kotak
+     * ini dirakit ulang dari keduanya saat halaman dibuka. Dua sumber
+     * kebenaran untuk satu rentang hanya akan berselisih.
+     */
+    public string $rentang = '';
+
+    public const PILIH_SENDIRI = 'pilih';
+
+    /**
+     * Merakit ulang keadaan kotak "Waktu" dari tanggal di alamat.
+     *
+     * Telusuran yang dikirim ke admin lain harus terbuka dengan kotak yang
+     * menyebut hal yang sama — bukan "Kapan saja" sementara daftarnya jelas
+     * tersaring, yang membuat penerimanya mengira datanya hilang.
+     */
+    public function mount(): void
+    {
+        foreach (self::RENTANG_CEPAT as $kunci => [, $mundur]) {
+            if ($this->dari === now()->subDays($mundur)->toDateString()
+                && $this->sampai === now()->toDateString()) {
+                $this->rentang = $kunci;
+                break;
+            }
+        }
+
+        if ($this->rentang === '' && ($this->dari !== '' || $this->sampai !== '')) {
+            $this->rentang = self::PILIH_SENDIRI;
+        }
+    }
+
+    /** Kotak "Waktu" dipilih: isi, kosongkan, atau serahkan ke dua medan tanggal. */
+    public function updatedRentang(string $nilai): void
+    {
+        $this->halaman = 1;
+
+        if ($nilai === self::PILIH_SENDIRI) {
+            return;
+        }
+
+        if ($nilai === '') {
+            $this->dari = '';
+            $this->sampai = '';
+
+            return;
+        }
+
+        $this->rentangCepat($nilai);
+    }
 
     public function updatedFilterAdmin(): void
     {
@@ -71,11 +129,13 @@ class OrchaJejakAuditList extends Component
 
     public function updatedDari(): void
     {
+        $this->rentang = self::PILIH_SENDIRI;
         $this->halaman = 1;
     }
 
     public function updatedSampai(): void
     {
+        $this->rentang = self::PILIH_SENDIRI;
         $this->halaman = 1;
     }
 
@@ -111,16 +171,32 @@ class OrchaJejakAuditList extends Component
 
         $this->dari = now()->subDays($mundur)->toDateString();
         $this->sampai = now()->toDateString();
+        $this->rentang = $kunci;
         $this->halaman = 1;
     }
 
     public function bersihkanSaringan(): void
     {
-        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'dari', 'sampai', 'cari']);
+        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'dari', 'sampai', 'cari', 'rentang']);
         $this->halaman = 1;
     }
 
-    /** Jumlah saringan yang sedang aktif — dipakai lencana di tombolnya. */
+    /**
+     * Jumlah saringan yang TERSEMBUNYI di balik tombolnya.
+     *
+     * Hanya yang tersembunyi: lencana yang ikut menghitung saringan yang sudah
+     * terpampang di layar menyuruh admin mencari sesuatu yang sedang
+     * dilihatnya. Penamaannya menyamai daftar pesanan, yang panel lanjutannya
+     * bekerja persis seperti ini.
+     */
+    public function jumlahSaringanLanjut(): int
+    {
+        return collect([$this->filterAksi, $this->filterIp])
+            ->filter(fn ($n) => $n !== '')
+            ->count();
+    }
+
+    /** Ada saringan apa pun yang aktif — penentu munculnya tombol pengosong. */
     public function jumlahSaringan(): int
     {
         return collect([$this->cari, $this->filterAdmin, $this->filterAksi, $this->filterIp, $this->dari, $this->sampai])

@@ -6148,3 +6148,137 @@ test('penyaring yang isinya bukan teks tidak merobohkan halaman', function () {
 
     $this->actingAs(adminOrcha())->get('/admin/orcha/jejak-audit')->assertOk();
 });
+
+/*
+ | ---------------------------------------------------------------------------
+ | Jejak audit: bilah saringan yang muat satu baris
+ |
+ | Enam medan berlabel, tiga tombol rentang, dan satu baris kaki memenuhi layar
+ | sebelum satu pun catatan terbaca — dan yang membacanya admin yang tidak
+ | tiap hari berurusan dengan audit.
+ | ---------------------------------------------------------------------------
+ */
+
+test('saringan harian muat satu baris; sisanya disembunyikan', function () {
+    jejakFake();
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    // Yang ditanyakan tiap hari: apa, siapa, kapan.
+    expect($isi)->toContain('Semua admin')->toContain('Kapan saja');
+
+    /*
+     | Dua medan tanggal TIDAK ikut tergambar selama rentangnya belum dipilih
+     | sendiri. Ini inti perampingannya: kalau keduanya tetap ada tapi
+     | tersembunyi lewat CSS, tingginya kembali seperti semula dan ukuran di
+     | sini tetap hijau — jadi yang dijaga keberadaannya di markah.
+     */
+    expect($isi)->not->toContain('id="ja-dari"')
+        ->and($isi)->not->toContain('id="ja-sampai"');
+
+    // Tombol rentang cepat yang lama sudah digantikan kotak "Waktu".
+    expect($isi)->not->toContain('ja-chip-tombol');
+});
+
+test('kotak waktu mengisi tanggalnya sendiri', function () {
+    jejakFake();
+
+    $t = Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('rentang', '7-hari');
+
+    // Yang terisi tetap kedua tanggalnya — bukan keadaan tersembunyi — supaya
+    // pilihannya ikut terbawa di alamat saat telusurannya dikirim ke orang lain.
+    $t->assertSet('dari', now()->subDays(6)->toDateString())
+        ->assertSet('sampai', now()->toDateString())
+        ->assertSet('halaman', 1);
+
+    // "Pilih tanggal sendiri" membuka medannya, tanpa mengubah apa pun.
+    $t->set('rentang', 'pilih')
+        ->assertSet('dari', now()->subDays(6)->toDateString())
+        ->assertSee('id="ja-dari"', false);
+
+    // Kembali ke "Kapan saja" mengosongkan keduanya; kalau tidak, daftarnya
+    // tetap tersaring sementara kotaknya bilang tidak.
+    $t->set('rentang', '')
+        ->assertSet('dari', '')
+        ->assertSet('sampai', '');
+});
+
+test('tanggal dari alamat merakit ulang kotak waktunya', function () {
+    jejakFake();
+
+    /*
+     | Telusuran yang dikirim ke admin lain harus terbuka dengan kotak yang
+     | menyebut hal yang sama. Kalau tidak, penerimanya melihat "Kapan saja"
+     | di atas daftar yang jelas tersaring — dan mengira datanya hilang.
+     */
+    Livewire::actingAs(adminOrcha())
+        ->withQueryParams(['dari' => now()->subDays(6)->toDateString(), 'sampai' => now()->toDateString()])
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->assertSet('rentang', '7-hari');
+
+    // Rentang yang tidak sama dengan satu pun pintasan jatuh ke "pilih
+    // sendiri", bukan kembali ke "Kapan saja".
+    Livewire::actingAs(adminOrcha())
+        ->withQueryParams(['dari' => '2026-03-01', 'sampai' => '2026-03-09'])
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->assertSet('rentang', 'pilih')
+        ->assertSee('id="ja-dari"', false);
+});
+
+test('menyunting tanggal sendiri memindahkan kotaknya ke pilih sendiri', function () {
+    jejakFake();
+
+    // Kalau tidak, kotak masih bertuliskan "7 hari terakhir" sementara
+    // tanggalnya sudah diubah tangan — dua benda yang saling membantah.
+    Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('rentang', '7-hari')
+        ->set('dari', '2026-01-02')
+        ->assertSet('rentang', 'pilih');
+});
+
+test('lencana hanya menghitung saringan yang tersembunyi', function () {
+    jejakFake();
+
+    $komponen = Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('cari', 'OT-0309')
+        ->set('filterAdmin', 'Asthana');
+
+    /*
+     | Lencana yang ikut menghitung saringan yang sudah terpampang di layar
+     | menyuruh admin mencari sesuatu yang sedang dilihatnya.
+     */
+    expect($komponen->instance()->jumlahSaringanLanjut())->toBe(0);
+
+    $komponen->set('filterIp', '103.10');
+    expect($komponen->instance()->jumlahSaringanLanjut())->toBe(1);
+
+    // Dan panelnya terbuka sendiri saat dibuka lewat alamat: daftar pendek
+    // tanpa sebab yang terlihat adalah data yang hilang, bagi yang membukanya.
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit?ip=103.10')->assertOk()->getContent();
+
+    expect($isi)->toContain('x-data="{ lain: true }"');
+});
+
+test('jumlah baris pindah ke kaki tabel, bukan bilah saringan', function () {
+    jejakFake();
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    /*
+     | "Berapa baris" baru ditanyakan SETELAH daftarnya terbaca. Di bilah
+     | saringan ia jadi kotak yang harus dilewati mata setiap kali halaman
+     | dibuka, untuk pertanyaan yang belum muncul.
+     */
+    $kaki = substr($isi, strpos($isi, 'ja-halaman'));
+    expect($kaki)->toContain('wire:model.live="baris"');
+
+    $saring = substr($isi, strpos($isi, 'ja-saring'), strpos($isi, 'ja-halaman') - strpos($isi, 'ja-saring'));
+    expect(substr_count($saring, 'wire:model.live="baris"'))->toBe(0);
+});
