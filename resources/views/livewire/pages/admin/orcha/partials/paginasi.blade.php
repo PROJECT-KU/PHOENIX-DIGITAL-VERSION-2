@@ -29,6 +29,13 @@
      | mount, satu-satunya saat permintaannya benar-benar permintaan halaman —
      | dan wire:click.prevent mengambil alih selama JavaScript hidup supaya
      | perpindahannya tidak memuat ulang seluruh halaman.
+     |
+     | Nomornya WAJIB lewat {{ }}. Isi atribut bukan kode PHP: ditulis
+     | "keHalaman($nomor)", yang sampai ke peramban adalah tanda dolar itu
+     | sendiri, Livewire menilainya sebagai nama yang tak dikenal, dan
+     | kliknya berhenti di situ — sementara .prevent sudah terlanjur
+     | membatalkan tautannya. Hasilnya tombol halaman yang tidak bisa diklik
+     | sama sekali, tanpa satu pun pesan: dua jalan keluar, dua-duanya mati.
      */
     $tautanHalaman = function (int $nomor) use ($alamatHalaman) {
         $bagian = parse_url($alamatHalaman ?: url()->current());
@@ -76,7 +83,7 @@
         <nav class="orcha-halaman">
             <ul class="pagination pagination-sm mb-0">
                 <li class="page-item {{ $halamanKini <= 1 ? 'disabled' : '' }}">
-                    <a class="page-link" href="{{ $tautanHalaman($halamanKini - 1) }}" wire:click.prevent="keHalaman($halamanKini - 1)">
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini - 1) }}" wire:click.prevent="keHalaman({{ $halamanKini - 1 }})">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
@@ -92,7 +99,7 @@
 
                 @for ($nomor = $mulai; $nomor <= $selesai; $nomor++)
                     <li class="page-item {{ $nomor === $halamanKini ? 'active' : '' }}">
-                        <a class="page-link" href="{{ $tautanHalaman($nomor) }}" wire:click.prevent="keHalaman($nomor)">{{ $nomor }}</a>
+                        <a class="page-link" href="{{ $tautanHalaman($nomor) }}" wire:click.prevent="keHalaman({{ $nomor }})">{{ $nomor }}</a>
                     </li>
                 @endfor
 
@@ -101,12 +108,12 @@
                         <li class="page-item disabled"><span class="page-link">…</span></li>
                     @endif
                     <li class="page-item">
-                        <a class="page-link" href="{{ $tautanHalaman($halamanAkhir) }}" wire:click.prevent="keHalaman($halamanAkhir)">{{ $halamanAkhir }}</a>
+                        <a class="page-link" href="{{ $tautanHalaman($halamanAkhir) }}" wire:click.prevent="keHalaman({{ $halamanAkhir }})">{{ $halamanAkhir }}</a>
                     </li>
                 @endif
 
                 <li class="page-item {{ $halamanKini >= $halamanAkhir ? 'disabled' : '' }}">
-                    <a class="page-link" href="{{ $tautanHalaman($halamanKini + 1) }}" wire:click.prevent="keHalaman($halamanKini + 1)">
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini + 1) }}" wire:click.prevent="keHalaman({{ $halamanKini + 1 }})">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
