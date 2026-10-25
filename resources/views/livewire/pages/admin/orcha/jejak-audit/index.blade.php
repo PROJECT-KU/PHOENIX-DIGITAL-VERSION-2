@@ -10,7 +10,75 @@ Jejak Audit Orcha || lemon
     @include('livewire.pages.admin.orcha.partials.gaya')
 
     @php
-        $adaSaringan = $cari !== '' || $filterAdmin !== '' || $dari !== '' || $sampai !== '';
+        $jumlahSaringan = $this->jumlahSaringan();
+        $adaSaringan = $jumlahSaringan > 0;
+
+        /*
+         | Rupa per JENIS aksi: ikon + warna.
+         |
+         | Tanpa ini "membuka riwayat kesehatan" (akses data pribadi) dan
+         | "tambah master harga" (rutin) tampil persis sama, sehingga yang
+         | berbobot hanya ketahuan setelah tiap baris dibaca satu per satu.
+         | Dicocokkan dari KATA KUNCI, bukan daftar tertutup: aksi baru muncul
+         | seiring fitur Orcha bertambah, dan daftar tertutup akan menjatuhkan
+         | semuanya ke abu-abu tanpa ada yang menyadarinya.
+         */
+        $rupaAksi = function (string $aksi): array {
+            $a = mb_strtolower($aksi);
+
+            return match (true) {
+                str_contains($a, 'bayar') || str_contains($a, 'angsuran') || str_contains($a, 'dana')
+                    => ['bi-cash-coin', '#047857'],
+                str_contains($a, 'batal') || str_contains($a, 'hapus') || str_contains($a, 'tolak')
+                    => ['bi-x-octagon', '#b91c1c'],
+                str_contains($a, 'riwayat kesehatan') || str_contains($a, 'peserta') || str_contains($a, 'pelanggan')
+                    => ['bi-person-vcard', '#b45309'],
+                str_contains($a, 'promo') || str_contains($a, 'rujukan') || str_contains($a, 'harga') || str_contains($a, 'rab')
+                    => ['bi-tags', '#7c3aed'],
+                str_contains($a, 'status') => ['bi-arrow-left-right', '#0ea5e9'],
+                str_contains($a, 'daftar') || str_contains($a, 'buat') || str_contains($a, 'tambah')
+                    => ['bi-plus-circle', '#4f46e5'],
+                default => ['bi-pencil-square', '#64748b'],
+            };
+        };
+
+        /*
+         | Kode pesanan jadi tautan ke daftar yang bersangkutan.
+         |
+         | Yang dikirim kata kuncinya, bukan id: jejak hanya menyimpan kode,
+         | dan menebak id dari kode berarti menebak. Daftar tujuan yang
+         | mencarikannya — itu juga yang dilakukan admin secara manual selama
+         | ini, hanya dengan menyalin-tempel.
+         */
+        $tautanKode = function (?string $kode): ?string {
+            if (! $kode) {
+                return null;
+            }
+
+            return match (true) {
+                str_starts_with($kode, 'SK-') => route('admin.orcha.penyewaan', ['cari' => $kode]),
+                str_starts_with($kode, 'OT-') => route('admin.orcha.pendaftaran', ['cari' => $kode]),
+                default => null,
+            };
+        };
+
+        // Pengelompokan per hari: daftar yang mengalir tanpa pemisah memaksa
+        // mata membandingkan tanggal baris demi baris.
+        $hariTerakhir = null;
+
+        $namaHari = function (?string $iso): string {
+            if (! $iso) {
+                return 'Tanpa tanggal';
+            }
+
+            $t = \Illuminate\Support\Carbon::parse($iso);
+
+            return match (true) {
+                $t->isToday() => 'Hari ini',
+                $t->isYesterday() => 'Kemarin',
+                default => $t->locale('id')->translatedFormat('l, d F Y'),
+            };
+        };
     @endphp
 
     <div class="dsb">
@@ -59,6 +127,18 @@ Jejak Audit Orcha || lemon
                                 </select>
                             </div>
 
+                            {{-- "Siapa saja yang pernah menyentuh pembayaran?" dijawab di
+                                 sini, bukan dengan menebak kata di kotak cari. --}}
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="ja-aksi">Jenis perubahan</label>
+                                <select id="ja-aksi" class="dsb-isian" wire:model.live="filterAksi">
+                                    <option value="">Semua jenis</option>
+                                    @foreach ($pilihanAksi as $aksi)
+                                        <option value="{{ $aksi }}">{{ $aksi }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             {{-- Rentang tanggal, bukan satu tanggal.
 
                                  Pertanyaan audit hampir selalu berbentuk rentang — "pekan
@@ -73,16 +153,71 @@ Jejak Audit Orcha || lemon
                                 <label class="dsb-label" for="ja-sampai">Sampai</label>
                                 <input id="ja-sampai" type="date" class="dsb-isian" wire:model.live="sampai">
                             </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="ja-ip">Alamat IP</label>
+                                <input id="ja-ip" type="text" class="dsb-isian" placeholder="mis. 103.10."
+                                    wire:model.live.debounce.500ms="filterIp">
+                            </div>
                         </div>
 
-                        @if ($adaSaringan)
-                            <div class="ja-saring-kaki">
-                                <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> Daftar di bawah mengikuti saringan</span>
-                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
-                                    <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
-                                </button>
+                        {{-- Pintasan rentang: pertanyaan audit hampir selalu "pekan lalu",
+                             bukan dua tanggal yang diketik satu per satu. Yang terisi tetap
+                             kedua medan tanggalnya, jadi pilihannya kelihatan & bisa diubah. --}}
+                        <div class="ja-cepat">
+                            <span class="dsb-label">Rentang cepat</span>
+                            <div class="ja-cepat-deret">
+                                @foreach ($this::RENTANG_CEPAT as $kunci => [$label, $mundur])
+                                    @php
+                                        $aktif = $dari === now()->subDays($mundur)->toDateString()
+                                            && $sampai === now()->toDateString();
+                                    @endphp
+                                    <button type="button" wire:click="rentangCepat('{{ $kunci }}')"
+                                        wire:loading.attr="disabled" wire:target="rentangCepat"
+                                        class="dsb-chip ja-chip-tombol {{ $aktif ? 'is-aktif' : '' }}">
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
                             </div>
-                        @endif
+                        </div>
+
+                        <div class="ja-saring-kaki">
+                            <span class="dsb-kartu-sub">
+                                <i class="bi bi-funnel"></i>
+                                @if ($adaSaringan)
+                                    {{ $jumlahSaringan }} saringan aktif — daftar & unduhan mengikutinya
+                                @else
+                                    Belum ada saringan; unduhan memuat seluruh catatan
+                                @endif
+                            </span>
+
+                            <span class="ja-saring-aksi">
+                                <span class="dsb-medan ja-medan-baris">
+                                    <label class="dsb-label" for="ja-baris">Baris</label>
+                                    <select id="ja-baris" class="dsb-isian" wire:model.live="baris">
+                                        @foreach ($this::PILIHAN_BARIS as $n)
+                                            <option value="{{ $n }}">{{ $n }}</option>
+                                        @endforeach
+                                    </select>
+                                </span>
+
+                                {{-- Yang diunduh SELURUH hasil saringan, bukan halaman yang
+                                     terlihat: audit yang dilampirkan ke laporan tidak boleh
+                                     terpotong di baris terakhir tanpa ada yang menyadarinya. --}}
+                                <button type="button" wire:click="unduhCsv" wire:loading.attr="disabled"
+                                    wire:target="unduhCsv" class="dsb-tombol is-lembut" style="--ikon: #16a34a">
+                                    <i class="bi bi-filetype-csv" wire:loading.remove wire:target="unduhCsv"></i>
+                                    <span class="dsb-putar" wire:loading wire:target="unduhCsv"></span>
+                                    <span>Unduh CSV</span>
+                                </button>
+
+                                @if ($adaSaringan)
+                                    <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
+                                        <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                    </button>
+                                @endif
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -122,24 +257,64 @@ Jejak Audit Orcha || lemon
                         <div class="dsb-tabel-bungkus">
                             <table class="dsb-tabel ja-tabel">
                                 <thead>
+                                    {{-- IP tidak lagi kolom sendiri: isinya hampir selalu
+                                         sama, tetapi lebarnya mendorong kolom yang justru
+                                         dibaca. Ia turun jadi keterangan di bawah nama. --}}
                                     <tr>
                                         <th>Waktu</th>
                                         <th>Admin</th>
                                         <th>Perubahan</th>
                                         <th>Pesanan</th>
-                                        <th>IP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($daftar as $baris)
+                                        @php
+                                            $hariIni = $namaHari($baris['waktu'] ?? null);
+                                            $gantiHari = $hariIni !== $hariTerakhir;
+                                            $hariTerakhir = $hariIni;
+
+                                            [$ikonAksi, $warnaAksi] = $rupaAksi((string) $baris['aksi']);
+
+                                            /*
+                                             | Warna avatar mengikuti NAMA: dengan beberapa admin
+                                             | aktif, warna tetap per orang membuat "mana pekerjaan
+                                             | si A" terbaca tanpa mengeja tiap baris.
+                                             |
+                                             | Penyebarnya md5, bukan crc32: ketiga admin yang benar-
+                                             | benar ada di data (Asthana, Everette, Rosalinda)
+                                             | kebetulan bersisa SAMA di crc32 % 6, jadi ketiganya
+                                             | berwarna hijau dan penandanya tidak menandai apa pun.
+                                             */
+                                            $warnaAdmin = ['#4f46e5', '#0ea5e9', '#b45309', '#047857', '#be185d', '#7c3aed'][intval(substr(md5((string) $baris['admin']), 0, 8), 16) % 6];
+
+                                            $waktu = ($baris['waktu'] ?? null)
+                                                ? \Illuminate\Support\Carbon::parse($baris['waktu'])
+                                                : null;
+                                        @endphp
+
+                                        @if ($gantiHari)
+                                            <tr class="ja-hari" wire:key="hari-{{ $baris['id'] }}">
+                                                <td colspan="4">{{ $hariIni }}</td>
+                                            </tr>
+                                        @endif
+
                                         <tr wire:key="jejak-{{ $baris['id'] }}">
                                             <td data-judul="Waktu">
-                                                <span class="dsb-tabel-angka">{{ $baris['waktu_teks'] }}</span>
+                                                {{-- Yang baru dibaca sebagai "2 jam lalu"; tanggal
+                                                     penuhnya tetap ada di tooltip dan di CSV. --}}
+                                                <span class="dsb-tabel-angka" title="{{ $baris['waktu_teks'] }}">
+                                                    {{ $waktu && $waktu->gt(now()->subDays(2)) ? $waktu->locale('id')->diffForHumans() : ($waktu?->format('H:i') ?? '—') }}
+                                                </span>
+                                                <span class="dsb-tabel-meta">{{ $waktu?->locale('id')->translatedFormat('d M Y') }}</span>
                                             </td>
                                             <td data-judul="Admin">
                                                 <span class="ja-admin">
-                                                    <span class="dsb-avatar" style="--c: #4f46e5">{{ \Illuminate\Support\Str::substr($baris['admin'], 0, 1) }}</span>
-                                                    <span>{{ $baris['admin'] }}</span>
+                                                    <span class="dsb-avatar" style="--c: {{ $warnaAdmin }}">{{ \Illuminate\Support\Str::substr($baris['admin'], 0, 1) }}</span>
+                                                    <span class="ja-admin-teks">
+                                                        <span>{{ $baris['admin'] }}</span>
+                                                        <span class="dsb-tabel-meta ja-ip">{{ $baris['ip'] ?: 'tanpa IP' }}</span>
+                                                    </span>
                                                 </span>
                                             </td>
                                             <td data-judul="Perubahan">
@@ -162,16 +337,26 @@ Jejak Audit Orcha || lemon
                                                     }
                                                 @endphp
 
-                                                <span class="dsb-tabel-judul">{{ $baris['aksi'] }}</span>
+                                                <span class="ja-aksi">
+                                                    <span class="dsb-ikon is-kecil" style="--c: {{ $warnaAksi }}"><i class="bi {{ $ikonAksi }}"></i></span>
+                                                    <span class="dsb-tabel-judul">{{ $baris['aksi'] }}</span>
+                                                </span>
 
                                                 {{-- Perpindahan status ditampilkan sebagai "dari → ke",
                                                      bukan hanya nilai akhirnya. Nilai akhir saja tidak
                                                      menjawab pertanyaan yang sebenarnya diajukan:
                                                      berubah DARI apa. --}}
                                                 @if ($baris['sebelum'] !== null || $baris['sesudah'] !== null)
+                                                    {{-- Tanpa nilai awal, "— → dp_masuk" terbaca seperti
+                                                         ada yang hilang. Yang benar: memang belum punya
+                                                         keadaan sebelumnya, jadi cukup "jadi X". --}}
                                                     <span class="ja-pindah">
-                                                        <span class="ja-pindah-lama">{{ $baris['sebelum'] ?: '—' }}</span>
-                                                        <i class="bi bi-arrow-right"></i>
+                                                        @if ($baris['sebelum'])
+                                                            <span class="ja-pindah-lama">{{ $baris['sebelum'] }}</span>
+                                                            <i class="bi bi-arrow-right"></i>
+                                                        @else
+                                                            <span class="ja-pindah-awal">jadi</span>
+                                                        @endif
                                                         <span class="ja-pindah-baru">{{ $baris['sesudah'] ?: '—' }}</span>
                                                     </span>
                                                 @endif
@@ -181,14 +366,20 @@ Jejak Audit Orcha || lemon
                                                 @endif
                                             </td>
                                             <td data-judul="Pesanan">
-                                                @if ($baris['kode'])
+                                                @php $tautan = $tautanKode($baris['kode'] ?? null); @endphp
+
+                                                @if ($baris['kode'] && $tautan)
+                                                    <a href="{{ $tautan }}" wire:navigate class="ja-kode is-tautan"
+                                                        title="Buka {{ $baris['kode'] }} di daftarnya">
+                                                        {{ $baris['kode'] }}<i class="bi bi-arrow-up-right"></i>
+                                                    </a>
+                                                @elseif ($baris['kode'])
+                                                    {{-- Kode yang tidak punya daftar tujuan (mis. RAB-)
+                                                         tetap ditampilkan apa adanya, bukan tautan mati. --}}
                                                     <span class="ja-kode">{{ $baris['kode'] }}</span>
                                                 @else
                                                     <span class="dsb-tabel-samar">—</span>
                                                 @endif
-                                            </td>
-                                            <td data-judul="IP">
-                                                <span class="dsb-tabel-samar">{{ $baris['ip'] ?: '—' }}</span>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -245,12 +436,44 @@ Jejak Audit Orcha || lemon
         .ja-pindah-lama { color: #94a3b8; text-decoration: line-through; }
         .ja-pindah i { color: #cbd5e1; font-size: .7rem; }
         .ja-pindah-baru { font-weight: 700; color: var(--dsb-tinta, #1c1f26); }
+        .ja-pindah-awal { color: #94a3b8; }
 
         .ja-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem;
             background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
             border-radius: 8px; padding: 2px 8px; white-space: nowrap;
         }
+
+        /* Pintasan rentang. Yang terpilih berwarna penuh supaya terbaca
+           sebagai keadaan, bukan sekadar tombol yang barusan ditekan. */
+        .ja-cepat { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        .ja-cepat .dsb-label { margin: 0; }
+        .ja-cepat-deret { display: flex; gap: 7px; flex-wrap: wrap; }
+        .ja-chip-tombol { cursor: pointer; border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff; }
+        .ja-chip-tombol:hover { border-color: #c7d2fe; color: #4338ca; }
+        .ja-chip-tombol.is-aktif { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; font-weight: 700; }
+
+        .ja-saring-aksi { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+        .ja-medan-baris { min-width: 0; }
+        .ja-medan-baris .dsb-isian { width: auto; min-width: 84px; }
+
+        /* Pemisah hari: satu baris tipis, bukan kartu — ia penanda, bukan isi. */
+        .ja-hari td {
+            background: #f8fafc; color: var(--dsb-redup, #6b7280);
+            font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+            padding: 7px 14px !important; border-bottom: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+
+        /* Aksi: ikon berwarna + namanya, sejajar di tengah. */
+        .ja-aksi { display: inline-flex; align-items: center; gap: 9px; }
+        .ja-aksi .dsb-ikon { flex-shrink: 0; }
+
+        .ja-admin-teks { display: flex; flex-direction: column; line-height: 1.3; }
+        .ja-ip { font-size: .72rem; }
+
+        .ja-kode.is-tautan { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; color: #4338ca; border-color: #c7d2fe; }
+        .ja-kode.is-tautan:hover { background: #eef2ff; }
+        .ja-kode.is-tautan i { font-size: .7rem; }
 
         .ja-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
         .ja-halaman > * { margin-bottom: 0 !important; }
@@ -271,6 +494,12 @@ Jejak Audit Orcha || lemon
                 letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0;
             }
             .ja-tabel tbody td > :not(:first-child) { margin-left: 0; }
+
+            /* Pemisah hari tidak ikut jadi kartu berlabel — ia tetap satu
+               baris penanda di atas kelompoknya. */
+            .ja-tabel tbody tr.ja-hari { display: block; padding: 0; }
+            .ja-tabel tbody tr.ja-hari td { display: block; }
+            .ja-tabel tbody tr.ja-hari td::before { content: none; }
         }
     </style>
 

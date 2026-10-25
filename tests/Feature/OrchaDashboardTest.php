@@ -5581,9 +5581,14 @@ test('tiga kendali detail sewa pindah ke kartunya sendiri, seukuran dan berwarna
     // Ditambatkan pada kartu tindakannya. Sempat ditambatkan pada tautan
     // wa.me — lalu tombolnya berhenti jadi tautan sama sekali begitu ia
     // membuka pilihan pesan.
-    $kepala = substr(tanpaGaya($isi), strpos(tanpaGaya($isi), 'orcha-kartu-tindakan'), 1800);
+    $kepala = substr(tanpaGaya($isi), strpos(tanpaGaya($isi), 'orcha-kartu-tindakan'), 2400);
 
-    expect(substr_count($kepala, 'orcha-aksi-sewa'))->toBe(2)
+    // Tiga tombol seukuran — Hubungi, Kwitansi, Jejak — plus pemilih status.
+    // Angkanya dipatok, bukan sekadar "ada": tombol yang ditambahkan tanpa
+    // .orcha-aksi-sewa akan berdiri 10px lebih tinggi dari tetangganya, dan
+    // bilah perkakas yang tingginya berbeda-beda terbaca seperti kumpulan
+    // tombol yang kebetulan bersebelahan.
+    expect(substr_count($kepala, 'orcha-aksi-sewa'))->toBe(3)
         ->and($kepala)->toContain('orcha-status-ringkas')
         // Warnanya mengikuti keadaan, sama seperti di daftar sewa
         ->and($kepala)->toContain('data-status="berjalan"');
@@ -5971,4 +5976,175 @@ it('tombol muat ulang menyebut nama metodenya, bukan $refresh', function () {
     // kebetulan lewat — patokan dasbor lemon melarangnya.
     expect($sumber)->toContain('wire:target="segarkan"')
         ->not->toContain('wire:target="$refresh"');
+});
+
+/*
+ | ---------------------------------------------------------------------------
+ | Jejak audit: alat telusur, bukan sekadar daftar
+ |
+ | Pertanyaan audit yang khas bukan "tampilkan semua", melainkan "siapa saja
+ | yang menyentuh pembayaran pekan lalu" dan "tolong lampirkan hasilnya".
+ | ---------------------------------------------------------------------------
+ */
+
+function jejakFake(array $baris = [], array $meta = []): void
+{
+    Http::fake([
+        '*/jejak-audit/admin' => Http::response(['data' => ['Asthana', 'Rina Admin']]),
+        '*/jejak-audit/aksi' => Http::response(['data' => ['catat pembayaran manual', 'ubah paket wisata']]),
+        '*/jejak-audit*' => Http::response([
+            'data' => $baris ?: [[
+                'id' => 1, 'admin' => 'Asthana', 'aksi' => 'catat pembayaran manual',
+                'ringkasan' => 'catat pembayaran manual — nominal: 2500000',
+                'kode' => 'OT-0309-9G9VBT', 'sebelum' => null, 'sesudah' => null,
+                'ip' => '103.10.20.30', 'waktu' => now()->toIso8601String(),
+                'waktu_teks' => now()->locale('id')->translatedFormat('j F Y, H:i'),
+            ]],
+            'meta' => $meta ?: ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1],
+        ]),
+    ]);
+}
+
+test('saringan jenis aksi dan IP ikut dikirim ke Orcha', function () {
+    jejakFake();
+
+    Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('filterAksi', 'catat pembayaran manual')
+        ->set('filterIp', '103.10')
+        ->assertOk();
+
+    // Tanpa ini keduanya cuma menghias layar: datanya tetap tidak tersaring.
+    Http::assertSent(function ($request) {
+        $url = urldecode($request->url());
+
+        return str_contains($url, 'jejak-audit')
+            && str_contains($url, 'aksi=catat pembayaran manual')
+            && str_contains($url, 'ip=103.10');
+    });
+});
+
+test('rentang cepat mengisi kedua tanggal, bukan keadaan tersembunyi', function () {
+    jejakFake();
+
+    $t = Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->call('rentangCepat', '7-hari');
+
+    // Terlihat, bisa disunting, dan ikut terbawa di alamat saat dikirim ke
+    // orang lain — itu bedanya dengan menyimpannya diam-diam.
+    $t->assertSet('dari', now()->subDays(6)->toDateString())
+        ->assertSet('sampai', now()->toDateString())
+        ->assertSet('halaman', 1);
+});
+
+test('jumlah baris per halaman bisa diubah dan ikut dikirim', function () {
+    jejakFake();
+
+    Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('baris', 50)
+        ->assertOk();
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'per_halaman=50'));
+
+    // Angka di luar daftar tidak dipakai begitu saja.
+    $komponen = new \App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList;
+    $komponen->baris = 9999;
+    $metode = new ReflectionMethod($komponen, 'perHalaman');
+    $metode->setAccessible(true);
+
+    expect($metode->invoke($komponen))->toBe(25);
+});
+
+test('unduhan memuat seluruh hasil saringan, bukan halaman yang terlihat', function () {
+    jejakFake();
+
+    $balasan = Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->set('filterAdmin', 'Asthana')
+        ->call('unduhCsv')
+        ->effects['download'] ?? null;
+
+    /*
+     | Audit yang dilampirkan ke laporan tidak boleh terpotong di baris
+     | terakhir halaman tanpa ada yang menyadarinya.
+     */
+    Http::assertSent(function ($request) {
+        $url = urldecode($request->url());
+
+        return str_contains($url, 'jejak-audit')
+            && str_contains($url, 'per_halaman=5000')
+            && str_contains($url, 'admin=Asthana');
+    });
+});
+
+test('kode pesanan bisa diklik ke daftarnya, kode lain tetap teks', function () {
+    jejakFake([
+        [
+            'id' => 1, 'admin' => 'Asthana', 'aksi' => 'catat pembayaran manual', 'ringkasan' => 'catat',
+            'kode' => 'OT-0309-9G9VBT', 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+            'waktu' => now()->toIso8601String(), 'waktu_teks' => '3 September 2026, 22:16',
+        ],
+        [
+            'id' => 2, 'admin' => 'Asthana', 'aksi' => 'buat rab', 'ringkasan' => 'buat rab',
+            'kode' => 'RAB-2609-HPZ4', 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+            'waktu' => now()->toIso8601String(), 'waktu_teks' => '18 September 2026, 23:20',
+        ],
+    ]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    // Yang punya daftar tujuan jadi tautan …
+    expect($isi)->toContain('cari=OT-0309-9G9VBT');
+
+    // … yang tidak punya tetap teks, bukan tautan mati.
+    expect($isi)->toContain('RAB-2609-HPZ4')
+        ->not->toContain('cari=RAB-2609-HPZ4');
+});
+
+test('daftar dikelompokkan per hari', function () {
+    jejakFake([
+        [
+            'id' => 1, 'admin' => 'Asthana', 'aksi' => 'ubah paket wisata', 'ringkasan' => 'ubah',
+            'kode' => null, 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+            'waktu' => now()->toIso8601String(), 'waktu_teks' => 'hari ini',
+        ],
+        [
+            'id' => 2, 'admin' => 'Asthana', 'aksi' => 'ubah paket wisata', 'ringkasan' => 'ubah',
+            'kode' => null, 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+            'waktu' => now()->subDay()->toIso8601String(), 'waktu_teks' => 'kemarin',
+        ],
+    ]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    // Tanpa pemisah, mata harus membandingkan tanggal baris demi baris.
+    expect($isi)->toContain('Hari ini')->toContain('Kemarin');
+});
+
+test('tiap admin punya warna avatar sendiri', function () {
+    /*
+     | Penyebarnya pernah memakai crc32 % 6 — dan ketiga admin yang benar-benar
+     | ada di data kebetulan bersisa SAMA, sehingga ketiganya hijau dan
+     | penandanya tidak menandai apa pun.
+     */
+    $warna = fn (string $nama) => intval(substr(md5($nama), 0, 8), 16) % 6;
+
+    expect(collect(['Asthana', 'Everette Runte', 'Rosalinda Hodkiewicz'])->map($warna)->unique())
+        ->toHaveCount(3);
+});
+
+test('penyaring yang isinya bukan teks tidak merobohkan halaman', function () {
+    // Balasan berbentuk lain pernah memicu TypeError di htmlspecialchars(),
+    // sehingga satu penyaring aneh menjatuhkan SELURUH jejaknya.
+    Http::fake([
+        '*/jejak-audit/aksi' => Http::response(['data' => [['id' => 1, 'aksi' => 'x']]]),
+        '*/jejak-audit/admin' => Http::response(['data' => [['nama' => 'bukan teks']]]),
+        '*' => Http::response(['data' => [], 'meta' => ['halaman' => 1, 'total' => 0, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $this->actingAs(adminOrcha())->get('/admin/orcha/jejak-audit')->assertOk();
 });

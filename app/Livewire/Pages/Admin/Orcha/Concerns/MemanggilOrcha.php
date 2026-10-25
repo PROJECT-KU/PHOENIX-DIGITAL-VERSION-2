@@ -111,6 +111,20 @@ trait MemanggilOrcha
         // kuerinya, dan href tanpa-JS harus membawanya — kalau tidak,
         // berpindah halaman diam-diam menghapus pencarian admin.
         $this->alamatHalaman = request()->fullUrl();
+
+        /*
+         | ?cari= dari alamat ikut mengisi kotak pencarian.
+         |
+         | $cari TIDAK ber-#[Url] (lihat alasannya di atas), jadi tanpa baris
+         | ini seluruh tautan "lihat ini di daftar sebelah" mendarat di daftar
+         | PENUH — tanpa galat, tanpa tanda, cuma hasil yang salah. Tautan
+         | semacam itu sudah ada di beberapa layar; sebelumnya hanya daftar
+         | pembayaran yang membacanya, dan tidak ada yang bisa menebak mengapa
+         | hanya yang satu itu berfungsi.
+         */
+        if ($this->cari === '') {
+            $this->cari = trim((string) request()->query('cari', ''));
+        }
     }
 
     public function keHalaman(int $nomor): void

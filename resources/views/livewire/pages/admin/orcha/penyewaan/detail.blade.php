@@ -126,6 +126,21 @@ Detail Sewa Kendaraan || lemon
                                 {{ $sewa['dikembalikan_pada'] ? 'Nota Akhir' : 'Kwitansi' }}
                             </a>
 
+                            {{-- Jalan ke jejak pesanan INI, bukan ke seluruh jejak.
+
+                                 Pertanyaan "siapa yang mengubah nominalnya?" muncul
+                                 saat admin sedang menatap pesanan yang bermasalah —
+                                 bukan saat ia kebetulan membuka halaman audit. Tanpa
+                                 tautan ini jawabannya menuntut: hafal kodenya, buka
+                                 menu lain, ketik ulang, lalu cocokkan sendiri. Kode
+                                 pesanannya dibawa di alamat, jadi yang terbuka sudah
+                                 tersaring. --}}
+                            <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $sewa['kode']]) }}"
+                                class="orcha-btn orcha-btn-lembut orcha-aksi-sewa"
+                                title="Siapa mengubah apa pada pesanan ini">
+                                <i class="bi bi-clock-history"></i> Jejak
+                            </a>
+
                             <select class="form-select orcha-status-ringkas"
                                 data-status="{{ $sewa['status'] }}"
                                 wire:change="ubahStatus($event.target.value)">

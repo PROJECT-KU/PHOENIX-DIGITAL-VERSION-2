@@ -148,6 +148,21 @@ Detail Pendaftaran || lemon
                                 </a>
                             @endif
 
+                            {{-- Jalan ke jejak pesanan INI, bukan ke seluruh jejak.
+
+                                 Pertanyaan "siapa yang mengubah nominalnya?" muncul
+                                 saat admin sedang menatap pesanan yang bermasalah —
+                                 bukan saat ia kebetulan membuka halaman audit. Tanpa
+                                 tautan ini jawabannya menuntut: hafal kodenya, buka
+                                 menu lain, ketik ulang, lalu cocokkan sendiri. Kode
+                                 pesanannya dibawa di alamat, jadi yang terbuka sudah
+                                 tersaring. --}}
+                            <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $pendaftaran['kode']]) }}"
+                                class="orcha-btn orcha-btn-lembut orcha-aksi-sewa"
+                                title="Siapa mengubah apa pada pesanan ini">
+                                <i class="bi bi-clock-history"></i> Jejak
+                            </a>
+
                             {{-- Mencatat pembayaran adalah TINDAKAN, sama seperti
                                  menghubungi pemesan — bukan keterangan yang menempel
                                  pada ringkasan biaya.
