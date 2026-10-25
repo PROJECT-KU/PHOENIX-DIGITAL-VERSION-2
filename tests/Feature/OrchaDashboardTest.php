@@ -5890,7 +5890,11 @@ test('keterangan yang hanya mengulang aksinya tidak ditampilkan dua kali', funct
 
     // Aksinya disebut sekali saja; keterangan sisanya tetap tampil.
     expect(substr_count($isi, 'ubah status pembayaran'))->toBe(1)
-        ->and($isi)->toContain('nominal: 1716000')
+        // Keterangannya tetap tampil — dan terbaca: label berlabel, angka
+        // uang sebagai uang.
+        ->and($isi)->toContain('Nominal')
+        ->and($isi)->toContain('Rp 1.716.000')
+        ->and($isi)->not->toContain('nominal: 1716000')
         // Perpindahannya tetap "dari → ke", dengan nama yang dibaca orang.
         ->and($isi)->toContain('Menunggu')
         ->and($isi)->toContain('Diterima');
@@ -6396,4 +6400,236 @@ test('jumlah baris pindah ke kaki tabel, bukan bilah saringan', function () {
 
     $saring = substr($isi, strpos($isi, 'ja-saring'), strpos($isi, 'ja-halaman') - strpos($isi, 'ja-saring'));
     expect(substr_count($saring, 'wire:model.live="baris"'))->toBe(0);
+});
+
+/*
+ | ---------------------------------------------------------------------------
+ | Keterangan jejak dibaca sebagai kalimat, bukan potongan berkas log
+ |
+ | Bentuk-bentuk di bawah DISALIN dari jejak Orcha yang sungguhan, bukan
+ | dikarang: pemecah yang hanya diuji dengan contoh rapi akan tenang sampai
+ | hari ia bertemu koma di dalam nilai.
+ | ---------------------------------------------------------------------------
+ */
+
+/** Label & nilainya saja — warnanya diuji tersendiri. */
+function rincianTeks(string $keterangan, array $rujukan = []): array
+{
+    return collect(rincianJejak($keterangan, $rujukan))
+        ->map(fn ($r) => ['label' => $r['label'], 'nilai' => $r['nilai']])
+        ->all();
+}
+
+function rincianJejak(string $keterangan, array $rujukan = []): array
+{
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => $rujukan]),
+        '*' => Http::response(['data' => [], 'meta' => ['halaman' => 1, 'total' => 0, 'halaman_terakhir' => 1]]),
+    ]);
+
+    return Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->instance()
+        ->rincian($keterangan);
+}
+
+test('kunci bergaris bawah jadi kata, nilainya ikut dinamai', function () {
+    $rincian = rincianTeks(
+        'paket: Private Trip Premium, kategori: private_trip, jumlah_peserta: 3, nama_terdata: 3',
+        ['kategori_paket' => ['private_trip' => 'Private Trip']],
+    );
+
+    expect($rincian)->toBe([
+        ['label' => 'Paket', 'nilai' => 'Private Trip Premium'],
+        ['label' => 'Kategori', 'nilai' => 'Private Trip'],
+        ['label' => 'Jumlah peserta', 'nilai' => '3'],
+        ['label' => 'Nama terdata', 'nilai' => '3'],
+    ]);
+});
+
+test('angka uang ditulis sebagai uang', function () {
+    /*
+     | "nominal: 1716000" menuntut pembacanya menghitung sendiri ada berapa
+     | nol — dan satu nol terlewat pada catatan audit pembayaran bukan salah
+     | baca yang kecil.
+     */
+    $rincian = rincianTeks('nominal: 2500000, jenis: dp, bank: bca', [
+        'jenis_pembayaran' => ['dp' => 'Uang Muka (DP)'],
+    ]);
+
+    expect($rincian[0])->toBe(['label' => 'Nominal', 'nilai' => 'Rp 2.500.000'])
+        ->and($rincian[1])->toBe(['label' => 'Jenis', 'nilai' => 'Uang Muka (DP)']);
+});
+
+test('angka yang bukan uang tidak dijadikan rupiah', function () {
+    // Kuncinya yang menentukan, bukan bentuk angkanya: "termin: 3" jadi
+    // "Rp 3" adalah kesalahan yang terbaca percaya diri.
+    expect(rincianTeks('termin: 3'))->toBe([['label' => 'Termin', 'nilai' => '3']]);
+
+    expect(rincianTeks('jumlah_peserta: 11, pendamping_gratis: 1'))->toBe([
+        ['label' => 'Jumlah peserta', 'nilai' => '11'],
+        ['label' => 'Pendamping gratis', 'nilai' => '1'],
+    ]);
+});
+
+test('koma di dalam nilai bukan pemisah rincian', function () {
+    /*
+     | Tanpa ini "paket: Jogja, Solo" pecah jadi dua rincian, yang kedua tanpa
+     | label — dan pembacanya tidak akan tahu bahwa yang dilihatnya potongan
+     | dari nilai sebelumnya.
+     */
+    expect(rincianTeks('paket: Jogja, Solo, Dieng, harga: 10000'))->toBe([
+        ['label' => 'Paket', 'nilai' => 'Jogja, Solo, Dieng'],
+        ['label' => 'Harga', 'nilai' => 'Rp 10.000'],
+    ]);
+});
+
+test('keterangan tanpa bentuk kunci-nilai tetap tampil apa adanya', function () {
+    // Yang tidak dikenali bentuknya tidak boleh hilang: yang hilang dari
+    // catatan audit justru yang dicari.
+    expect(rincianTeks('dibatalkan sepihak oleh pelanggan'))->toBe([
+        ['label' => '', 'nilai' => 'dibatalkan sepihak oleh pelanggan'],
+    ]);
+
+    expect(rincianTeks(''))->toBe([]);
+});
+
+test('keterangan yang mengulang aksinya dipotong sebelum dipecah', function () {
+    jejakFake([[
+        'id' => 1, 'admin' => 'Asthana', 'aksi' => 'catat pembayaran manual',
+        'ringkasan' => 'catat pembayaran manual (menunggu → diterima) — nominal: 1716000',
+        'kode' => null, 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+        'waktu' => now()->toIso8601String(), 'waktu_teks' => 'kini',
+    ]]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    // Nama aksinya sekali saja, dan sisa kalimatnya sudah berupa rincian.
+    expect(substr_count($isi, 'catat pembayaran manual'))->toBe(1)
+        ->and($isi)->toContain('Rp 1.716.000')
+        ->and($isi)->not->toContain('(menunggu');
+});
+
+test('unduhan ikut rapi, bukan kembali mentah di Excel', function () {
+    /*
+     | Yang diunduh dilampirkan ke laporan dan dibaca orang yang tidak membuka
+     | lemon sama sekali — "kategori: private_trip" di lembar Excel lebih buruk
+     | lagi daripada di layar, karena di sana tidak ada tempat bertanya.
+     */
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => [
+            'status_pembayaran' => ['menunggu' => 'Menunggu Dicek', 'diterima' => 'Diterima'],
+        ]]),
+        '*/jejak-audit/admin' => Http::response(['data' => ['Asthana']]),
+        '*/jejak-audit/aksi' => Http::response(['data' => []]),
+        '*/jejak-audit*' => Http::response(['data' => [[
+            'id' => 1, 'admin' => 'Asthana', 'aksi' => 'ubah status pembayaran',
+            'ringkasan' => 'ubah status pembayaran (menunggu → diterima) — nominal: 1716000',
+            'kode' => 'OT-1', 'sebelum' => 'menunggu', 'sesudah' => 'diterima',
+            'ip' => '103.10.20.30', 'waktu' => now()->toIso8601String(), 'waktu_teks' => 'kini',
+        ]], 'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $unduhan = Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->call('unduhCsv');
+
+    // Unduhan di uji Livewire tersimpan sebagai effects['download'], isinya
+    // base64 — bukan balasan yang bisa dialirkan ke keluaran.
+    $isi = base64_decode($unduhan->effects['download']['content']);
+
+    expect($isi)->toContain('Menunggu Dicek')
+        ->and($isi)->toContain('Diterima')
+        ->and($isi)->toContain('Nominal Rp 1.716.000')
+        ->and($isi)->not->toContain('nominal: 1716000');
+});
+
+test('tiap jenis medan punya warnanya sendiri', function () {
+    /*
+     | Satu warna untuk seluruh label membuat "Paket", "Kategori", "Jumlah
+     | peserta" dan isinya mengalir jadi satu untaian; mata harus mengeja
+     | untuk tahu di mana satu medan berakhir dan medan berikutnya mulai.
+     */
+    $rincian = rincianJejak('paket: A, kategori: B, jumlah_peserta: 3, pendamping_gratis: 1, nama_terdata: 3');
+
+    $warna = collect($rincian)->pluck('warna');
+
+    // Lima medan, lima warna. Penyebar warna avatar pernah memakai crc32 % 6
+    // dan membuat ketiga admin yang benar-benar ada bersisa SAMA — penandanya
+    // tidak menandai apa pun. Yang dijaga di sini jumlah warna uniknya.
+    expect($warna)->toHaveCount(5)
+        ->and($warna->unique())->toHaveCount(5);
+
+    // Semuanya dari palet, tak ada yang dikarang.
+    foreach ($warna as $w) {
+        expect(in_array($w, \App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::WARNA_LABEL, true))
+            ->toBeTrue("warna {$w} di luar palet");
+    }
+
+    // Ungu kata penghubung tidak boleh ikut dipakai label: dua peran berbeda
+    // dengan warna sama di baris yang sama justru menghapus penandanya.
+    expect($warna->contains('#7c3aed'))->toBeFalse();
+});
+
+test('medan yang sama berwarna sama di baris yang berbeda', function () {
+    // Supaya matanya belajar: "Paket" selalu warna itu, di mana pun.
+    $satu = collect(rincianJejak('paket: A, kategori: B'))->firstWhere('label', 'Paket');
+    $dua = collect(rincianJejak('paket: Z, termin: 3'))->firstWhere('label', 'Paket');
+
+    expect($satu['warna'])->toBe($dua['warna']);
+});
+
+test('warnanya sampai ke markah baris, bukan berhenti di komponen', function () {
+    jejakFake([[
+        'id' => 1, 'admin' => 'Asthana', 'aksi' => 'daftarkan rombongan dari admin',
+        'ringkasan' => 'paket: Private Trip Premium, kategori: private_trip, jumlah_peserta: 3',
+        'kode' => null, 'sebelum' => null, 'sesudah' => null, 'ip' => '1.1.1.1',
+        'waktu' => now()->toIso8601String(), 'waktu_teks' => 'kini',
+    ]]);
+
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent();
+
+    // Tiga medan, tiga gaya --c yang berbeda di markahnya.
+    preg_match_all('/ja-rinci-butir" style="--c: (#[0-9a-f]{6})"/', $isi, $cocok);
+
+    expect($cocok[1])->toHaveCount(3)
+        ->and(array_unique($cocok[1]))->toHaveCount(3);
+});
+
+test('medan yang nyata tidak pernah kembar warna di satu baris', function () {
+    /*
+     | Bentuk-bentuk ini DISALIN dari jejak Orcha yang sungguhan. Penyebar
+     | warna punya jaring pengaman berupa geseran, tetapi geseran merambat:
+     | satu bentrok membuat medan ketiga berpindah warna, sehingga dua baris
+     | bersebelahan dengan medan yang sama tampil berbeda — persis yang
+     | hendak dihindari. Yang dijaga di sini: untuk medan yang nyata, jaring
+     | itu tidak perlu dipakai sama sekali.
+     */
+    $bentuk = [
+        'paket: A, kategori: B, jumlah_peserta: 3, pendamping_gratis: 1, nama_terdata: 3',
+        'paket: A, kategori: B, jumlah_peserta: 3, nama_terdata: 3',
+        'nominal: 2500000, jenis: dp, bank: bca',
+        'nama: depok, harga: 10000',
+        'minimal peserta: 20 orang, keuntungan: potongan 10%',
+    ];
+
+    $warnaMedan = [];
+
+    foreach ($bentuk as $teks) {
+        $rincian = rincianJejak($teks);
+        $warna = collect($rincian)->pluck('warna');
+
+        expect($warna->unique())->toHaveCount($warna->count(), "warna kembar pada: {$teks}");
+
+        // Dan medan yang sama tetap sewarna di bentuk yang berbeda.
+        foreach ($rincian as $butir) {
+            $warnaMedan[$butir['label']][] = $butir['warna'];
+        }
+    }
+
+    foreach ($warnaMedan as $label => $warna) {
+        expect(array_unique($warna))->toHaveCount(1, "medan {$label} berganti warna antarbaris");
+    }
 });

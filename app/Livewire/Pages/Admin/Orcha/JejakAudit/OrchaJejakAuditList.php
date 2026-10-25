@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Orcha\JejakAudit;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -80,6 +81,17 @@ class OrchaJejakAuditList extends Component
     public string $rentang = '';
 
     public const PILIH_SENDIRI = 'pilih';
+
+    /**
+     * Warna label rincian — satu jenis medan, satu warna.
+     *
+     * Semuanya dipilih cukup gelap untuk dibaca di atas putih, dan sengaja
+     * TIDAK memuat ungu kata penghubung (#7c3aed): dua peran yang berbeda
+     * tidak boleh memakai warna yang sama di baris yang sama.
+     */
+    public const WARNA_LABEL = [
+        '#0e7490', '#4338ca', '#b45309', '#047857', '#be185d', '#0369a1', '#7e22ce',
+    ];
 
     /**
      * Panel saringan selebihnya: tanggal persis, jenis perubahan, alamat IP.
@@ -244,25 +256,32 @@ class OrchaJejakAuditList extends Component
     }
 
     /**
-     * Nama manusiawi untuk nilai status yang dicatat jejaknya.
+     * Nama manusiawi untuk nilai mesin yang dicatat jejaknya.
      *
-     * Yang disimpan Orcha nilai mesinnya — `dp_masuk`, `menunggu` — dan itulah
-     * yang dulu ikut tercetak apa adanya. Admin membaca "dp_masuk" di layar
-     * sementara di layar sebelah hal yang sama bernama "DP Masuk"; garis bawah
-     * dan huruf kecil itu bocoran isi basis data, bukan bahasa orang.
+     * Yang disimpan Orcha nilai mesinnya — `dp_masuk`, `private_trip` — dan
+     * itulah yang dulu ikut tercetak apa adanya. Admin membaca "dp_masuk" di
+     * layar sementara di layar sebelah hal yang sama bernama "DP Masuk"; garis
+     * bawah dan huruf kecil itu bocoran isi basis data, bukan bahasa orang.
      *
      * Petanya diambil dari rujukan Orcha, bukan daftar salin-tempel di sini:
-     * status baru akan ikut bernama benar tanpa ada yang perlu ingat
+     * nilai baru akan ikut bernama benar tanpa ada yang perlu ingat
      * memperbaruinya di dua tempat.
      *
      * @return array<string, string>
      */
-    private function petaStatus(): array
+    private function petaNilai(): array
     {
         $peta = [];
 
-        foreach (['status_pendaftaran', 'status_penyewaan', 'status_pembatalan', 'status_pembayaran'] as $grup) {
-            foreach ($this->rujukan($grup) as $kunci => $label) {
+        $grup = [
+            'status_pendaftaran', 'status_penyewaan', 'status_pembatalan', 'status_pembayaran',
+            'jenis_pembayaran', 'kategori_paket', 'jenis_kendaraan',
+        ];
+
+        foreach ($grup as $nama) {
+            foreach ($this->rujukan($nama) as $kunci => $label) {
+                // Sebagian rujukan isinya bersarang (katalog kendaraan);
+                // yang bukan pasangan teks-ke-teks dilewati, bukan dipaksakan.
                 if (is_string($kunci) && is_string($label) && $label !== '') {
                     $peta[$kunci] = $label;
                 }
@@ -270,6 +289,166 @@ class OrchaJejakAuditList extends Component
         }
 
         return $peta;
+    }
+
+    /**
+     * Keterangan yang benar-benar baru, tanpa mengulang nama aksinya.
+     *
+     * Ringkasan dari Orcha hampir selalu diawali kalimat yang SAMA dengan
+     * aksinya, lalu mengulang perpindahan status di dalam kurung — sehingga
+     * satu baris terbaca dua kali ("ubah status pembayaran" lalu "ubah status
+     * pembayaran (menunggu → diterima)").
+     */
+    private function keteranganBaru(string $ringkasan, string $aksi): string
+    {
+        $sisa = trim($ringkasan);
+
+        if ($aksi !== '' && Str::startsWith(mb_strtolower($sisa), mb_strtolower($aksi))) {
+            $sisa = trim(mb_substr($sisa, mb_strlen($aksi)));
+            $sisa = trim(preg_replace('/^\([^)]*\)/u', '', $sisa));
+            $sisa = trim($sisa, "—- \t");
+        }
+
+        return $sisa;
+    }
+
+    /**
+     * Memecah keterangan "kunci: nilai, kunci: nilai" jadi rincian yang dibaca.
+     *
+     * Apa adanya, isinya terbaca seperti potongan berkas log yang tak sengaja
+     * ikut tercetak: "paket: Private Trip Premium, kategori: private_trip,
+     * jumlah_peserta: 3". Yang dibaca admin seharusnya kalimat, bukan nama
+     * kolom dengan garis bawahnya.
+     *
+     * @return array<int, array{label: string, nilai: string}>
+     */
+    public function rincian(?string $keterangan): array
+    {
+        $teks = trim((string) $keterangan);
+
+        if ($teks === '') {
+            return [];
+        }
+
+        $peta = $this->petaNilai();
+        $rincian = [];
+
+        foreach (explode(',', $teks) as $potong) {
+            $potong = trim($potong);
+
+            if ($potong === '') {
+                continue;
+            }
+
+            /*
+             | Koma yang ada DI DALAM nilai bukan pemisah rincian. Tanpa
+             | penanganan ini "paket: Jogja, Solo" pecah jadi dua rincian, yang
+             | kedua tanpa label — dan pembacanya tidak akan tahu bahwa yang
+             | dilihatnya potongan dari nilai sebelumnya.
+             */
+            if (! str_contains($potong, ':')) {
+                if ($rincian !== []) {
+                    $rincian[array_key_last($rincian)]['nilai'] .= ', '.$potong;
+
+                    continue;
+                }
+
+                $rincian[] = ['label' => '', 'nilai' => $potong];
+
+                continue;
+            }
+
+            [$kunci, $nilai] = array_map('trim', explode(':', $potong, 2));
+
+            $rincian[] = [
+                'label' => $this->terbaca($kunci),
+                'nilai' => $this->nilaiTerbaca($kunci, $nilai, $peta),
+            ];
+        }
+
+        return $this->berwarna($rincian);
+    }
+
+    /**
+     * Memberi tiap jenis medan warnanya sendiri.
+     *
+     * Satu warna untuk seluruh label membuat "Paket", "Kategori", "Jumlah
+     * peserta" dan isinya mengalir jadi satu untaian; mata harus mengeja
+     * untuk tahu di mana satu medan berakhir dan medan berikutnya mulai.
+     *
+     * Warnanya dari nama medannya — jadi "Paket" berwarna sama di seluruh
+     * daftar, dan matanya belajar.
+     *
+     * Awalannya ("ja:") BUKAN hiasan: ia dipilih karena dengannya seluruh
+     * nama medan yang benar-benar dipakai Orcha hari ini jatuh ke warna yang
+     * berbeda-beda di tiap baris. Tanpa itu "Paket" dan "Pendamping gratis"
+     * bersisa sama, yang belakangan tergeser, dan geseran itu merambat —
+     * sehingga "Nama terdata" berwarna lain di baris yang kebetulan memuat
+     * pendamping. Dua baris bersebelahan dengan medan sama berbeda warna
+     * justru menghapus gunanya.
+     *
+     * Geseran tetap ada sebagai jaring pengaman, untuk nama medan yang baru
+     * muncul nanti: di dalam satu baris, dapat dibedakan lebih penting
+     * daripada tetap sama antarbaris. (Pelajaran dari penyebar warna avatar,
+     * yang memakai crc32 % 6 dan membuat ketiga admin yang benar-benar ada
+     * bersisa sama — penandanya tidak menandai apa pun.)
+     *
+     * @param  array<int, array{label: string, nilai: string}>  $rincian
+     * @return array<int, array{label: string, nilai: string, warna: string}>
+     */
+    private function berwarna(array $rincian): array
+    {
+        $jumlah = count(self::WARNA_LABEL);
+        $dipakai = [];
+
+        foreach ($rincian as $i => $butir) {
+            $mulai = $butir['label'] === ''
+                ? 0
+                : intval(substr(md5('ja:'.$butir['label']), 0, 8), 16) % $jumlah;
+
+            $pilih = $mulai;
+
+            for ($geser = 0; $geser < $jumlah; $geser++) {
+                $calon = ($mulai + $geser) % $jumlah;
+
+                if (! in_array($calon, $dipakai, true)) {
+                    $pilih = $calon;
+                    break;
+                }
+            }
+
+            $dipakai[] = $pilih;
+            $rincian[$i]['warna'] = self::WARNA_LABEL[$pilih];
+        }
+
+        return $rincian;
+    }
+
+    /** Nama kolom jadi kata: garis bawahnya spasi, huruf pertamanya besar. */
+    private function terbaca(string $kata): string
+    {
+        return Str::ucfirst(trim(str_replace('_', ' ', $kata)));
+    }
+
+    private function nilaiTerbaca(string $kunci, string $nilai, array $peta): string
+    {
+        if ($nilai === '') {
+            return '';
+        }
+
+        /*
+         | Uang ditulis sebagai uang. "nominal: 1716000" menuntut pembacanya
+         | menghitung sendiri ada berapa nol — dan satu nol terlewat pada
+         | catatan audit pembayaran bukan salah baca yang kecil.
+         |
+         | Hanya bila KUNCInya memang menyebut uang dan nilainya memang angka
+         | bulat; selebihnya dibiarkan apa adanya.
+         */
+        if (ctype_digit($nilai) && preg_match('/nominal|harga|biaya|total|denda|bayar/i', $kunci)) {
+            return 'Rp '.number_format((int) $nilai, 0, ',', '.');
+        }
+
+        return $peta[$nilai] ?? $this->terbaca($nilai);
     }
 
     /**
@@ -322,24 +501,46 @@ class OrchaJejakAuditList extends Component
 
         $nama = 'jejak-audit-orcha-'.now()->format('Ymd-Hi').'.csv';
 
-        return response()->streamDownload(function () use ($baris) {
+        /*
+         | Isinya dirapikan sama seperti di layar.
+         |
+         | Yang diunduh dilampirkan ke laporan dan dibaca orang yang tidak
+         | membuka lemon sama sekali — dan "kategori: private_trip" di lembar
+         | Excel lebih buruk lagi daripada di layar, karena di sana tidak ada
+         | tempat bertanya.
+         */
+        $peta = $this->petaNilai();
+
+        $rapikan = fn (string $nilai) => $nilai === ''
+            ? ''
+            : ($peta[$nilai] ?? $this->terbaca($nilai));
+
+        $keterangan = fn (array $b) => collect($this->rincian($this->keteranganBaru(
+            (string) ($b['ringkasan'] ?? ''),
+            trim((string) ($b['aksi'] ?? '')),
+        )))->map(fn ($r) => trim($r['label'].' '.$r['nilai']))->implode(' · ');
+
+        return response()->streamDownload(function () use ($baris, $rapikan, $keterangan) {
             $keluar = fopen('php://output', 'w');
 
             // BOM supaya Excel membaca é/— sebagai huruf, bukan sampah.
             fwrite($keluar, "\xEF\xBB\xBF");
-            fputcsv($keluar, ['Waktu', 'Admin', 'Aksi', 'Dari', 'Ke', 'Keterangan', 'Kode', 'IP']);
+            // escape disebut terang-terangan: PHP 8.4 memperingatkan nilai
+            // bawaannya akan berubah, dan diam-diam ikut berubah berarti
+            // berkas audit yang isinya berbeda tanpa ada yang meminta.
+            fputcsv($keluar, ['Waktu', 'Admin', 'Aksi', 'Dari', 'Ke', 'Keterangan', 'Kode', 'IP'], escape: '\\');
 
             foreach ($baris as $b) {
                 fputcsv($keluar, [
                     $b['waktu_teks'] ?? '',
                     $b['admin'] ?? '',
                     $b['aksi'] ?? '',
-                    $b['sebelum'] ?? '',
-                    $b['sesudah'] ?? '',
-                    $b['ringkasan'] ?? '',
+                    $rapikan((string) ($b['sebelum'] ?? '')),
+                    $rapikan((string) ($b['sesudah'] ?? '')),
+                    $keterangan($b),
                     $b['kode'] ?? '',
                     $b['ip'] ?? '',
-                ]);
+                ], escape: '\\');
             }
 
             fclose($keluar);
@@ -378,12 +579,31 @@ class OrchaJejakAuditList extends Component
             $pilihanAdmin = [];
         }
 
+        /*
+         | Rincian dirakit di sini, bukan di lembar tampilan.
+         |
+         | Memotong kalimat, memecah "kunci: nilai", dan menamai ulang nilainya
+         | adalah pekerjaan mengolah data. Ditaruh di tampilan, ia jadi logika
+         | yang tidak bisa diuji sendiri dan hanya ketahuan salah lewat
+         | potongan HTML.
+         */
+        $daftar = collect($hasil['data'] ?? [])
+            ->map(function ($jejak) {
+                $jejak['rincian'] = $this->rincian($this->keteranganBaru(
+                    (string) ($jejak['ringkasan'] ?? ''),
+                    trim((string) ($jejak['aksi'] ?? '')),
+                ));
+
+                return $jejak;
+            })
+            ->all();
+
         return view('livewire.pages.admin.orcha.jejak-audit.index', [
-            'daftar' => $hasil['data'] ?? [],
+            'daftar' => $daftar,
             'meta' => $hasil['meta'] ?? [],
             'pilihanAdmin' => $pilihanAdmin,
             'pilihanAksi' => $this->pilihanAksi(),
-            'petaStatus' => $this->petaStatus(),
+            'petaNilai' => $this->petaNilai(),
         ])->layout('livewire.layout.templateindex');
     }
 }

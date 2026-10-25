@@ -92,14 +92,14 @@ Jejak Audit Orcha || lemon
          | Yang tidak dikenal rujukan (mis. nominal) tetap tampil, cuma
          | garis bawahnya diganti spasi — lebih baik apa adanya daripada hilang.
          */
-        $namaNilai = function (?string $nilai) use ($petaStatus): string {
+        $namaNilai = function (?string $nilai) use ($petaNilai): string {
             $n = trim((string) $nilai);
 
             if ($n === '') {
                 return '';
             }
 
-            return $petaStatus[$n] ?? \Illuminate\Support\Str::ucfirst(str_replace('_', ' ', $n));
+            return $petaNilai[$n] ?? \Illuminate\Support\Str::ucfirst(str_replace('_', ' ', $n));
         };
     @endphp
 
@@ -354,25 +354,13 @@ Jejak Audit Orcha || lemon
                                                 </span>
                                             </td>
                                             <td data-judul="Perubahan">
-                                                @php
-                                                    /*
-                                                     | Ringkasan dari Orcha hampir selalu diawali kalimat
-                                                     | yang SAMA dengan aksinya, lalu mengulang perpindahan
-                                                     | status di dalam kurung — sehingga satu baris terbaca
-                                                     | dua kali ("ubah status pembayaran" lalu "ubah status
-                                                     | pembayaran (menunggu → diterima)"). Yang disisakan
-                                                     | hanya keterangan yang benar-benar baru, mis. nominal.
-                                                     */
-                                                    $ringkas = trim((string) ($baris['ringkasan'] ?? ''));
-                                                    $aksi = trim((string) $baris['aksi']);
+                                                {{-- Satu wadah, bukan dua kotak bersaudara.
 
-                                                    if ($aksi !== '' && \Illuminate\Support\Str::startsWith(mb_strtolower($ringkas), mb_strtolower($aksi))) {
-                                                        $ringkas = trim(mb_substr($ringkas, mb_strlen($aksi)));
-                                                        $ringkas = trim(preg_replace('/^\([^)]*\)/u', '', $ringkas));
-                                                        $ringkas = trim($ringkas, "—- \t");
-                                                    }
-                                                @endphp
-
+                                                     Di ponsel sel tabel jadi baris flex "label | isi".
+                                                     Dengan dua kotak, lebarnya dibagi tiga — dan nama
+                                                     aksinya terjepit sampai satu huruf per baris, yang
+                                                     terbaca seperti halaman rusak, bukan halaman sempit. --}}
+                                                <span class="ja-ubah">
                                                 <span class="ja-aksi">
                                                     <span class="dsb-ikon is-kecil" style="--c: {{ $warnaAksi }}"><i class="bi {{ $ikonAksi }}"></i></span>
 
@@ -403,9 +391,22 @@ Jejak Audit Orcha || lemon
                                                     </span>
                                                 </span>
 
-                                                @if ($ringkas !== '')
-                                                    <span class="dsb-tabel-meta">{{ $ringkas }}</span>
+                                                {{-- Keterangan dibaca sebagai rincian berlabel, bukan satu
+                                                     baris "kunci: nilai, kunci: nilai" yang terbaca seperti
+                                                     potongan berkas log yang tak sengaja ikut tercetak. --}}
+                                                @if (($baris['rincian'] ?? []) !== [])
+                                                    <span class="ja-rinci">
+                                                        @foreach ($baris['rincian'] as $butir)
+                                                            <span class="ja-rinci-butir" style="--c: {{ $butir['warna'] }}">
+                                                                @if ($butir['label'] !== '')
+                                                                    <span class="ja-rinci-label">{{ $butir['label'] }}</span>
+                                                                @endif
+                                                                <span class="ja-rinci-nilai">{{ $butir['nilai'] }}</span>
+                                                            </span>
+                                                        @endforeach
+                                                    </span>
                                                 @endif
+                                                </span>
                                             </td>
                                             <td data-judul="Pesanan">
                                                 @php $tautan = $tautanKode($baris['kode'] ?? null); @endphp
@@ -547,6 +548,46 @@ Jejak Audit Orcha || lemon
             margin: 0 2px; white-space: nowrap;
         }
 
+        /* Rincian keterangan: label redup, isinya tegas, dipisah titik tengah.
+
+           Dulu satu baris mentah "paket: X, kategori: private_trip, …" — dan
+           yang perlu dibaca admin (isinya) tenggelam di antara nama kolom yang
+           tidak pernah ia tanyakan. */
+        .ja-rinci {
+            display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 5px;
+            margin-top: 4px; font-size: .78rem; color: var(--dsb-redup, #6b7280);
+            /* min-width: 0 — WAJIB.
+               Sebagai medan flex, lebar terkecilnya secara bawaan selebar
+               isinya, jadi ia menolak menyempit; di ponsel satu rincian
+               panjang melebarkan selnya, lalu tabelnya, lalu seluruh
+               halamannya bergeser mendatar. */
+            min-width: 0;
+        }
+        .ja-rinci-butir {
+            display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px;
+            min-width: 0; padding: 1px 7px 2px; border-radius: 7px; max-width: 100%;
+            /* Latar setipis mungkin dari warna labelnya sendiri: cukup untuk
+               memagari satu medan dari tetangganya, tidak cukup untuk
+               menjadikan barisnya deretan tombol. */
+            background: color-mix(in srgb, var(--c) 7%, transparent);
+        }
+
+        /* Tiap jenis medan warnanya sendiri — dan yang diwarnai LABELnya,
+           bukan isinya.
+
+           Seluruh rincian tadinya satu warna redup, jadi "paket", "Private
+           Trip Premium", "kategori" dan seterusnya mengalir sebagai satu
+           untaian; mata harus mengeja titik dua untuk tahu mana nama medan
+           dan mana jawabannya. Isinya tetap tinta tegas supaya ia yang
+           terbaca lebih dulu — warnanya penanda jenis, bukan isi. */
+        .ja-rinci-label { color: var(--c, #0e7490); font-weight: 600; }
+        .ja-rinci-nilai {
+            color: var(--dsb-tinta, #1c1f26); font-weight: 700;
+            /* Angka selebar sama: "Rp 1.716.000" dan "Rp 2.500.000" di dua
+               baris bersebelahan jadi bisa dibandingkan tanpa dieja. */
+            font-variant-numeric: tabular-nums;
+        }
+
         .ja-nilai { font-size: .82rem; white-space: nowrap; }
         .ja-nilai.is-lama { color: #94a3b8; text-decoration: line-through; }
         .ja-nilai.is-baru { font-weight: 700; color: var(--dsb-tinta, #1c1f26); }
@@ -563,6 +604,8 @@ Jejak Audit Orcha || lemon
             font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
             padding: 7px 14px !important; border-bottom: 1px solid var(--dsb-tepi, #e9edf3);
         }
+
+        .ja-ubah { display: block; min-width: 0; }
 
         /* Aksi: ikon berwarna + namanya, sejajar di tengah. */
         .ja-aksi { display: inline-flex; align-items: center; gap: 9px; }
@@ -603,6 +646,16 @@ Jejak Audit Orcha || lemon
                 letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0;
             }
             .ja-tabel tbody td > :not(:first-child) { margin-left: 0; }
+
+            /* Isi tiap sel harus boleh menyempit. Tanpa ini medan flex di
+               dalamnya (nama aksi, rincian) mempertahankan lebar isinya dan
+               mendorong kartunya keluar layar. */
+            .ja-tabel tbody td > * { min-width: 0; }
+
+            /* Kolom perubahan: isinya menumpuk dan rata kanan, menyamai sel
+               lain yang isinya juga berdiri di kanan labelnya. */
+            .ja-ubah { flex: 1 1 auto; text-align: right; }
+            .ja-ubah .ja-aksi, .ja-ubah .ja-rinci { justify-content: flex-end; }
 
             /* Pemisah hari tidak ikut jadi kartu berlabel — ia tetap satu
                baris penanda di atas kelompoknya. */
