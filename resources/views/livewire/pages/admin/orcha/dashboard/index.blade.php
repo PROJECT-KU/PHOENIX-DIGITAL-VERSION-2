@@ -3,244 +3,194 @@ Dashboard Orcha Journey || lemon
 @stop
 
 <div>
+    {{-- Bahasa rupa dsb-* milik dasbor lemon.
+
+         Dasbor Orcha dulu memakai dialeknya sendiri (Bootstrap card + kelas
+         orcha-*), sehingga berpindah ke sini terasa seperti berpindah aplikasi
+         padahal admin-nya sama. Sekarang kerangkanya sama persis dengan dasbor
+         lemon: rak 12 kolom, kepala bagian, kartu angka, daftar, keadaan
+         kosong. Warna Orcha tetap dipakai lewat token --orc-*. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-{{-- Gaya khusus halaman dasbor.
+    @php
+        $perlu = [
+            ['pendaftaran_baru', 'Pendaftaran baru', 'bi-clipboard-check', 'admin.orcha.pendaftaran', '#4f46e5', 'pendaftaran menunggu diproses'],
+            ['penyewaan_baru', 'Sewa kendaraan baru', 'bi-truck', 'admin.orcha.penyewaan', '#7c3aed', 'pemesanan sewa masuk'],
+            ['pembayaran_menunggu', 'Bukti bayar menunggu', 'bi-cash-coin', 'admin.orcha.pembayaran', '#047857', 'bukti transfer perlu dicek'],
+            ['pembatalan_diajukan', 'Pembatalan diajukan', 'bi-x-circle', 'admin.orcha.pembatalan', '#b91c1c', 'menunggu keputusan admin'],
+            ['pesan_belum_dibaca', 'Pesan belum dibaca', 'bi-inbox', 'admin.orcha.pesan', '#b45309', 'dari formulir kontak'],
+        ];
+        $jumlahPekerjaan = collect($perlu)->sum(fn ($baris) => (int) ($perluDitindak[$baris[0]] ?? 0));
 
-     Ditulis di sini, bukan di partials/gaya.blade.php, karena
-     .orcha-kartu-tindakan dan .orcha-ikon-* juga dipakai empat halaman detail
-     (pendaftaran, penyewaan, pembatalan, pesan). Menyunting aturan bersamanya
-     akan mengubah keempatnya sekaligus, padahal yang kepenuhan warna cuma
-     dasbor — di halaman detail kartunya cuma satu, dan warnanya justru
-     membantu. --}}
-<style>
-    /* ---------- Judul bagian ----------
+    @endphp
 
-       Sebelumnya tiga baris kartu berdiri tanpa satu kata pun yang menerangkan
-       kenapa mereka dipisah. Yang membaca harus menyimpulkan sendiri bahwa
-       lima kartu teratas adalah pekerjaan dan empat di bawahnya uang. */
-    .orc-das-judul {
-        font-size: .72rem;
-        font-weight: 800;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        color: #94a3b8;
-        margin: 0 0 .7rem;
-    }
-
-    /* ---------- Kartu tindakan ----------
-
-       Ikonnya tidak lagi kotak bergradien pekat berhuruf putih.
-
-       Lima gradien jenuh berjajar membuat mata tidak punya alasan berhenti di
-       salah satunya — persis kebalikan dari maksudnya. Sekarang latarnya tipis
-       dan warnanya pindah ke glifnya: kelima kartu tetap bisa dibedakan sekilas
-       tanpa satu pun yang berteriak. */
-    .orc-das-tindakan .orcha-ikon {
-        box-shadow: none;
-        border-radius: 12px;
-    }
-
-    .orc-das-tindakan .orcha-ikon-daftar { background: #eef2ff; color: #4f46e5; }
-    .orc-das-tindakan .orcha-ikon-sewa   { background: #f3f0ff; color: #7c3aed; }
-    .orc-das-tindakan .orcha-ikon-bayar  { background: #e8f7f0; color: #047857; }
-    .orc-das-tindakan .orcha-ikon-batal  { background: #fdeeee; color: #b91c1c; }
-    .orc-das-tindakan .orcha-ikon-pesan  { background: #fef4e6; color: #b45309; }
-
-    /* Pita oranye di tepi kiri dibuang.
-
-       Maksudnya menandai kartu yang ada isinya — tetapi pada hari sibuk
-       KELIMA kartu ada isinya, sehingga kelimanya berpita dan tandanya tidak
-       lagi menandai apa pun. Yang membedakan sudah cukup: angkanya bukan nol
-       dan ikonnya berwarna, sedangkan yang kosong meredup sendiri. */
-    .orc-das-tindakan .orcha-kartu-tindakan.ada { border-left: 0 !important; }
-
-    /* Latar bergradien milik kartu tindakan di halaman detail tidak dipakai di
-       sini: di dasbor ia berdampingan dengan kartu putih lain, dan dua putih
-       yang beda tipis terbaca sebagai cacat cetak, bukan sebagai kelompok. */
-    .orc-das-tindakan .orcha-kartu-tindakan {
-        background: #fff !important;
-        border: 1px solid #e9eef5 !important;
-    }
-
-    /* ---------- Kartu uang ----------
-
-       Empat pita berlainan warna dibuang. Keempat angka ini dibaca berurutan
-       sebagai satu hitungan — omzet dikurangi modal jadi keuntungan — jadi
-       memberi tiap kartu warna sendiri memutus bacaan yang justru berurutan.
-       Yang tetap berwarna hanya keuntungannya, karena itu jawaban akhirnya. */
-    .orc-das-uang .orcha-kartu-uang { border-left: 0 !important; }
-
-    /* ---------- Bilah isi etalase ---------- */
-    .orc-das-bilah {
-        display: flex;
-        flex-wrap: wrap;
-        gap: .5rem 2rem;
-    }
-
-    .orc-das-bilah-item {
-        display: flex;
-        align-items: center;
-        gap: .5rem;
-        padding: .3rem .1rem;
-        color: var(--orc-tinta);
-        text-decoration: none;
-        border-radius: 8px;
-        transition: color .14s ease;
-    }
-
-    .orc-das-bilah-item[href]:hover { color: var(--orc-primer); }
-
-    .orc-das-bilah-item > i {
-        display: flex;
-        align-items: center;
-        line-height: 1;
-        font-size: .95rem;
-        color: #94a3b8;
-    }
-
-    .orc-das-bilah-item[href]:hover > i { color: var(--orc-primer); }
-
-    .orc-das-bilah-angka { font-weight: 800; font-size: 1.05rem; line-height: 1; }
-    .orc-das-bilah-label { font-size: .82rem; color: #64748b; }
-
-    @media (max-width: 575.98px) {
-        /* Di layar sempit bilahnya jadi dua lajur, bukan satu deret panjang
-           yang memaksa menggulir ke samping. */
-        .orc-das-bilah { gap: .75rem 1rem; }
-        .orc-das-bilah-item { flex: 0 0 calc(50% - .5rem); }
-    }
-</style>
-
-    <div class="container-fluid">
-        @include('livewire.pages.admin.orcha.partials.kepala', [
-            'judul' => 'Dashboard Orcha Journey',
-            'keterangan' => 'Data diambil langsung dari server Orcha. Tidak ada salinan yang disimpan di lemon.',
-        ])
-
-        {{-- Yang perlu ditindak dulu, baru angka-angka lain. Admin membuka
-             halaman ini untuk tahu "apa yang harus saya kerjakan sekarang". --}}
-        @php
-            // Warna mengikuti makna kartunya, bukan satu warna untuk semua:
-            // lima kartu senada membuat mata tidak punya alasan berhenti di
-            // salah satunya, padahal itu justru gunanya.
-            $perlu = [
-                ['pendaftaran_baru', 'Pendaftaran baru', 'bi-clipboard-check', 'admin.orcha.pendaftaran', 'orcha-ikon-daftar'],
-                ['penyewaan_baru', 'Sewa kendaraan baru', 'bi-truck', 'admin.orcha.penyewaan', 'orcha-ikon-sewa'],
-                ['pembayaran_menunggu', 'Bukti bayar menunggu', 'bi-cash-coin', 'admin.orcha.pembayaran', 'orcha-ikon-bayar'],
-                ['pembatalan_diajukan', 'Pembatalan diajukan', 'bi-x-circle', 'admin.orcha.pembatalan', 'orcha-ikon-batal'],
-                ['pesan_belum_dibaca', 'Pesan belum dibaca', 'bi-inbox', 'admin.orcha.pesan', 'orcha-ikon-pesan'],
-            ];
-            $adaPekerjaan = collect($perlu)->sum(fn ($baris) => (int) ($perluDitindak[$baris[0]] ?? 0)) > 0;
-        @endphp
-
-        <h2 class="orc-das-judul">Perlu ditindak</h2>
-
-        <div class="row g-3 mb-4 orc-das-tindakan">
-            @foreach ($perlu as [$kunci, $label, $ikon, $rute, $rupa])
-                @php $nilai = (int) ($perluDitindak[$kunci] ?? 0); @endphp
-                <div class="col-6 col-lg-3 col-xl">
-                    <a href="{{ route($rute) }}" wire:navigate class="text-decoration-none">
-                        <div class="card orcha-kartu orcha-kartu-tindakan h-100 {{ $nilai > 0 ? 'ada' : 'kosong' }}">
-                            <div class="card-body d-flex align-items-center gap-3 p-3">
-                                <span class="orcha-ikon {{ $rupa }}">
-                                    <i class="bi {{ $ikon }}"></i>
-                                </span>
-                                <div>
-                                    <div class="orcha-angka">{{ $nilai }}</div>
-                                    <div class="text-muted small">{{ $label }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            @endforeach
-        </div>
-
-        @if (! $galat && ! $adaPekerjaan)
-            <div class="alert alert-success border-0 shadow-sm rounded-4 d-flex align-items-center gap-3 mb-4">
-                <i class="bi bi-check-circle-fill fs-4"></i>
-                <span>Tidak ada yang menunggu ditindak di Orcha saat ini.</span>
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
+                <h1 class="dsb-judul">Dashboard Orcha Journey</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">Data diambil langsung dari server Orcha — tidak ada salinan yang disimpan di lemon.</span>
+                </p>
             </div>
-        @endif
 
-        {{-- ============ UANG ============
+            <div class="dsb-hero-aksi">
+                {{-- wire:target menyebut NAMA METODE, bukan $refresh: dengan
+                     $refresh penanda memuatnya ikut menyala untuk permintaan
+                     lain yang kebetulan lewat. --}}
+                <button type="button" wire:click="segarkan" wire:loading.attr="disabled" wire:target="segarkan"
+                    class="dsb-tombol is-lembut" style="--ikon: #2b7fb8">
+                    <i class="bi bi-arrow-repeat" wire:loading.remove wire:target="segarkan"></i>
+                    <span class="dsb-putar" wire:loading wire:target="segarkan"></span>
+                    <span>Muat ulang</span>
+                </button>
+                <a href="{{ route('admin.dashboard') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #d97706">
+                    <i class="bi bi-box-arrow-left"></i><span>Kembali ke lemon</span>
+                </a>
+            </div>
+        </header>
 
-             Omzet, modal, dan keuntungan — dibaca dari laporan yang SAMA dengan
-             halaman Keuntungan Paket, bukan dihitung ulang di sini. Dua tempat
-             yang menghitung sendiri-sendiri akan berbeda angkanya suatu saat,
-             biasanya tepat ketika ada yang menanyakannya.
-
-             Digambar sebagai batang bersusun tanpa pustaka grafik: aset Vite
-             tidak ikut ter-deploy untuk halaman admin ini, jadi pustaka yang
-             menuntut bundel hanya menghasilkan kotak kosong di server. --}}
-        @if ($uang !== [])
-            <h2 class="orc-das-judul">Uang</h2>
-
-            <div class="row g-3 mb-4 orc-das-uang">
-                @foreach ([
-                    ['omzet_teks', 'Omzet masuk', 'bi-graph-up-arrow', 'omzet'],
-                    ['modal_teks', 'Modal keluar', 'bi-box-seam', 'modal'],
-                    ['keuntungan_teks', 'Keuntungan', 'bi-piggy-bank', 'untung'],
-                    ['potensi_omzet_teks', 'Potensi omzet', 'bi-hourglass-split', 'potensi'],
-                ] as [$kunci, $label, $ikon, $rupa])
-                    <div class="col-6 col-xl-3">
-                        <div class="card orcha-kartu orcha-kartu-uang h-100" data-rupa="{{ $rupa }}">
-                            <div class="card-body p-3 p-lg-4">
-                                <div class="orcha-label-kecil mb-1">
-                                    <i class="bi {{ $ikon }}"></i> {{ $label }}
-                                </div>
-                                <div class="orcha-angka-uang">{{ $uang[$kunci] ?? 'Rp 0' }}</div>
-                            </div>
+        @if ($galat)
+            {{-- Orcha tak terjangkau: disebut apa adanya, bukan angka nol yang
+                 terbaca seolah memang tidak ada pekerjaan. --}}
+            <section class="dsb-bagian">
+                <div class="dsb-kartu">
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon" style="color: #b45309; background: #fffbeb; border-color: #fde68a">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </span>
+                            <p class="dsb-kosong-judul">Data Orcha belum bisa ditampilkan</p>
+                            <p class="dsb-kosong-ket">{{ $galat }}</p>
                         </div>
                     </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== PERLU DITINDAK ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #d97706">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-exclamation-diamond-fill"></i></span>
+                    <div class="dsb-kepala-teks is-hitung-atas">
+                        <span class="dsb-kicker">Butuh Perhatian</span>
+                        <h2 class="dsb-judul">Yang Menunggu Dikerjakan</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip dsb-chip-hitung"><i class="bi bi-list-check"></i>{{ $jumlahPekerjaan }} hal</span>
+                            @if (! $galat && $jumlahPekerjaan === 0)
+                                <span class="dsb-chip is-samar">Tidak ada yang menunggu ditindak saat ini</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                @foreach ($perlu as $i => [$kunci, $label, $ikon, $rute, $warna, $ket])
+                    @php
+                        $nilai = (int) ($perluDitindak[$kunci] ?? 0);
+                        // Lima kartu: tiga di baris pertama, dua di baris kedua —
+                        // susunan yang sama dengan "Butuh Perhatian" di lemon.
+                        $lebar = $i < 3 ? 'k-4' : 'k-6';
+                    @endphp
+                    <article class="dsb-tugas {{ $lebar }} {{ $loop->last ? 'is-penuh-sedang' : '' }}" style="--c: {{ $warna }}">
+                        <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+
+                        <span class="dsb-tugas-isi">
+                            <span class="dsb-stat-label">{{ $label }}</span>
+                            <span class="dsb-tugas-angka">{{ $nilai }}</span>
+                            <span class="dsb-stat-ket"><i class="bi {{ $ikon }}"></i><span>{{ $ket }}</span></span>
+                        </span>
+
+                        {{-- Tautannya MENUTUPI kartu, bukan kartunya yang jadi <a>:
+                             markupnya satu jalur, jadi penanda morph Livewire aman. --}}
+                        <a class="dsb-tutup-kartu" href="{{ route($rute) }}" wire:navigate>
+                            <span class="visually-hidden">Buka {{ $label }}</span>
+                        </a>
+                    </article>
                 @endforeach
             </div>
+        </section>
 
-            {{-- Yang belum bisa dihitung disebut apa adanya. Laporan yang diam
-                 soal paket tanpa modal membuat keuntungannya terbaca lebih kecil
-                 daripada yang sebenarnya, tanpa satu pun tanda. --}}
+        {{-- ================== UANG ================== --}}
+        @if ($uang !== [])
             @php
                 // Yang masih potensi ikut dihitung: modalnya sama-sama kosong,
                 // dan pekerjaan yang menunggu admin sama persis.
                 $belumUtuh = (int) ($uang['belum_lengkap'] ?? 0) + (int) ($uang['potensi_belum_lengkap'] ?? 0);
             @endphp
-            @if ($belumUtuh > 0)
-                <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex gap-3 align-items-start mb-4">
-                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                    <div style="font-size:.86rem">
-                        <strong>{{ $belumUtuh }} pendaftaran belum ikut terhitung keuntungannya</strong>
-                        — paketnya belum diisi harga modal, jadi angka di atas lebih kecil
-                        daripada yang sebenarnya.
-                        <a href="{{ route('admin.orcha.keuntungan') }}" wire:navigate>Lengkapi modalnya</a>.
+
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kepala" style="--c: #0ea5e9">
+                        <span class="dsb-kepala-ikon"><i class="bi bi-cash-stack"></i></span>
+                        <div class="dsb-kepala-teks">
+                            <span class="dsb-kicker">Uang</span>
+                            <h2 class="dsb-judul">Omzet &amp; Keuntungan</h2>
+                            <div class="dsb-chip-deret">
+                                <span class="dsb-chip is-samar">Dibaca dari laporan Keuntungan Paket, bukan dihitung ulang</span>
+                            </div>
+                        </div>
                     </div>
+
+                    @foreach ([
+                        ['omzet_teks', 'Omzet masuk', 'bi-graph-up-arrow', '#2b7fb8', 'sudah diterima'],
+                        ['modal_teks', 'Modal keluar', 'bi-box-seam', '#64748b', 'biaya paket'],
+                        ['keuntungan_teks', 'Keuntungan', 'bi-piggy-bank', '#1a8a52', 'omzet dikurangi modal'],
+                        ['potensi_omzet_teks', 'Potensi omzet', 'bi-hourglass-split', '#d97706', 'belum lunas'],
+                    ] as [$kunci, $label, $ikon, $warna, $ket])
+                        <article class="dsb-stat k-3" style="--c: {{ $warna }}">
+                            <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                            <span class="dsb-stat-label">{{ $label }}</span>
+                            <span class="dsb-stat-nilai">{{ $uang[$kunci] ?? 'Rp 0' }}</span>
+                            <span class="dsb-stat-ket"><i class="bi {{ $ikon }}"></i><span>{{ $ket }}</span></span>
+                        </article>
+                    @endforeach
+
+                    @if ($belumUtuh > 0)
+                        {{-- Yang belum bisa dihitung disebut apa adanya: laporan yang
+                             diam soal paket tanpa modal membuat keuntungannya terbaca
+                             lebih kecil daripada yang sebenarnya, tanpa satu pun tanda. --}}
+                        <div class="dsb-kartu k-12" style="--c: #d97706">
+                            <div class="dsb-kartu-isi orc-das-catatan">
+                                <span class="dsb-ikon is-kecil"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                                <span>
+                                    <strong>{{ $belumUtuh }} pendaftaran belum ikut terhitung keuntungannya</strong>
+                                    — paketnya belum diisi harga modal, jadi angka di atas lebih kecil daripada
+                                    yang sebenarnya.
+                                    <a href="{{ route('admin.orcha.keuntungan') }}" wire:navigate class="orc-das-tautan">Lengkapi modalnya</a>.
+                                </span>
+                            </div>
+                        </div>
+                    @endif
                 </div>
-            @endif
+            </section>
         @endif
 
-        {{-- ============ GRAFIK OMZET & KEUNTUNGAN ============
-
-             ApexCharts, sama seperti grafik keuangan di dashboard lemon —
-             bentuk area bergradien, garis melengkung, keterangan di kanan atas.
-
-             Pustakanya BOLEH dipakai di sini: berkasnya ada di public/mazer,
-             bukan hasil bundel Vite. public/build memang tidak ikut ter-deploy,
-             tetapi public/mazer terlacak git dan ikut terkirim ke server —
-             saya sempat menyamakan keduanya dan menggambar grafiknya sendiri
-             dengan batang HTML, padahal tidak perlu. --}}
+        {{-- ================== GRAFIK ================== --}}
         @if ($uangPerBulan !== [])
-            <div class="card orcha-kartu mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <h6 class="fw-bold mb-1 orcha-judul-ikon" style="font-size:.95rem">
-                        <i class="bi bi-graph-up-arrow text-primary"></i> Omzet & keuntungan per bulan
-                    </h6>
-                    <div class="text-muted mb-2" style="font-size:.8rem">
-                        Hanya pendaftaran yang sudah lunas dan paketnya sudah punya harga modal.
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #2b7fb8"><i class="bi bi-graph-up-arrow"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Omzet &amp; keuntungan per bulan</h3>
+                                    <span class="dsb-kartu-sub">Hanya pendaftaran yang sudah lunas dan paketnya punya harga modal</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dsb-kartu-isi">
+                            <div class="dsb-grafik">
+                                <div id="orcha-grafik-uang" wire:ignore></div>
+                            </div>
+                        </div>
                     </div>
-
-                    <div id="orcha-grafik-uang" wire:ignore></div>
                 </div>
-            </div>
+            </section>
 
             {{-- Dimuat LANGSUNG di sini, bukan lewat @push('scripts').
 
@@ -325,75 +275,106 @@ Dashboard Orcha Journey || lemon
             </script>
         @endif
 
-        <div class="row g-4">
-            {{-- Pendaftaran terbaru --}}
-            <div class="col-12 col-xl-6">
-                <div class="card orcha-kartu h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0">Pendaftaran terbaru</h6>
-                            <a href="{{ route('admin.orcha.pendaftaran') }}" wire:navigate
-                                class="small text-decoration-none">Lihat semua</a>
-                        </div>
-                        @forelse ($pendaftaranTerbaru as $baris)
-                            <div class="py-2 border-bottom">
-                                <div class="d-flex justify-content-between gap-2">
-                                    <span class="orcha-kode small">{{ $baris['kode'] }}</span>
-                                    {{-- Berwarna menurut statusnya, sama seperti di
-                                         daftar pendaftaran: lima lencana abu yang sama
-                                         tidak memberi tahu apa pun sampai tulisannya
-                                         dibaca satu per satu. --}}
-                                    <span class="orcha-cip-status-daftar status-{{ $baris['status'] }}">
-                                        {{ $baris['status_label'] }}
-                                    </span>
-                                </div>
-                                <div class="small fw-semibold">{{ $baris['nama'] }}</div>
-                                <div class="text-muted" style="font-size:.78rem">
-                                    {{ $baris['paket']['nama'] }} · {{ $baris['jumlah_peserta'] }} peserta
-                                </div>
+        {{-- ================== DAFTAR TERBARU ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kartu k-6">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-clipboard-check"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Pendaftaran terbaru</h3>
+                                <span class="dsb-kartu-sub">Lima yang paling akhir masuk</span>
                             </div>
-                        @empty
-                            <p class="text-muted small mb-0">Belum ada pendaftaran.</p>
-                        @endforelse
+                        </div>
+                        <a href="{{ route('admin.orcha.pendaftaran') }}" wire:navigate class="dsb-tautan">Lihat semua</a>
                     </div>
-                </div>
-            </div>
 
-            {{-- Sewa terbaru --}}
-            <div class="col-12 col-xl-6">
-                <div class="card orcha-kartu h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0">Sewa kendaraan terbaru</h6>
-                            <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate
-                                class="small text-decoration-none">Lihat semua</a>
-                        </div>
-                        @forelse ($penyewaanTerbaru as $baris)
-                            <div class="py-2 border-bottom">
-                                <div class="d-flex justify-content-between gap-2">
-                                    <span class="orcha-kode small">{{ $baris['kode'] }}</span>
-                                    {{-- Warnanya memakai peta status PENYEWAAN, bukan
-                                         status pendaftaran: keduanya punya kata yang
-                                         sama ("baru", "batal") tetapi daftar keadaannya
-                                         berbeda, dan menyamakannya membuat satu status
-                                         kehilangan warnanya diam-diam. --}}
-                                    <span class="orcha-cip-status-sewa" data-status="{{ $baris['status'] }}">
-                                        {{ $baris['status_label'] }}
+                    <div class="dsb-daftar">
+                        @forelse ($pendaftaranTerbaru as $baris)
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: #4f46e5">{{ \Illuminate\Support\Str::substr($baris['nama'], 0, 1) }}</span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $baris['nama'] }}</span>
+                                    <span class="dsb-baris-meta">
+                                        <span>{{ $baris['kode'] }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>{{ $baris['paket']['nama'] }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>{{ $baris['jumlah_peserta'] }} peserta</span>
                                     </span>
-                                </div>
-                                <div class="small fw-semibold">{{ $baris['nama'] }}</div>
-                                <div class="text-muted" style="font-size:.78rem">
-                                    {{ $baris['kendaraan']['nama'] }} · {{ $baris['durasi_label'] }}
-                                </div>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    {{-- Cip status milik Orcha dipertahankan: peta warnanya
+                                         SENGAJA dua (pendaftaran & penyewaan). Kata yang sama
+                                         berbeda artinya — "baru" kuning di pendaftaran, biru di
+                                         sewa — jadi menyatukannya membuat satu status kehilangan
+                                         warnanya diam-diam. --}}
+                                    <span class="orcha-cip-status-daftar status-{{ $baris['status'] }}">{{ $baris['status_label'] }}</span>
+                                </span>
                             </div>
                         @empty
-                            <p class="text-muted small mb-0">Belum ada pemesanan sewa.</p>
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-clipboard"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada pendaftaran</p>
+                                <p class="dsb-kosong-ket">Pendaftaran yang masuk akan muncul di sini.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-6">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-truck"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Sewa kendaraan terbaru</h3>
+                                <span class="dsb-kartu-sub">Lima pemesanan terakhir</span>
+                            </div>
+                        </div>
+                        <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate class="dsb-tautan">Lihat semua</a>
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @forelse ($penyewaanTerbaru as $baris)
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: #7c3aed">{{ \Illuminate\Support\Str::substr($baris['nama'], 0, 1) }}</span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $baris['nama'] }}</span>
+                                    <span class="dsb-baris-meta">
+                                        <span>{{ $baris['kode'] }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>{{ $baris['kendaraan']['nama'] }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>{{ $baris['durasi_label'] }}</span>
+                                    </span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="orcha-cip-status-sewa" data-status="{{ $baris['status'] }}">{{ $baris['status_label'] }}</span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-truck"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada pemesanan sewa</p>
+                                <p class="dsb-kosong-ket">Pemesanan kendaraan akan muncul di sini.</p>
+                            </div>
                         @endforelse
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
+
+    <style>
+        /* Catatan "belum terhitung": satu baris ikon + kalimat. */
+        .orc-das-catatan { display: flex; align-items: flex-start; gap: 12px; font-size: .88rem; color: #475569; }
+        .orc-das-catatan strong { color: var(--dsb-tinta, #1c1f26); }
+        /* Tautan DI DALAM kalimat: .dsb-tautan bergaya tombol, dan tombol di
+           tengah kalimat memutus bacaannya. */
+        .orc-das-tautan { color: #b45309; font-weight: 700; text-decoration: underline; }
+        .orc-das-tautan:hover { color: #92400e; }
+    </style>
 
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

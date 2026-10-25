@@ -4353,7 +4353,7 @@ test('orcha yang belum mengirim laporan keuntungan tidak merobohkan dashboard', 
 
     // Buktinya bagian yang TIDAK bergantung pada /keuntungan: halamannya
     // tetap tergambar utuh, hanya bagian uangnya yang absen.
-    expect($isi)->toContain('Perlu ditindak')
+    expect($isi)->toContain('Yang Menunggu Dikerjakan')
         ->not->toContain('Omzet masuk')
         ->not->toContain('orcha-grafik-uang');
 });
@@ -5728,8 +5728,15 @@ it('memberi judul pada tiap bagian dasbor', function () {
     // Tanpa judul, tiga baris kartu berdiri tanpa satu kata pun yang
     // menerangkan kenapa mereka dipisah — yang membaca harus menyimpulkan
     // sendiri mana pekerjaan dan mana keterangan.
-    foreach (['Perlu ditindak', 'Uang'] as $judul) {
-        expect($sumber)->toContain(">$judul</h2>");
+    // Sejak dasbor ini memakai bahasa rupa lemon (dsb-*), judulnya ada di
+    // <h2 class="dsb-judul"> dan didahului kicker — tetapi aturannya tidak
+    // berubah: tiap bagian tetap wajib menyebut dirinya.
+    foreach (['Yang Menunggu Dikerjakan', 'Omzet &amp; Keuntungan'] as $judul) {
+        expect($sumber)->toContain(">{$judul}</h2>");
+    }
+
+    foreach (['Butuh Perhatian', 'Uang'] as $kicker) {
+        expect($sumber)->toContain(">{$kicker}</span>");
     }
 });
 
@@ -5879,4 +5886,39 @@ test('testimoni yang menunggu ditandai dan bisa ditayangkan admin', function () 
         // yang dibaca admin saat memutuskan.
         ->toContain('Pesanan terbukti')
         ->toContain('Tayangkan');
+});
+
+/*
+ | Dasbor Orcha memakai bahasa rupa lemon (dsb-*), bukan dialek sendiri.
+ |
+ | Sebelum 25 Okt 2026 halaman ini memakai Bootstrap card + kelas orcha-*,
+ | sehingga berpindah ke sini terasa seperti berpindah aplikasi padahal
+ | admin-nya sama. Patokannya: dasbor lemon.
+ */
+it('memakai kerangka dasbor lemon, bukan dialek sendiri', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/dashboard/index.blade.php')
+    );
+
+    // Sumber bahasa rupanya ikut dimuat, kalau tidak seluruh kelas dsb-* mati.
+    expect($sumber)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')");
+
+    foreach (['dsb-hero', 'dsb-rak', 'dsb-kepala', 'dsb-tugas', 'dsb-stat', 'dsb-daftar', 'dsb-baris', 'dsb-kosong'] as $kelas) {
+        expect(str_contains($sumber, $kelas))->toBeTrue("kerangka {$kelas} tidak dipakai");
+    }
+
+    // Dialek lama tidak boleh kembali diam-diam.
+    expect($sumber)->not->toContain('orcha-kartu-tindakan')
+        ->not->toContain('class="card orcha-kartu');
+});
+
+it('tombol muat ulang menyebut nama metodenya, bukan $refresh', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/dashboard/index.blade.php')
+    );
+
+    // Dengan $refresh, penanda memuat ikut menyala untuk permintaan lain yang
+    // kebetulan lewat — patokan dasbor lemon melarangnya.
+    expect($sumber)->toContain('wire:target="segarkan"')
+        ->not->toContain('wire:target="$refresh"');
 });
