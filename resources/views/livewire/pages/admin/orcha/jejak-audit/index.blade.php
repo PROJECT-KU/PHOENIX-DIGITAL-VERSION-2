@@ -80,6 +80,27 @@ Jejak Audit Orcha || lemon
                 default => $t->locale('id')->translatedFormat('l, d F Y'),
             };
         };
+
+        /*
+         | Nilai status dibaca sebagai nama, bukan isi kolom.
+         |
+         | Yang dicatat Orcha nilai mesinnya — "dp_masuk", "menunggu" — dan
+         | itulah yang dulu tercetak apa adanya. Admin membaca "dp_masuk" di
+         | sini sementara hal yang sama bernama "DP Masuk" di layar sebelah;
+         | garis bawah dan huruf kecil itu bocoran isi basis data.
+         |
+         | Yang tidak dikenal rujukan (mis. nominal) tetap tampil, cuma
+         | garis bawahnya diganti spasi — lebih baik apa adanya daripada hilang.
+         */
+        $namaNilai = function (?string $nilai) use ($petaStatus): string {
+            $n = trim((string) $nilai);
+
+            if ($n === '') {
+                return '';
+            }
+
+            return $petaStatus[$n] ?? \Illuminate\Support\Str::ucfirst(str_replace('_', ' ', $n));
+        };
     @endphp
 
     <div class="dsb">
@@ -341,27 +362,33 @@ Jejak Audit Orcha || lemon
 
                                                 <span class="ja-aksi">
                                                     <span class="dsb-ikon is-kecil" style="--c: {{ $warnaAksi }}"><i class="bi {{ $ikonAksi }}"></i></span>
-                                                    <span class="dsb-tabel-judul">{{ $baris['aksi'] }}</span>
-                                                </span>
 
-                                                {{-- Perpindahan status ditampilkan sebagai "dari → ke",
-                                                     bukan hanya nilai akhirnya. Nilai akhir saja tidak
-                                                     menjawab pertanyaan yang sebenarnya diajukan:
-                                                     berubah DARI apa. --}}
-                                                @if ($baris['sebelum'] !== null || $baris['sesudah'] !== null)
-                                                    {{-- Tanpa nilai awal, "— → dp_masuk" terbaca seperti
-                                                         ada yang hilang. Yang benar: memang belum punya
-                                                         keadaan sebelumnya, jadi cukup "jadi X". --}}
-                                                    <span class="ja-pindah">
-                                                        @if ($baris['sebelum'])
-                                                            <span class="ja-pindah-lama">{{ $baris['sebelum'] }}</span>
-                                                            <i class="bi bi-arrow-right"></i>
-                                                        @else
-                                                            <span class="ja-pindah-awal">jadi</span>
+                                                    {{-- Nama aksi dan perpindahannya satu kalimat di satu
+                                                         kotak teks, supaya keduanya duduk di garis huruf
+                                                         yang sama. Sebagai dua kotak bersebelahan,
+                                                         ukurannya yang berbeda membuat kata penghubungnya
+                                                         melayang — terbaca seperti salah tempel. --}}
+                                                    <span class="ja-aksi-teks">
+                                                        <span class="dsb-tabel-judul">{{ $baris['aksi'] }}</span>
+
+                                                        {{-- Perpindahan status ditampilkan sebagai "dari → ke",
+                                                             bukan hanya nilai akhirnya. Nilai akhir saja tidak
+                                                             menjawab pertanyaan yang sebenarnya diajukan:
+                                                             berubah DARI apa. --}}
+                                                        @if ($baris['sebelum'] !== null || $baris['sesudah'] !== null)
+                                                            {{-- Tanpa nilai awal, "— → DP Masuk" terbaca seperti
+                                                                 ada yang hilang. Yang benar: memang belum punya
+                                                                 keadaan sebelumnya, jadi cukup "jadi X". --}}
+                                                            @if ($baris['sebelum'])
+                                                                <span class="ja-nilai is-lama">{{ $namaNilai($baris['sebelum']) }}</span>
+                                                                <span class="ja-kata" aria-label="berubah menjadi">&rarr;</span>
+                                                            @else
+                                                                <span class="ja-kata">jadi</span>
+                                                            @endif
+                                                            <span class="ja-nilai is-baru">{{ $baris['sesudah'] ? $namaNilai($baris['sesudah']) : '—' }}</span>
                                                         @endif
-                                                        <span class="ja-pindah-baru">{{ $baris['sesudah'] ?: '—' }}</span>
                                                     </span>
-                                                @endif
+                                                </span>
 
                                                 @if ($ringkas !== '')
                                                     <span class="dsb-tabel-meta">{{ $ringkas }}</span>
@@ -476,13 +503,27 @@ Jejak Audit Orcha || lemon
         .ja-admin { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; color: var(--dsb-tinta, #1c1f26); }
         .ja-admin .dsb-avatar { width: 30px; height: 30px; font-size: .78rem; }
 
-        /* "dari → ke" dibaca sebagai satu kalimat; yang lama diredupkan dan
-           dicoret supaya arah perubahannya terbaca tanpa mengeja. */
-        .ja-pindah { display: inline-flex; align-items: center; gap: 6px; margin-top: 3px; font-size: .78rem; flex-wrap: wrap; }
-        .ja-pindah-lama { color: #94a3b8; text-decoration: line-through; }
-        .ja-pindah i { color: #cbd5e1; font-size: .7rem; }
-        .ja-pindah-baru { font-weight: 700; color: var(--dsb-tinta, #1c1f26); }
-        .ja-pindah-awal { color: #94a3b8; }
+        /* "dari → ke" dibaca sebagai satu kalimat dengan nama aksinya.
+
+           Semuanya span sebaris di dalam satu kotak teks — BUKAN flexbox di
+           sebelah judul. Dua kotak bersebelahan dengan ukuran huruf berbeda
+           duduk di tengah masing-masing, bukan di garis huruf yang sama, dan
+           kata penghubungnya tampak melayang separuh baris di bawah. */
+        .ja-aksi-teks { min-width: 0; }
+        .ja-aksi-teks .dsb-tabel-judul { display: inline; }
+
+        /* Kata penghubung ("jadi", panah) berwarna lain dari nilainya: ia
+           perekat kalimat, bukan isi yang dibaca. Dulu abu-abu yang sama
+           dengan nilai lama, sehingga "menunggu" dan panahnya terbaca
+           sebagai satu benda. */
+        .ja-kata {
+            color: #7c3aed; font-weight: 600; font-size: .78rem;
+            margin: 0 2px; white-space: nowrap;
+        }
+
+        .ja-nilai { font-size: .82rem; white-space: nowrap; }
+        .ja-nilai.is-lama { color: #94a3b8; text-decoration: line-through; }
+        .ja-nilai.is-baru { font-weight: 700; color: var(--dsb-tinta, #1c1f26); }
 
         .ja-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem;

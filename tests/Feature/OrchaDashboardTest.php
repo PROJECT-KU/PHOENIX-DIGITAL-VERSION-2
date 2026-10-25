@@ -5891,9 +5891,84 @@ test('keterangan yang hanya mengulang aksinya tidak ditampilkan dua kali', funct
     // Aksinya disebut sekali saja; keterangan sisanya tetap tampil.
     expect(substr_count($isi, 'ubah status pembayaran'))->toBe(1)
         ->and($isi)->toContain('nominal: 1716000')
-        // Perpindahannya tetap "dari → ke".
-        ->and($isi)->toContain('menunggu')
-        ->and($isi)->toContain('diterima');
+        // Perpindahannya tetap "dari → ke", dengan nama yang dibaca orang.
+        ->and($isi)->toContain('Menunggu')
+        ->and($isi)->toContain('Diterima');
+});
+
+test('nilai status dibaca sebagai nama, bukan isi kolom', function () {
+    /*
+     | Yang dicatat Orcha nilai mesinnya — "dp_masuk". Tercetak apa adanya,
+     | admin membaca "dp_masuk" di sini sementara hal yang sama bernama
+     | "DP Masuk" di layar sebelah; garis bawah dan huruf kecil itu bocoran
+     | isi basis data, bukan bahasa orang.
+     */
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => [
+            'status_pendaftaran' => ['dp_masuk' => 'DP Masuk', 'lunas' => 'Lunas'],
+            'status_pembayaran' => ['menunggu' => 'Menunggu Dicek', 'diterima' => 'Diterima'],
+        ]]),
+        '*/jejak-audit/admin' => Http::response(['data' => ['Asthana']]),
+        '*/jejak-audit/aksi' => Http::response(['data' => ['status pesanan menyesuaikan pembayaran']]),
+        '*/jejak-audit*' => Http::response(['data' => [[
+            'id' => 1, 'admin' => 'Asthana',
+            'aksi' => 'status pesanan menyesuaikan pembayaran',
+            'ringkasan' => 'status pesanan menyesuaikan pembayaran',
+            'kode' => 'OT-1', 'sebelum' => null, 'sesudah' => 'dp_masuk',
+            'ip' => '127.0.0.1', 'waktu' => now()->toIso8601String(),
+            'waktu_teks' => '6 September 2026, 10:46',
+        ]], 'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    expect($isi)->toContain('DP Masuk')
+        ->not->toContain('dp_masuk');
+});
+
+test('status tak dikenal tetap tampil, garis bawahnya saja yang hilang', function () {
+    // Rujukan yang belum memuat status baru tidak boleh membuat nilainya
+    // hilang dari layar — yang hilang dari catatan audit justru yang dicari.
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => []]),
+        '*/jejak-audit/admin' => Http::response(['data' => []]),
+        '*/jejak-audit/aksi' => Http::response(['data' => []]),
+        '*/jejak-audit*' => Http::response(['data' => [[
+            'id' => 1, 'admin' => 'Asthana', 'aksi' => 'ubah sesuatu', 'ringkasan' => 'ubah sesuatu',
+            'kode' => null, 'sebelum' => null, 'sesudah' => 'status_baru_sekali',
+            'ip' => '127.0.0.1', 'waktu' => now()->toIso8601String(), 'waktu_teks' => 'kini',
+        ]], 'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    expect($isi)->toContain('Status baru sekali');
+});
+
+test('kata penghubung berbeda warna dari nilainya', function () {
+    jejakFake([[
+        'id' => 1, 'admin' => 'Asthana', 'aksi' => 'ubah status pembayaran', 'ringkasan' => 'ubah status pembayaran',
+        'kode' => null, 'sebelum' => 'menunggu', 'sesudah' => 'diterima',
+        'ip' => '127.0.0.1', 'waktu' => now()->toIso8601String(), 'waktu_teks' => 'kini',
+    ]]);
+
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent();
+
+    /*
+     | Kata penghubung adalah perekat kalimat, bukan isi yang dibaca — dan
+     | diberi warna yang sama dengan nilai lama, "menunggu" dan panahnya
+     | terbaca sebagai satu benda.
+     */
+    expect($isi)->toContain('class="ja-kata"')
+        ->and($isi)->toContain('ja-nilai is-lama')
+        ->and($isi)->toContain('ja-nilai is-baru');
+
+    // Keduanya duduk di satu kotak teks, bukan dua kotak bersebelahan:
+    // ukuran huruf yang berbeda di dua kotak membuat penghubungnya melayang.
+    expect($isi)->toContain('ja-aksi-teks');
 });
 
 test('orcha yang tidak bisa dihubungi tidak merobohkan halaman jejak', function () {

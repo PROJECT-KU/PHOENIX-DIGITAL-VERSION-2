@@ -225,6 +225,35 @@ class OrchaJejakAuditList extends Component
     }
 
     /**
+     * Nama manusiawi untuk nilai status yang dicatat jejaknya.
+     *
+     * Yang disimpan Orcha nilai mesinnya — `dp_masuk`, `menunggu` — dan itulah
+     * yang dulu ikut tercetak apa adanya. Admin membaca "dp_masuk" di layar
+     * sementara di layar sebelah hal yang sama bernama "DP Masuk"; garis bawah
+     * dan huruf kecil itu bocoran isi basis data, bukan bahasa orang.
+     *
+     * Petanya diambil dari rujukan Orcha, bukan daftar salin-tempel di sini:
+     * status baru akan ikut bernama benar tanpa ada yang perlu ingat
+     * memperbaruinya di dua tempat.
+     *
+     * @return array<string, string>
+     */
+    private function petaStatus(): array
+    {
+        $peta = [];
+
+        foreach (['status_pendaftaran', 'status_penyewaan', 'status_pembatalan', 'status_pembayaran'] as $grup) {
+            foreach ($this->rujukan($grup) as $kunci => $label) {
+                if (is_string($kunci) && is_string($label) && $label !== '') {
+                    $peta[$kunci] = $label;
+                }
+            }
+        }
+
+        return $peta;
+    }
+
+    /**
      * Sisakan yang benar-benar teks.
      *
      * Balasan API yang bentuknya lain — mis. daftar baris, bukan daftar nama —
@@ -335,6 +364,7 @@ class OrchaJejakAuditList extends Component
             'meta' => $hasil['meta'] ?? [],
             'pilihanAdmin' => $pilihanAdmin,
             'pilihanAksi' => $this->pilihanAksi(),
+            'petaStatus' => $this->petaStatus(),
         ])->layout('livewire.layout.templateindex');
     }
 }
