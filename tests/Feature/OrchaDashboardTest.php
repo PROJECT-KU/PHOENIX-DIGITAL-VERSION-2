@@ -5841,6 +5841,56 @@ test('halaman jejak audit tidak menawarkan cara menghapus jejaknya', function ()
         ->not->toContain('bi-trash');
 });
 
+test('halaman jejak audit memakai kerangka dasbor lemon', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/jejak-audit/index.blade.php')
+    );
+
+    expect($sumber)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')");
+
+    foreach (['dsb-hero', 'dsb-rak', 'dsb-kartu', 'dsb-medan', 'dsb-tabel', 'dsb-kosong'] as $kelas) {
+        expect(str_contains($sumber, $kelas))->toBeTrue("kerangka {$kelas} tidak dipakai");
+    }
+
+    // Dialek lama tidak boleh kembali diam-diam.
+    expect($sumber)->not->toContain('class="card border-0 shadow-sm rounded-4')
+        ->not->toContain('table table-hover');
+});
+
+test('keterangan yang hanya mengulang aksinya tidak ditampilkan dua kali', function () {
+    /*
+     | Ringkasan dari Orcha hampir selalu diawali kalimat yang SAMA dengan
+     | aksinya ("ubah status pembayaran (menunggu → diterima)"), sehingga satu
+     | baris terbaca dua kali. Yang disisakan hanya keterangan yang benar-benar
+     | baru — di sini nominalnya.
+     */
+    Http::fake([
+        '*/jejak-audit/admin' => Http::response(['data' => ['Rina Admin']]),
+        '*/jejak-audit*' => Http::response(['data' => [[
+            'id' => 7,
+            'admin' => 'Rina Admin',
+            'aksi' => 'ubah status pembayaran',
+            'ringkasan' => 'ubah status pembayaran (menunggu → diterima) — nominal: 1716000',
+            'kode' => 'OT-1',
+            'sebelum' => 'menunggu',
+            'sesudah' => 'diterima',
+            'ip' => '103.10.20.30',
+            'waktu' => now()->toIso8601String(),
+            'waktu_teks' => '6 September 2026, 10:46',
+        ]], 'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    // Aksinya disebut sekali saja; keterangan sisanya tetap tampil.
+    expect(substr_count($isi, 'ubah status pembayaran'))->toBe(1)
+        ->and($isi)->toContain('nominal: 1716000')
+        // Perpindahannya tetap "dari → ke".
+        ->and($isi)->toContain('menunggu')
+        ->and($isi)->toContain('diterima');
+});
+
 test('orcha yang tidak bisa dihubungi tidak merobohkan halaman jejak', function () {
     // Penyaring admin diambil lewat panggilan terpisah; gagalnya harus diam.
     Http::fake(['*' => Http::response([], 500)]);
