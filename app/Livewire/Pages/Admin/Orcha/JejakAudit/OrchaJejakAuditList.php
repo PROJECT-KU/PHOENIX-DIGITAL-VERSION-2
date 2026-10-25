@@ -82,6 +82,16 @@ class OrchaJejakAuditList extends Component
     public const PILIH_SENDIRI = 'pilih';
 
     /**
+     * Panel saringan selebihnya: tanggal persis, jenis perubahan, alamat IP.
+     *
+     * Dipegang komponen, bukan Alpine di tampilan. Yang membukanya bukan cuma
+     * tombolnya: memilih "Pilih tanggal sendiri" di kotak Waktu juga harus
+     * membukanya, dan keadaan yang bisa diubah dari dua sisi lebih baik
+     * dipegang satu pihak daripada dititipkan ke penonton.
+     */
+    public bool $lainnya = false;
+
+    /**
      * Merakit ulang keadaan kotak "Waktu" dari tanggal di alamat.
      *
      * Telusuran yang dikirim ke admin lain harus terbuka dengan kotak yang
@@ -101,6 +111,11 @@ class OrchaJejakAuditList extends Component
         if ($this->rentang === '' && ($this->dari !== '' || $this->sampai !== '')) {
             $this->rentang = self::PILIH_SENDIRI;
         }
+
+        // Saringan yang sedang aktif WAJIB ikut terlihat: daftar yang pendek
+        // tanpa sebab yang terlihat adalah data yang hilang, bagi yang
+        // membukanya lewat tautan dari orang lain.
+        $this->lainnya = $this->jumlahSaringanLanjut() > 0 || $this->rentang === self::PILIH_SENDIRI;
     }
 
     /** Kotak "Waktu" dipilih: isi, kosongkan, atau serahkan ke dua medan tanggal. */
@@ -109,6 +124,10 @@ class OrchaJejakAuditList extends Component
         $this->halaman = 1;
 
         if ($nilai === self::PILIH_SENDIRI) {
+            // Medannya ada di dalam panel; memilihnya tanpa membuka panel
+            // berarti menyuruh admin mencari isian yang baru saja ia minta.
+            $this->lainnya = true;
+
             return;
         }
 
@@ -177,7 +196,7 @@ class OrchaJejakAuditList extends Component
 
     public function bersihkanSaringan(): void
     {
-        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'dari', 'sampai', 'cari', 'rentang']);
+        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'dari', 'sampai', 'cari', 'rentang', 'lainnya']);
         $this->halaman = 1;
     }
 

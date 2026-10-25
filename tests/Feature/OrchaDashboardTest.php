@@ -6337,7 +6337,47 @@ test('lencana hanya menghitung saringan yang tersembunyi', function () {
     $isi = $this->actingAs(adminOrcha())
         ->get('/admin/orcha/jejak-audit?ip=103.10')->assertOk()->getContent();
 
-    expect($isi)->toContain('x-data="{ lain: true }"');
+    expect($isi)->toContain('id="ja-ip"');
+});
+
+test('memilih tanggal sendiri ikut membuka panelnya', function () {
+    jejakFake();
+
+    /*
+     | Medan tanggalnya ADA DI DALAM panel. Memilih "Pilih tanggal sendiri"
+     | tanpa membuka panelnya berarti menyuruh admin mencari isian yang baru
+     | saja ia minta — dan di layarnya tidak ada yang berubah sama sekali.
+     */
+    Livewire::actingAs(adminOrcha())
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->assertSet('lainnya', false)
+        ->set('rentang', 'pilih')
+        ->assertSet('lainnya', true)
+        ->assertSee('id="ja-dari"', false);
+});
+
+test('panel saringan terisi penuh selebar kartunya', function () {
+    jejakFake();
+
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit?ip=103.10')->assertOk()->getContent();
+
+    /*
+     | Keempat medan dalam SATU panel, bukan dua panel yang muncul
+     | sendiri-sendiri: masing-masing dulu cuma mengisi separuh kiri kartu,
+     | dan dua baris setengah kosong bertumpuk terbaca seperti layar yang
+     | belum selesai dirapikan.
+     */
+    $panel = substr($isi, strpos($isi, 'ja-saring-lipat'));
+    $panel = substr($panel, 0, strpos($panel, 'ja-halaman') ?: 4000);
+
+    foreach (['ja-dari', 'ja-sampai', 'ja-aksi', 'ja-ip'] as $medan) {
+        expect(str_contains($panel, 'id="'.$medan.'"'))->toBeTrue("medan {$medan} tidak ada di panel");
+    }
+
+    // Satu panel, bukan dua. Dihitung di markah saja — aturan gayanya menyebut
+    // nama yang sama beberapa kali untuk layar sempit.
+    expect(substr_count($isi, 'class="ja-saring-lipat"'))->toBe(1);
 });
 
 test('jumlah baris pindah ke kaki tabel, bukan bilah saringan', function () {
