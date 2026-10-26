@@ -17,15 +17,18 @@ function rekamanVendor(): array
     return [
         'data' => [
             ['id' => 1, 'nama' => 'PO Sumber Jaya', 'kontak' => '081234000111 (Pak Budi)',
-                'jenis' => 'Armada', 'catatan' => 'Pool di Maguwo', 'aktif' => true,
+                'jenis' => 'Armada', 'provinsi' => 'DI Yogyakarta', 'catatan' => 'Pool di Maguwo', 'aktif' => true,
                 'jumlah_harga' => 3, 'diubah_pada' => '2026-10-27T08:00:00+07:00'],
             ['id' => 3, 'nama' => 'Vendor Tanpa Nomor', 'kontak' => null,
-                'jenis' => null, 'catatan' => null, 'aktif' => true,
+                'jenis' => null, 'provinsi' => null, 'catatan' => null, 'aktif' => true,
                 'jumlah_harga' => 0, 'diubah_pada' => '2026-10-27T08:00:00+07:00'],
         ],
         'meta' => [
             'halaman' => 1, 'halaman_terakhir' => 1, 'total' => 2, 'per_halaman' => 15,
-            'ringkas' => ['tanpa_kontak' => 1, 'nonaktif' => 2, 'jenis' => ['Armada', 'Akomodasi']],
+            'ringkas' => [
+                'tanpa_kontak' => 1, 'nonaktif' => 2,
+                'jenis' => ['Armada', 'Akomodasi'], 'provinsi' => ['Bali', 'DI Yogyakarta'],
+            ],
         ],
     ];
 }
@@ -41,6 +44,10 @@ function palsukanVendor(): void
         $jalur = parse_url($r->url(), PHP_URL_PATH);
 
         return match (true) {
+            str_ends_with($jalur, '/rincian') => Http::response(['data' => [
+                'vendor' => rekamanVendorBaris(),
+                'harga' => [], 'rab' => [], 'belanja' => 0, 'belanja_teks' => 'Rp 0',
+            ]]),
             str_ends_with($jalur, '/kontak-tercecer') => Http::response(['data' => [
                 ['id' => 7, 'nama' => 'Sewa Hiace', 'catatan' => 'PO Sumber Jaya 081234000111'],
             ], 'meta' => ['total' => 1]]),
@@ -169,13 +176,56 @@ test('menyimpan vendor melupakan katalog RAB', function () {
     expect(cache()->get('orcha.rab.katalog'))->toBeNull();
 });
 
-test('peringatan hapus menyebut berapa harga yang kehilangan kontaknya', function () {
-    // Angka itu yang membedakan "hapus saja" dari "tunggu dulu".
+test('vendor yang masih dipakai ditawari dimatikan, bukan dihapus', function () {
+    /*
+     | Yang hampir selalu dimaksud admin adalah "jangan tawarkan lagi", dan
+     | itu namanya mematikan. Menghapusnya menghilangkan kontak dari seluruh
+     | RAB yang memakainya tanpa bisa dibatalkan.
+     */
     palsukanVendor();
 
-    $this->actingAs(adminRab())->get('/admin/orcha/vendor')
-        ->assertOk()
-        ->assertSee('3 harga akan kehilangan kontaknya', false);
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/vendor')->assertOk()->getContent();
+
+    // PO Sumber Jaya: 3 harga, aktif -> tombolnya "matikan".
+    expect($isi)->toContain('data-action="matikan"')
+        ->and($isi)->toContain('Matikan PO Sumber Jaya?')
+        ->and($isi)->toContain('tetap terbaca di 3 harga')
+        // Vendor Tanpa Nomor: 0 harga -> hapus biasa, tanpa peringatan apa pun.
+        ->and($isi)->toContain('data-action="hapus"')
+        ->and($isi)->toContain('belum dipakai harga mana pun');
+});
+
+test('vendor nonaktif yang masih dipakai dihapus dengan paksa', function () {
+    // Baris salah ketik memang pantas dibuang — tetapi dipaksa dengan sadar.
+    Http::fake(fn () => Http::response(['data' => [[
+        'id' => 9, 'nama' => 'Salah Ketik', 'kontak' => null, 'jenis' => null,
+        'provinsi' => null, 'catatan' => null, 'aktif' => false, 'jumlah_harga' => 2,
+    ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1, 'per_halaman' => 15]]));
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/vendor')->assertOk()->getContent();
+
+    expect($isi)->toContain('data-action="hapusPaksa"')
+        ->and($isi)->toContain('tidak bisa dibatalkan');
+});
+
+test('mematikan membaca barisnya dari Orcha, bukan dari markah', function () {
+    /*
+     | Dialog konfirmasi bersama hanya membawa SATU argumen, dan merakit
+     | payload dari markah berarti nilai apa pun di sana bisa ikut tersimpan.
+     */
+    palsukanVendor();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaVendorList::class)
+        ->call('matikan', 1);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'GET'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1/rincian'));
+
+    Http::assertSent(fn (Request $r) => in_array($r->method(), ['PATCH', 'PUT'], true)
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1')
+        && $r['aktif'] === false
+        && $r['nama'] === 'PO Sumber Jaya');
 });
 
 test('layar vendor memakai kerangka dasbor lemon', function () {
@@ -335,4 +385,106 @@ test('jenis yang diketik sendiri ditandai di luar daftar', function () {
         ->html();
 
     expect($isi)->toContain('di luar daftar baku');
+});
+
+test('rincian vendor menyebut belanja, harga, dan RAB-nya', function () {
+    /*
+     | Daftar vendor menjawab "siapa saja"; halaman ini menjawab "sudah
+     | sejauh apa dengan vendor ini" — angka yang dipakai menawar harga
+     | tahun depan.
+     */
+    Http::fake(fn () => Http::response(['data' => [
+        'vendor' => ['id' => 1, 'nama' => 'PO Sumber Jaya', 'kontak' => '081234000111 (Pak Budi)',
+            'jenis' => 'Armada', 'provinsi' => 'DI Yogyakarta', 'catatan' => null,
+            'aktif' => true, 'jumlah_harga' => 2],
+        'harga' => [
+            ['id' => 5, 'nama' => 'Sewa Hiace', 'kategori_label' => 'Transportasi',
+                'satuan_label' => 'per unit per hari', 'harga' => 1100000,
+                'harga_teks' => 'Rp 1.100.000', 'aktif' => true],
+        ],
+        'rab' => [
+            ['id' => 3, 'kode' => 'RAB-001', 'judul' => 'Private Trip Jogja', 'status' => 'disetujui',
+                'status_label' => 'Disetujui', 'tanggal_mulai' => '2026-11-01',
+                'jumlah_baris' => 1, 'nilai' => 6600000, 'nilai_teks' => 'Rp 6.600.000'],
+        ],
+        'belanja' => 6600000, 'belanja_teks' => 'Rp 6.600.000',
+    ]]));
+
+    $this->actingAs(adminRab())->get('/admin/orcha/vendor/1')
+        ->assertOk()
+        ->assertSee('PO Sumber Jaya')
+        ->assertSee('Rp 6.600.000')
+        ->assertSee('Sewa Hiace')
+        ->assertSee('RAB-001')
+        // Tombol hubungi ikut, dengan aturan nomor yang sama.
+        ->assertSee('https://wa.me/6281234000111', false);
+});
+
+test('nama vendor membawa ke halaman rinciannya', function () {
+    palsukanVendor();
+
+    $this->actingAs(adminRab())->get('/admin/orcha/vendor')
+        ->assertOk()
+        ->assertSee(route('admin.orcha.vendor.detail', 1), false);
+});
+
+test('wilayah vendor bisa disaring dan ikut terkirim', function () {
+    // Dengan empat puluh vendor, yang benar tenggelam di antara yang tidak
+    // mungkin dipakai.
+    palsukanVendor();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaVendorList::class)
+        ->set('filterProvinsi', 'Bali');
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/vendor')
+        && $r->method() === 'GET' && str_contains($r->url(), 'provinsi=Bali'));
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaVendorList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama', 'PO Bali Indah')
+        ->set('isian.provinsi', 'Bali')
+        ->call('simpan');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor')
+        && $r['provinsi'] === 'Bali');
+});
+
+test('nomor yang panjangnya janggal ditandai, bukan ditolak', function () {
+    /*
+     | Kontaknya memang teks bebas, dan nomor kantor berbeda panjang dari
+     | seluler. Tetapi salah ketik satu digit tersimpan dengan yakin, dan
+     | tombol WhatsApp-nya mengarah ke nomor orang lain tanpa satu pun tanda.
+     */
+    palsukanVendor();
+    $k = Livewire::actingAs(adminRab())->test(OrchaVendorList::class)->instance();
+
+    expect($k->nomorJanggal('081234000111'))->toBeFalse()        // 12 digit, wajar
+        ->and($k->nomorJanggal('0274555000'))->toBeFalse()        // 10 digit, nomor kantor
+        ->and($k->nomorJanggal('08123400'))->toBeTrue()           // 8 digit, ada yang terlewat
+        ->and($k->nomorJanggal('0812340001112233'))->toBeTrue()   // 16 digit, kelebihan
+        // Yang terlalu pendek untuk dianggap nomor sama sekali tidak
+        // ditandai — di sana yang muncul "belum ada nomor", bukan "periksa
+        // lagi", dan dua tanda untuk satu keadaan hanya membingungkan.
+        ->and($k->nomorJanggal('08123'))->toBeFalse()
+        ->and($k->nomorJanggal('tanya Pak Budi'))->toBeFalse();
+});
+
+test('ekspor vendor mengikuti saringan yang sedang aktif', function () {
+    // Berkas yang isinya berbeda dari yang terlihat di layar adalah berkas
+    // yang menyesatkan.
+    palsukanVendor();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaVendorList::class)
+        ->set('filterJenis', 'Armada')
+        ->call('unduhExcel');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'GET'
+        && str_contains($r->url(), '/vendor')
+        && str_contains($r->url(), 'jenis=Armada')
+        // Tanpa halaman: yang terunduh seluruhnya, bukan lima belas baris.
+        && str_contains($r->url(), 'per_halaman=500'));
 });

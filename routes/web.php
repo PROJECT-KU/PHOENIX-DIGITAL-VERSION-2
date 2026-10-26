@@ -617,6 +617,7 @@ Route::middleware('permission:akses_orcha')->group(function () {
     // yang muncul di tiap baris harga, di rincian biaya RAB, dan di PDF
     // internal.
     Route::get('/admin/orcha/vendor', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorList::class)->name('admin.orcha.vendor');
+    Route::get('/admin/orcha/vendor/{vendor}', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorDetail::class)->name('admin.orcha.vendor.detail');
 
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');

@@ -85,6 +85,14 @@ Vendor || lemon
                                 @endforeach
                             </select>
 
+                            <select class="dsb-isian vd-pilih" wire:model.live="filterProvinsi" aria-label="Saring menurut wilayah">
+                                <option value="">Semua wilayah</option>
+                                <option value="-">Tanpa wilayah</option>
+                                @foreach ($provinsiAda as $p)
+                                    <option value="{{ $p }}">{{ $p }}</option>
+                                @endforeach
+                            </select>
+
                             <select class="dsb-isian vd-pilih" wire:model.live="filterStatus2" aria-label="Saring menurut status">
                                 <option value="">Aktif &amp; nonaktif</option>
                                 <option value="aktif">Hanya aktif</option>
@@ -93,6 +101,16 @@ Vendor || lemon
 
                             <button type="button" wire:click="bukaTambah" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                 <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
+                            </button>
+
+                            {{-- Mengikuti saringan yang sedang aktif: berkas yang
+                                 isinya berbeda dari yang terlihat di layar adalah
+                                 berkas yang menyesatkan. --}}
+                            <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel"
+                                class="dsb-tombol is-lembut" style="--ikon: #047857" title="Unduh daftar vendor sesuai saringan">
+                                <i class="bi bi-file-earmark-spreadsheet" wire:loading.remove wire:target="unduhExcel"></i>
+                                <span class="dsb-putar" wire:loading wire:target="unduhExcel"></span>
+                                <span>Excel</span>
                             </button>
 
                             @if ($adaSaringan)
@@ -145,6 +163,21 @@ Vendor || lemon
                                     @error('isian.kontak')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 </div>
 
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="vd-provinsi">
+                                        Melayani wilayah
+                                        <span class="dsb-label-ket">kosong = di mana saja</span>
+                                    </label>
+                                    <input id="vd-provinsi" type="text" wire:model="isian.provinsi" maxlength="80"
+                                        class="dsb-isian" placeholder="DI Yogyakarta"
+                                        list="vd-daftar-provinsi">
+                                    <datalist id="vd-daftar-provinsi">
+                                        @foreach ($provinsiAda as $p)
+                                            <option value="{{ $p }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                </div>
+
                                 <div class="dsb-medan is-lebar">
                                     <label class="dsb-label">
                                         Jenis
@@ -163,8 +196,14 @@ Vendor || lemon
                                                 <i class="bi {{ $ikonJ }}"></i>{{ $j }}
                                             </button>
                                         @endforeach
+                                    </div>
+                                    {{-- Di luar deret chip, bukan sejajar dengannya: ia
+                                         berbeda fungsi, dan berbaris bersama membuatnya
+                                         terbaca seperti chip keenam. --}}
+                                    <div class="vd-jenis-lain">
+                                        <span class="dsb-kartu-sub">atau</span>
                                         <input type="text" wire:model.live.debounce.400ms="isian.jenis" maxlength="30"
-                                            class="dsb-isian vd-jenis-isi" placeholder="atau ketik sendiri">
+                                            class="dsb-isian vd-jenis-isi" placeholder="ketik jenis lain">
                                     </div>
                                     @if ($jenisAsing)
                                         <span class="dsb-kartu-sub vd-jenis-asing">
@@ -256,9 +295,16 @@ Vendor || lemon
 
                         <div class="dsb-kartu-isi">
                             @if ($tercecer === [])
+                                {{-- Sesudah bersih, panelnya menutup diri. Panel yang
+                                     menawarkan diri selamanya memaksa admin menekan
+                                     "Periksa" hanya untuk diberi tahu tidak ada apa-apa. --}}
                                 <div class="vd-tercecer-bersih">
                                     <i class="bi bi-check2-circle"></i>
-                                    Tidak ada nomor yang tertinggal di catatan master harga.
+                                    <span>Tidak ada nomor yang tertinggal di catatan master harga.</span>
+                                    <button type="button" wire:click="$set('bukaTercecer', false)"
+                                        class="dsb-tombol is-lembut" style="--ikon: #047857">
+                                        <i class="bi bi-check2"></i><span>Selesai</span>
+                                    </button>
                                 </div>
                             @else
                                 <div class="vd-tercecer-deret">
@@ -292,9 +338,7 @@ Vendor || lemon
                             <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-shop"></i></span>
                             <div>
                                 <h3 class="dsb-kartu-judul">Daftar vendor</h3>
-                                <span class="dsb-kartu-sub">
-                                    Nomornya ikut muncul di rincian biaya RAB dan di PDF internal — tidak perlu dicari lagi saat menyiapkan keberangkatan.
-                                </span>
+                                <span class="dsb-kartu-sub">Nomornya ikut ke rincian biaya RAB dan PDF internal.</span>
                             </div>
                         </div>
                         <span class="vd-chip-deret">
@@ -399,7 +443,11 @@ Vendor || lemon
                                         <tr wire:key="vd-{{ $baris['id'] }}" class="{{ $baris['aktif'] ? '' : 'is-mati' }}">
                                             <td data-judul="Vendor">
                                                 <span class="vd-utama">
-                                                    <span class="dsb-tabel-judul">{{ $baris['nama'] }}</span>
+                                                    <a href="{{ route('admin.orcha.vendor.detail', $baris['id']) }}" wire:navigate
+                                                        class="dsb-tabel-judul vd-tautan">{{ $baris['nama'] }}</a>
+                                                    @if (! empty($baris['provinsi']))
+                                                        <span class="dsb-tabel-meta"><i class="bi bi-geo-alt"></i> {{ $baris['provinsi'] }}</span>
+                                                    @endif
                                                     @if ($baris['catatan'])
                                                         <span class="dsb-tabel-meta vd-catatan">{{ $baris['catatan'] }}</span>
                                                     @endif
@@ -417,7 +465,19 @@ Vendor || lemon
                                             <td data-judul="Kontak">
                                                 @if ($baris['kontak'])
                                                     <span class="vd-kontak">
-                                                        <span class="vd-kontak-teks">{{ $baris['kontak'] }}</span>
+                                                        <span class="vd-kontak-teks">
+                                                            {{ $baris['kontak'] }}
+                                                            @if ($this->nomorJanggal($baris['kontak']))
+                                                                {{-- Bukan penolakan: nomor kantor memang
+                                                                     berbeda panjang dari seluler. Tetapi
+                                                                     salah ketik satu digit tersimpan
+                                                                     dengan yakin, dan tombolnya mengarah
+                                                                     ke nomor orang lain tanpa tanda. --}}
+                                                                <span class="vd-nomor-janggal" title="Panjang nomornya di luar kebiasaan — mungkin ada digit yang terlewat">
+                                                                    <i class="bi bi-question-circle"></i>periksa lagi
+                                                                </span>
+                                                            @endif
+                                                        </span>
                                                         {{-- Tombolnya hanya muncul bila ada deretan
                                                              angka yang cukup panjang untuk sebuah
                                                              nomor. Tombol yang selalu ada lalu
@@ -481,19 +541,41 @@ Vendor || lemon
                                                         title="Ubah vendor ini">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
+                                                    {{-- Ikon union tidak langsung terbaca artinya,
+                                                         jadi yang dipakai panah-menyatu plus
+                                                         judul yang menyebut maksudnya. --}}
                                                     <button type="button" class="dsb-tabel-btn" style="--c: #b45309"
                                                         wire:click="bukaGabung({{ $baris['id'] }})"
                                                         title="Gabungkan ke vendor lain — untuk dua baris yang ternyata orang yang sama">
-                                                        <i class="bi bi-union"></i>
+                                                        <i class="bi bi-arrows-angle-contract"></i>
                                                     </button>
-                                                    <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #be123c"
-                                                        data-action="hapus" data-arg="{{ $baris['id'] }}"
-                                                        data-title="Hapus {{ $baris['nama'] }}?"
-                                                        data-text="{{ $baris['jumlah_harga'] }} harga akan kehilangan kontaknya, tetapi harganya sendiri tetap ada."
-                                                        data-confirm="Ya, hapus" data-icon="warning"
-                                                        title="Hapus vendor ini">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
+                                                    @if ($baris['jumlah_harga'] > 0 && $baris['aktif'])
+                                                        {{-- Yang hampir selalu dimaksud admin adalah
+                                                             "jangan tawarkan lagi", dan itu namanya
+                                                             mematikan. Menghapusnya menghilangkan
+                                                             kontak dari seluruh RAB yang memakainya
+                                                             tanpa bisa dibatalkan. --}}
+                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #64748b"
+                                                            data-action="matikan" data-arg="{{ $baris['id'] }}"
+                                                            data-title="Matikan {{ $baris['nama'] }}?"
+                                                            data-text="Tidak ditawarkan lagi untuk harga baru. Kontaknya tetap terbaca di {{ $baris['jumlah_harga'] }} harga yang sudah memakainya."
+                                                            data-confirm="Ya, matikan" data-icon="question"
+                                                            title="Matikan vendor ini">
+                                                            <i class="bi bi-pause-circle"></i>
+                                                        </button>
+                                                    @else
+                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #be123c"
+                                                            data-action="{{ $baris['jumlah_harga'] > 0 ? 'hapusPaksa' : 'hapus' }}"
+                                                            data-arg="{{ $baris['id'] }}"
+                                                            data-title="Hapus {{ $baris['nama'] }}?"
+                                                            data-text="{{ $baris['jumlah_harga'] > 0
+                                                                ? $baris['jumlah_harga'].' harga akan kehilangan kontaknya. Harganya sendiri tetap ada, dan ini tidak bisa dibatalkan.'
+                                                                : 'Vendor ini belum dipakai harga mana pun.' }}"
+                                                            data-confirm="Ya, hapus" data-icon="warning"
+                                                            title="Hapus vendor ini">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    @endif
                                                 </span>
                                             </td>
                                         </tr>
@@ -548,17 +630,25 @@ Vendor || lemon
         .vd-jenis-chip i { color: var(--c, #64748b); }
         .vd-jenis-chip:hover { border-color: #c7d2fe; }
         .vd-jenis-chip.is-aktif { border-color: var(--c, #4f46e5); background: #f8fafc; box-shadow: 0 0 0 3px rgba(99, 102, 241, .08); }
-        .vd-jenis-isi { flex: 1 1 150px; min-width: 0; }
+        .vd-jenis-lain { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+        .vd-jenis-lain .dsb-kartu-sub { flex: 0 0 auto; }
+        .vd-jenis-isi { flex: 1 1 auto; min-width: 0; }
 
         .vd-sakelar { margin-top: 14px; }
         .vd-kaki { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
 
         .vd-utama { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .vd-catatan { font-style: italic; }
+        /* Teks melar, tombolnya menempel di kanan kolom.
+
+           Sebelumnya tombol mengikuti akhir teks kontaknya, jadi posisinya
+           berbeda-beda tiap baris dan mata harus mencari tombol yang
+           seharusnya selalu di tempat yang sama. */
         .vd-kontak {
-            display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px;
+            display: flex; align-items: center; gap: 8px;
             font-size: .84rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26);
         }
+        .vd-kontak .vd-kontak-teks { flex: 1 1 auto; }
         .vd-kosong {
             display: inline-flex; align-items: center; gap: 5px;
             font-size: .76rem; font-weight: 600; color: #b45309;
@@ -577,10 +667,11 @@ Vendor || lemon
         .vd-tercecer-teks { display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px; min-width: 0; }
         .vd-tercecer-teks strong { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
         .vd-tercecer-bersih {
-            display: flex; align-items: center; gap: 8px;
+            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
             padding: 11px 14px; border-radius: 12px;
             background: #f6fbf8; border: 1px solid #d1fae5; color: #047857; font-size: .84rem; font-weight: 600;
         }
+        .vd-tercecer-bersih > span { flex: 1 1 240px; }
         .vd-tercecer-deret { display: flex; flex-direction: column; gap: 6px; }
         .vd-tercecer-baris {
             display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
@@ -619,6 +710,14 @@ Vendor || lemon
         .vd-dipakai { font-weight: 700; font-size: .84rem; color: #4f46e5; text-decoration: none; }
         .vd-dipakai:hover { text-decoration: underline; }
         .vd-dipakai-nol { font-size: .78rem; color: var(--dsb-redup, #6b7280); }
+        .vd-tautan { text-decoration: none; }
+        .vd-tautan:hover { color: #4338ca; }
+        .vd-nomor-janggal {
+            display: inline-flex; align-items: center; gap: 4px; margin-left: 6px;
+            padding: 1px 7px 2px; border-radius: 7px;
+            background: #fffbeb; border: 1px solid #fde68a;
+            color: #92400e; font-size: .68rem; font-weight: 700;
+        }
         .vd-jenis-asing { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; }
 
         .vd-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }

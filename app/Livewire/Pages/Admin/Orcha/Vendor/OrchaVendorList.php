@@ -30,6 +30,9 @@ class OrchaVendorList extends Component
     #[Url(as: 'status', except: '')]
     public string $filterStatus2 = '';
 
+    #[Url(as: 'provinsi', except: '')]
+    public string $filterProvinsi = '';
+
     public bool $tambah = false;
 
     /** Vendor yang sedang ditawarkan untuk digabungkan; null berarti tertutup. */
@@ -60,7 +63,7 @@ class OrchaVendorList extends Component
 
     private function kosongkan(): void
     {
-        $this->isian = ['nama' => '', 'kontak' => '', 'jenis' => '', 'catatan' => ''];
+        $this->isian = ['nama' => '', 'kontak' => '', 'jenis' => '', 'provinsi' => '', 'catatan' => ''];
         $this->aktif = true;
     }
 
@@ -79,17 +82,24 @@ class OrchaVendorList extends Component
         $this->halaman = 1;
     }
 
+    public function updatedFilterProvinsi(): void
+    {
+        $this->halaman = 1;
+    }
+
     public function bersihkanSaringan(): void
     {
         $this->cari = '';
         $this->filterJenis = '';
         $this->filterStatus2 = '';
+        $this->filterProvinsi = '';
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterJenis !== '' || $this->filterStatus2 !== '';
+        return $this->cari !== '' || $this->filterJenis !== ''
+            || $this->filterStatus2 !== '' || $this->filterProvinsi !== '';
     }
 
     /**
@@ -121,6 +131,27 @@ class OrchaVendorList extends Component
         }
 
         return str_starts_with($angka, '0') ? '62'.substr($angka, 1) : $angka;
+    }
+
+    /**
+     * Nomor yang panjangnya di luar wajar.
+     *
+     * Bukan penolakan — kontaknya memang teks bebas, dan nomor kantor
+     * berbeda panjang dari nomor seluler. Tetapi salah ketik satu digit
+     * tetap tersimpan dengan yakin, dan tombol WhatsApp-nya mengarah ke
+     * nomor orang lain tanpa satu pun tanda. Jadi ditandai, bukan ditolak.
+     */
+    public function nomorJanggal(?string $kontak): bool
+    {
+        $angka = $this->nomorDari($kontak);
+
+        if ($angka === null) {
+            return false;
+        }
+
+        $panjang = strlen($angka);
+
+        return $panjang < 9 || $panjang > 15;
     }
 
     public function bukaGabung(int $id): void
@@ -217,6 +248,7 @@ class OrchaVendorList extends Component
             'nama' => (string) $baris['nama'],
             'kontak' => (string) ($baris['kontak'] ?? ''),
             'jenis' => (string) ($baris['jenis'] ?? ''),
+            'provinsi' => (string) ($baris['provinsi'] ?? ''),
             'catatan' => (string) ($baris['catatan'] ?? ''),
         ];
         $this->aktif = (bool) $baris['aktif'];
@@ -242,6 +274,7 @@ class OrchaVendorList extends Component
             'isian.nama' => 'required|string|min:2|max:120',
             'isian.kontak' => 'nullable|string|max:120',
             'isian.jenis' => 'nullable|string|max:30',
+            'isian.provinsi' => 'nullable|string|max:80',
             'isian.catatan' => 'nullable|string|max:300',
         ], [
             'isian.nama.required' => 'Isi nama vendornya.',
@@ -255,6 +288,8 @@ class OrchaVendorList extends Component
             // justru bentuk yang paling berguna saat menelepon.
             'kontak' => trim($this->isian['kontak']) ?: null,
             'jenis' => trim($this->isian['jenis']) ?: null,
+            // Kosong berarti BERLAKU DI MANA SAJA, bukan belum diisi.
+            'provinsi' => trim($this->isian['provinsi']) ?: null,
             'catatan' => trim($this->isian['catatan']) ?: null,
             'aktif' => $this->aktif,
         ];
@@ -276,6 +311,14 @@ class OrchaVendorList extends Component
         }
     }
 
+    /**
+     * Menghapus vendor — ditahan Orcha bila masih dipakai.
+     *
+     * Balasan 422 dari sana bukan kegagalan, melainkan tawaran: matikan saja
+     * supaya tidak ditawarkan lagi. Yang hampir selalu dimaksud admin memang
+     * itu, dan menghapusnya menghilangkan kontak dari seluruh RAB yang
+     * memakainya tanpa bisa dibatalkan.
+     */
     public function hapus(int $id): void
     {
         if ($this->hapusData("/vendor/{$id}", 'Vendor dihapus. Harga yang memakainya tetap ada.')) {
@@ -283,17 +326,99 @@ class OrchaVendorList extends Component
         }
     }
 
+    /** Dipaksa, karena baris salah ketik memang pantas dibuang. */
+    public function hapusPaksa(int $id): void
+    {
+        if ($this->hapusData("/vendor/{$id}?paksa=1", 'Vendor dihapus. Harga yang memakainya tetap ada, hanya kehilangan kontaknya.')) {
+            cache()->forget('orcha.rab.katalog');
+        }
+    }
+
+    /**
+     * Mematikan tanpa membuka formulirnya — jalan yang disarankan Orcha.
+     *
+     * Barisnya dibaca ulang dari Orcha, bukan dikirim lewat markah: dialog
+     * konfirmasi bersama hanya membawa SATU argumen, dan merakit payload dari
+     * markah berarti nilai apa pun di sana bisa ikut tersimpan.
+     */
+    public function matikan(int $id): void
+    {
+        try {
+            $v = $this->orcha()->ambil("/vendor/{$id}/rincian")['data']['vendor'] ?? null;
+
+            if ($v === null) {
+                $this->dispatch('toast-error', message: 'Vendornya tidak ditemukan.');
+
+                return;
+            }
+
+            $this->orcha()->ubah("/vendor/{$id}", [
+                'nama' => $v['nama'],
+                'kontak' => $v['kontak'],
+                'jenis' => $v['jenis'],
+                'provinsi' => $v['provinsi'] ?? null,
+                'catatan' => $v['catatan'],
+                'aktif' => false,
+            ]);
+
+            cache()->forget('orcha.rab.katalog');
+            $this->dispatch('order-updated', message: "{$v['nama']} dimatikan. Kontaknya tetap terbaca di RAB yang sudah memakainya.");
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Mengunduh daftar vendor sebagai Excel.
+     *
+     * Yang diunduh MENGIKUTI saringan yang sedang aktif — berkas yang isinya
+     * berbeda dari yang terlihat di layar adalah berkas yang menyesatkan.
+     * Diambil tanpa halaman supaya yang terunduh seluruhnya, bukan lima
+     * belas baris pertama.
+     */
+    public function unduhExcel()
+    {
+        try {
+            $hasil = $this->orcha()->ambil('/vendor', [
+                'cari' => $this->cari,
+                'jenis' => $this->filterJenis,
+                'status' => $this->filterStatus2,
+                'provinsi' => $this->filterProvinsi,
+                'per_halaman' => 500,
+            ]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return null;
+        }
+
+        $baris = $hasil['data'] ?? [];
+
+        if ($baris === []) {
+            $this->dispatch('toast-error', message: 'Tidak ada vendor yang cocok dengan saringannya.');
+
+            return null;
+        }
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\OrchaVendorExport($baris),
+            'vendor-orcha-'.now()->format('Ymd-Hi').'.xlsx',
+        );
+    }
+
     public function render()
     {
         $hasil = $this->muat('/vendor', $this->parameterDaftar([
             'jenis' => $this->filterJenis,
             'status' => $this->filterStatus2,
+            'provinsi' => $this->filterProvinsi,
         ]));
 
         return view('livewire.pages.admin.orcha.vendor.index', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
             'pilihanJenis' => self::JENIS,
+            'provinsiAda' => $hasil['meta']['ringkas']['provinsi'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }
