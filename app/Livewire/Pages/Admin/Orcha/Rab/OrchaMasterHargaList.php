@@ -21,6 +21,37 @@ class OrchaMasterHargaList extends Component
     use IsianRupiah;
     use MemanggilOrcha;
 
+    /*
+     | Satuan yang hampir selalu benar untuk tiap kategori.
+     |
+     | Tiket dihitung per orang, bus per unit per hari, hotel per kamar per
+     | malam — pasangan yang nyaris tidak pernah berbeda. Kotak yang
+     | jawabannya sudah diketahui dari kotak di sebelahnya bukan pilihan,
+     | melainkan penyalinan; dan penyalinan yang dilakukan berpuluh kali
+     | sehari adalah tempat salah pilih lahir.
+     |
+     | Terisinya tetap bisa ditimpa: begitu admin memilih satuannya sendiri,
+     | mengganti kategori tidak lagi menimpanya.
+     */
+    private const SATUAN_BAKU = [
+        'transportasi' => 'unit_hari',
+        'akomodasi' => 'kamar_malam',
+        'konsumsi' => 'orang',
+        'tiket' => 'orang',
+        'pemandu' => 'hari',
+        'asuransi' => 'orang',
+        'dokumentasi' => 'rombongan',
+        'operasional' => 'rombongan',
+        'sopir' => 'hari',
+        'lainnya' => 'rombongan',
+    ];
+
+    /** Kapasitas yang paling sering dipakai: Hiace 14 kursi, kamar twin 2 orang. */
+    private const KAPASITAS_BAKU = [
+        'unit_hari' => 14,
+        'kamar_malam' => 2,
+    ];
+
     #[Url(as: 'kategori', except: '')]
     public string $filterKategori = '';
 
@@ -43,6 +74,14 @@ class OrchaMasterHargaList extends Component
 
     public bool $otomatis = false;
 
+    /**
+     * Admin sudah memilih satuannya sendiri.
+     *
+     * Tanpa penanda ini, mengganti kategori akan menimpa satuan yang baru
+     * saja dipilih tangan — perbaikan yang berubah jadi gangguan.
+     */
+    public bool $satuanDisetel = false;
+
     private function kosongkan(): void
     {
         $this->isian = [
@@ -58,6 +97,9 @@ class OrchaMasterHargaList extends Component
         ];
         $this->aktif = true;
         $this->otomatis = false;
+        $this->satuanDisetel = false;
+        $this->destinasiBaru = false;
+        $this->namaDestinasiBaru = '';
     }
 
     public function mount(): void
@@ -115,6 +157,12 @@ class OrchaMasterHargaList extends Component
         ];
         $this->aktif = (bool) $baris['aktif'];
         $this->otomatis = (bool) $baris['otomatis'];
+
+        // Baris yang sudah tersimpan satuannya memang pilihan orang, bukan
+        // terkaan — mengganti kategorinya tidak boleh menimpanya.
+        $this->satuanDisetel = true;
+        $this->destinasiBaru = false;
+        $this->namaDestinasiBaru = '';
     }
 
     public function tutup(): void
@@ -122,6 +170,90 @@ class OrchaMasterHargaList extends Component
         $this->sunting = null;
         $this->tambah = false;
         $this->kosongkan();
+    }
+
+    /**
+     * Kategori menentukan satuannya, dan satuan menentukan kapasitasnya.
+     *
+     * Dari sembilan kotak, dua di antaranya jawabannya sudah diketahui begitu
+     * kategorinya dipilih. Keduanya tetap terlihat dan tetap bisa diubah —
+     * yang dikerjakan diam-diam akan mengejutkan saat angkanya masuk RAB.
+     */
+    public function updatedIsianKategori(string $kategori): void
+    {
+        if ($this->satuanDisetel) {
+            return;
+        }
+
+        $this->isian['satuan'] = self::SATUAN_BAKU[$kategori] ?? ($this->isian['satuan'] ?? 'orang');
+        $this->isiKapasitasBaku();
+    }
+
+    public function updatedIsianSatuan(): void
+    {
+        $this->satuanDisetel = true;
+        $this->isiKapasitasBaku();
+    }
+
+    /** Kapasitas hanya diisikan bila kotaknya memang masih kosong. */
+    private function isiKapasitasBaku(): void
+    {
+        $baku = self::KAPASITAS_BAKU[$this->isian['satuan'] ?? ''] ?? null;
+
+        if ($baku !== null && trim((string) ($this->isian['kapasitas'] ?? '')) === '') {
+            $this->isian['kapasitas'] = (string) $baku;
+        }
+    }
+
+    /**
+     * Satuan ini menghitung jumlah unit, jadi kapasitasnya menentukan.
+     *
+     * Daftarnya datang dari kosakata Orcha, bukan dari tetapan di berkas ini:
+     * KAPASITAS_BAKU hanya tahu angka yang paling sering dipakai, dan satuan
+     * ber-kapasitas yang kelak ditambahkan di sana tidak akan terbaca kalau
+     * aturannya ikut dikunci di sini.
+     */
+    public function perluKapasitas(): bool
+    {
+        $daftar = $this->katalog()['kosakata']['satuan_berkapasitas'] ?? ['unit_hari', 'kamar_malam'];
+
+        return in_array($this->isian['satuan'] ?? '', $daftar, true);
+    }
+
+    /**
+     * Nama yang dirakit dari kategori dan tempatnya.
+     *
+     * Untuk tiket ini bukan sekadar menghemat ketikan: namanya dirakit DARI
+     * destinasi yang dipilih, jadi tidak bisa lagi berbeda dari destinasi
+     * yang dimaksudnya.
+     */
+    public function namaOtomatis(): string
+    {
+        $destinasi = trim((string) ($this->isian['destinasi'] ?? ''));
+        $daerah = trim((string) ($this->isian['daerah'] ?? ''));
+        $tempat = $daerah !== '' ? $daerah : trim((string) ($this->isian['provinsi'] ?? ''));
+
+        return match ($this->isian['kategori'] ?? '') {
+            'tiket' => $destinasi !== '' ? "Tiket Masuk {$destinasi}" : ($tempat !== '' ? "Retribusi {$tempat}" : ''),
+            'akomodasi' => $tempat !== '' ? "Hotel di {$tempat}" : '',
+            'konsumsi' => $tempat !== '' ? "Makan di {$tempat}" : '',
+            'pemandu' => $tempat !== '' ? "Pemandu {$tempat}" : '',
+            default => '',
+        };
+    }
+
+    /**
+     * Tiket tanpa destinasi tidak akan pernah ikut tertarik ke RAB.
+     *
+     * Penariknya mencari harga tiket lewat nama destinasi di itinerary. Tiket
+     * yang tersimpan tanpa destinasi memang tersimpan — tetapi tidak pernah
+     * terpakai, dan RAB-nya kekurangan modal tanpa satu pun tanda.
+     */
+    public function tiketTanpaDestinasi(): bool
+    {
+        return ($this->isian['kategori'] ?? '') === 'tiket'
+            && trim((string) ($this->isian['destinasi'] ?? '')) === ''
+            && ! $this->otomatis;
     }
 
     /** Harga ditampilkan bertitik begitu kotaknya ditinggalkan. */
@@ -204,7 +336,19 @@ class OrchaMasterHargaList extends Component
 
     public function simpan(): void
     {
-        $berkapasitas = in_array($this->isian['satuan'], ['unit_hari', 'kamar_malam'], true);
+        /*
+         | Nama rakitan dipakai apa adanya bila kotaknya dibiarkan kosong.
+         |
+         | Nilainya diisikan ke kotaknya LEBIH DULU, bukan disisipkan saat
+         | mengirim: yang tersimpan harus sama dengan yang terlihat di layar.
+         | Nama yang baru muncul sesudah menyimpan tidak bisa dikoreksi oleh
+         | orang yang tidak pernah melihatnya.
+         */
+        if (trim((string) $this->isian['nama']) === '') {
+            $this->isian['nama'] = $this->namaOtomatis();
+        }
+
+        $berkapasitas = $this->perluKapasitas();
 
         $this->validate([
             'isian.kategori' => 'required|string',
@@ -215,6 +359,7 @@ class OrchaMasterHargaList extends Component
             'isian.catatan' => 'nullable|string|max:500',
         ], [
             'isian.kapasitas.required' => 'Isi kapasitasnya — tanpanya jumlah unit untuk rombongan besar tidak bisa dihitung.',
+            'isian.nama.required' => 'Isi namanya — atau pilih destinasinya, dan namanya terisi sendiri.',
         ], [
             'isian.nama' => 'nama', 'isian.harga' => 'harga', 'isian.kapasitas' => 'kapasitas',
         ]);
@@ -227,7 +372,10 @@ class OrchaMasterHargaList extends Component
             'destinasi' => trim($this->isian['destinasi']) ?: null,
             'satuan' => $this->isian['satuan'],
             'harga' => $this->angkaDari($this->isian['harga']),
-            'kapasitas' => $berkapasitas || $this->isian['kapasitas'] !== '' ? ((int) $this->isian['kapasitas'] ?: null) : null,
+            // Satuan yang tidak menghitung unit tidak mengirim kapasitas:
+            // kotaknya memang disembunyikan untuk satuan itu, dan nilai yang
+            // tidak terlihat tidak boleh ikut tersimpan.
+            'kapasitas' => $berkapasitas ? ((int) $this->isian['kapasitas'] ?: null) : null,
             'otomatis' => $this->otomatis,
             'aktif' => $this->aktif,
             'catatan' => trim($this->isian['catatan']) ?: null,
@@ -305,7 +453,6 @@ class OrchaMasterHargaList extends Component
             'meta' => $hasil['meta'] ?? [],
             'kategori' => $kosakata['kategori'] ?? [],
             'satuan' => $kosakata['satuan'] ?? [],
-            'berkapasitas' => $kosakata['satuan_berkapasitas'] ?? ['unit_hari', 'kamar_malam'],
             'provinsi' => $katalog['provinsi'] ?? [],
             'destinasi' => $destinasi,
             'namaKatalog' => $semuaNama,
