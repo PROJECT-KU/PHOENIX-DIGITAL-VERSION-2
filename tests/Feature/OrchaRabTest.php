@@ -148,7 +148,9 @@ test('penyusun menggambar itinerary, destinasi, dan ringkasan dari Orcha', funct
         ->assertSee('Candi Prambanan')
         ->assertSee($show['ringkasan']['harga_per_orang_teks'])
         ->assertSee('pakai harga baru')          // harga master sudah naik
-        ->assertSee('Tarik biaya dari itinerary');
+        // Tombolnya kini jaring pengaman, bukan langkah wajib: biayanya
+        // ditarik sendiri saat destinasinya diklik.
+        ->assertSee('Tarik ulang dari itinerary');
 });
 
 test('klik destinasi menyimpan itinerary utuh ke hari yang aktif', function () {
@@ -282,4 +284,171 @@ test('halaman master harga tergambar dengan harganya', function () {
         ->assertSee('Master Harga')
         ->assertSee('Tiket Candi Prambanan')
         ->assertSee('Rp 60.000');
+});
+
+/*
+ | ---------------------------------------------------------------------------
+ | Yang dulu diketik, kini terisi sendiri
+ |
+ | Setiap kotak yang jawabannya sudah diketahui dari kotak di sebelahnya bukan
+ | pilihan, melainkan penyalinan — dan penyalinan yang dilakukan berpuluh kali
+ | sehari adalah tempat salah ketik lahir.
+ | ---------------------------------------------------------------------------
+ */
+
+test('judul RAB dirakit sendiri dari tujuan dan lamanya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.nama_pelanggan', 'Keluarga Hendra')
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->set('isian.jumlah_hari', 3)
+        ->set('isian.jumlah_peserta', 10)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab')
+        && ($r->data()['judul'] ?? null) === 'Private Trip DI Yogyakarta 3H2M');
+});
+
+test('kota yang diisi admin menang atas provinsi di judul', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->set('isian.daerah', 'Sleman')
+        ->set('isian.jumlah_hari', 2);
+
+    expect($komponen->instance()->judulOtomatis())->toBe('Private Trip Sleman 2H1M');
+});
+
+test('judul yang ditulis sendiri tidak ditimpa rakitan', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.judul', 'Jogja Heritage Spesial')
+        ->set('isian.nama_pelanggan', 'Keluarga Hendra')
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($r) => $r->method() === 'POST'
+        && ($r->data()['judul'] ?? null) === 'Jogja Heritage Spesial');
+});
+
+test('klik destinasi langsung ikut menarik biayanya', function () {
+    palsukanRab();
+
+    /*
+     | Menambahkan destinasi dan menghitung tiketnya adalah satu maksud, bukan
+     | dua. Dulu dua tekanan tombol, dan yang lupa menekan tombol kedua
+     | mengirim penawaran dengan modal yang kurang — kesalahan yang baru
+     | ketahuan saat uangnya kurang.
+     */
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('tambahDestinasi', 'Candi Prambanan');
+
+    Http::assertSent(fn ($r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/tarik-biaya'));
+});
+
+/**
+ * Isi itinerary yang DIKIRIM ke Orcha pada permintaan terakhir.
+ *
+ * Diperiksa dari kirimannya, bukan dari properti komponen: tiap simpanan
+ * menggambar ulang layar dari jawaban Orcha, dan jawaban palsu di uji ini
+ * selalu rekaman yang sama — jadi properti komponen tidak pernah memuat
+ * yang barusan ditambahkan. Yang menentukan tetap apa yang dikirim.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function itineraryTerkirim(): array
+{
+    $isi = [];
+
+    Http::assertSent(function ($r) use (&$isi) {
+        if (str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')) {
+            $isi = $r->data()['itinerary'] ?? [];
+        }
+
+        return true;
+    });
+
+    return $isi;
+}
+
+test('jam kegiatan ditebak berurutan, bukan dibiarkan kosong', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('tambahKegiatanBaku', 'Penjemputan peserta');
+
+    // Hari 1 di rekaman sudah berisi kegiatan pukul 09.00, jadi tebakan
+    // berikutnya 11.00 — +2 jam dari yang terakhir pada hari itu.
+    $baru = collect(itineraryTerkirim())->firstWhere('nama', 'Penjemputan peserta');
+
+    expect($baru['jam'])->toBe('11:00');
+
+    $komponen->call('tambahKegiatanBaku', 'Sarapan');
+
+    /*
+     | 11.00 lagi, bukan 13.00 — dan itu benar DI UJI INI: jawaban palsunya
+     | selalu rekaman yang sama, jadi kegiatan pertama tidak pernah
+     | benar-benar masuk dan hari 1 tetap berisi satu kegiatan pukul 09.00.
+     | Yang dibuktikan di sini jam selalu TERISI, bukan rantai tebakannya.
+     */
+    expect(collect(itineraryTerkirim())->firstWhere('nama', 'Sarapan')['jam'])->toBe('11:00');
+});
+
+test('hari yang masih kosong mulai dari pukul delapan', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pilihHari', 3)
+        ->call('tambahKegiatanBaku', 'Penjemputan peserta');
+
+    expect(collect(itineraryTerkirim())->firstWhere('nama', 'Penjemputan peserta')['jam'])->toBe('08:00');
+});
+
+test('hanya kegiatan dari daftar baku yang diterima tombolnya', function () {
+    palsukanRab();
+
+    /*
+     | Nama kegiatan datang dari markah, dan markah bisa dikarang pemanggilnya.
+     | Yang dijaga bukan rupa layarnya, melainkan apa yang boleh masuk.
+     */
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('tambahKegiatanBaku', 'Mampir ke tempat yang dikarang');
+
+    Http::assertNotSent(fn ($r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary'));
+});
+
+test('ketiga layar RAB memakai kerangka dasbor lemon', function () {
+    palsukanRab();
+    $admin = adminRab();
+
+    $layar = [
+        '/admin/orcha/rab' => ['dsb-hero', 'dsb-rak', 'dsb-kartu', 'dsb-tabel'],
+        '/admin/orcha/rab/3' => ['dsb-hero', 'dsb-rak', 'dsb-kartu', 'dsb-isian'],
+        '/admin/orcha/master-harga' => ['dsb-hero', 'dsb-kartu', 'dsb-isian'],
+    ];
+
+    foreach ($layar as $alamat => $kelas) {
+        $isi = $this->actingAs($admin)->get($alamat)->assertOk()->getContent();
+
+        foreach ($kelas as $k) {
+            expect(str_contains($isi, $k))->toBeTrue("{$alamat} tidak memakai {$k}");
+        }
+
+        // Dialek lama tidak boleh kembali diam-diam.
+        expect($isi)->not->toContain('card border-0 shadow-sm rounded-4');
+    }
 });

@@ -172,9 +172,103 @@ class OrchaRabSusun extends Component
         $this->hariAktif = max(1, min($hari, (int) ($this->dataRab['jumlah_hari'] ?? 1)));
     }
 
+    /**
+     * Kegiatan yang muncul di hampir setiap itinerary.
+     *
+     * Bukan destinasi — tidak ada tiketnya, tidak ada di master harga — tetapi
+     * selalu ada di jadwal, dan selama ini diketik ulang kata demi kata pada
+     * tiap RAB. Satu klik mengganti sekitar lima belas ketukan, dan kalimatnya
+     * jadi sama di semua penawaran.
+     */
+    public const KEGIATAN_BAKU = [
+        'Penjemputan peserta',
+        'Sarapan',
+        'Makan siang',
+        'Check-in hotel',
+        'Makan malam',
+        'Acara bebas',
+        'Check-out hotel',
+        'Perjalanan pulang',
+    ];
+
     public function tambahDestinasi(string $nama): void
     {
-        $this->sisipkan(['hari_ke' => $this->hariAktif, 'jam' => '', 'nama' => $nama, 'keterangan' => '', 'destinasi' => $nama]);
+        $this->sisipkan([
+            'hari_ke' => $this->hariAktif,
+            'jam' => $this->jamBerikutnya($this->hariAktif),
+            'nama' => $nama,
+            'keterangan' => '',
+            'destinasi' => $nama,
+        ]);
+
+        /*
+         | Biayanya ditarik sekalian.
+         |
+         | Menambahkan destinasi dan menarik biayanya adalah satu maksud, bukan
+         | dua: tidak ada yang memasukkan Candi Prambanan ke itinerary lalu
+         | bermaksud TIDAK menghitung tiketnya. Dulu dua tekanan tombol, dan
+         | yang lupa menekan tombol kedua mengirim penawaran dengan modal yang
+         | kurang — kesalahan yang baru ketahuan saat uangnya kurang.
+         |
+         | Aman diulang: penarikan melewati master harga yang sudah ada di RAB.
+         */
+        $this->tarikBiaya(diam: true);
+
+        $this->isiDaerahDari($nama);
+    }
+
+    /**
+     * Kota RAB terisi dari destinasi pertama yang dipilih.
+     *
+     * Kotanya sudah diketahui — ia melekat pada destinasi di katalog. Dibiarkan
+     * kosong, ia muncul sebagai provinsi di daftar RAB dan di kepala penawaran
+     * ("DI Yogyakarta" alih-alih "Sleman"), lalu diisi tangan belakangan oleh
+     * orang yang menyadarinya. Yang sudah diisi TIDAK ditimpa: pilihan admin
+     * lebih tahu daripada tebakan ini.
+     */
+    private function isiDaerahDari(string $nama): void
+    {
+        if (trim((string) ($this->dataRab['daerah'] ?? '')) !== '') {
+            return;
+        }
+
+        $daerah = collect($this->katalog['destinasi'] ?? [])
+            ->firstWhere('nama', $nama)['daerah'] ?? null;
+
+        if (! is_string($daerah) || trim($daerah) === '') {
+            return;
+        }
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}", ['daerah' => trim($daerah)]);
+    }
+
+    /**
+     * Jam berikutnya untuk hari itu: 08.00, lalu +2 jam tiap kegiatan.
+     *
+     * Tebakan, bukan keputusan — admin menimpanya kapan saja. Tetapi tebakan
+     * yang hampir benar jauh lebih cepat diperbaiki daripada kotak kosong yang
+     * harus diisi dari nol delapan belas kali per RAB.
+     */
+    private function jamBerikutnya(int $hari): string
+    {
+        $isi = collect($this->itinerary)
+            ->where('hari_ke', $hari)
+            ->pluck('jam')
+            ->filter(fn ($j) => preg_match('/^\d{1,2}:\d{2}$/', (string) $j) === 1);
+
+        if ($isi->isEmpty()) {
+            return '08:00';
+        }
+
+        $menit = $isi->map(function ($j) {
+            [$h, $m] = array_map('intval', explode(':', $j));
+
+            return $h * 60 + $m;
+        })->max() + 120;
+
+        // Lewat tengah malam berarti tebakannya sudah tidak masuk akal;
+        // lebih baik kosong daripada menuliskan jam yang salah.
+        return $menit >= 24 * 60 ? '' : sprintf('%02d:%02d', intdiv($menit, 60), $menit % 60);
     }
 
     public function tambahKegiatan(): void
@@ -186,7 +280,28 @@ class OrchaRabSusun extends Component
         }
 
         $this->kegiatanBaru = '';
-        $this->sisipkan(['hari_ke' => $this->hariAktif, 'jam' => '', 'nama' => mb_substr($nama, 0, 150), 'keterangan' => '', 'destinasi' => '']);
+        $this->tambahKegiatanBernama($nama);
+    }
+
+    /** Kegiatan baku yang diklik dari deretnya. */
+    public function tambahKegiatanBaku(string $nama): void
+    {
+        if (! in_array($nama, self::KEGIATAN_BAKU, true)) {
+            return;
+        }
+
+        $this->tambahKegiatanBernama($nama);
+    }
+
+    private function tambahKegiatanBernama(string $nama): void
+    {
+        $this->sisipkan([
+            'hari_ke' => $this->hariAktif,
+            'jam' => $this->jamBerikutnya($this->hariAktif),
+            'nama' => mb_substr($nama, 0, 150),
+            'keterangan' => '',
+            'destinasi' => '',
+        ]);
     }
 
     /** Disisipkan di akhir harinya, bukan di akhir seluruh daftar. */
@@ -261,14 +376,26 @@ class OrchaRabSusun extends Component
 
     /* -------------------------------- BIAYA -------------------------------- */
 
-    public function tarikBiaya(): void
+    /**
+     * @param  bool  $diam  true saat dipanggil sebagai ikutan klik lain:
+     *                      kabar "0 biaya ditarik" pada tiap destinasi yang
+     *                      tiketnya sudah ada cuma kebisingan.
+     */
+    public function tarikBiaya(bool $diam = false): void
     {
         $balasan = $this->kirimKe('kirim', "/rab/{$this->rabId}/tarik-biaya", [], null);
 
-        if ($balasan) {
-            $this->tanpaTiket = $balasan['tanpa_tiket'] ?? [];
-            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Biaya ditarik.');
+        if (! $balasan) {
+            return;
         }
+
+        $this->tanpaTiket = $balasan['tanpa_tiket'] ?? [];
+
+        if ($diam) {
+            return;
+        }
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Biaya ditarik.');
     }
 
     public function tambahDariMaster(): void

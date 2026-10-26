@@ -19,6 +19,15 @@ class OrchaRabList extends Component
 
     public bool $tambah = false;
 
+    /**
+     * Isian yang jarang diubah, disembunyikan sampai diminta.
+     *
+     * Judul, kota, dan jumlah malam semuanya punya jawaban yang hampir selalu
+     * benar — dan tiga kotak yang hampir selalu diisi dengan jawaban yang sama
+     * bukan pilihan, melainkan pekerjaan. Yang ingin lain tinggal membukanya.
+     */
+    public bool $rinci = false;
+
     public array $isian = [];
 
     private function kosongkan(): void
@@ -44,6 +53,7 @@ class OrchaRabList extends Component
     public function bukaTambah(): void
     {
         $this->tambah = true;
+        $this->rinci = false;
         $this->kosongkan();
         $this->resetValidation();
     }
@@ -51,7 +61,27 @@ class OrchaRabList extends Component
     public function tutup(): void
     {
         $this->tambah = false;
+        $this->rinci = false;
         $this->kosongkan();
+    }
+
+    /**
+     * Judul yang dirakit dari isian lain: "Private Trip Yogyakarta 3H2M".
+     *
+     * Judul adalah satu-satunya isian wajib yang jawabannya sudah diketahui
+     * dari kotak-kotak di sebelahnya. Mengetiknya ulang bukan keputusan, cuma
+     * penyalinan — dan penyalinan yang dilakukan berpuluh kali sehari adalah
+     * tempat salah ketik lahir.
+     *
+     * Tetap bisa ditulis sendiri; yang dihapus kewajibannya, bukan pilihannya.
+     */
+    public function judulOtomatis(): string
+    {
+        $tujuan = trim((string) ($this->isian['daerah'] ?? '')) ?: trim((string) ($this->isian['provinsi'] ?? ''));
+        $hari = max(1, (int) ($this->isian['jumlah_hari'] ?? 1));
+        $malam = max(0, (int) ($this->isian['jumlah_malam'] ?? 0));
+
+        return trim('Private Trip '.$tujuan.' '.$hari.'H'.$malam.'M');
     }
 
     /**
@@ -65,6 +95,9 @@ class OrchaRabList extends Component
 
     public function simpan(): void
     {
+        // Judul kosong berarti "pakai yang dirakit", bukan "belum diisi".
+        $this->isian['judul'] = trim((string) $this->isian['judul']) ?: $this->judulOtomatis();
+
         $this->validate([
             'isian.judul' => 'required|string|min:3|max:150',
             'isian.nama_pelanggan' => 'required|string|min:2|max:120',

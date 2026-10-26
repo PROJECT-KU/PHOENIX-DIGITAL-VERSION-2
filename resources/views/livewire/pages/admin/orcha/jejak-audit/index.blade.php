@@ -122,6 +122,12 @@ Jejak Audit Orcha || lemon
             </div>
         </header>
 
+        {{-- Tanpa pita ini, layar yang datanya GAGAL diambil tampil persis
+             seperti layar yang datanya memang kosong — "Belum ada perubahan
+             tercatat" di atas jejak yang sebenarnya penuh. Yang membacanya
+             menyimpulkan catatannya hilang. --}}
+        @include('livewire.pages.admin.orcha.partials.galat-dsb')
+
         {{-- ================== SARINGAN ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">

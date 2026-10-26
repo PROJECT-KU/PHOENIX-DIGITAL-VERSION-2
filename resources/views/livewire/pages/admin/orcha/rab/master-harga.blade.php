@@ -10,16 +10,60 @@ Master Harga || lemon
 @endphp
 
 <div>
+    @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-    <div class="container-fluid">
-        @include('livewire.pages.admin.orcha.partials.kepala', [
-            'judul' => 'Master Harga',
-            'keterangan' => 'Harga tiket, armada, hotel, makan, dan pemandu yang dipakai menyusun RAB.',
-        ])
+    <style>
+        /* Kartu di luar rak 12 kolom: jaraknya diatur sendiri, karena yang
+           biasanya mengaturnya adalah gap raknya. */
+        .mh-kartu { margin-bottom: clamp(12px, 1.2vw, 16px); }
+        .mh-kartu:last-of-type { margin-bottom: 0; }
 
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-3 p-lg-4">
+        /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu
+           bertumpuk, aturan yang sama dengan daftar lemon lain. Tanpa ini
+           tabelnya menggulir mendatar di dalam pembungkusnya, dan kolom
+           terakhir — tombol ubah & hapus — tidak pernah terlihat tanpa
+           digeser lebih dulu. */
+        @media (max-width: 767.98px) {
+            .mh-tabel { min-width: 0; }
+            .mh-tabel thead { display: none; }
+            .mh-tabel tbody tr { display: block; padding: 13px 4px; border-bottom: 1px solid #f2f5f9; }
+            .mh-tabel tbody td {
+                display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+                padding: 4px 0; border: 0; text-align: left !important;
+            }
+            .mh-tabel tbody td[data-judul]::before {
+                content: attr(data-judul);
+                color: var(--dsb-redup, #6b7280); font-size: .72rem; font-weight: 700;
+                letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0;
+            }
+            .mh-tabel tbody td > * { min-width: 0; }
+            .mh-tabel tbody td > div { text-align: right; }
+        }
+    </style>
+
+    <div class="dsb">
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
+                <h1 class="dsb-judul">Master Harga</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">Harga tiket, armada, hotel, dan pemandu — ditulis sekali, dipakai seluruh RAB.</span>
+                    <span class="d-block">Yang diisi di sini tidak perlu diketik ulang pada tiap penawaran.</span>
+                </p>
+            </div>
+
+            <div class="dsb-hero-aksi">
+                <a href="{{ route('admin.orcha.rab') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                    <i class="bi bi-calculator"></i><span>RAB &amp; Itinerary</span>
+                </a>
+            </div>
+        </header>
+
+        @include('livewire.pages.admin.orcha.partials.galat-dsb')
+
+        <div class="dsb-kartu mh-kartu">
+            <div class="dsb-kartu-isi">
                 <div class="orcha-bagian-kepala mb-0">
                     <div class="orcha-bagian-nomor"><i class="bi bi-info-circle"></i></div>
                     <div>
@@ -37,14 +81,14 @@ Master Harga || lemon
         </div>
 
         {{-- Saringan --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-3 p-lg-4">
+        <div class="dsb-kartu mh-kartu">
+            <div class="dsb-kartu-isi">
                 <div class="row g-3 align-items-center">
                     <div class="col-12 col-lg-3">
                         @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari nama, destinasi, atau daerah...'])
                     </div>
                     <div class="col-6 col-lg-3">
-                        <select wire:model.live="filterKategori" class="form-select">
+                        <select wire:model.live="filterKategori" class="dsb-isian">
                             <option value="">Semua kategori</option>
                             @foreach ($kategori as $kunci => $label)
                                 <option value="{{ $kunci }}">{{ $label }}</option>
@@ -52,7 +96,7 @@ Master Harga || lemon
                         </select>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <select wire:model.live="filterProvinsi" class="form-select">
+                        <select wire:model.live="filterProvinsi" class="dsb-isian">
                             <option value="">Semua provinsi</option>
                             <option value="-">Berlaku umum (semua provinsi)</option>
                             @foreach ($provinsi as $p)
@@ -61,7 +105,7 @@ Master Harga || lemon
                         </select>
                     </div>
                     <div class="col-12 col-lg-3 d-grid">
-                        <button type="button" wire:click="bukaTambah" class="orcha-btn orcha-btn-utama justify-content-center">
+                        <button type="button" wire:click="bukaTambah" class="dsb-tombol is-lembut justify-content-center" style="--ikon: #4f46e5">
                             <i class="bi bi-plus-lg"></i>
                             <span>Tambah Harga</span>
                         </button>
@@ -78,8 +122,8 @@ Master Harga || lemon
         </div>
 
         @if ($formTerbuka)
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
+            <div class="dsb-kartu mh-kartu">
+                <div class="dsb-kartu-isi">
                     <h6 class="fw-bold mb-3 orcha-judul-ikon">
                         <i class="bi bi-tags text-primary"></i>
                         {{ $sunting ? 'Ubah Harga' : 'Harga Baru' }}
@@ -87,24 +131,24 @@ Master Harga || lemon
 
                     <div class="row g-3">
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Kategori <span class="text-danger">*</span></label>
-                            <select wire:model="isian.kategori" class="form-select">
+                            <label class="dsb-label">Kategori <span class="text-danger">*</span></label>
+                            <select wire:model="isian.kategori" class="dsb-isian">
                                 @foreach ($kategori as $kunci => $label)
                                     <option value="{{ $kunci }}">{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-12 col-md-8">
-                            <label class="form-label small fw-semibold">Nama <span class="text-danger">*</span></label>
+                            <label class="dsb-label">Nama <span class="text-danger">*</span></label>
                             <input type="text" wire:model="isian.nama" maxlength="150"
-                                class="form-control @error('isian.nama') is-invalid @enderror"
+                                class="dsb-isian @error('isian.nama') is-galat @enderror"
                                 placeholder="Tiket Candi Prambanan (domestik) / Sewa Hiace + driver + BBM">
-                            @error('isian.nama')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            @error('isian.nama')<div class="dsb-galat">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Provinsi</label>
-                            <select wire:model.live="isian.provinsi" class="form-select">
+                            <label class="dsb-label">Provinsi</label>
+                            <select wire:model.live="isian.provinsi" class="dsb-isian">
                                 <option value="">Berlaku umum (semua provinsi)</option>
                                 @foreach ($provinsi as $p)
                                     <option value="{{ $p }}">{{ $p }}</option>
@@ -112,54 +156,54 @@ Master Harga || lemon
                             </select>
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Destinasi <span class="text-muted fw-normal">(untuk tiket)</span></label>
+                            <label class="dsb-label">Destinasi <span class="text-muted fw-normal">(untuk tiket)</span></label>
                             <input type="text" wire:model.blur="isian.destinasi" list="rab-daftar-destinasi" maxlength="150"
-                                class="form-control" placeholder="Pilih dari katalog">
+                                class="dsb-isian" placeholder="Pilih dari katalog">
                             <datalist id="rab-daftar-destinasi">
                                 @foreach ($destinasi as $d)
                                     <option value="{{ $d }}"></option>
                                 @endforeach
                             </datalist>
-                            <div class="form-text">Nama harus sama dengan katalog supaya ikut tertarik.</div>
+                            <div class="dsb-kartu-sub">Nama harus sama dengan katalog supaya ikut tertarik.</div>
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Daerah</label>
-                            <input type="text" wire:model="isian.daerah" maxlength="80" class="form-control" placeholder="Sleman">
+                            <label class="dsb-label">Daerah</label>
+                            <input type="text" wire:model="isian.daerah" maxlength="80" class="dsb-isian" placeholder="Sleman">
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label small fw-semibold">Dihitung per <span class="text-danger">*</span></label>
-                            <select wire:model.live="isian.satuan" class="form-select">
+                            <label class="dsb-label">Dihitung per <span class="text-danger">*</span></label>
+                            <select wire:model.live="isian.satuan" class="dsb-isian">
                                 @foreach ($satuan as $kunci => $label)
                                     <option value="{{ $kunci }}">{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label small fw-semibold">Harga <span class="text-danger">*</span></label>
+                            <label class="dsb-label">Harga <span class="text-danger">*</span></label>
                             <div class="orcha-rupiah">
                                 <input type="text" inputmode="numeric" wire:model.blur="isian.harga"
-                                    class="orcha-uang form-control @error('isian.harga') is-invalid @enderror" placeholder="50.000">
+                                    class="orcha-uang dsb-isian @error('isian.harga') is-galat @enderror" placeholder="50.000">
                             </div>
-                            @error('isian.harga')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            @error('isian.harga')<div class="dsb-galat">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-6 col-md-4">
-                            <label class="form-label small fw-semibold">
+                            <label class="dsb-label">
                                 Kapasitas
                                 @if ($perluKapasitas)<span class="text-danger">*</span>@endif
                             </label>
                             <input type="number" min="1" wire:model="isian.kapasitas"
-                                class="form-control @error('isian.kapasitas') is-invalid @enderror"
+                                class="dsb-isian @error('isian.kapasitas') is-galat @enderror"
                                 placeholder="{{ $perluKapasitas ? '14 kursi / 2 orang per kamar' : 'Tidak perlu' }}">
                             @if ($perluKapasitas)
-                                <div class="form-text">Jumlah unit dihitung sendiri: 17 peserta ÷ 14 kursi = 2 unit.</div>
+                                <div class="dsb-kartu-sub">Jumlah unit dihitung sendiri: 17 peserta ÷ 14 kursi = 2 unit.</div>
                             @endif
-                            @error('isian.kapasitas')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            @error('isian.kapasitas')<div class="dsb-galat">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label small fw-semibold">Catatan internal</label>
-                            <input type="text" wire:model="isian.catatan" maxlength="500" class="form-control"
+                            <label class="dsb-label">Catatan internal</label>
+                            <input type="text" wire:model="isian.catatan" maxlength="500" class="dsb-isian"
                                 placeholder="Vendor, nomor kontak, harga berlaku sampai…">
                         </div>
 
@@ -198,9 +242,9 @@ Master Harga || lemon
                     </div>
 
                     <div class="d-flex gap-2 justify-content-end pt-3 mt-4 border-top">
-                        <button type="button" wire:click="tutup" class="orcha-btn orcha-btn-lembut">Batal</button>
+                        <button type="button" wire:click="tutup" class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
                         <button type="button" wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan"
-                            class="orcha-btn orcha-btn-utama">
+                            class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                             <span wire:loading.remove wire:target="simpan"><i class="bi bi-check2-circle"></i> Simpan</span>
                             <span wire:loading wire:target="simpan">
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan…
@@ -211,11 +255,11 @@ Master Harga || lemon
             </div>
         @endif
 
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-3 p-lg-4">
+        <div class="dsb-kartu mh-kartu">
+            <div class="dsb-kartu-isi">
                 <div class="text-muted small mb-3">{{ $jumlahData }} harga tersimpan.</div>
                 <div class="orcha-gulung">
-                    <table class="table table-hover align-middle orcha-tabel mb-0">
+                    <table class="table table-hover align-middle orcha-tabel mh-tabel mb-0">
                         <thead>
                             <tr>
                                 <th>NAMA</th>
@@ -230,7 +274,7 @@ Master Harga || lemon
                         <tbody>
                             @forelse ($daftar as $baris)
                                 <tr wire:key="mh-{{ $baris['id'] }}">
-                                    <td>
+                                    <td data-judul="Nama">
                                         <div class="fw-bold">{{ $baris['nama'] }}</div>
                                         @if ($baris['destinasi'])
                                             <div class="text-muted small"><i class="bi bi-geo-alt"></i> {{ $baris['destinasi'] }}</div>
@@ -239,17 +283,17 @@ Master Harga || lemon
                                             <div class="text-muted small fst-italic">{{ $baris['catatan'] }}</div>
                                         @endif
                                     </td>
-                                    <td><span class="badge bg-primary-subtle text-primary-emphasis">{{ $baris['kategori_label'] }}</span></td>
-                                    <td class="small">
+                                    <td data-judul="Kategori"><span class="badge bg-primary-subtle text-primary-emphasis">{{ $baris['kategori_label'] }}</span></td>
+                                    <td data-judul="Wilayah" class="small">
                                         {{ $baris['provinsi'] ?: 'Semua provinsi' }}
                                         @if ($baris['daerah'])<div class="text-muted">{{ $baris['daerah'] }}</div>@endif
                                     </td>
-                                    <td class="small">
+                                    <td data-judul="Dihitung per" class="small">
                                         {{ $baris['satuan_label'] }}
                                         @if ($baris['kapasitas'])<div class="text-muted">kapasitas {{ $baris['kapasitas'] }}</div>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-nowrap">{{ $baris['harga_teks'] }}</td>
-                                    <td>
+                                    <td data-judul="Harga" class="text-end fw-bold text-nowrap">{{ $baris['harga_teks'] }}</td>
+                                    <td data-judul="Status">
                                         @if ($baris['aktif'])
                                             <span class="badge bg-success-subtle text-success-emphasis">Aktif</span>
                                         @else
@@ -259,7 +303,7 @@ Master Harga || lemon
                                             <span class="badge bg-warning-subtle text-warning-emphasis">Wajib</span>
                                         @endif
                                     </td>
-                                    <td class="text-end">
+                                    <td data-judul="Aksi" class="text-end">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-ubah"
                                                 wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"

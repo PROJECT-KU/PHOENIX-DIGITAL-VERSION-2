@@ -6633,3 +6633,19 @@ test('medan yang nyata tidak pernah kembar warna di satu baris', function () {
         expect(array_unique($warna))->toHaveCount(1, "medan {$label} berganti warna antarbaris");
     }
 });
+
+test('orcha yang tak terjangkau dikabarkan, bukan disamarkan jadi data kosong', function () {
+    /*
+     | Layar yang datanya GAGAL diambil tampil persis seperti layar yang
+     | datanya memang kosong. "Belum ada perubahan tercatat" di atas jejak
+     | yang sebenarnya penuh membuat pembacanya menyimpulkan catatannya
+     | hilang — kesimpulan yang jauh lebih mahal daripada API yang sedang
+     | tidak menyahut.
+     */
+    Http::fake(fn () => Http::response('', 500));
+
+    $isi = tanpaGaya($this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')->assertOk()->getContent());
+
+    expect($isi)->toContain('Data Orcha belum bisa ditampilkan');
+});
