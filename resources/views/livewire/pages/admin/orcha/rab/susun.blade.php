@@ -92,11 +92,58 @@ Susun RAB || lemon
         .rb-gandeng { display: flex; align-items: stretch; gap: 8px; }
         .rb-gandeng > .dsb-isian { flex: 1 1 auto; min-width: 0; }
         .rb-gandeng > .dsb-tombol, .rb-gandeng > .rb-gandeng-teks { flex: 0 0 auto; }
+        /* Dua kolom: jadwal yang sedang disusun, dan persediaan yang tinggal
+           diklik. Lebar kanannya dipatok supaya cip-cipnya melipat rapat —
+           deret cip yang melebar membuat baris terakhirnya hampir kosong. */
+        /* Jadwal selebar kartu, pemilih di BAWAHnya — bukan dua kolom.
+
+           Dua kolom sempat dicoba dan salah: baris kegiatan butuh lebar
+           (rentang jam + nama + keterangan + empat tombol), dan dijepit jadi
+           sepertiga kartu ia meluber keluar kolomnya. Yang menyebabkan ruang
+           kosong di susunan lama bukan arah tumpukannya, melainkan deret cip
+           yang melipat ragged — itu yang diperbaiki di bawah. */
+        .rb-itin-jadwal { min-width: 0; display: flex; flex-direction: column; }
+        .rb-kegiatan-bebas { margin-top: 10px; }
+
+        .rb-itin-pilih {
+            margin-top: 14px; padding: 13px; border-radius: 13px;
+            background: #fbfcfe; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        /* Kepala pemilih: judul di kiri, kotak cari di kanan — satu baris,
+           bukan dua, karena keduanya pendek. */
+        .rb-pilih-kepala {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 4px 12px; margin-bottom: 10px;
+        }
+        .rb-pilih-judul { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .rb-pilih-kepala strong { font-size: .86rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-pilih-kepala .rab-tiket { color: #b7791f; }
+        .rb-pilih-cari { width: auto; min-width: 220px; flex: 0 1 260px; }
+        .rb-pilih-kosong { font-size: .76rem; color: var(--dsb-redup, #6b7280); line-height: 1.5; }
+
+        .rb-pilih-pisah {
+            margin: 11px 0 7px; padding-top: 10px; border-top: 1px solid var(--dsb-tepi, #e9edf3);
+            font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+            color: var(--dsb-redup, #6b7280);
+        }
+
+        /* Hari kosong: kotak berpenanda, bukan satu baris miring yang
+           melayang — yang melayang terbaca sebagai sisa, bukan sebagai
+           keadaan yang disengaja. */
+        .rb-hari-kosong {
+            /* flex: 1 — mengisi sisa tinggi kolomnya, jadi hari yang masih
+               kosong tampil sebagai bidang yang memang disediakan, bukan
+               sebagai kekosongan yang tertinggal. */
+            flex: 1; display: flex; align-items: center; gap: 10px;
+            padding: 13px; border-radius: 12px;
+            background: #f8fafc; border: 1px dashed var(--dsb-tepi, #e9edf3);
+        }
+        .rb-hari-kosong strong { display: block; font-size: .86rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-hari-kosong .dsb-kartu-sub { line-height: 1.45; }
+
         /* Deret kegiatan baku. Chip, bukan tombol penuh: ia pilihan cepat,
            bukan tindakan utama di kartu ini. */
-        .rb-baku { margin-top: 12px; }
-        .rb-baku .dsb-label { display: block; margin-bottom: 6px; }
-        .rb-baku-deret { display: flex; flex-wrap: wrap; gap: 6px; }
+
         .rb-chip-tombol { cursor: pointer; border: 1px solid var(--dsb-tepi, #e9edf3); background: #fff; }
         .rb-chip-tombol:hover { border-color: #c7d2fe; color: #4338ca; }
         .rb-chip-tombol:disabled { opacity: .5; cursor: default; }
@@ -119,21 +166,66 @@ Susun RAB || lemon
         .rab-hari-tab button { border: 2px solid #e2e8f0; background: #fff; border-radius: 12px; padding: .45rem .9rem; font-weight: 600; font-size: .85rem; color: var(--orc-tinta); }
         .rab-hari-tab button.aktif { border-color: var(--orc-primer); background: var(--orc-gradien); color: #fff; }
         .rab-hari-tab small { opacity: .75; font-weight: 500; margin-left: .25rem; }
-        .rab-kegiatan { display: grid; grid-template-columns: 196px 1fr auto; grid-template-areas: "jam nama aksi" ". ket ket"; gap: .5rem .6rem; align-items: center; padding: .75rem; border: var(--orc-panel-garis); border-radius: 14px; background: #fff; margin-bottom: .5rem; }
-        .rab-kegiatan .rab-jam { grid-area: jam; }
+        /* Flex-wrap, bukan grid berkolom tetap: media query mengukur lebar
+           LAYAR, sementara yang menjepit baris ini lebar WADAHnya. Di layar
+           lebar dengan wadah sempit, aturan ponselnya tidak pernah menyala
+           dan barisnya meluber tanpa satu pun tanda. */
+        .rab-kegiatan {
+            display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem;
+            padding: .75rem; border: var(--orc-panel-garis); border-radius: 14px;
+            background: #fff; margin-bottom: .5rem;
+        }
+        .rab-kegiatan .rab-jam { order: 1; flex: 0 0 auto; }
+        /* Basis 140px, bukan 200: flex memutuskan pindah baris dari JUMLAH
+           basis, bukan dari lebar setelah tumbuh. Dengan 200, jumlahnya
+           melewati lebar kartu sedikit saja — dan tombolnya terlempar ke
+           baris sendiri walau ruangnya sebenarnya cukup. */
+        .rab-kegiatan .rab-nama { order: 2; flex: 1 1 140px; min-width: 0; }
+        /* Tombol di baris PERTAMA bersama jam dan namanya; keterangan turun
+           sendiri ke baris kedua.
+
+           Tanpa order, keterangan yang selebar penuh berdiri lebih dulu dan
+           mendorong tombolnya ke baris KETIGA — satu kegiatan jadi setinggi
+           tiga baris, dan sepuluh kegiatan jadi layar yang harus digulir
+           dua kali. */
+        .rab-kegiatan .rab-kegiatan-aksi { order: 3; flex: 0 0 auto; }
+        .rab-kegiatan .rab-ket { order: 4; flex: 1 1 100%; min-width: 0; }
         .rab-waktu { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
         .rab-waktu-isian { display: flex; align-items: center; gap: 4px; min-width: 0; }
         .rab-waktu-isian .dsb-isian { min-width: 0; padding-left: 8px !important; padding-right: 4px; }
         .rab-waktu-pisah { color: #94a3b8; font-size: .8rem; flex: 0 0 auto; }
         .rab-waktu-lama { font-size: .72rem; color: var(--dsb-redup, #6b7280); font-weight: 600; }
-        .rab-kegiatan .rab-nama { grid-area: nama; }
-        .rab-kegiatan .rab-ket { grid-area: ket; }
-        .rab-kegiatan .rab-kegiatan-aksi { grid-area: aksi; }
         .rab-kegiatan .dsb-isian { height: 38px !important; min-height: 38px; font-size: .88rem; padding-left: .75rem !important; }
         .rab-kegiatan-aksi { display: flex; gap: .3rem; align-items: center; }
         .rab-kegiatan-aksi .btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
         .rab-kegiatan-aksi .dsb-isian { width: 74px; padding-right: 1.6rem; }
-        .rab-destinasi { display: flex; flex-wrap: wrap; gap: .45rem; max-height: 260px; overflow-y: auto; padding: .25rem; }
+        /* Cip di dalam GRID, bukan flex-wrap.
+
+           Flex-wrap meninggalkan sisa di ujung kanan tiap baris sebesar cip
+           yang tidak muat lagi — dan pada baris terakhir sisanya bisa
+           selebar setengah kartu. Grid auto-fill membagi lebarnya rata, jadi
+           tiap baris selalu habis. */
+        .rab-destinasi,
+        .rb-baku-deret {
+            /* 120px: di kartu lebar memberi empat kolom, di ponsel masih muat
+               dua. Angkanya dihitung dari ruang yang BENAR-BENAR tersedia —
+               lebar panel dikurangi padding 13px di kedua sisinya. Dengan
+               146px ponsel jatuh ke satu kolom dan daftarnya jadi dua kali
+               lebih panjang tanpa alasan. */
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 6px; padding: 1px;
+        }
+        .rab-destinasi { max-height: 196px; overflow-y: auto; }
+        /* Dibiarkan membungkus, bukan dipotong.
+
+           Nama yang panjang ("Penjemputan peserta") terpotong di kedua
+           ujungnya karena isinya ditengahkan — dan tombol yang namanya tidak
+           terbaca utuh tidak bisa dipilih dengan yakin. Satu baris yang
+           menjadi dua lebih murah daripada nama yang hilang. */
+        .rab-destinasi button, .rb-baku-deret button {
+            width: 100%; justify-content: center; text-align: center;
+            white-space: normal; line-height: 1.3;
+        }
         .rab-destinasi button { border: 1px solid #dbe3ec; background: #fff; border-radius: 999px; padding: .4rem .8rem; font-size: .83rem; color: var(--orc-tinta); display: inline-flex; gap: .35rem; align-items: center; }
         .rab-destinasi button:hover { border-color: var(--orc-primer); color: var(--orc-primer); }
         .rab-destinasi button.dipakai { background: #eafaf1; border-color: #9fd6b4; color: #14683f; font-weight: 600; }
@@ -190,7 +282,6 @@ Susun RAB || lemon
         }
         .rb-sadar input { margin-top: 2px; flex: 0 0 auto; }
         @media (max-width: 575.98px) {
-            .rab-kegiatan { grid-template-columns: 1fr; grid-template-areas: "jam" "nama" "ket" "aksi"; }
             .rab-kegiatan-aksi { justify-content: flex-end; }
         }
     </style>
@@ -350,6 +441,16 @@ Susun RAB || lemon
                                 </div>
                             </div>
 
+                            {{-- Dua kolom: jadwal yang sedang disusun di kiri, benda
+                                 yang bisa diklik di kanan.
+
+                                 Sebelumnya semuanya bertumpuk satu kolom — deret cip
+                                 melipat jadi dua baris yang baris keduanya hampir
+                                 kosong, dan kartunya memanjang sampai jadwalnya sendiri
+                                 terdorong keluar layar. Yang dipakai sekarang ruang
+                                 mendatar yang tadinya menganggur. --}}
+                            <div class="rb-itin">
+                            <div class="rb-itin-jadwal">
                             <div class="rab-hari-tab mb-3">
                                 @for ($h = 1; $h <= $jumlahHari; $h++)
                                     <button type="button" wire:click="pilihHari({{ $h }})" class="{{ $h === $hariAktif ? 'aktif' : '' }}">
@@ -359,7 +460,13 @@ Susun RAB || lemon
                             </div>
 
                             @if ($hariAktifKosong)
-                                <div class="orcha-kosong">Hari {{ $hariAktif }} belum berisi kegiatan — di PDF tertulis "waktu bebas".</div>
+                                <div class="rb-hari-kosong">
+                                    <span class="dsb-ikon is-kecil" style="--c: #94a3b8"><i class="bi bi-calendar-x"></i></span>
+                                    <div>
+                                        <strong>Hari {{ $hariAktif }} masih kosong</strong>
+                                        <span class="dsb-kartu-sub">Klik destinasi atau kegiatan di bawah. Dibiarkan kosong, di PDF tertulis "waktu bebas".</span>
+                                    </div>
+                                </div>
                             @endif
 
                             @foreach ($kegiatanAktif as $i => $k)
@@ -404,40 +511,35 @@ Susun RAB || lemon
                                 </div>
                             @endforeach
 
-                            {{-- Kegiatan yang ada di hampir setiap itinerary: satu klik,
-                                 bukan diketik ulang kata demi kata pada tiap RAB. Jamnya
-                                 ikut ditebak — 08.00, lalu +2 jam — jadi yang tersisa cuma
-                                 membetulkan yang memang perlu dibetulkan. --}}
-                            <div class="rb-baku">
-                                <span class="dsb-label mb-0">Kegiatan umum</span>
-                                <div class="rb-baku-deret">
-                                    @foreach ($this::KEGIATAN_BAKU as $kb)
-                                        <button type="button" wire:key="kb-{{ md5($kb) }}"
-                                            wire:click="tambahKegiatanBaku(@js($kb))"
-                                            wire:loading.attr="disabled" wire:target="tambahKegiatanBaku"
-                                            class="dsb-chip rb-chip-tombol">{{ $kb }}</button>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            <div class="rb-gandeng mt-2 mb-4">
+                            {{-- Kegiatan yang tidak ada di daftar mana pun. Tetap di
+                                 kolom jadwal, karena ia menambah ke hari yang sedang
+                                 dibuka — bukan memilih dari persediaan. --}}
+                            <div class="rb-gandeng rb-kegiatan-bebas">
                                 <input type="text" wire:model="kegiatanBaru" wire:keydown.enter.prevent="tambahKegiatan" maxlength="150"
-                                    class="dsb-isian" placeholder="Kegiatan lain yang tidak ada di atas…">
+                                    class="dsb-isian" placeholder="Kegiatan lain…">
                                 <button type="button" wire:click="tambahKegiatan" class="dsb-tombol is-lembut" style="--ikon: #64748b">
-                                    <i class="bi bi-plus-lg"></i> Tambah ke Hari {{ $hariAktif }}
+                                    <i class="bi bi-plus-lg"></i> Tambah
                                 </button>
                             </div>
-
-                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                                <div class="orcha-label-kecil">
-                                    <i class="bi bi-hand-index"></i> Klik untuk menambah ke Hari {{ $hariAktif }} ·
-                                    <i class="bi bi-ticket-perforated rab-tiket text-warning"></i> sudah ada harga tiket
-                                </div>
-                                <div style="min-width: 220px">
-                                    <input type="text" wire:model.live.debounce.300ms="cariDestinasi" class="dsb-isian rb-isian-ringkas" placeholder="Cari destinasi…">
-                                </div>
                             </div>
-                            <div class="rab-destinasi">
+
+                            {{-- Kolom kanan: persediaan yang tinggal diklik. Satu klik
+                                 mengganti sekitar lima belas ketukan, dan jamnya ikut
+                                 ditebak — yang tersisa cuma membetulkan yang memang
+                                 perlu dibetulkan. --}}
+                            <aside class="rb-itin-pilih">
+                                <div class="rb-pilih-kepala">
+                                    <div class="rb-pilih-judul">
+                                        <strong>Tambah ke Hari {{ $hariAktif }}</strong>
+                                        <span class="dsb-kartu-sub">
+                                            <i class="bi bi-ticket-perforated rab-tiket"></i> bertiket = harganya sudah ada
+                                        </span>
+                                    </div>
+                                    <input type="text" wire:model.live.debounce.300ms="cariDestinasi"
+                                        class="dsb-isian rb-pilih-cari" placeholder="Cari destinasi…">
+                                </div>
+
+                                <div class="rab-destinasi">
                                 @foreach ($destinasi as $d)
                                     <button type="button" wire:key="ds-{{ md5($d['nama']) }}"
                                         wire:click="tambahDestinasi(@js($d['nama']))"
@@ -448,8 +550,20 @@ Susun RAB || lemon
                                     </button>
                                 @endforeach
                                 @if ($tanpaDestinasi)
-                                    <div class="orcha-kosong mb-0">Tidak ada destinasi katalog untuk provinsi ini. Tambahkan lewat menu Destinasi Populer, atau ketik sebagai kegiatan lain.</div>
+                                    <div class="rb-pilih-kosong">Tidak ada destinasi katalog untuk provinsi ini. Tambahkan lewat menu Destinasi Populer, atau ketik sebagai kegiatan lain.</div>
                                 @endif
+                                </div>
+
+                                <div class="rb-pilih-pisah">Kegiatan umum</div>
+                                <div class="rb-baku-deret">
+                                    @foreach ($this::KEGIATAN_BAKU as $kb)
+                                        <button type="button" wire:key="kb-{{ md5($kb) }}"
+                                            wire:click="tambahKegiatanBaku(@js($kb))"
+                                            wire:loading.attr="disabled" wire:target="tambahKegiatanBaku"
+                                            class="dsb-chip rb-chip-tombol">{{ $kb }}</button>
+                                    @endforeach
+                                </div>
+                            </aside>
                             </div>
                         </div>
                     </div>

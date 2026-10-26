@@ -653,3 +653,41 @@ test('penolakan dari Orcha sampai apa adanya, bukan jadi kode 422', function () 
         ->call('jadikanPendaftaran')
         ->assertDispatched('toast-error', message: 'Peserta baru 2 orang, sementara trip ini baru balik modal mulai 5 orang.');
 });
+
+test('kartu itinerary tidak menyisakan baris cip yang ragged', function () {
+    /*
+     | Deret cip yang melipat dengan flex meninggalkan sisa di ujung kanan
+     | tiap baris sebesar cip yang tidak muat lagi — dan pada baris terakhir
+     | sisanya bisa selebar setengah kartu. Grid auto-fill membagi lebarnya
+     | rata, jadi tiap baris selalu habis.
+     |
+     | Dijaga di sumber gayanya: yang rusak kalau seseorang mengembalikannya
+     | ke flex adalah rupa, dan rupa tidak menerbitkan galat apa pun.
+     */
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
+
+    // Jendelanya dibuat lapang: komentar di dalam aturannya panjang, dan
+    // jendela yang terlalu sempit memotong justru baris yang diperiksa —
+    // uji merah yang menunjuk hal yang tidak bersalah.
+    $aturan = substr($gaya, strpos($gaya, '.rab-destinasi,'), 1200);
+
+    expect($aturan)->toContain('display: grid')
+        ->and($aturan)->toContain('auto-fill')
+        // Nama tombol tidak boleh dipotong: yang namanya tidak terbaca utuh
+        // tidak bisa dipilih dengan yakin.
+        ->and($aturan)->not->toContain('text-overflow: ellipsis');
+});
+
+test('baris kegiatan melipat menurut lebar wadahnya, bukan lebar layar', function () {
+    /*
+     | Media query mengukur lebar LAYAR, sementara yang menjepit baris ini
+     | lebar WADAHnya. Di layar lebar dengan kartu sempit, aturan ponselnya
+     | tidak pernah menyala dan barisnya meluber tanpa satu pun tanda.
+     */
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
+
+    $aturan = substr($gaya, strpos($gaya, '.rab-kegiatan {'), 320);
+
+    expect($aturan)->toContain('flex-wrap: wrap')
+        ->and($aturan)->not->toContain('grid-template-areas');
+});
