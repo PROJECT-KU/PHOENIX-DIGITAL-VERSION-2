@@ -226,7 +226,12 @@ Susun RAB || lemon
         .rab-waktu-pisah { color: #94a3b8; font-size: .8rem; flex: 0 0 auto; }
         /* Baris kedua: penanda jenis, lamanya, lalu keterangannya. */
         .rab-ket-baris {
-            order: 4; display: flex; flex-wrap: wrap; align-items: center;
+            /* align-items: stretch — pil jenis dan pil lama setinggi kotak
+               isian di sebelahnya, bukan lencana kecil yang melayang di
+               tengahnya. Diregangkan, bukan dipatok angka: tinggi .dsb-isian
+               milik sistem desain dan boleh berubah tanpa memberi tahu
+               berkas ini. */
+            order: 4; display: flex; flex-wrap: wrap; align-items: stretch;
             gap: 6px; flex: 1 1 100%; min-width: 0;
         }
         /* Basis 180px: di kartu lebar keterangannya sebaris dengan kedua pil,
@@ -237,8 +242,20 @@ Susun RAB || lemon
 
         .rab-pil-jenis, .rab-pil-lama {
             flex: 0 0 auto; display: inline-flex; align-items: center;
-            padding: 3px 9px 4px; border-radius: 999px;
-            font-size: .7rem; font-weight: 700; white-space: nowrap;
+            /* Sudutnya menyamai .dsb-isian, bukan bulat penuh: setinggi kotak
+               isian, bentuk kapsul membuat ketiganya terbaca seperti tiga
+               benda yang kebetulan bersebelahan.
+               Tingginya TIDAK dipatok angka — kotak isian di kartu ini
+               dipatok 38px oleh aturan di atas, bukan 40px bawaan sistem
+               desain, dan angka yang disalin tangan akan meleset lagi begitu
+               salah satunya berubah. Biar diregangkan oleh barisnya.
+
+               min-height di sini LANTAI, bukan patokan: saat kotak isiannya
+               turun ke baris sendiri di layar sempit, tidak ada lagi yang
+               bisa diikuti — tanpa lantai keduanya menciut jadi 18px dan
+               kembali terbaca sebagai lencana kecil. */
+            padding: 0 13px; min-height: 34px; border-radius: 11px;
+            font-size: .74rem; font-weight: 700; white-space: nowrap;
         }
         /* color-mix memberi latar setipis warnanya sendiri; peramban yang
            belum mengenalnya mengabaikan baris ini dan menyisakan tulisan

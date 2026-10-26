@@ -751,10 +751,38 @@ test('lamanya kegiatan berdiri di baris keterangan, bukan menggantung sendiri', 
     // Di bawah kotak jam ia menambah satu baris sendiri dan menyisakan ruang
     // kosong di sebelahnya; di baris keterangan ia mengisi baris yang memang
     // sudah ada.
-    $baris = substr($isi, strpos($isi, 'rab-ket-baris'), 700);
+    // class="…", bukan sekadar nama kelasnya: kemunculan pertama nama itu
+    // ada di blok <style> halaman, dan jendela yang mendarat di sana
+    // memeriksa aturan gaya alih-alih markahnya.
+    $baris = substr($isi, strpos($isi, 'class="rab-ket-baris"'), 700);
 
     expect($baris)->toContain('rab-pil-lama')
         ->and($baris)->toContain('rab-ket')
         // Penanda lama di bawah kotak jam tidak boleh kembali.
         ->and($isi)->not->toContain('rab-waktu-lama');
+});
+
+test('pil jenis dan lama setinggi kotak isian di sebelahnya', function () {
+    /*
+     | Dijaga di sumber gayanya, bukan di markah: yang rusak kalau seseorang
+     | mematok tingginya dengan angka adalah rupa, dan rupa tidak menerbitkan
+     | galat apa pun.
+     |
+     | Kotak isian di kartu ini dipatok 38px — bukan 40px bawaan sistem
+     | desain — jadi angka yang disalin tangan akan meleset lagi begitu salah
+     | satunya berubah. Yang benar: diregangkan oleh barisnya.
+     */
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
+
+    $baris = substr($gaya, strpos($gaya, '.rab-ket-baris {'), 480);
+    expect($baris)->toContain('align-items: stretch');
+
+    // Jendela dilebarkan: komentar di dalam aturannya panjang, dan jendela
+    // yang terlalu sempit memotong justru baris yang diperiksa.
+    $pil = substr($gaya, strpos($gaya, '.rab-pil-jenis, .rab-pil-lama {'), 1500);
+    expect($pil)->not->toContain('height: 38px')
+        ->and($pil)->not->toContain('height: 40px')
+        // Lantai boleh, patokan tidak: tanpa lantai keduanya menciut saat
+        // kotak isiannya turun ke baris sendiri di layar sempit.
+        ->and($pil)->toContain('min-height: 34px');
 });
