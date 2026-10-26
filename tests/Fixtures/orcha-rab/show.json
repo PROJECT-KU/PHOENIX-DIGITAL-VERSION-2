@@ -36,7 +36,8 @@
                 "destinasi": "Candi Prambanan",
                 "jam_selesai": "11:00",
                 "durasi_menit": 120,
-                "durasi_teks": "2 jam"
+                "durasi_teks": "2 jam",
+                "jenis": "destinasi"
             },
             {
                 "id": 16,
@@ -48,7 +49,21 @@
                 "destinasi": "Malioboro",
                 "jam_selesai": null,
                 "durasi_menit": null,
-                "durasi_teks": null
+                "durasi_teks": null,
+                "jenis": "destinasi"
+            },
+            {
+                "id": 17,
+                "hari_ke": 2,
+                "urutan": 2,
+                "jam": "13:00",
+                "jam_selesai": "15:00",
+                "durasi_menit": 120,
+                "durasi_teks": "2 jam",
+                "nama": "Perjalanan menuju Borobudur",
+                "keterangan": null,
+                "destinasi": null,
+                "jenis": "perjalanan"
             }
         ],
         "ringkasan": {

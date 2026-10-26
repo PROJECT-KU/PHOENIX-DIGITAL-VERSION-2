@@ -106,6 +106,12 @@ class OrchaRabSusun extends Component
             // Lamanya datang dari Orcha, tidak dihitung lagi di sini:
             // hitungan yang diulang di dua tempat akan berbeda suatu hari.
             'durasi_teks' => (string) ($k['durasi_teks'] ?? ''),
+            /*
+             | Jenis kegiatan datang dari Orcha, tidak ditebak di sini.
+             | Penggolongnya satu untuk layar dan kedua PDF — dua tebakan
+             | untuk perjalanan yang sama suatu hari akan berselisih.
+             */
+            'jenis' => (string) ($k['jenis'] ?? 'lain'),
             'nama' => (string) $k['nama'],
             'keterangan' => (string) ($k['keterangan'] ?? ''),
             'destinasi' => (string) ($k['destinasi'] ?? ''),
@@ -216,6 +222,8 @@ class OrchaRabSusun extends Component
             'nama' => $nama,
             'keterangan' => '',
             'destinasi' => $nama,
+            // Sementara, sampai jawaban penyimpanan membawa jenis dari Orcha.
+            'jenis' => 'destinasi',
         ]);
 
         /*
@@ -352,6 +360,7 @@ class OrchaRabSusun extends Component
             'nama' => mb_substr($nama, 0, 150),
             'keterangan' => '',
             'destinasi' => '',
+            'jenis' => 'lain',
         ]);
     }
 

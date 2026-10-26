@@ -170,7 +170,10 @@ test('klik destinasi menyimpan itinerary utuh ke hari yang aktif', function () {
 
         // Yang lama ikut terkirim (penggantian utuh), yang baru di hari 2
         // SESUDAH kegiatan hari 2 yang sudah ada.
-        return $baris->count() === 3
+        // Rekamannya kini berisi tiga kegiatan (termasuk satu ruas
+        // perjalanan, supaya warna per jenis bisa diuji), jadi yang terkirim
+        // empat: tiga lama ditambah yang baru.
+        return $baris->count() === 4
             && $baris->last()['nama'] === 'Pantai Parangtritis'
             && $baris->last()['hari_ke'] === 2
             && $baris->last()['destinasi'] === 'Pantai Parangtritis'
@@ -690,4 +693,68 @@ test('baris kegiatan melipat menurut lebar wadahnya, bukan lebar layar', functio
 
     expect($aturan)->toContain('flex-wrap: wrap')
         ->and($aturan)->not->toContain('grid-template-areas');
+});
+
+test('tiap kegiatan diberi warna menurut jenisnya', function () {
+    palsukanRab();
+
+    /*
+     | Hari 2 dipilih karena di sanalah rekamannya memuat DUA jenis sekaligus
+     | — destinasi dan ruas perjalanan. Hari 1 sengaja tidak diganggu: uji
+     | tebakan jam membaca isinya, dan menambah kegiatan di sana membuat uji
+     | itu merah karena alasan yang tidak ada hubungannya dengan warna.
+     */
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pilihHari', 2)
+        ->html();
+
+    /*
+     | Sepuluh kartu yang seragam menuntut pembacanya mengeja tiap baris
+     | untuk tahu mana perjalanan dan mana destinasi. Warnanya di TEPI, bukan
+     | latar penuh: latar berwarna membuat kotak isian di dalamnya susah
+     | dibaca, dan yang perlu dibedakan cuma jenisnya.
+     */
+    expect($isi)->toContain('class="rab-kegiatan" style="--c: #0369a1"')   // perjalanan
+        ->and($isi)->toContain('class="rab-kegiatan" style="--c: #1f7a44"') // destinasi
+        ->and($isi)->toContain('rab-pil-jenis');
+});
+
+test('warna di layar sama dengan warna di kedua PDF', function () {
+    /*
+     | Satu perjalanan tidak boleh memakai warna berbeda untuk hal yang sama
+     | di layar dan di berkas yang dicetak DARI layar itu. Peta warnanya
+     | disalin dari templat PDF; yang dijaga di sini kesamaannya.
+     */
+    $layar = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
+    $peta = substr($layar, strpos($layar, '$rupaKegiatan = ['), 900);
+
+    foreach ([
+        'destinasi' => '#1f7a44',
+        // Bukan biru merek lama: menuliskannya langsung dilarang di layar
+        // Orcha, jadi birunya diganti di layar DAN di kedua PDF sekaligus.
+        'perjalanan' => '#0369a1',
+        'makan' => '#e0912f',
+        'snack' => '#0e7490',
+        'istirahat' => '#6d28d9',
+    ] as $jenis => $warna) {
+        expect(str_contains($peta, "'{$jenis}' => ["))->toBeTrue("jenis {$jenis} tidak ada di peta");
+        expect(str_contains($peta, $warna))->toBeTrue("warna {$warna} untuk {$jenis} tidak cocok dengan PDF");
+    }
+});
+
+test('lamanya kegiatan berdiri di baris keterangan, bukan menggantung sendiri', function () {
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    // Di bawah kotak jam ia menambah satu baris sendiri dan menyisakan ruang
+    // kosong di sebelahnya; di baris keterangan ia mengisi baris yang memang
+    // sudah ada.
+    $baris = substr($isi, strpos($isi, 'rab-ket-baris'), 700);
+
+    expect($baris)->toContain('rab-pil-lama')
+        ->and($baris)->toContain('rab-ket')
+        // Penanda lama di bawah kotak jam tidak boleh kembali.
+        ->and($isi)->not->toContain('rab-waktu-lama');
 });

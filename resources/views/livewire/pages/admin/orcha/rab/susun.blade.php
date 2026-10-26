@@ -69,6 +69,31 @@ Susun RAB || lemon
      | Dijaga PenandaMorphAdminTest.
      */
     $amanLaba = fn (array $s) => $s['laba'] >= 0;
+
+    /*
+     | Warna per jenis kegiatan — peta yang SAMA dengan kedua PDF, supaya
+     | satu perjalanan tidak memakai warna berbeda untuk hal yang sama di
+     | layar dan di berkas yang dicetak dari layar itu.
+     |
+     | Jenisnya datang dari Orcha (BerkasRab::jenis), tidak ditebak di sini.
+     */
+    $rupaKegiatan = [
+        'destinasi' => ['Destinasi', '#1f7a44'],
+        // Bukan biru merek lama: menuliskannya langsung dilarang di layar
+        // Orcha (OrchaTampilanSeragamTest), dan satu tempat yang terlewat
+        // cukup untuk meninggalkan biru di tengah halaman ungu. Birunya
+        // diganti di sini DAN di kedua PDF, supaya tetap sepasang.
+        //
+        // Kodenya sengaja tidak dikutip di komentar ini: pemindainya membaca
+        // seluruh berkas, jadi menyebut yang dilarang untuk menjelaskan
+        // larangannya justru melanggarnya.
+        'perjalanan' => ['Perjalanan', '#0369a1'],
+        'makan' => ['Makan / singgah', '#e0912f'],
+        'snack' => ['Snack', '#0e7490'],
+        'istirahat' => ['Istirahat', '#6d28d9'],
+        'lain' => ['Kegiatan', '#64748b'],
+    ];
+    $rupaDari = fn (array $k) => $rupaKegiatan[$k['jenis'] ?? 'lain'] ?? $rupaKegiatan['lain'];
 @endphp
 
 <div>
@@ -172,8 +197,13 @@ Susun RAB || lemon
            dan barisnya meluber tanpa satu pun tanda. */
         .rab-kegiatan {
             display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem;
-            padding: .75rem; border: var(--orc-panel-garis); border-radius: 14px;
-            background: #fff; margin-bottom: .5rem;
+            padding: .75rem .75rem .75rem .9rem; border: var(--orc-panel-garis);
+            border-radius: 14px; background: #fff; margin-bottom: .5rem;
+            /* Pita warna di tepi kiri, bukan latar penuh: sepuluh kartu
+               berlatar warna membuat kotak isian di dalamnya susah dibaca,
+               dan yang perlu dibedakan cuma JENISnya — bukan seluruh
+               kartunya. Warnanya sama dengan yang dipakai kedua PDF. */
+            box-shadow: inset 4px 0 0 var(--c, #64748b);
         }
         .rab-kegiatan .rab-jam { order: 1; flex: 0 0 auto; }
         /* Basis 140px, bukan 200: flex memutuskan pindah baris dari JUMLAH
@@ -189,12 +219,32 @@ Susun RAB || lemon
            tiga baris, dan sepuluh kegiatan jadi layar yang harus digulir
            dua kali. */
         .rab-kegiatan .rab-kegiatan-aksi { order: 3; flex: 0 0 auto; }
-        .rab-kegiatan .rab-ket { order: 4; flex: 1 1 100%; min-width: 0; }
+
         .rab-waktu { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
         .rab-waktu-isian { display: flex; align-items: center; gap: 4px; min-width: 0; }
         .rab-waktu-isian .dsb-isian { min-width: 0; padding-left: 8px !important; padding-right: 4px; }
         .rab-waktu-pisah { color: #94a3b8; font-size: .8rem; flex: 0 0 auto; }
-        .rab-waktu-lama { font-size: .72rem; color: var(--dsb-redup, #6b7280); font-weight: 600; }
+        /* Baris kedua: penanda jenis, lamanya, lalu keterangannya. */
+        .rab-ket-baris {
+            order: 4; display: flex; flex-wrap: wrap; align-items: center;
+            gap: 6px; flex: 1 1 100%; min-width: 0;
+        }
+        /* Basis 180px: di kartu lebar keterangannya sebaris dengan kedua pil,
+           di ponsel ia turun sendiri ke baris berikutnya. Tanpa itu kotaknya
+           terjepit jadi selebar dua kata — kotak isian yang tidak bisa
+           dibaca isinya sama saja dengan tidak ada. */
+        .rab-ket-baris .rab-ket { flex: 1 1 180px; min-width: 0; }
+
+        .rab-pil-jenis, .rab-pil-lama {
+            flex: 0 0 auto; display: inline-flex; align-items: center;
+            padding: 3px 9px 4px; border-radius: 999px;
+            font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        /* color-mix memberi latar setipis warnanya sendiri; peramban yang
+           belum mengenalnya mengabaikan baris ini dan menyisakan tulisan
+           berwarna tanpa latar — masih terbaca, cuma kurang tegas. */
+        .rab-pil-jenis { color: var(--c, #64748b); background: color-mix(in srgb, var(--c, #64748b) 10%, transparent); }
+        .rab-pil-lama { color: var(--dsb-redup, #6b7280); background: #f1f5f9; }
         .rab-kegiatan .dsb-isian { height: 38px !important; min-height: 38px; font-size: .88rem; padding-left: .75rem !important; }
         .rab-kegiatan-aksi { display: flex; gap: .3rem; align-items: center; }
         .rab-kegiatan-aksi .btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
@@ -470,7 +520,9 @@ Susun RAB || lemon
                             @endif
 
                             @foreach ($kegiatanAktif as $i => $k)
-                                <div class="rab-kegiatan" wire:key="kg-{{ $i }}-{{ md5($k['nama'].$k['hari_ke']) }}">
+                                @php [$labelJenis, $warnaJenis] = $rupaDari($k); @endphp
+                                <div class="rab-kegiatan" style="--c: {{ $warnaJenis }}"
+                                    wire:key="kg-{{ $i }}-{{ md5($k['nama'].$k['hari_ke']) }}">
                                     {{-- Rentang waktu, bukan satu jam. Yang ditanyakan
                                          pembaca jadwal bukan "mulai kapan" melainkan
                                          "memakan waktu berapa lama, dan kapan rombongan
@@ -485,14 +537,21 @@ Susun RAB || lemon
                                             <input type="time" wire:model.blur="itinerary.{{ $i }}.jam_selesai"
                                                 class="dsb-isian" title="Jam selesai" aria-label="Jam selesai">
                                         </div>
-                                        @if (($k['durasi_teks'] ?? '') !== '')
-                                            <span class="rab-waktu-lama">{{ $k['durasi_teks'] }}</span>
-                                        @endif
                                     </div>
                                     <input type="text" wire:model.blur="itinerary.{{ $i }}.nama" maxlength="150" class="dsb-isian fw-semibold rab-nama"
                                         title="{{ $k['destinasi'] ? 'Destinasi: '.$k['destinasi'] : 'Kegiatan' }}">
-                                    <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
-                                        class="dsb-isian rab-ket" placeholder="Keterangan untuk pelanggan (boleh kosong)">
+                                    {{-- Lamanya di sini, bukan menggantung di bawah kotak
+                                         jam: di sana ia menambah satu baris sendiri dan
+                                         menyisakan ruang kosong di sebelahnya. Di sini ia
+                                         mengisi baris yang memang sudah ada. --}}
+                                    <div class="rab-ket-baris">
+                                        <span class="rab-pil-jenis">{{ $labelJenis }}</span>
+                                        @if (($k['durasi_teks'] ?? '') !== '')
+                                            <span class="rab-pil-lama">{{ $k['durasi_teks'] }}</span>
+                                        @endif
+                                        <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
+                                            class="dsb-isian rab-ket" placeholder="Keterangan untuk pelanggan (boleh kosong)">
+                                    </div>
                                     <div class="rab-kegiatan-aksi">
                                         <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat" wire:click="geser({{ $i }}, -1)"
                                             title="Naikkan" @disabled($i === $idxPertama)><i class="bi bi-arrow-up"></i></button>
