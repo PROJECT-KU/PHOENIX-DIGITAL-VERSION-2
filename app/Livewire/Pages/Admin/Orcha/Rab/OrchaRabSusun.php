@@ -339,6 +339,26 @@ class OrchaRabSusun extends Component
         $this->tambahKegiatanBernama($nama);
     }
 
+    /**
+     * Menambahkan kata yang dicari sebagai kegiatan biasa.
+     *
+     * Yang diketik di kotak cari sering memang bukan destinasi katalog —
+     * nama di rincian biaya, misalnya, datang dari master harga. Tanpa jalan
+     * keluar ini admin harus menghapus ketikannya, pindah ke kotak lain, dan
+     * mengetik ulang kata yang sama.
+     */
+    public function tambahDariCari(): void
+    {
+        $nama = trim($this->cariDestinasi);
+
+        if ($nama === '') {
+            return;
+        }
+
+        $this->cariDestinasi = '';
+        $this->tambahKegiatanBernama($nama);
+    }
+
     /** Kegiatan baku yang diklik dari deretnya. */
     public function tambahKegiatanBaku(string $nama): void
     {

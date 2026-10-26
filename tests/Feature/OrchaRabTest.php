@@ -833,3 +833,59 @@ test('tabel biaya menumpuk jadi kartu di ponsel', function () {
         expect($isi)->toContain('data-judul="'.$judul.'"');
     }
 });
+
+test('pencarian tanpa hasil tidak dilaporkan sebagai katalog kosong', function () {
+    /*
+     | Dua keadaan yang berbeda, dan sebelumnya keduanya diberi kalimat yang
+     | sama. Mengaku "tidak ada destinasi katalog untuk provinsi ini" padahal
+     | ada sepuluh membuat admin pergi mengisi data yang sudah terisi.
+     |
+     | Kata yang dicari sering memang bukan destinasi: nama di rincian biaya
+     | datang dari master harga, daftar yang berbeda dari katalog destinasi.
+     */
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'depok')
+        ->html();
+
+    expect($isi)->toContain('Tidak ada destinasi bernama')
+        ->and($isi)->not->toContain('Tidak ada destinasi katalog untuk provinsi ini')
+        // Dan ditawarkan jalan keluarnya, bukan sekadar kabar nihil.
+        ->and($isi)->toContain('Tambah sebagai kegiatan')
+        ->and($isi)->toContain('Master Harga');
+});
+
+test('kata yang dicari bisa langsung jadi kegiatan', function () {
+    // Tanpa ini admin harus menghapus ketikannya, pindah ke kotak lain, dan
+    // mengetik ulang kata yang sama.
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'Pantai Depok')
+        ->call('tambahDariCari')
+        ->assertSet('cariDestinasi', '');
+
+    $baru = collect(itineraryTerkirim())->firstWhere('nama', 'Pantai Depok');
+
+    expect($baru)->not->toBeNull()
+        // Kegiatan biasa, bukan destinasi katalog: ia memang tidak ada di
+        // sana, dan menandainya sebagai destinasi akan membuat penarikan
+        // biaya mencari tiket yang tidak pernah ada.
+        ->and($baru['destinasi'])->toBeNull();
+});
+
+test('katalog yang benar-benar kosong tetap dikabarkan apa adanya', function () {
+    Http::fake([
+        '*/rab/katalog*' => Http::response(['data' => ['destinasi' => [], 'master' => [], 'paket' => [], 'kosakata' => []]]),
+        '*' => Http::response(rekamanRab('show')),
+    ]);
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->html();
+
+    expect($isi)->toContain('Tidak ada destinasi katalog untuk provinsi ini');
+});

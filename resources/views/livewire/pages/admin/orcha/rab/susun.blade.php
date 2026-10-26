@@ -26,9 +26,24 @@ Susun RAB || lemon
 
     $destinasiDipakai = collect($itinerary)->pluck('destinasi')->filter()->flip()->all();
     $kata = mb_strtolower(trim($cariDestinasi));
-    $destinasi = collect($katalog['destinasi'] ?? [])
+    $semuaDestinasi = collect($katalog['destinasi'] ?? []);
+    $destinasi = $semuaDestinasi
         ->filter(fn ($d) => $kata === '' || str_contains(mb_strtolower($d['nama'].' '.($d['daerah'] ?? '')), $kata))
         ->values()->all();
+
+    /*
+     | Dua keadaan kosong yang berbeda, dan sebelumnya keduanya diberi
+     | kalimat yang sama.
+     |
+     | Katalognya memang kosong untuk provinsi ini — itu pekerjaan di menu
+     | Destinasi Populer. Atau katalognya penuh tetapi pencariannya tidak
+     | menemukan apa-apa — itu bukan pekerjaan siapa pun, cuma kata yang
+     | tidak ada di daftar. Mengaku "tidak ada destinasi katalog untuk
+     | provinsi ini" padahal ada sepuluh membuat admin pergi mengisi data
+     | yang sudah terisi.
+     */
+    $katalogKosong = $semuaDestinasi->isEmpty();
+    $cariTanpaHasil = ! $katalogKosong && $destinasi === [];
     $tanpaDestinasi = $destinasi === [];
 
     $masterPerKategori = collect($katalog['master'] ?? [])->groupBy('kategori_label')->all();
@@ -148,7 +163,16 @@ Susun RAB || lemon
         .rb-pilih-kepala strong { font-size: .86rem; color: var(--dsb-tinta, #1c1f26); }
         .rb-pilih-kepala .rab-tiket { color: #b7791f; }
         .rb-pilih-cari { width: auto; min-width: 220px; flex: 0 1 260px; }
-        .rb-pilih-kosong { font-size: .76rem; color: var(--dsb-redup, #6b7280); line-height: 1.5; }
+        /* Pesan kosong duduk di dalam grid cip, jadi ia harus MEMBENTANG
+           seluruh kolomnya. Tanpa itu ia terjepit selebar satu cip (120px)
+           dan kalimatnya terpotong di tengah — pesan yang menjelaskan
+           keadaan justru jadi keadaan yang perlu dijelaskan. */
+        .rb-pilih-kosong {
+            grid-column: 1 / -1; font-size: .76rem;
+            color: var(--dsb-redup, #6b7280); line-height: 1.5;
+        }
+        .rb-kosong-aksi { display: flex; flex-wrap: wrap; gap: 6px; }
+        .rb-kosong-aksi .dsb-tombol { flex: 0 0 auto; }
 
         .rb-pilih-pisah {
             margin: 11px 0 7px; padding-top: 10px; border-top: 1px solid var(--dsb-tepi, #e9edf3);
@@ -293,7 +317,7 @@ Susun RAB || lemon
            ujungnya karena isinya ditengahkan — dan tombol yang namanya tidak
            terbaca utuh tidak bisa dipilih dengan yakin. Satu baris yang
            menjadi dua lebih murah daripada nama yang hilang. */
-        .rab-destinasi button, .rb-baku-deret button {
+        .rab-destinasi > button, .rb-baku-deret > button {
             width: 100%; justify-content: center; text-align: center;
             white-space: normal; line-height: 1.3;
         }
@@ -708,7 +732,25 @@ Susun RAB || lemon
                                         {{ $d['nama'] }}
                                     </button>
                                 @endforeach
-                                @if ($tanpaDestinasi)
+                                @if ($cariTanpaHasil)
+                                    {{-- Kata yang dicari sering memang bukan destinasi:
+                                         nama di rincian biaya datang dari MASTER HARGA,
+                                         daftar yang berbeda dari katalog destinasi. Yang
+                                         ditawarkan di sini jalan keluarnya, bukan
+                                         sekadar kabar bahwa hasilnya nihil. --}}
+                                    <div class="rb-pilih-kosong">
+                                        <p class="mb-2">Tidak ada destinasi bernama <strong>{{ $cariDestinasi }}</strong> di katalog provinsi ini.</p>
+                                        <div class="rb-kosong-aksi">
+                                            <button type="button" wire:click="tambahDariCari" class="dsb-tombol is-lembut" style="--ikon: #047857">
+                                                <i class="bi bi-plus-lg"></i> Tambah sebagai kegiatan
+                                            </button>
+                                            <button type="button" wire:click="$set('cariDestinasi', '')" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                                <i class="bi bi-x-circle"></i> Kosongkan pencarian
+                                            </button>
+                                        </div>
+                                        <p class="mt-2 mb-0">Mencari nama yang ada di rincian biaya? Itu dari <strong>Master Harga</strong>, daftar yang berbeda dari katalog destinasi.</p>
+                                    </div>
+                                @elseif ($katalogKosong)
                                     <div class="rb-pilih-kosong">Tidak ada destinasi katalog untuk provinsi ini. Tambahkan lewat menu Destinasi Populer, atau ketik sebagai kegiatan lain.</div>
                                 @endif
                                 </div>
