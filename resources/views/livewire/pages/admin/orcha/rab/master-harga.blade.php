@@ -58,6 +58,11 @@ Master Harga || lemon
          */
         $lepasDariKatalog = fn ($nama) => $nama && ! in_array($nama, $namaKatalog, true);
         $destinasiAsing = $lepasDariKatalog($destinasiKini);
+
+        // Destinasi hanya ditawarkan untuk tiket — tetapi tetap ditampilkan
+        // bila nilainya SUDAH ada, supaya mengganti kategori tidak diam-diam
+        // menyembunyikan data yang masih tersimpan.
+        $medanDestinasi = ($isian['kategori'] ?? '') === 'tiket' || $destinasiKini !== '';
     @endphp
 
     <div class="dsb">
@@ -255,7 +260,7 @@ Master Harga || lemon
                                      Tetap ditampilkan bila nilainya SUDAH ada, supaya
                                      mengganti kategori tidak diam-diam menyembunyikan
                                      data yang masih tersimpan. --}}
-                                @if (($isian['kategori'] ?? '') === 'tiket' || $destinasiKini !== '')
+                                @if ($medanDestinasi)
                                     <div class="dsb-medan">
                                         <label class="dsb-label" for="mh-destinasi">
                                             Destinasi
@@ -277,36 +282,11 @@ Master Harga || lemon
                                             @endforeach
                                         </select>
 
-                                        @if ($destinasiBaru)
-                                            {{-- Kotak pilih hanya memuat yang sudah ada di
-                                                 katalog, sementara destinasi baru memang
-                                                 bermunculan. Tanpa jalan ini admin harus
-                                                 pindah menu dan kehilangan isiannya. --}}
-                                            <div class="mh-baru">
-                                                <input type="text" wire:model="namaDestinasiBaru" maxlength="100"
-                                                    wire:keydown.enter.prevent="tambahDestinasiKatalog"
-                                                    class="dsb-isian @error('namaDestinasiBaru') is-galat @enderror"
-                                                    placeholder="Nama destinasi baru, mis. Tebing Breksi">
-                                                <button type="button" wire:click="tambahDestinasiKatalog"
-                                                    wire:loading.attr="disabled" wire:target="tambahDestinasiKatalog"
-                                                    class="dsb-tombol is-lembut" style="--ikon: #1f7a44">
-                                                    <i class="bi bi-plus-lg" wire:loading.remove wire:target="tambahDestinasiKatalog"></i>
-                                                    <span class="dsb-putar" wire:loading wire:target="tambahDestinasiKatalog"></span>
-                                                    <span>Tambah</span>
-                                                </button>
-                                                <button type="button" wire:click="batalDestinasiBaru"
-                                                    class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
-                                            </div>
-                                            @error('namaDestinasiBaru')
-                                                <span class="dsb-galat">{{ $message }}</span>
-                                            @else
-                                                <span class="dsb-kartu-sub">Namanya langsung masuk katalog Orcha, jadi bisa dipilih di itinerary juga.</span>
-                                            @enderror
-                                        @else
+                                        @unless ($destinasiBaru)
                                             <button type="button" wire:click="$set('destinasiBaru', true)" class="mh-tambah">
                                                 <i class="bi bi-plus-circle"></i> Destinasinya belum ada di daftar
                                             </button>
-                                        @endif
+                                        @endunless
                                     </div>
                                 @endif
 
@@ -325,6 +305,54 @@ Master Harga || lemon
                                     <input id="mh-daerah" type="text" wire:model.live.debounce.400ms="isian.daerah"
                                         maxlength="80" class="dsb-isian" placeholder="Sleman">
                                 </div>
+
+                                {{-- Selebar rak, bukan terjepit di dalam medan Destinasi.
+
+                                     Di sepertiga lebar kartu, isian dan tombolnya tidak
+                                     muat sebaris: "Batal" jatuh sendirian ke baris kedua
+                                     dan menyisakan tiga perempat baris menganggur —
+                                     sementara dua pertiga kartu di sebelahnya kosong.
+
+                                     Kotak pilih hanya memuat yang sudah ada di katalog,
+                                     sementara destinasi baru memang bermunculan. Tanpa
+                                     jalan ini admin harus pindah menu dan kehilangan
+                                     seluruh isian yang sudah diketiknya. --}}
+                                @if ($destinasiBaru && $medanDestinasi)
+                                    <div class="mh-baru">
+                                        <div class="mh-baru-judul">
+                                            <i class="bi bi-plus-circle"></i> Destinasi baru
+                                        </div>
+
+                                        <input type="text" wire:model="namaDestinasiBaru" maxlength="100"
+                                            wire:keydown.enter.prevent="tambahDestinasiKatalog"
+                                            class="dsb-isian @error('namaDestinasiBaru') is-galat @enderror"
+                                            placeholder="Nama destinasi baru, mis. Tebing Breksi">
+
+                                        <button type="button" wire:click="tambahDestinasiKatalog"
+                                            wire:loading.attr="disabled" wire:target="tambahDestinasiKatalog"
+                                            class="dsb-tombol is-lembut" style="--ikon: #1f7a44">
+                                            <i class="bi bi-plus-lg" wire:loading.remove wire:target="tambahDestinasiKatalog"></i>
+                                            <span class="dsb-putar" wire:loading wire:target="tambahDestinasiKatalog"></span>
+                                            <span>Tambah ke katalog</span>
+                                        </button>
+
+                                        <button type="button" wire:click="batalDestinasiBaru"
+                                            class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                            <i class="bi bi-x-lg"></i><span>Batal</span>
+                                        </button>
+
+                                        @error('namaDestinasiBaru')
+                                            <span class="dsb-galat mh-baru-kaki">{{ $message }}</span>
+                                        @else
+                                            <span class="dsb-kartu-sub mh-baru-kaki">
+                                                Namanya langsung masuk katalog Orcha, jadi bisa dipilih di itinerary juga.
+                                                @if (trim((string) ($isian['provinsi'] ?? '')) !== '')
+                                                    Provinsi <strong>{{ $isian['provinsi'] }}</strong> ikut terkirim.
+                                                @endif
+                                            </span>
+                                        @enderror
+                                    </div>
+                                @endif
 
 
                             </div>
@@ -642,13 +670,25 @@ Master Harga || lemon
         }
         .mh-muat-chip.is-aktif .mh-muat-kursi { background: #e0e7ff; color: #4338ca; }
 
-        /* Destinasi baru: sebaris isian + dua tombol, di dalam medannya. */
+        /* Destinasi baru: satu blok selebar rak, bukan kotak terjepit.
+
+           Judul & keterangannya selebar blok (flex-basis 100%), isiannya
+           melar mengisi sisa baris, dua tombolnya menempel di kanan — jadi
+           barisnya habis terpakai dan tidak ada tombol yang jatuh sendirian. */
         .mh-baru {
-            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; padding: 8px;
-            border-radius: 11px; background: #f0fdfa; border: 1px solid #99f6e4;
+            flex: 1 1 100%;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            padding: 12px 14px; border-radius: 13px;
+            background: #f0fdfa; border: 1px solid #99f6e4;
         }
-        .mh-baru .dsb-isian { flex: 1 1 170px; min-width: 0; }
-        .mh-baru .dsb-tombol { flex: 0 0 auto; }
+        .mh-baru-judul {
+            flex: 1 1 100%;
+            display: flex; align-items: center; gap: 7px;
+            font-size: .82rem; font-weight: 700; color: #0f766e;
+        }
+        .mh-baru .dsb-isian { flex: 1 1 240px; min-width: 0; background: #fff; }
+        .mh-baru .dsb-tombol { flex: 0 0 auto; background: #fff; }
+        .mh-baru-kaki { flex: 1 1 100%; margin-top: 0 !important; }
         .mh-tambah {
             display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
             padding: 0; border: 0; background: none;
@@ -702,6 +742,12 @@ Master Harga || lemon
             /* Kotak angkanya ikut selebar baris: di layar sempit ia duduk
                sendirian, dan 104px menyisakan dua pertiga baris menganggur. */
             .mh-muat-angka { flex: 1 1 100%; width: auto; }
+
+            /* Dua tombol destinasi baru berbagi satu baris; kalau tidak
+               cukup, masing-masing melar selebar baris. Yang tidak boleh
+               terjadi cuma satu: tombol sempit dengan baris kosong di
+               kanannya. */
+            .mh-baru .dsb-tombol { flex: 1 1 130px; justify-content: center; }
         }
 
         @media (max-width: 991.98px) {
