@@ -248,11 +248,14 @@ test('PDF internal hanya bila diminta tegas; selain itu penawaran', function () 
     Http::assertSent(fn (Request $r) => str_contains($r->url(), '/rab/3/pdf') && $r['jenis'] === 'penawaran');
 });
 
-test('kategori mengisi satuan & kapasitasnya sendiri', function () {
+test('kategori mengisi satuannya sendiri', function () {
     /*
      | Tiket dihitung per orang, bus per unit per hari, hotel per kamar per
-     | malam — pasangan yang nyaris tidak pernah berbeda. Dua dari sembilan
-     | kotak jawabannya sudah diketahui begitu kategorinya dipilih.
+     | malam — pasangan yang nyaris tidak pernah berbeda.
+     |
+     | Kapasitasnya TIDAK ikut ditebak. Transportasi bisa mobil pribadi, Elf,
+     | atau bus besar; angka yang salah di sana tidak pernah terlihat salah,
+     | karena yang meleset cuma jumlah unitnya.
      */
     palsukanRab();
     $this->actingAs(adminRab());
@@ -262,12 +265,74 @@ test('kategori mengisi satuan & kapasitasnya sendiri', function () {
         ->assertSet('isian.satuan', 'orang')            // bawaan: tiket
         ->set('isian.kategori', 'transportasi')
         ->assertSet('isian.satuan', 'unit_hari')
-        ->assertSet('isian.kapasitas', '14')            // Hiace, yang paling sering
+        ->assertSet('isian.kapasitas', '')
         ->set('isian.kategori', 'akomodasi')
-        ->assertSet('isian.satuan', 'kamar_malam')
-        // Kapasitas yang SUDAH terisi tidak ditimpa: 14 bisa saja memang
-        // diketik tangan, dan terkaan tidak boleh menghapus isian orang.
-        ->assertSet('isian.kapasitas', '14');
+        ->assertSet('isian.satuan', 'kamar_malam');
+});
+
+test('kapasitas tidak ditebak, tetapi dipilih dari daftar bernama', function () {
+    /*
+     | Satu klik, dan yang diklik mengatakan angka itu artinya apa. "14"
+     | telanjang tidak menjawab pertanyaan yang sebenarnya ada di kepala —
+     | ini muatan satu kendaraan, atau jumlah kendaraannya?
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi');
+
+    // Transportasi bukan cuma Hiace.
+    expect($layar->html())->toContain('Mobil pribadi')
+        ->and($layar->html())->toContain('Hiace')
+        ->and($layar->html())->toContain('Bus besar')
+        // Kata yang memisahkan dua angka yang selama ini tertukar.
+        ->and($layar->html())->toContain('bukan jumlah unit-nya');
+
+    $layar->call('pakaiKapasitas', 59)->assertSet('isian.kapasitas', '59');
+
+    // Kalimatnya ikut angkanya, bukan contoh mati yang selalu menyebut 14.
+    expect($layar->html())->toContain('Satu unit muat <strong>59 orang</strong>')
+        ->and($layar->html())->toContain('60 orang sudah butuh 2 unit');
+});
+
+test('kamar hotel memakai sebutan & pilihannya sendiri', function () {
+    // "14" benar untuk Hiace dan omong kosong untuk kamar hotel.
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'akomodasi')
+        ->call('pakaiKapasitas', 2)
+        ->html();
+
+    expect($isi)->toContain('Muat berapa orang per kamar?')
+        ->and($isi)->toContain('Twin / Double')
+        ->and($isi)->toContain('3 orang sudah butuh 2 kamar')
+        // Pilihan kendaraan tidak ikut muncul. Diperiksa lewat nama yang
+        // hanya ada di markah chip-nya — "Hiace" juga tertulis di komentar
+        // CSS blok <style>, dan komentar CSS ikut terkirim ke peramban.
+        ->and($isi)->not->toContain('Bus besar')
+        ->and($isi)->not->toContain('Elf long');
+});
+
+test('ganti satuan mengosongkan kapasitas satuan sebelumnya', function () {
+    /*
+     | Kapasitas milik satuan lama tidak berlaku untuk yang baru. Dibiarkan,
+     | "14" yang dimaksudkan sebagai kursi Hiace tersimpan sebagai 14 orang
+     | per kamar — dan jumlah kamarnya jadi sepersekian dari yang sebenarnya.
+     */
+    palsukanRab();
+    $this->actingAs(adminRab());
+
+    Livewire::test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi')
+        ->call('pakaiKapasitas', 14)
+        ->set('isian.satuan', 'kamar_malam')
+        ->assertSet('isian.kapasitas', '');
 });
 
 test('satuan yang dipilih tangan tidak ditimpa kategori', function () {
@@ -317,8 +382,12 @@ test('kapasitas tidak ikut terkirim untuk satuan yang tidak menghitung unit', fu
 
     Livewire::test(OrchaMasterHargaList::class)
         ->call('bukaTambah')
-        ->set('isian.kategori', 'transportasi')     // kapasitas terisi 14
+        ->set('isian.kategori', 'transportasi')
+        ->call('pakaiKapasitas', 14)
         ->set('isian.satuan', 'orang')
+        // Dikembalikan paksa, meniru nilai basi yang kotaknya sudah
+        // disembunyikan: pengamannya di simpan(), bukan cuma di layar.
+        ->set('isian.kapasitas', '14')
         ->set('isian.nama', 'Tiket Masuk')
         ->set('isian.harga', '60000')
         ->call('simpan')

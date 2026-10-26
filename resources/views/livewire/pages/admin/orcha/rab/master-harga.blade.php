@@ -15,6 +15,9 @@ Master Harga || lemon
         $formTerbuka = $tambah || $sunting;
 
         $perluKapasitas = $this->perluKapasitas();
+        $sebutan = $this->sebutanUnit();
+        $pilihanMuat = $this->pilihanKapasitas();
+        $muatKini = (int) ($isian['kapasitas'] ?? 0);
         $namaRakitan = $this->namaOtomatis();
         $namaKini = trim((string) ($isian['nama'] ?? ''));
         $destinasiKini = trim((string) ($isian['destinasi'] ?? ''));
@@ -190,15 +193,54 @@ Master Harga || lemon
                                      "Tidak perlu" — kotak yang hadir untuk tidak
                                      diisi tetap menuntut dibaca lebih dulu. --}}
                                 @if ($perluKapasitas)
-                                    <div class="dsb-medan">
-                                        <label class="dsb-label" for="mh-kapasitas">Kapasitas <span class="dsb-wajib">*</span></label>
-                                        <input id="mh-kapasitas" type="number" min="1" wire:model="isian.kapasitas"
-                                            class="dsb-isian @error('isian.kapasitas') is-galat @enderror"
-                                            placeholder="14">
+                                    <div class="dsb-medan is-lebar">
+                                        <label class="dsb-label" for="mh-kapasitas">
+                                            Muat berapa orang per {{ $sebutan }}? <span class="dsb-wajib">*</span>
+                                            <span class="dsb-label-ket">bukan jumlah {{ $sebutan }}-nya</span>
+                                        </label>
+
+                                        <div class="mh-muat">
+                                            <input id="mh-kapasitas" type="number" min="1" max="1000"
+                                                wire:model.live.debounce.400ms="isian.kapasitas"
+                                                class="dsb-isian mh-muat-angka @error('isian.kapasitas') is-galat @enderror"
+                                                placeholder="{{ $sebutan === 'kamar' ? '2' : '14' }}">
+
+                                            {{-- Pilihan bernama, bukan angka yang ditebakkan.
+                                                 Transportasi tidak selalu Hiace — bisa mobil
+                                                 pribadi, Elf, atau bus besar — dan angka yang
+                                                 salah di sini tidak pernah terlihat salah:
+                                                 yang meleset cuma jumlah unitnya. --}}
+                                            <div class="mh-muat-pilih">
+                                                @foreach ($pilihanMuat as [$namaKendaraan, $kursi])
+                                                    <button type="button" wire:click="pakaiKapasitas({{ $kursi }})"
+                                                        class="mh-muat-chip {{ $muatKini === $kursi ? 'is-aktif' : '' }}"
+                                                        title="Isi dengan {{ $kursi }}">
+                                                        {{ $namaKendaraan }}
+                                                        <span class="mh-muat-kursi">{{ $kursi }}</span>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
                                         @error('isian.kapasitas')
                                             <span class="dsb-galat">{{ $message }}</span>
                                         @else
-                                            <span class="dsb-kartu-sub">Jumlah unit dihitung sendiri: 17 peserta ÷ 14 kursi = 2 unit.</span>
+                                            {{-- Dua angka yang selama ini sama-sama disebut
+                                                 "kapasitas", dan karena itu tertukar: yang
+                                                 diisi di sini muatan SATU buah; jumlah
+                                                 buahnya dihitung sendiri dari peserta. --}}
+                                            <span class="dsb-kartu-sub">
+                                                @if ($muatKini)
+                                                    Satu {{ $sebutan }} muat <strong>{{ $muatKini }} orang</strong>.
+                                                    Jumlah {{ $sebutan }}-nya dihitung sendiri saat menyusun RAB —
+                                                    peserta ÷ {{ $muatKini }}, dibulatkan ke atas, jadi
+                                                    <strong>{{ $muatKini + 1 }} orang sudah butuh 2 {{ $sebutan }}</strong>.
+                                                @else
+                                                    Isi muatan <strong>satu</strong> {{ $sebutan }} saja. Jumlah
+                                                    {{ $sebutan }}-nya dihitung sendiri saat menyusun RAB:
+                                                    peserta ÷ muatan, dibulatkan ke atas.
+                                                @endif
+                                            </span>
                                         @enderror
                                     </div>
                                 @endif
@@ -295,7 +337,7 @@ Master Harga || lemon
                                     </label>
                                     <input id="mh-nama" type="text" wire:model.blur="isian.nama" maxlength="150"
                                         class="dsb-isian @error('isian.nama') is-galat @enderror"
-                                        placeholder="{{ $namaRakitan !== '' ? $namaRakitan : 'Sewa Hiace + driver + BBM' }}">
+                                        placeholder="{{ $namaRakitan !== '' ? $namaRakitan : 'Sewa kendaraan + sopir + BBM' }}">
                                     @error('isian.nama')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 </div>
 
@@ -560,6 +602,29 @@ Master Harga || lemon
            memakai .dsb-isian — tanpa padding kirinya, "Rp" duduk tepat di
            atas angka pertama dan yang terbaca jadi "Rp0.000". */
         .mh-medan-rak .orcha-rupiah .dsb-isian { padding-left: 2.4rem; font-weight: 600; }
+
+        /* Kotak muatan: angkanya kecil di kiri, pilihan bernamanya di kanan.
+
+           Angka telanjang "14" tidak mengatakan apa-apa; "Hiace · 14" sekaligus
+           menjawab pertanyaan yang sebenarnya ada di kepala — ini muatan satu
+           kendaraan, bukan jumlah kendaraannya. */
+        .mh-muat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .mh-muat-angka { flex: 0 0 110px; width: 110px; }
+        .mh-muat-pilih { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 260px; min-width: 0; }
+        .mh-muat-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 11px; border-radius: 10px; cursor: pointer;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+            color: var(--dsb-tinta, #1c1f26); font-size: .79rem; font-weight: 600;
+            white-space: nowrap;
+        }
+        .mh-muat-chip:hover { border-color: #c7d2fe; }
+        .mh-muat-chip.is-aktif { border-color: #4f46e5; background: #f6f5ff; box-shadow: 0 0 0 3px rgba(99, 102, 241, .1); }
+        .mh-muat-kursi {
+            padding: 1px 6px 2px; border-radius: 6px;
+            background: #f1f5f9; color: var(--dsb-redup, #6b7280); font-size: .7rem; font-weight: 700;
+        }
+        .mh-muat-chip.is-aktif .mh-muat-kursi { background: #e0e7ff; color: #4338ca; }
 
         /* Destinasi baru: sebaris isian + dua tombol, di dalam medannya. */
         .mh-baru {

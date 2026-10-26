@@ -46,10 +46,33 @@ class OrchaMasterHargaList extends Component
         'lainnya' => 'rombongan',
     ];
 
-    /** Kapasitas yang paling sering dipakai: Hiace 14 kursi, kamar twin 2 orang. */
-    private const KAPASITAS_BAKU = [
-        'unit_hari' => 14,
-        'kamar_malam' => 2,
+    /*
+     | Pilihan cepat kapasitas, BESERTA namanya.
+     |
+     | Dulu kotaknya diisi 14 sendiri — angka yang mengandaikan Hiace,
+     | padahal transportasi bisa mobil pribadi, Elf, atau bus besar. Tebakan
+     | yang salah di sini tidak pernah terlihat salah: angkanya wajar, dan
+     | yang meleset cuma jumlah unitnya — jadi RAB-nya kekurangan satu bus
+     | tanpa satu pun tanda.
+     |
+     | Jadi tidak ada lagi yang ditebak. Yang ada pilihan bernama: menekan
+     | "Hiace · 14 kursi" lebih cepat daripada mengetik 14, dan yang jauh
+     | lebih penting — ia mengatakan angka itu artinya apa.
+     */
+    private const PILIHAN_KAPASITAS = [
+        'unit_hari' => [
+            ['Mobil pribadi', 6],
+            ['Hiace', 14],
+            ['Elf long', 19],
+            ['Bus sedang', 31],
+            ['Bus besar', 59],
+        ],
+        'kamar_malam' => [
+            ['Single', 1],
+            ['Twin / Double', 2],
+            ['Triple', 3],
+            ['Family', 4],
+        ],
     ];
 
     #[Url(as: 'kategori', except: '')]
@@ -186,30 +209,45 @@ class OrchaMasterHargaList extends Component
         }
 
         $this->isian['satuan'] = self::SATUAN_BAKU[$kategori] ?? ($this->isian['satuan'] ?? 'orang');
-        $this->isiKapasitasBaku();
     }
 
     public function updatedIsianSatuan(): void
     {
         $this->satuanDisetel = true;
-        $this->isiKapasitasBaku();
+
+        // Kapasitas milik satuan yang lama tidak berlaku untuk yang baru:
+        // "14" benar untuk Hiace dan omong kosong untuk kamar hotel.
+        $this->isian['kapasitas'] = '';
     }
 
-    /** Kapasitas hanya diisikan bila kotaknya memang masih kosong. */
-    private function isiKapasitasBaku(): void
+    /**
+     * Sebutan satu buahnya: unit untuk kendaraan, kamar untuk hotel.
+     *
+     * Kata inilah yang membedakan "kapasitas" dari "jumlah unit" — dua angka
+     * yang selama ini sama-sama disebut kapasitas dan karena itu tertukar.
+     */
+    public function sebutanUnit(): string
     {
-        $baku = self::KAPASITAS_BAKU[$this->isian['satuan'] ?? ''] ?? null;
+        return ($this->isian['satuan'] ?? '') === 'kamar_malam' ? 'kamar' : 'unit';
+    }
 
-        if ($baku !== null && trim((string) ($this->isian['kapasitas'] ?? '')) === '') {
-            $this->isian['kapasitas'] = (string) $baku;
-        }
+    /** Pilihan cepat kapasitas untuk satuan yang sedang dipakai. */
+    public function pilihanKapasitas(): array
+    {
+        return self::PILIHAN_KAPASITAS[$this->isian['satuan'] ?? ''] ?? [];
+    }
+
+    public function pakaiKapasitas(int $jumlah): void
+    {
+        $this->isian['kapasitas'] = (string) max(1, $jumlah);
+        $this->resetValidation('isian.kapasitas');
     }
 
     /**
      * Satuan ini menghitung jumlah unit, jadi kapasitasnya menentukan.
      *
      * Daftarnya datang dari kosakata Orcha, bukan dari tetapan di berkas ini:
-     * KAPASITAS_BAKU hanya tahu angka yang paling sering dipakai, dan satuan
+     * PILIHAN_KAPASITAS hanya tahu angka yang sering dipakai, dan satuan
      * ber-kapasitas yang kelak ditambahkan di sana tidak akan terbaca kalau
      * aturannya ikut dikunci di sini.
      */
