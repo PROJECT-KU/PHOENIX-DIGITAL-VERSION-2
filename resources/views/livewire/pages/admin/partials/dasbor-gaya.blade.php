@@ -634,6 +634,69 @@
     .dsb-lencana.is-merah { background: #fee2e2; color: #b91c1c; }
     .dsb-lencana.is-abu { background: #f1f5f9; color: #475569; }
 
+    /* ======================================================================
+       KOSAKATA WARNA PERAN — acuan untuk SELURUH menu, bukan satu layar.
+
+       Dinamai menurut APA YANG DILAKUKAN tombolnya, bukan menurut warnanya.
+       Nama warna ("is-hijau") memaksa setiap layar memutuskan ulang hijau itu
+       artinya apa; nama peran ("is-aman") membuat keputusannya diambil sekali
+       di sini, dan layar berikutnya tinggal memakainya.
+
+         is-utama   ungu   aksi pokok halaman — Simpan, Buat, Tambah
+         is-aman    hijau  menghubungi & menyelesaikan — WhatsApp, Jadikan…
+         is-telaah  biru   melihat & mengambil — Telepon, Buka, Unduh
+         is-awas    jingga menahan tanpa merusak — Matikan, Gabungkan
+         is-bahaya  merah  menghapus & membatalkan
+         is-lembut  putih  netral — Batal, Kembali
+
+       Warnanya juga tersedia sebagai variabel supaya lencana & tombol tabel
+       memakai NAMA, bukan kode heksa yang disalin dari layar sebelah:
+       style="--c: var(--dsb-aman)".
+       ====================================================================== */
+    :root {
+        --dsb-utama: #4f46e5;
+        --dsb-aman: #1f7a44;
+        --dsb-telaah: #0369a1;
+        --dsb-awas: #b45309;
+        --dsb-bahaya: #be123c;
+        --dsb-netral: #64748b;
+    }
+
+    /* Pola yang sama dengan .is-bahaya yang sudah ada sejak lama: dasar putih
+       dengan huruf berwarna, lalu terisi penuh saat disorot. Tombol yang
+       sudah terisi warna sejak diam membuat lima tombol bersebelahan
+       berteriak bersamaan, dan tidak satu pun terbaca lebih penting. */
+    .dsb-tombol.is-aman i.bi,
+    .dsb-tombol.is-telaah i.bi,
+    .dsb-tombol.is-awas i.bi { color: inherit; }
+
+    .dsb-tombol.is-aman { background: #fff; color: #15803d; border-color: #bbf7d0; }
+    .dsb-tombol.is-telaah { background: #fff; color: #0369a1; border-color: #bae6fd; }
+    .dsb-tombol.is-awas { background: #fff; color: #b45309; border-color: #fde68a; }
+
+    .dsb-tombol.is-aman:hover { background: #15803d; color: #fff; border-color: transparent; }
+    .dsb-tombol.is-telaah:hover { background: #0369a1; color: #fff; border-color: transparent; }
+    .dsb-tombol.is-awas:hover { background: #b45309; color: #fff; border-color: transparent; }
+
+    /* Lencana & tombol tabel yang diberi --c.
+
+       Keduanya SELAMA INI mengabaikannya: layar Orcha menulis
+       style="--c: #1f7a44" di delapan tempat, tidak ada satu pun aturan yang
+       membacanya, dan statusnya tergambar tanpa warna sama sekali. Yang
+       rusak bukan markahnya — markahnya sudah benar sejak awal — melainkan
+       aturan yang tidak pernah ditulis. */
+    .dsb-lencana[style*="--c"] {
+        background: color-mix(in srgb, var(--c) 12%, #fff);
+        border: 1px solid color-mix(in srgb, var(--c) 26%, #fff);
+        color: var(--c);
+    }
+    .dsb-tabel-btn[style*="--c"] { color: var(--c); border-color: color-mix(in srgb, var(--c) 28%, #fff); }
+    .dsb-tabel-btn[style*="--c"]:hover {
+        background: color-mix(in srgb, var(--c) 10%, #fff);
+        border-color: color-mix(in srgb, var(--c) 45%, #fff);
+        color: var(--c);
+    }
+
     /* Dua status yang dulu ikut memakai is-abu: LURING (lawan dari ONLINE) dan
        TAMU (pelanggan yang belum jadi member). Abu-abunya bukan soal kontras
        — teksnya cukup gelap — melainkan soal ARTI: di dasbor ini abu-abu

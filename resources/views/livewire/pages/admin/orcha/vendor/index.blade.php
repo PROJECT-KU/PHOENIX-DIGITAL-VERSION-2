@@ -54,10 +54,10 @@ Vendor || lemon
             </div>
 
             <div class="dsb-hero-aksi">
-                <a href="{{ route('admin.orcha.master-harga') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #b45309">
+                <a href="{{ route('admin.orcha.master-harga') }}" wire:navigate class="dsb-tombol is-awas">
                     <i class="bi bi-tags"></i><span>Master Harga</span>
                 </a>
-                <a href="{{ route('admin.orcha.rab') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                <a href="{{ route('admin.orcha.rab') }}" wire:navigate class="dsb-tombol is-utama">
                     <i class="bi bi-calculator"></i><span>RAB &amp; Itinerary</span>
                 </a>
             </div>
@@ -99,7 +99,7 @@ Vendor || lemon
                                 <option value="nonaktif">Hanya nonaktif</option>
                             </select>
 
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
                                 <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
                             </button>
 
@@ -107,15 +107,15 @@ Vendor || lemon
                                  isinya berbeda dari yang terlihat di layar adalah
                                  berkas yang menyesatkan. --}}
                             <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel"
-                                class="dsb-tombol is-lembut" style="--ikon: #047857" title="Unduh daftar vendor sesuai saringan">
+                                class="dsb-tombol is-telaah" title="Unduh daftar vendor sesuai saringan">
                                 <i class="bi bi-file-earmark-spreadsheet" wire:loading.remove wire:target="unduhExcel"></i>
                                 <span class="dsb-putar" wire:loading wire:target="unduhExcel"></span>
                                 <span>Excel</span>
                             </button>
 
                             @if ($adaSaringan)
-                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut"
-                                    style="--ikon: #b45309" title="Kembali menampilkan seluruh vendor">
+                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas"
+                                    title="Kembali menampilkan seluruh vendor">
                                     <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
                                 </button>
                             @endif
@@ -132,7 +132,7 @@ Vendor || lemon
                     <div class="dsb-kartu k-12">
                         <div class="dsb-kartu-kepala">
                             <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-shop"></i></span>
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-shop"></i></span>
                                 <div>
                                     <h3 class="dsb-kartu-judul">{{ $sunting ? 'Ubah Vendor' : 'Vendor Baru' }}</h3>
                                     <span class="dsb-kartu-sub">
@@ -146,11 +146,11 @@ Vendor || lemon
                             @include('livewire.pages.admin.orcha.vendor.partials.medan')
 
                             <div class="vd-kaki">
-                                <button type="button" wire:click="tutup" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                <button type="button" wire:click="tutup" class="dsb-tombol is-lembut">
                                     <i class="bi bi-x-lg"></i><span>Batal</span>
                                 </button>
                                 <button type="button" wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan"
-                                    class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                                    class="dsb-tombol is-utama">
                                     <i class="bi bi-check2-circle" wire:loading.remove wire:target="simpan"></i>
                                     <span class="dsb-putar" wire:loading wire:target="simpan"></span>
                                     <span>Simpan</span>
@@ -172,13 +172,13 @@ Vendor || lemon
                 <div class="dsb-kartu k-12">
                     @if (! $bukaTercecer)
                         <div class="dsb-kartu-isi vd-tercecer-ajak">
-                            <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-box-seam"></i></span>
+                            <span class="dsb-ikon is-kecil" style="--c: var(--dsb-awas)"><i class="bi bi-box-seam"></i></span>
                             <div class="vd-tercecer-teks">
                                 <strong>Nomor lama di kolom catatan</strong>
                                 <span class="dsb-kartu-sub">Sebelum ada daftar vendor, nomor ditulis di catatan master harga — dan catatan tidak pernah ikut ke RAB.</span>
                             </div>
                             <button type="button" wire:click="lihatTercecer" wire:loading.attr="disabled" wire:target="lihatTercecer"
-                                class="dsb-tombol is-lembut" style="--ikon: #b45309">
+                                class="dsb-tombol is-awas">
                                 <i class="bi bi-search" wire:loading.remove wire:target="lihatTercecer"></i>
                                 <span class="dsb-putar" wire:loading wire:target="lihatTercecer"></span>
                                 <span>Periksa</span>
@@ -187,13 +187,13 @@ Vendor || lemon
                     @else
                         <div class="dsb-kartu-kepala">
                             <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-box-seam"></i></span>
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-awas)"><i class="bi bi-box-seam"></i></span>
                                 <div>
                                     <h3 class="dsb-kartu-judul">Nomor lama di kolom catatan</h3>
                                     <span class="dsb-kartu-sub">Jadikan vendor supaya nomornya ikut ke rincian biaya RAB.</span>
                                 </div>
                             </div>
-                            <button type="button" wire:click="$set('bukaTercecer', false)" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                            <button type="button" wire:click="$set('bukaTercecer', false)" class="dsb-tombol is-lembut">
                                 <i class="bi bi-x-lg"></i><span>Tutup</span>
                             </button>
                         </div>
@@ -207,7 +207,7 @@ Vendor || lemon
                                     <i class="bi bi-check2-circle"></i>
                                     <span>Tidak ada nomor yang tertinggal di catatan master harga.</span>
                                     <button type="button" wire:click="$set('bukaTercecer', false)"
-                                        class="dsb-tombol is-lembut" style="--ikon: #047857">
+                                        class="dsb-tombol is-aman">
                                         <i class="bi bi-check2"></i><span>Selesai</span>
                                     </button>
                                 </div>
@@ -222,11 +222,11 @@ Vendor || lemon
                                     <div class="vd-tercecer-bilah">
                                         <span><strong>{{ count($pilihTercecer) }}</strong> baris dicentang</span>
                                         <button type="button" wire:click="dariBeberapaCatatan"
-                                            class="dsb-tombol is-lembut" style="--ikon: #1f7a44">
+                                            class="dsb-tombol is-aman">
                                             <i class="bi bi-arrow-right-circle"></i><span>Jadikan satu vendor</span>
                                         </button>
                                         <button type="button" wire:click="$set('pilihTercecer', [])"
-                                            class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                            class="dsb-tombol is-lembut">
                                             <i class="bi bi-x-lg"></i><span>Batal</span>
                                         </button>
                                     </div>
@@ -242,7 +242,7 @@ Vendor || lemon
                                                 <span class="dsb-tabel-meta">{{ $t['catatan'] }}</span>
                                             </span>
                                             <button type="button" wire:click="dariCatatan({{ json_encode($t['catatan']) }})"
-                                                class="dsb-tombol is-lembut" style="--ikon: #1f7a44">
+                                                class="dsb-tombol is-aman">
                                                 <i class="bi bi-arrow-right-circle"></i><span>Jadikan vendor</span>
                                             </button>
                                         </label>
@@ -262,7 +262,7 @@ Vendor || lemon
                     wire:target="cari,bersihkanSaringan,bersihkanCari,keHalaman">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
-                            <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-shop"></i></span>
+                            <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-shop"></i></span>
                             <div>
                                 <h3 class="dsb-kartu-judul">Daftar vendor</h3>
                                 <span class="dsb-kartu-sub">Nomornya ikut ke rincian biaya RAB dan PDF internal.</span>
@@ -316,12 +316,12 @@ Vendor || lemon
                                 </select>
 
                                 <button type="button" wire:click="gabungkan" wire:loading.attr="disabled" wire:target="gabungkan"
-                                    class="dsb-tombol is-lembut" style="--ikon: #b45309">
+                                    class="dsb-tombol is-awas">
                                     <i class="bi bi-union" wire:loading.remove wire:target="gabungkan"></i>
                                     <span class="dsb-putar" wire:loading wire:target="gabungkan"></span>
                                     <span>Gabungkan</span>
                                 </button>
-                                <button type="button" wire:click="tutupGabung" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                <button type="button" wire:click="tutupGabung" class="dsb-tombol is-lembut">
                                     <i class="bi bi-x-lg"></i><span>Batal</span>
                                 </button>
 
@@ -413,10 +413,10 @@ Vendor || lemon
                                                         @if ($nomorWa)
                                                             <span class="vd-hubungi">
                                                                 <a href="https://wa.me/{{ $nomorWa }}" target="_blank" rel="noopener"
-                                                                    class="dsb-tabel-btn" style="--c: #1f7a44" title="WhatsApp {{ $baris['nama'] }}">
+                                                                    class="dsb-tabel-btn" style="--c: var(--dsb-aman)" title="WhatsApp {{ $baris['nama'] }}">
                                                                     <i class="bi bi-whatsapp"></i>
                                                                 </a>
-                                                                <a href="tel:{{ $nomorTel }}" class="dsb-tabel-btn" style="--c: #0369a1"
+                                                                <a href="tel:{{ $nomorTel }}" class="dsb-tabel-btn" style="--c: var(--dsb-telaah)"
                                                                     title="Telepon {{ $baris['nama'] }}">
                                                                     <i class="bi bi-telephone"></i>
                                                                 </a>
@@ -447,9 +447,9 @@ Vendor || lemon
                                             </td>
                                             <td data-judul="Status">
                                                 @if ($baris['aktif'])
-                                                    <span class="dsb-lencana" style="--c: #1f7a44"><i class="bi bi-check-circle"></i>Aktif</span>
+                                                    <span class="dsb-lencana" style="--c: var(--dsb-aman)"><i class="bi bi-check-circle"></i>Aktif</span>
                                                 @else
-                                                    <span class="dsb-lencana" style="--c: #64748b"><i class="bi bi-pause-circle"></i>Dimatikan</span>
+                                                    <span class="dsb-lencana" style="--c: var(--dsb-netral)"><i class="bi bi-pause-circle"></i>Dimatikan</span>
                                                     @if ($baris['jumlah_harga'] > 0)
                                                         {{-- Dimatikan tetapi masih dipakai: kontaknya
                                                              tetap terbaca di RAB, hanya tidak bisa
@@ -463,7 +463,7 @@ Vendor || lemon
                                             </td>
                                             <td data-judul="Aksi" class="text-end">
                                                 <span class="dsb-tabel-aksi">
-                                                    <button type="button" class="dsb-tabel-btn" style="--c: #4f46e5"
+                                                    <button type="button" class="dsb-tabel-btn" style="--c: var(--dsb-utama)"
                                                         wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
                                                         title="Ubah vendor ini">
                                                         <i class="bi bi-pencil-square"></i>
@@ -471,7 +471,12 @@ Vendor || lemon
                                                     {{-- Ikon union tidak langsung terbaca artinya,
                                                          jadi yang dipakai panah-menyatu plus
                                                          judul yang menyebut maksudnya. --}}
-                                                    <button type="button" class="dsb-tabel-btn" style="--c: #b45309"
+                                                    {{-- Biru, bukan jingga: menggabungkan MENATA, tidak
+                                                         menahan apa pun. Harga & biaya RAB-nya selamat;
+                                                         yang berpindah cuma ke siapa ia menunjuk. Sewarna
+                                                         dengan "matikan" di sebelahnya, keduanya terbaca
+                                                         sebagai peringatan yang sama. --}}
+                                                    <button type="button" class="dsb-tabel-btn" style="--c: var(--dsb-telaah)"
                                                         wire:click="bukaGabung({{ $baris['id'] }})"
                                                         title="Gabungkan ke vendor lain — untuk dua baris yang ternyata orang yang sama">
                                                         <i class="bi bi-arrows-angle-contract"></i>
@@ -482,7 +487,7 @@ Vendor || lemon
                                                              mematikan. Menghapusnya menghilangkan
                                                              kontak dari seluruh RAB yang memakainya
                                                              tanpa bisa dibatalkan. --}}
-                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #64748b"
+                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: var(--dsb-awas)"
                                                             data-action="matikan" data-arg="{{ $baris['id'] }}"
                                                             data-title="Matikan {{ $baris['nama'] }}?"
                                                             data-text="Tidak ditawarkan lagi untuk harga baru. Kontaknya tetap terbaca di {{ $baris['jumlah_harga'] }} harga yang sudah memakainya."
@@ -491,7 +496,7 @@ Vendor || lemon
                                                             <i class="bi bi-pause-circle"></i>
                                                         </button>
                                                     @else
-                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #be123c"
+                                                        <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: var(--dsb-bahaya)"
                                                             data-action="{{ $baris['jumlah_harga'] > 0 ? 'hapusPaksa' : 'hapus' }}"
                                                             data-arg="{{ $baris['id'] }}"
                                                             data-title="Hapus {{ $baris['nama'] }}?"
@@ -522,7 +527,12 @@ Vendor || lemon
 
     <style>
         .vd-saring { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .vd-saring > .vd-medan-cari { flex: 1 1 260px; min-width: 0; }
+        /* Enam benda di satu baris: kotak cari yang mengalah duluan.
+
+           Dengan basis 260px ia menolak menyempit, "Excel" terdorong ke
+           baris kedua, dan barisnya menyisakan tiga perempat ruang kosong
+           untuk satu tombol. */
+        .vd-saring > .vd-medan-cari { flex: 1 1 180px; min-width: 0; }
         .vd-saring .dsb-tombol { flex: 0 0 auto; }
 
         /* Kotak cari bersama memakai .form-control Bootstrap; yang disamakan
@@ -581,7 +591,7 @@ Vendor || lemon
             font-size: .76rem; font-weight: 600; color: #b45309;
         }
 
-        .vd-saring > .vd-pilih { flex: 0 1 auto; width: auto; min-width: 150px; max-width: 200px; }
+        .vd-saring > .vd-pilih { flex: 0 1 auto; width: auto; min-width: 128px; max-width: 176px; }
 
         /* Ringkasan di kepala kartu: dua angka yang sebelumnya harus dipindai
            baris per baris, dan keduanya membawa ke tempatnya. */
