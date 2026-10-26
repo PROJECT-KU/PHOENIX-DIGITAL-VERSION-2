@@ -122,6 +122,36 @@
                 "kapasitas": 14,
                 "otomatis": false,
                 "umum": false
+            },
+            {
+                "id": 11,
+                "kategori": "transportasi",
+                "kategori_label": "Transportasi",
+                "nama": "Sewa Bus Besar + driver",
+                "destinasi": null,
+                "daerah": null,
+                "satuan": "unit_hari",
+                "satuan_label": "per unit per hari",
+                "harga": 3200000,
+                "harga_teks": "Rp 3.200.000",
+                "kapasitas": 59,
+                "otomatis": false,
+                "umum": false
+            },
+            {
+                "id": 12,
+                "kategori": "transportasi",
+                "kategori_label": "Transportasi",
+                "nama": "Sewa Elf Long + driver",
+                "destinasi": null,
+                "daerah": null,
+                "satuan": "unit_hari",
+                "satuan_label": "per unit per hari",
+                "harga": 1450000,
+                "harga_teks": "Rp 1.450.000",
+                "kapasitas": 19,
+                "otomatis": false,
+                "umum": false
             }
         ],
         "paket": [

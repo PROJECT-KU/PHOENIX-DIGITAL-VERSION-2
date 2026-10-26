@@ -363,6 +363,47 @@ Susun RAB || lemon
         .rb-biaya-pilih { flex: 1 1 300px; min-width: 0; }
 
         /* Nama biaya + penjelasan hitungannya, bertumpuk di satu sel. */
+        /* Panel kendaraan: satu baris per pilihan, angkanya sejajar supaya
+           yang dibandingkan memang kolomnya — bukan mata yang melompat. */
+        .rb-armada {
+            margin-bottom: 14px; padding: 12px 14px;
+            background: #f5fafd; border: 1px solid #cfe6f3; border-radius: 13px;
+        }
+        .rb-armada-kepala { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+        .rb-armada-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .rb-armada-teks strong { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-armada-deret { display: flex; flex-direction: column; gap: 6px; }
+        .rb-armada-pil {
+            display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto;
+            align-items: center; gap: 10px;
+            padding: 9px 11px; border-radius: 11px;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        .rb-armada-pil.is-saran { border-color: #7cc0e0; box-shadow: 0 0 0 3px rgba(3, 105, 161, .08); }
+        .rb-armada-pil.is-dipakai { background: #f8fafc; }
+        .rb-armada-nama { font-weight: 700; font-size: .85rem; color: var(--dsb-tinta, #1c1f26); min-width: 0; }
+        .rb-armada-tanda {
+            display: inline-block; margin-left: 6px; padding: 1px 7px 2px; border-radius: 7px;
+            background: #e0f2fe; color: #0369a1; font-size: .66rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .03em;
+            /* Utuh atau pindah baris sekalian — "PALING / MURAH" terbelah dua
+               baris terbaca seperti dua lencana yang berbeda. */
+            white-space: nowrap;
+        }
+        .rb-armada-hitung { display: flex; flex-direction: column; gap: 1px; text-align: right; }
+        .rb-armada-unit { font-weight: 700; font-size: .82rem; color: #0369a1; }
+        .rb-armada-angka { font-weight: 700; font-size: .88rem; white-space: nowrap; }
+        .rb-armada-sudah {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: .75rem; font-weight: 600; color: #047857; white-space: nowrap;
+        }
+
+        @media (max-width: 575.98px) {
+            .rb-armada-pil { grid-template-columns: minmax(0, 1fr) auto; }
+            .rb-armada-hitung { grid-column: 1; text-align: left; }
+            .rb-armada-angka { grid-column: 2; grid-row: 2; }
+        }
+
         .rab-biaya-nama { font-weight: 700; color: var(--dsb-tinta, #1c1f26); font-size: .88rem; }
         .rab-biaya-hitung { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
         .rab-pil-satuan {
@@ -779,6 +820,63 @@ Susun RAB || lemon
                                     <div class="orcha-bagian-sub">Tiket dari itinerary sudah masuk sendiri. Sisanya — armada, hotel, pemandu — dipilih dari master harga.</div>
                                 </div>
                             </div>
+
+                            {{-- ===== Kendaraan yang muat untuk rombongan ini =====
+
+                                 Master harga menyimpan "kendaraan ini muat berapa";
+                                 di sinilah angka itu bertemu jumlah peserta. Tanpa
+                                 panel ini admin membagi di kepala setiap kali — dan
+                                 yang paling sering terjadi bukan salah hitung,
+                                 melainkan tidak dihitung sama sekali: dipilih Hiace
+                                 karena itu yang biasa, satu unit, lalu dua belas
+                                 orang tidak kebagian kursi. --}}
+                            @php($saranKendaraan = $this->saranKendaraan())
+                            @if ($saranKendaraan !== [])
+                                <div class="rb-armada">
+                                    <div class="rb-armada-kepala">
+                                        <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-bus-front"></i></span>
+                                        <div class="rb-armada-teks">
+                                            <strong>Kendaraan untuk {{ $rab['jumlah_peserta'] }} peserta</strong>
+                                            <span class="dsb-kartu-sub">
+                                                Termurah lebih dulu. Angkanya sudah termasuk {{ $rab['jumlah_hari'] }} hari —
+                                                dihitung dengan rumus yang sama dengan rincian di bawah.
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="rb-armada-deret">
+                                        @foreach ($saranKendaraan as $i => $k)
+                                            <div class="rb-armada-pil {{ $i === 0 ? 'is-saran' : '' }} {{ $k['sudah'] ? 'is-dipakai' : '' }}">
+                                                <div class="rb-armada-nama">
+                                                    {{ $k['nama'] }}
+                                                    @if ($i === 0)<span class="rb-armada-tanda">paling murah</span>@endif
+                                                </div>
+                                                <div class="rb-armada-hitung">
+                                                    <span class="rb-armada-unit">{{ $k['unit'] }} unit</span>
+                                                    <span class="dsb-kartu-sub">
+                                                        muat {{ $k['muat'] }}/unit ·
+                                                        @if ($k['sisa'] === 0)
+                                                            pas, tanpa kursi kosong
+                                                        @else
+                                                            {{ $k['sisa'] }} kursi kosong
+                                                        @endif
+                                                    </span>
+                                                </div>
+                                                <div class="rb-armada-angka">{{ 'Rp '.number_format($k['total'], 0, ',', '.') }}</div>
+                                                @if ($k['sudah'])
+                                                    <span class="rb-armada-sudah"><i class="bi bi-check2"></i> sudah di RAB</span>
+                                                @else
+                                                    <button type="button" wire:click="pakaiKendaraan({{ $k['id'] }})"
+                                                        wire:loading.attr="disabled" wire:target="pakaiKendaraan"
+                                                        class="dsb-tombol is-lembut" style="--ikon: #0369a1">
+                                                        <i class="bi bi-plus-lg"></i><span>Pakai</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
 
                             <div class="d-flex flex-wrap gap-2 align-items-center mb-3 rb-biaya-bilah">
                                 <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"

@@ -479,6 +479,55 @@ class OrchaRabSusun extends Component
         $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Biaya ditarik.');
     }
 
+    /**
+     * Kendaraan mana yang muat untuk jumlah peserta RAB ini.
+     *
+     * Master harga menyimpan "kendaraan ini muat berapa"; yang belum ada
+     * adalah jembatan ke jumlah peserta. Tanpa itu admin menghitung sendiri
+     * di kepala — 42 peserta dibagi 14 kursi — setiap kali menyusun RAB, dan
+     * yang paling sering terjadi bukan salah hitung melainkan tidak dihitung
+     * sama sekali: dipilih Hiace karena itu yang biasa, lalu satu unit, lalu
+     * dua belas orang tidak kebagian kursi.
+     *
+     * Rumusnya SAMA PERSIS dengan HitungRab::faktor() di Orcha — unit =
+     * ceil(peserta / muat), biaya = harga × unit × hari. Kalau berbeda,
+     * angka di panel ini akan berselisih dengan angka di rincian biaya tepat
+     * di bawahnya, dan yang dipercaya admin jadi yang mana saja.
+     *
+     * Dihitung di Phoenix, bukan diminta ke Orcha: seluruh bahannya sudah
+     * ikut di /rab/katalog yang memang sudah ditarik layar ini.
+     */
+    public function saranKendaraan(): array
+    {
+        $peserta = max(1, (int) ($this->dataRab['jumlah_peserta'] ?? 1));
+        $hari = max(1, (int) ($this->dataRab['jumlah_hari'] ?? 1));
+
+        $dipakai = collect($this->dataRab['ringkasan']['baris'] ?? [])
+            ->pluck('master_harga_id')->filter()->flip();
+
+        return collect($this->katalog['master'] ?? [])
+            ->filter(fn ($m) => ($m['satuan'] ?? '') === 'unit_hari' && (int) ($m['kapasitas'] ?? 0) > 0)
+            ->map(function (array $m) use ($peserta, $hari, $dipakai) {
+                $muat = (int) $m['kapasitas'];
+                $unit = (int) ceil($peserta / $muat);
+                $kursi = $unit * $muat;
+
+                return [
+                    'id' => (int) $m['id'],
+                    'nama' => $m['nama'],
+                    'muat' => $muat,
+                    'unit' => $unit,
+                    'sisa' => $kursi - $peserta,
+                    'total' => (int) $m['harga'] * $unit * $hari,
+                    'sudah' => $dipakai->has((int) $m['id']),
+                ];
+            })
+            // Termurah dulu; bila seri, yang kursinya paling sedikit
+            // menganggur. Urutannya memang urutan rekomendasinya.
+            ->sortBy([['total', 'asc'], ['sisa', 'asc']])
+            ->values()->all();
+    }
+
     public function tambahDariMaster(): void
     {
         if ($this->pilihMaster === '') {
@@ -487,6 +536,12 @@ class OrchaRabSusun extends Component
 
         $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => (int) $this->pilihMaster], 'Biaya ditambahkan.');
         $this->pilihMaster = '';
+    }
+
+    /** Memakai kendaraan yang disarankan, tanpa mencarinya lagi di kotak pilih. */
+    public function pakaiKendaraan(int $id): void
+    {
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], 'Kendaraan ditambahkan ke biaya.');
     }
 
     private function kosongkanManual(): void

@@ -1305,3 +1305,116 @@ test('kategori di daftar harga berwarna menurut jenisnya', function () {
     expect($isi)->toContain('dsb-lencana')
         ->and($isi)->toContain('bi-ticket-perforated');
 });
+
+/*
+ | ---------------------------------------------------------------------------
+ | Kendaraan yang muat untuk rombongan ini
+ |
+ | Master harga menyimpan "kendaraan ini muat berapa"; penyusun RAB yang
+ | mempertemukan angka itu dengan jumlah peserta. Tanpanya admin membagi di
+ | kepala setiap kali — dan yang paling sering terjadi bukan salah hitung,
+ | melainkan tidak dihitung sama sekali.
+ | ---------------------------------------------------------------------------
+ */
+
+test('penyusun menyarankan kendaraan menurut jumlah peserta', function () {
+    palsukanRab();
+
+    $saran = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan();
+
+    /*
+     | 17 peserta, 3 hari. Hiace muat 14 — yang "biasa dipakai" — ternyata
+     | butuh 2 unit dan jadi lebih mahal daripada satu Elf. Justru perkara
+     | semacam ini yang tidak terlihat saat dibagi di kepala.
+     */
+    expect(collect($saran)->pluck('nama')->all())->toBe([
+        'Sewa Elf Long + driver',      // 1 unit × 1.450.000 × 3 = 4.350.000
+        'Sewa Hiace + driver',         // 2 unit × 1.100.000 × 3 = 6.600.000
+        'Sewa Bus Besar + driver',     // 1 unit × 3.200.000 × 3 = 9.600.000
+    ]);
+
+    $elf = $saran[0];
+    expect($elf['unit'])->toBe(1)
+        ->and($elf['muat'])->toBe(19)
+        ->and($elf['sisa'])->toBe(2)
+        ->and($elf['total'])->toBe(4_350_000);
+
+    // Pembulatan ke atas, bukan ke bawah: 17 ÷ 14 adalah dua unit, bukan 1,2.
+    // Membulatkan ke bawah berarti tiga orang tidak punya kursi.
+    $hiace = collect($saran)->firstWhere('nama', 'Sewa Hiace + driver');
+    expect($hiace['unit'])->toBe(2)
+        ->and($hiace['sisa'])->toBe(11)
+        ->and($hiace['total'])->toBe(6_600_000);
+});
+
+test('angka saran kendaraan sama dengan rumus rincian biaya', function () {
+    /*
+     | Kalau rumusnya berbeda, angka di panel saran akan berselisih dengan
+     | angka di rincian biaya tepat di bawahnya — dan yang dipercaya admin
+     | jadi yang mana saja. Rumus Orcha: harga × ceil(peserta/muat) × hari.
+     */
+    palsukanRab();
+
+    $rab = rekamanRab('show')['data'];
+    $peserta = (int) $rab['jumlah_peserta'];
+    $hari = (int) $rab['jumlah_hari'];
+
+    $master = collect(rekamanRab('katalog')['data']['master'])
+        ->where('satuan', 'unit_hari')->keyBy('nama');
+
+    $saran = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan();
+
+    foreach ($saran as $k) {
+        $m = $master[$k['nama']];
+        $unit = (int) ceil($peserta / (int) $m['kapasitas']);
+
+        expect($k['unit'])->toBe($unit)
+            ->and($k['total'])->toBe((int) $m['harga'] * $unit * $hari);
+    }
+});
+
+test('kendaraan yang sudah ada di RAB tidak ditawarkan lagi', function () {
+    // Menambahkannya dua kali berarti menyewa dua armada untuk satu
+    // rombongan — dan modalnya naik tanpa seorang pun berniat menaikkannya.
+    palsukanRab();
+
+    $saran = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan();
+
+    $dipakai = collect(rekamanRab('show')['data']['ringkasan']['baris'])
+        ->pluck('master_harga_id')->filter()->all();
+
+    foreach ($saran as $k) {
+        expect($k['sudah'])->toBe(in_array($k['id'], $dipakai, true));
+    }
+});
+
+test('tombol pakai kendaraan mengirim id masternya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiKendaraan', 12);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+        && $r['master_harga_id'] === 12);
+});
+
+test('panel kendaraan tergambar dengan unit dan sisa kursinya', function () {
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    expect($isi)->toContain('Kendaraan untuk 17 peserta')
+        ->and($isi)->toContain('paling murah')
+        // Dua angka yang membuat pilihannya bisa dibandingkan tanpa dihitung
+        // ulang: berapa unitnya, dan berapa kursi yang menganggur.
+        ->and($isi)->toContain('2 unit')
+        ->and($isi)->toContain('11 kursi kosong');
+});
