@@ -167,11 +167,13 @@ Master Harga || lemon
                                             <option value="{{ $kunci }}">{{ $label }}</option>
                                         @endforeach
                                     </select>
-                                    <span class="dsb-kartu-sub">Menentukan satuan &amp; kapasitasnya sendiri.</span>
                                 </div>
 
                                 <div class="dsb-medan">
-                                    <label class="dsb-label" for="mh-satuan">Dihitung per <span class="dsb-wajib">*</span></label>
+                                    <label class="dsb-label" for="mh-satuan">
+                                        Dihitung per <span class="dsb-wajib">*</span>
+                                        <span class="dsb-label-ket">terisi dari kategori</span>
+                                    </label>
                                     <select id="mh-satuan" wire:model.live="isian.satuan" class="dsb-isian">
                                         @foreach ($satuan as $kunci => $label)
                                             <option value="{{ $kunci }}">{{ $label }}</option>
@@ -342,10 +344,12 @@ Master Harga || lemon
                                 </div>
 
                                 <div class="dsb-medan is-lebar">
-                                    <label class="dsb-label" for="mh-catatan">Catatan internal</label>
+                                    <label class="dsb-label" for="mh-catatan">
+                                        Catatan internal
+                                        <span class="dsb-label-ket">tidak pernah ikut ke PDF pelanggan</span>
+                                    </label>
                                     <input id="mh-catatan" type="text" wire:model="isian.catatan" maxlength="500"
                                         class="dsb-isian" placeholder="Vendor, nomor kontak, harga berlaku sampai…">
-                                    <span class="dsb-kartu-sub">Tidak pernah ikut ke PDF penawaran pelanggan.</span>
                                 </div>
                             </div>
 
@@ -609,11 +613,23 @@ Master Harga || lemon
            menjawab pertanyaan yang sebenarnya ada di kepala — ini muatan satu
            kendaraan, bukan jumlah kendaraannya. */
         .mh-muat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        .mh-muat-angka { flex: 0 0 110px; width: 110px; }
-        .mh-muat-pilih { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 260px; min-width: 0; }
+        .mh-muat-angka { flex: 0 0 104px; width: 104px; }
+
+        /* Flex yang melar, bukan deret yang berhenti di tengah jalan.
+
+           Dengan basis sama dan grow sama, lima chip di satu baris jadi
+           sama lebar — dan yang penting, chip terakhir di baris manapun
+           ikut melar menutup sisanya. Grid auto-fit tidak bisa begitu:
+           di layar sempit, chip kelima duduk sendirian di kolom pertama
+           dan kolom kedua menganggur. */
+        .mh-muat-pilih {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            flex: 1 1 260px; min-width: 0;
+        }
+        .mh-muat-pilih > .mh-muat-chip { flex: 1 1 118px; }
         .mh-muat-chip {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 7px 11px; border-radius: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 7px 10px; border-radius: 10px; cursor: pointer; min-width: 0;
             background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
             color: var(--dsb-tinta, #1c1f26); font-size: .79rem; font-weight: 600;
             white-space: nowrap;
@@ -678,6 +694,15 @@ Master Harga || lemon
 
         .mh-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
         .mh-halaman > * { margin-bottom: 0 !important; margin-top: 0 !important; }
+
+        /* Keterangan label turun ke barisnya sendiri di layar sempit:
+           di samping judulnya ia membelah dua-duanya jadi dua baris. */
+        @media (max-width: 575.98px) {
+            .mh-medan-rak .dsb-label-ket { display: block; margin-left: 0; margin-top: 2px; }
+            /* Kotak angkanya ikut selebar baris: di layar sempit ia duduk
+               sendirian, dan 104px menyisakan dua pertiga baris menganggur. */
+            .mh-muat-angka { flex: 1 1 100%; width: auto; }
+        }
 
         @media (max-width: 991.98px) {
             .mh-saring > .mh-medan-cari { flex: 1 1 100%; }
