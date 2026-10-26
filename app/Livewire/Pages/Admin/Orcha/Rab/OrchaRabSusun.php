@@ -546,7 +546,10 @@ class OrchaRabSusun extends Component
 
     private function kosongkanManual(): void
     {
-        $this->manual = ['kategori' => 'lainnya', 'nama' => '', 'satuan' => 'rombongan', 'harga_satuan' => '', 'kapasitas' => ''];
+        $this->manual = [
+            'kategori' => 'lainnya', 'nama' => '', 'satuan' => 'rombongan',
+            'harga_satuan' => '', 'kapasitas' => '', 'vendor_id' => '',
+        ];
     }
 
     public function tambahManual(): void
@@ -565,6 +568,10 @@ class OrchaRabSusun extends Component
             'satuan' => $this->manual['satuan'],
             'harga_satuan' => $this->angkaDari($this->manual['harga_satuan']),
             'kapasitas' => $berkapasitas ? (int) $this->manual['kapasitas'] : null,
+            // Justru di biaya manual vendor dadakan muncul: sewa perahu, jip,
+            // pemandu lokal. Kosong dikirim sebagai null — kolomnya kunci
+            // asing, dan "" bukan id yang ada di tabel vendor.
+            'vendor_id' => ($this->manual['vendor_id'] ?? '') !== '' ? (int) $this->manual['vendor_id'] : null,
         ], 'Biaya ditambahkan.');
 
         if ($hasil) {

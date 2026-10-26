@@ -85,10 +85,20 @@ class OrchaMasterHargaList extends Component
 
     public bool $tambah = false;
 
+    #[Url(as: 'vendor', except: '')]
+    public string $filterVendor = '';
+
     /** Kotak isian destinasi baru sedang terbuka. */
     public bool $destinasiBaru = false;
 
     public string $namaDestinasiBaru = '';
+
+    /** Kotak isian vendor baru sedang terbuka. */
+    public bool $vendorBaru = false;
+
+    public string $namaVendorBaru = '';
+
+    public string $kontakVendorBaru = '';
 
     public array $isian = [];
 
@@ -124,6 +134,9 @@ class OrchaMasterHargaList extends Component
         $this->satuanDisetel = false;
         $this->destinasiBaru = false;
         $this->namaDestinasiBaru = '';
+        $this->vendorBaru = false;
+        $this->namaVendorBaru = '';
+        $this->kontakVendorBaru = '';
     }
 
     public function mount(): void
@@ -141,17 +154,24 @@ class OrchaMasterHargaList extends Component
         $this->halaman = 1;
     }
 
+    public function updatedFilterVendor(): void
+    {
+        $this->halaman = 1;
+    }
+
     public function bersihkanSaringan(): void
     {
         $this->cari = '';
         $this->filterKategori = '';
         $this->filterProvinsi = '';
+        $this->filterVendor = '';
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterKategori !== '' || $this->filterProvinsi !== '';
+        return $this->cari !== '' || $this->filterKategori !== ''
+            || $this->filterProvinsi !== '' || $this->filterVendor !== '';
     }
 
     public function bukaTambah(): void
@@ -357,6 +377,59 @@ class OrchaMasterHargaList extends Component
         $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Destinasi ditambahkan.');
     }
 
+    /**
+     * Menambah vendor tanpa meninggalkan formulir ini.
+     *
+     * Satu-satunya jalan sebelumnya adalah tautan ke daftar vendor — yang
+     * MEMINDAHKAN halaman, dan seluruh isian harga yang sudah diketik hilang
+     * bersamanya. Persoalan yang sama dengan destinasi baru, dan jawabannya
+     * pun sama: kerjakan di tempat.
+     */
+    public function tambahVendorKatalog(): void
+    {
+        $nama = trim(preg_replace('/\s+/', ' ', (string) $this->namaVendorBaru));
+
+        $this->resetValidation('namaVendorBaru');
+
+        if (mb_strlen($nama) < 2) {
+            $this->addError('namaVendorBaru', 'Nama vendor minimal 2 huruf.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/vendor', [
+                'nama' => $nama,
+                'kontak' => trim($this->kontakVendorBaru) ?: null,
+            ]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        // Katalognya disimpan sepuluh menit; tanpa dilupakan, vendor yang baru
+        // dibuat tidak muncul di kotak pilihnya sendiri.
+        cache()->forget('orcha.rab.katalog');
+
+        // Langsung terpilih. Vendor yang dibuat lalu harus dicari lagi di
+        // kotak pilih adalah pekerjaan yang dikerjakan dua kali.
+        $this->isian['vendor_id'] = (string) ($balasan['data']['id'] ?? '');
+        $this->namaVendorBaru = '';
+        $this->kontakVendorBaru = '';
+        $this->vendorBaru = false;
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor ditambahkan.');
+    }
+
+    public function batalVendorBaru(): void
+    {
+        $this->vendorBaru = false;
+        $this->namaVendorBaru = '';
+        $this->kontakVendorBaru = '';
+        $this->resetValidation('namaVendorBaru');
+    }
+
     public function batalDestinasiBaru(): void
     {
         $this->destinasiBaru = false;
@@ -469,6 +542,7 @@ class OrchaMasterHargaList extends Component
         $hasil = $this->muat('/master-harga', $this->parameterDaftar([
             'kategori' => $this->filterKategori,
             'provinsi' => $this->filterProvinsi,
+            'vendor' => $this->filterVendor,
         ]));
 
         $katalog = $this->katalog();

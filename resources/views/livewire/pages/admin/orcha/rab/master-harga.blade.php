@@ -119,6 +119,17 @@ Master Harga || lemon
                                 @endforeach
                             </select>
 
+                            <select class="dsb-isian mh-pilih" wire:model.live="filterVendor" aria-label="Saring menurut vendor">
+                                <option value="">Semua vendor</option>
+                                {{-- "Belum ada vendor" adalah daftar pekerjaan yang
+                                     tersisa, dan itu yang paling sering dicari
+                                     sesudah daftar vendornya ada. --}}
+                                <option value="-">Belum ada vendor</option>
+                                @foreach ($vendor as $v)
+                                    <option value="{{ $v['id'] }}">{{ $v['nama'] }}</option>
+                                @endforeach
+                            </select>
+
                             <button type="button" wire:click="bukaTambah" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                 <i class="bi bi-plus-lg"></i><span>Tambah Harga</span>
                             </button>
@@ -318,12 +329,13 @@ Master Harga || lemon
                                             Vendor ini belum punya nomor.
                                             <a href="{{ route('admin.orcha.vendor') }}" wire:navigate>Isi di daftar vendor</a>
                                         </span>
-                                    @else
-                                        <span class="dsb-kartu-sub">
-                                            <a href="{{ route('admin.orcha.vendor') }}" wire:navigate class="mh-vendor-tautan">
-                                                <i class="bi bi-plus-circle"></i> Kelola daftar vendor
-                                            </a>
-                                        </span>
+                                    @elseif (! $vendorBaru)
+                                        {{-- Dulu di sini ada tautan ke daftar vendor —
+                                             yang MEMINDAHKAN halaman, dan seluruh isian
+                                             harga yang sudah diketik hilang bersamanya. --}}
+                                        <button type="button" wire:click="$set('vendorBaru', true)" class="mh-tambah">
+                                            <i class="bi bi-plus-circle"></i> Vendornya belum ada di daftar
+                                        </button>
                                     @endif
                                 </div>
 
@@ -342,6 +354,45 @@ Master Harga || lemon
                                     <input id="mh-daerah" type="text" wire:model.live.debounce.400ms="isian.daerah"
                                         maxlength="80" class="dsb-isian" placeholder="Sleman">
                                 </div>
+
+                                @if ($vendorBaru)
+                                    <div class="mh-baru is-vendor">
+                                        <div class="mh-baru-judul">
+                                            <i class="bi bi-shop"></i> Vendor baru
+                                        </div>
+
+                                        <input type="text" wire:model="namaVendorBaru" maxlength="120"
+                                            wire:keydown.enter.prevent="tambahVendorKatalog"
+                                            class="dsb-isian @error('namaVendorBaru') is-galat @enderror"
+                                            placeholder="Nama vendor, mis. PO Sumber Jaya">
+
+                                        <input type="text" wire:model="kontakVendorBaru" maxlength="120"
+                                            wire:keydown.enter.prevent="tambahVendorKatalog"
+                                            class="dsb-isian" placeholder="081234000111 (Pak Budi)">
+
+                                        <button type="button" wire:click="tambahVendorKatalog"
+                                            wire:loading.attr="disabled" wire:target="tambahVendorKatalog"
+                                            class="dsb-tombol is-lembut" style="--ikon: #0369a1">
+                                            <i class="bi bi-plus-lg" wire:loading.remove wire:target="tambahVendorKatalog"></i>
+                                            <span class="dsb-putar" wire:loading wire:target="tambahVendorKatalog"></span>
+                                            <span>Tambah vendor</span>
+                                        </button>
+
+                                        <button type="button" wire:click="batalVendorBaru"
+                                            class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                            <i class="bi bi-x-lg"></i><span>Batal</span>
+                                        </button>
+
+                                        @error('namaVendorBaru')
+                                            <span class="dsb-galat mh-baru-kaki">{{ $message }}</span>
+                                        @else
+                                            <span class="dsb-kartu-sub mh-baru-kaki">
+                                                Langsung terpilih untuk harga ini, dan masuk ke
+                                                <a href="{{ route('admin.orcha.vendor') }}" wire:navigate>daftar vendor</a>.
+                                            </span>
+                                        @enderror
+                                    </div>
+                                @endif
 
                                 {{-- Selebar rak, bukan terjepit di dalam medan Destinasi.
 
@@ -731,6 +782,10 @@ Master Harga || lemon
         .mh-baru .dsb-isian { flex: 1 1 240px; min-width: 0; background: #fff; }
         .mh-baru .dsb-tombol { flex: 0 0 auto; background: #fff; }
         .mh-baru-kaki { flex: 1 1 100%; margin-top: 0 !important; }
+        /* Vendor baru memakai kotak yang sama dengan destinasi baru, warnanya
+           saja yang mengikuti warna vendor di seluruh layar. */
+        .mh-baru.is-vendor { background: #f5fafd; border-color: #cfe6f3; }
+        .mh-baru.is-vendor .mh-baru-judul { color: #0369a1; }
         .mh-tambah {
             display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
             padding: 0; border: 0; background: none;

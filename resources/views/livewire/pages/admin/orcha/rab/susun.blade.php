@@ -1068,6 +1068,17 @@ Susun RAB || lemon
                                                 <input type="number" min="1" wire:model="manual.kapasitas" class="dsb-isian @error('manual.kapasitas') is-galat @enderror"
                                                     placeholder="{{ $manualBerkapasitas ? 'Kapasitas' : '—' }}" @disabled(! $manualBerkapasitas)>
                                             </div>
+                                            {{-- Justru di biaya manual vendor dadakan muncul:
+                                                 sewa perahu, jip, pemandu lokal. Tanpa kotak ini
+                                                 biaya manual tidak pernah bisa punya kontak. --}}
+                                            <div class="col-12">
+                                                <select wire:model="manual.vendor_id" class="dsb-isian">
+                                                    <option value="">Vendor — belum ditentukan</option>
+                                                    @foreach ($katalog['vendor'] ?? [] as $v)
+                                                        <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="d-flex gap-2 justify-content-end mt-2">
                                             <button type="button" wire:click="$set('bukaManual', false)" class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>

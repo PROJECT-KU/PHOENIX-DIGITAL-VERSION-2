@@ -1480,3 +1480,125 @@ test('kontak vendor terbaca di rincian biaya RAB', function () {
     expect($isi)->toContain('PO Sumber Jaya')
         ->and($isi)->toContain('081234000111 (Pak Budi)');
 });
+
+test('vendor baru bisa ditambahkan tanpa meninggalkan formulir harga', function () {
+    /*
+     | Satu-satunya jalan sebelumnya adalah tautan ke daftar vendor — yang
+     | MEMINDAHKAN halaman, dan seluruh isian harga yang sudah diketik hilang
+     | bersamanya. Persoalan yang sama dengan destinasi baru.
+     */
+    $katalogDipanggil = 0;
+
+    Http::fake(function (Request $r) use (&$katalogDipanggil) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalogDipanggil++;
+            $data = rekamanRab('katalog');
+
+            if ($katalogDipanggil > 1) {
+                $data['data']['vendor'][] = ['id' => 77, 'nama' => 'PO Baru Jaya', 'kontak' => '0899', 'jenis' => null];
+            }
+
+            return Http::response($data);
+        }
+
+        if (str_ends_with($jalur, '/vendor')) {
+            return Http::response(['data' => ['id' => 77, 'nama' => 'PO Baru Jaya'], 'pesan' => 'Vendor ditambahkan.'], 201);
+        }
+
+        return Http::response(rekamanRab('master'));
+    });
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama', 'Sewa Bus Baru')      // isian yang TIDAK boleh hilang
+        ->set('vendorBaru', true)
+        ->set('namaVendorBaru', '  PO Baru   Jaya ')
+        ->set('kontakVendorBaru', '0899')
+        ->call('tambahVendorKatalog');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor')
+        && $r['nama'] === 'PO Baru Jaya'
+        && $r['kontak'] === '0899');
+
+    $layar->assertSet('isian.vendor_id', '77')      // langsung terpilih
+        ->assertSet('vendorBaru', false)
+        ->assertSet('isian.nama', 'Sewa Bus Baru'); // isiannya utuh
+
+    // Katalognya disimpan sepuluh menit; tanpa dilupakan, vendor yang baru
+    // dibuat tidak muncul di kotak pilihnya sendiri.
+    expect($katalogDipanggil)->toBeGreaterThan(1)
+        ->and($layar->html())->toContain('PO Baru Jaya');
+});
+
+test('nama vendor baru yang terlalu pendek tidak dikirim', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('vendorBaru', true)
+        ->set('namaVendorBaru', 'P')
+        ->call('tambahVendorKatalog')
+        ->assertHasErrors('namaVendorBaru')
+        ->assertSet('vendorBaru', true);
+
+    Http::assertNotSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor'));
+});
+
+test('harga bisa disaring menurut vendornya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterVendor', '1');
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga')
+        && $r->method() === 'GET' && str_contains($r->url(), 'vendor=1'));
+
+    // "-" berarti yang BELUM punya vendor — daftar pekerjaan yang tersisa.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterVendor', '-');
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga')
+        && $r->method() === 'GET' && str_contains($r->url(), 'vendor=-'));
+});
+
+test('biaya manual bisa menyebut vendornya', function () {
+    // Justru di biaya manual vendor dadakan muncul: sewa perahu, jip,
+    // pemandu lokal.
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('bukaManual', true)
+        ->set('manual.nama', 'Sewa perahu Rawa Jombor')
+        ->set('manual.harga_satuan', '350000')
+        ->set('manual.vendor_id', '1')
+        ->call('tambahManual');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+        && $r['vendor_id'] === 1);
+});
+
+test('biaya manual tanpa vendor mengirim null, bukan string kosong', function () {
+    // Kolomnya kunci asing — "" bukan id yang ada di tabel vendor.
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('bukaManual', true)
+        ->set('manual.nama', 'Parkir tambahan')
+        ->set('manual.harga_satuan', '20000')
+        ->call('tambahManual');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+        && array_key_exists('vendor_id', $r->data()) && $r['vendor_id'] === null);
+});

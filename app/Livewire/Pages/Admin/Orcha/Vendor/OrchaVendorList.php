@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Orcha\Vendor;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -23,7 +24,23 @@ class OrchaVendorList extends Component
 {
     use MemanggilOrcha;
 
+    #[Url(as: 'jenis', except: '')]
+    public string $filterJenis = '';
+
+    #[Url(as: 'status', except: '')]
+    public string $filterStatus2 = '';
+
     public bool $tambah = false;
+
+    /** Vendor yang sedang ditawarkan untuk digabungkan; null berarti tertutup. */
+    public ?int $gabungDari = null;
+
+    public string $gabungKe = '';
+
+    /** Daftar master harga yang nomornya masih tertinggal di kolom catatan. */
+    public bool $bukaTercecer = false;
+
+    public array $tercecer = [];
 
     public ?int $sunting = null;
 
@@ -50,6 +67,136 @@ class OrchaVendorList extends Component
     public function mount(): void
     {
         $this->kosongkan();
+    }
+
+    public function updatedFilterJenis(): void
+    {
+        $this->halaman = 1;
+    }
+
+    public function updatedFilterStatus2(): void
+    {
+        $this->halaman = 1;
+    }
+
+    public function bersihkanSaringan(): void
+    {
+        $this->cari = '';
+        $this->filterJenis = '';
+        $this->filterStatus2 = '';
+        $this->halaman = 1;
+    }
+
+    public function adaSaringan(): bool
+    {
+        return $this->cari !== '' || $this->filterJenis !== '' || $this->filterStatus2 !== '';
+    }
+
+    /**
+     * Nomor yang bisa ditelepon, diambil dari kontak yang ditulis bebas.
+     *
+     * Kontaknya memang teks bebas — "081234000111 (Pak Budi)" justru bentuk
+     * yang paling berguna. Yang diambil deretan angka pertama yang cukup
+     * panjang untuk sebuah nomor; kalau tidak ada, tombolnya tidak muncul,
+     * bukan muncul lalu menelepon entah ke mana.
+     */
+    public function nomorDari(?string $kontak): ?string
+    {
+        if (! preg_match('/\d[\d\s().+-]{6,}/', (string) $kontak, $cocok)) {
+            return null;
+        }
+
+        $angka = preg_replace('/\D/', '', $cocok[0]);
+
+        return strlen($angka) >= 7 ? $angka : null;
+    }
+
+    /** Bentuk 62… untuk WhatsApp; 0 di depan DIGANTI, bukan ditempeli. */
+    public function nomorWa(?string $kontak): ?string
+    {
+        $angka = $this->nomorDari($kontak);
+
+        if ($angka === null) {
+            return null;
+        }
+
+        return str_starts_with($angka, '0') ? '62'.substr($angka, 1) : $angka;
+    }
+
+    public function bukaGabung(int $id): void
+    {
+        $this->gabungDari = $id;
+        $this->gabungKe = '';
+        $this->resetValidation('gabungKe');
+    }
+
+    public function tutupGabung(): void
+    {
+        $this->gabungDari = null;
+        $this->gabungKe = '';
+        $this->resetValidation('gabungKe');
+    }
+
+    /**
+     * Menyatukan dua vendor yang ternyata orang yang sama.
+     *
+     * Seluruh harga DAN baris biaya RAB yang menunjuk vendor asal dipindahkan
+     * ke tujuannya, lalu vendor asalnya dihapus. Yang berpindah rujukannya
+     * saja — harganya tidak disentuh.
+     */
+    public function gabungkan(): void
+    {
+        $this->resetValidation('gabungKe');
+
+        if ($this->gabungDari === null || $this->gabungKe === '' || (int) $this->gabungKe === $this->gabungDari) {
+            $this->addError('gabungKe', 'Pilih vendor tujuan yang berbeda.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim("/vendor/{$this->gabungDari}/gabung", ['ke' => (int) $this->gabungKe]);
+            cache()->forget('orcha.rab.katalog');
+            $this->tutupGabung();
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor digabungkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Master harga yang nomornya masih tertinggal di kolom catatan.
+     *
+     * Sebelum ada daftar vendor, nomor ditulis di catatan — dan catatan itu
+     * tidak pernah ikut ke RAB. Daftar ini yang membuat sisa data lama
+     * terlihat, bukan menunggu diingat.
+     */
+    public function lihatTercecer(): void
+    {
+        $this->bukaTercecer = true;
+
+        try {
+            $this->tercecer = $this->orcha()->ambil('/vendor/kontak-tercecer')['data'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->tercecer = [];
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /** Catatan lama dipakai sebagai bahan vendor baru, bukan diketik ulang. */
+    public function dariCatatan(string $catatan): void
+    {
+        $this->bukaTambah();
+        $this->bukaTercecer = false;
+
+        $nomor = $this->nomorDari($catatan);
+
+        // Yang bukan nomor dianggap namanya: "PO Sumber Jaya 081234000111"
+        // jadi nama "PO Sumber Jaya", kontaknya catatan apa adanya.
+        $this->isian['nama'] = $nomor !== null
+            ? trim(preg_replace('/\d[\d\s().+-]{6,}/', '', $catatan), " \t\n\r-,.:;|")
+            : trim($catatan);
+        $this->isian['kontak'] = trim($catatan);
     }
 
     public function bukaTambah(): void
@@ -138,7 +285,10 @@ class OrchaVendorList extends Component
 
     public function render()
     {
-        $hasil = $this->muat('/vendor', $this->parameterDaftar());
+        $hasil = $this->muat('/vendor', $this->parameterDaftar([
+            'jenis' => $this->filterJenis,
+            'status' => $this->filterStatus2,
+        ]));
 
         return view('livewire.pages.admin.orcha.vendor.index', [
             'daftar' => $hasil['data'] ?? [],
