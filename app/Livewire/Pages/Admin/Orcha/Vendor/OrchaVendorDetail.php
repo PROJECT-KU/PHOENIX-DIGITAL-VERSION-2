@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Orcha\Vendor;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use App\Livewire\Pages\Admin\Orcha\Vendor\Concerns\MenyuntingVendor;
 use Livewire\Component;
 
 /**
@@ -21,43 +22,78 @@ use Livewire\Component;
 class OrchaVendorDetail extends Component
 {
     use MemanggilOrcha;
+    use MenyuntingVendor;
 
     public int $vendorId;
 
     public array $data = [];
 
+    /** Halaman daftar RAB — belanjanya tetap dari seluruhnya. */
+    public int $halamanRab = 1;
+
     public function mount(int $vendor): void
     {
         $this->vendorId = $vendor;
+        $this->kosongkanVendor();
+        $this->muatRincian();
+    }
 
+    private function muatRincian(): void
+    {
         try {
-            $this->data = $this->orcha()->ambil("/vendor/{$vendor}/rincian")['data'] ?? [];
+            $this->data = $this->orcha()->ambil("/vendor/{$this->vendorId}/rincian", [
+                'halaman' => $this->halamanRab,
+            ])['data'] ?? [];
+            $this->galat = '';
         } catch (OrchaTidakTerjangkau $e) {
             $this->galat = $e->getMessage();
         }
     }
 
-    /** Nomor yang bisa ditelepon — aturan yang sama dengan daftar vendor. */
-    public function nomorDari(?string $kontak): ?string
+    public function keHalamanRab(int $nomor): void
     {
-        if (! preg_match('/\d[\d\s().+-]{6,}/', (string) $kontak, $cocok)) {
-            return null;
-        }
-
-        $angka = preg_replace('/\D/', '', $cocok[0]);
-
-        return strlen($angka) >= 7 ? $angka : null;
+        $this->halamanRab = max(1, $nomor);
+        $this->muatRincian();
     }
 
-    public function nomorWa(?string $kontak): ?string
+    /**
+     * Menyunting di tempat, bukan dilempar kembali ke daftar.
+     *
+     * Halaman ini satu-satunya tempat yang menyebut sudah dibelanjakan
+     * berapa — dan keputusan mengubah kontaknya justru lahir di sini, saat
+     * angkanya terlihat. Melempar admin ke daftar berarti menyuruhnya
+     * mencari baris yang baru saja ia buka.
+     */
+    public function bukaUbah(): void
     {
-        $angka = $this->nomorDari($kontak);
+        $v = $this->data['vendor'] ?? null;
 
-        if ($angka === null) {
-            return null;
+        if ($v === null) {
+            return;
         }
 
-        return str_starts_with($angka, '0') ? '62'.substr($angka, 1) : $angka;
+        $this->bukaSunting((int) $v['id'], $v);
+    }
+
+    public function simpan(): void
+    {
+        $data = $this->periksaVendor();
+
+        try {
+            $balasan = $this->orcha()->ubah("/vendor/{$this->vendorId}", $data);
+            cache()->forget('orcha.rab.katalog');
+            $this->tutup();
+            $this->muatRincian();
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor diperbarui.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function matikanIni(): void
+    {
+        $this->matikan($this->vendorId);
+        $this->muatRincian();
     }
 
     public function render()

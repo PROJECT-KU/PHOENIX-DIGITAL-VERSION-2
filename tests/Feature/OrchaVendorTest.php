@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorDetail;
 use App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorList;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -487,4 +488,78 @@ test('ekspor vendor mengikuti saringan yang sedang aktif', function () {
         && str_contains($r->url(), 'jenis=Armada')
         // Tanpa halaman: yang terunduh seluruhnya, bukan lima belas baris.
         && str_contains($r->url(), 'per_halaman=500'));
+});
+
+test('halaman rincian bisa menyunting dan mematikan di tempat', function () {
+    /*
+     | Halaman ini satu-satunya tempat yang menyebut sudah dibelanjakan
+     | berapa — dan keputusan mengubah kontaknya justru lahir di sini, saat
+     | angkanya terlihat. Melempar admin ke daftar berarti menyuruhnya
+     | mencari baris yang baru saja ia buka.
+     */
+    palsukanVendor();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaVendorDetail::class, ['vendor' => 1])
+        ->call('bukaUbah')
+        ->assertSet('sunting', 1)
+        ->assertSet('isian.nama', 'PO Sumber Jaya');
+
+    $layar->set('isian.kontak', '082199900022')->call('simpan')->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => in_array($r->method(), ['PATCH', 'PUT'], true)
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1')
+        && $r['kontak'] === '082199900022');
+
+    // Formulirnya menutup sendiri dan rinciannya dibaca ulang.
+    $layar->assertSet('sunting', null);
+});
+
+test('daftar RAB di rincian berhalaman, belanjanya tidak ikut terpotong', function () {
+    Http::fake(fn () => Http::response(['data' => [
+        'vendor' => ['id' => 1, 'nama' => 'PO Sumber Jaya', 'kontak' => '081234000111',
+            'jenis' => 'Armada', 'provinsi' => null, 'catatan' => null, 'aktif' => true, 'jumlah_harga' => 1],
+        'harga' => [],
+        'rab' => [['id' => 9, 'kode' => 'RAB-009', 'judul' => 'Trip A', 'status' => 'draf',
+            'status_label' => 'Draf', 'tanggal_mulai' => null, 'jumlah_baris' => 1,
+            'nilai' => 850000, 'nilai_teks' => 'Rp 850.000']],
+        'rab_meta' => ['halaman' => 1, 'halaman_terakhir' => 3, 'total' => 5, 'per_halaman' => 2],
+        'belanja' => 4250000, 'belanja_teks' => 'Rp 4.250.000',
+    ]]));
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaVendorDetail::class, ['vendor' => 1]);
+
+    expect($layar->html())->toContain('Halaman 1 dari 3')
+        ->and($layar->html())->toContain('5 RAB')
+        // Belanjanya dari seluruh RAB, bukan dari satu yang tampil.
+        ->and($layar->html())->toContain('Rp 4.250.000');
+
+    $layar->call('keHalamanRab', 2)->assertSet('halamanRab', 2);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/vendor/1/rincian')
+        && str_contains($r->url(), 'halaman=2'));
+});
+
+test('beberapa catatan tercecer jadi satu vendor sekali jalan', function () {
+    /*
+     | Hiace, Elf, dan bus besar biasanya dari pemilik armada yang sama.
+     | Menjadikannya satu per satu berarti mengulang keputusan yang sama
+     | lalu menggabungkannya belakangan.
+     */
+    palsukanVendor();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaVendorList::class)
+        ->call('lihatTercecer')
+        ->set('pilihTercecer', ['7'])
+        ->call('dariBeberapaCatatan')
+        ->assertSet('tambah', true)
+        ->assertSet('isian.nama', 'PO Sumber Jaya')
+        ->assertSet('pasangHarga', [7]);
+
+    $layar->call('simpan')->assertHasNoErrors()->assertSet('pasangHarga', []);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1/pasang')
+        && $r['harga'] === [7]);
 });

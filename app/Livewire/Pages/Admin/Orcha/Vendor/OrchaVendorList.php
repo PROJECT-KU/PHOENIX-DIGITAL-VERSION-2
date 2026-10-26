@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Orcha\Vendor;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use App\Livewire\Pages\Admin\Orcha\Vendor\Concerns\MenyuntingVendor;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -23,6 +24,7 @@ use Livewire\Component;
 class OrchaVendorList extends Component
 {
     use MemanggilOrcha;
+    use MenyuntingVendor;
 
     #[Url(as: 'jenis', except: '')]
     public string $filterJenis = '';
@@ -32,8 +34,6 @@ class OrchaVendorList extends Component
 
     #[Url(as: 'provinsi', except: '')]
     public string $filterProvinsi = '';
-
-    public bool $tambah = false;
 
     /** Vendor yang sedang ditawarkan untuk digabungkan; null berarti tertutup. */
     public ?int $gabungDari = null;
@@ -45,13 +45,13 @@ class OrchaVendorList extends Component
 
     public array $tercecer = [];
 
-    public ?int $sunting = null;
+    /** Baris tercecer yang dicentang untuk dijadikan SATU vendor. */
+    public array $pilihTercecer = [];
 
-    public array $isian = [];
+    /** Id master harga yang akan dipasangkan begitu vendornya tersimpan. */
+    public array $pasangHarga = [];
 
     /** Sakelar dipegang properti tersendiri — lihat OrchaRujukanList::$aktif. */
-    public bool $aktif = true;
-
     /**
      * Jenis vendor yang paling sering dipakai.
      *
@@ -59,17 +59,9 @@ class OrchaVendorList extends Component
      * selalu muat di lima kotak, dan menolak yang keenam hanya membuat admin
      * mengetiknya di kolom lain.
      */
-    public const JENIS = ['Armada', 'Akomodasi', 'Konsumsi', 'Tiket', 'Pemandu'];
-
-    private function kosongkan(): void
-    {
-        $this->isian = ['nama' => '', 'kontak' => '', 'jenis' => '', 'provinsi' => '', 'catatan' => ''];
-        $this->aktif = true;
-    }
-
     public function mount(): void
     {
-        $this->kosongkan();
+        $this->kosongkanVendor();
     }
 
     public function updatedFilterJenis(): void
@@ -110,29 +102,7 @@ class OrchaVendorList extends Component
      * panjang untuk sebuah nomor; kalau tidak ada, tombolnya tidak muncul,
      * bukan muncul lalu menelepon entah ke mana.
      */
-    public function nomorDari(?string $kontak): ?string
-    {
-        if (! preg_match('/\d[\d\s().+-]{6,}/', (string) $kontak, $cocok)) {
-            return null;
-        }
-
-        $angka = preg_replace('/\D/', '', $cocok[0]);
-
-        return strlen($angka) >= 7 ? $angka : null;
-    }
-
     /** Bentuk 62… untuk WhatsApp; 0 di depan DIGANTI, bukan ditempeli. */
-    public function nomorWa(?string $kontak): ?string
-    {
-        $angka = $this->nomorDari($kontak);
-
-        if ($angka === null) {
-            return null;
-        }
-
-        return str_starts_with($angka, '0') ? '62'.substr($angka, 1) : $angka;
-    }
-
     /**
      * Nomor yang panjangnya di luar wajar.
      *
@@ -141,19 +111,6 @@ class OrchaVendorList extends Component
      * tetap tersimpan dengan yakin, dan tombol WhatsApp-nya mengarah ke
      * nomor orang lain tanpa satu pun tanda. Jadi ditandai, bukan ditolak.
      */
-    public function nomorJanggal(?string $kontak): bool
-    {
-        $angka = $this->nomorDari($kontak);
-
-        if ($angka === null) {
-            return false;
-        }
-
-        $panjang = strlen($angka);
-
-        return $panjang < 9 || $panjang > 15;
-    }
-
     public function bukaGabung(int $id): void
     {
         $this->gabungDari = $id;
@@ -205,6 +162,7 @@ class OrchaVendorList extends Component
     public function lihatTercecer(): void
     {
         $this->bukaTercecer = true;
+        $this->pilihTercecer = [];
 
         try {
             $this->tercecer = $this->orcha()->ambil('/vendor/kontak-tercecer')['data'] ?? [];
@@ -214,11 +172,35 @@ class OrchaVendorList extends Component
         }
     }
 
+    /**
+     * Beberapa baris tercecer sekaligus jadi SATU vendor.
+     *
+     * Satu vendor biasanya menempel pada beberapa baris harga — Hiace, Elf,
+     * dan bus besar dari pemilik armada yang sama. Menjadikannya satu per
+     * satu berarti mengulang keputusan yang sama berkali-kali, lalu
+     * menggabungkannya belakangan.
+     */
+    public function dariBeberapaCatatan(): void
+    {
+        $dipilih = collect($this->tercecer)
+            ->filter(fn ($t) => in_array((int) $t['id'], array_map('intval', $this->pilihTercecer), true))
+            ->values();
+
+        if ($dipilih->isEmpty()) {
+            return;
+        }
+
+        // Catatan pertama jadi bahan namanya; sisanya cuma ikut dipasangkan.
+        $this->dariCatatan((string) $dipilih->first()['catatan']);
+        $this->pasangHarga = $dipilih->pluck('id')->map(fn ($i) => (int) $i)->all();
+    }
+
     /** Catatan lama dipakai sebagai bahan vendor baru, bukan diketik ulang. */
     public function dariCatatan(string $catatan): void
     {
         $this->bukaTambah();
         $this->bukaTercecer = false;
+        $this->pasangHarga = [];
 
         $nomor = $this->nomorDari($catatan);
 
@@ -230,69 +212,9 @@ class OrchaVendorList extends Component
         $this->isian['kontak'] = trim($catatan);
     }
 
-    public function bukaTambah(): void
-    {
-        $this->sunting = null;
-        $this->tambah = true;
-        $this->kosongkan();
-        $this->resetValidation();
-    }
-
-    public function bukaSunting(int $id, array $baris): void
-    {
-        $this->tambah = false;
-        $this->sunting = $id;
-        $this->resetValidation();
-
-        $this->isian = [
-            'nama' => (string) $baris['nama'],
-            'kontak' => (string) ($baris['kontak'] ?? ''),
-            'jenis' => (string) ($baris['jenis'] ?? ''),
-            'provinsi' => (string) ($baris['provinsi'] ?? ''),
-            'catatan' => (string) ($baris['catatan'] ?? ''),
-        ];
-        $this->aktif = (bool) $baris['aktif'];
-    }
-
-    public function tutup(): void
-    {
-        $this->sunting = null;
-        $this->tambah = false;
-        $this->kosongkan();
-    }
-
-    public function pakaiJenis(string $jenis): void
-    {
-        // Menekan jenis yang sedang terpilih melepaskannya — tanpa itu
-        // jenis yang salah tekan tidak punya cara dibatalkan.
-        $this->isian['jenis'] = trim((string) ($this->isian['jenis'] ?? '')) === $jenis ? '' : $jenis;
-    }
-
     public function simpan(): void
     {
-        $this->validate([
-            'isian.nama' => 'required|string|min:2|max:120',
-            'isian.kontak' => 'nullable|string|max:120',
-            'isian.jenis' => 'nullable|string|max:30',
-            'isian.provinsi' => 'nullable|string|max:80',
-            'isian.catatan' => 'nullable|string|max:300',
-        ], [
-            'isian.nama.required' => 'Isi nama vendornya.',
-        ], [
-            'isian.nama' => 'nama', 'isian.kontak' => 'kontak',
-        ]);
-
-        $data = [
-            'nama' => trim($this->isian['nama']),
-            // Nomor TIDAK dipaksa berformat angka: "0812xxx (Pak Budi)"
-            // justru bentuk yang paling berguna saat menelepon.
-            'kontak' => trim($this->isian['kontak']) ?: null,
-            'jenis' => trim($this->isian['jenis']) ?: null,
-            // Kosong berarti BERLAKU DI MANA SAJA, bukan belum diisi.
-            'provinsi' => trim($this->isian['provinsi']) ?: null,
-            'catatan' => trim($this->isian['catatan']) ?: null,
-            'aktif' => $this->aktif,
-        ];
+        $data = $this->periksaVendor();
 
         try {
             $balasan = $this->sunting
@@ -304,11 +226,35 @@ class OrchaVendorList extends Component
             // harga dan tampak seperti gagal tersimpan.
             cache()->forget('orcha.rab.katalog');
 
+            $pesan = $balasan['pesan'] ?? 'Vendor disimpan.';
+
+            // Baris tercecer yang dipilih ikut dipasangkan sekaligus: satu
+            // vendor biasanya menempel pada beberapa harga, dan memasangnya
+            // satu per satu berarti mengulang keputusan yang sama.
+            if ($this->pasangHarga !== [] && ! empty($balasan['data']['id'])) {
+                $pesan = $this->pasangkan((int) $balasan['data']['id'], $pesan);
+            }
+
             $this->tutup();
-            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor disimpan.');
+            $this->dispatch('order-updated', message: $pesan);
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());
         }
+    }
+
+    private function pasangkan(int $vendorId, string $pesan): string
+    {
+        try {
+            $balasan = $this->orcha()->kirim("/vendor/{$vendorId}/pasang", ['harga' => $this->pasangHarga]);
+            $pesan = $balasan['pesan'] ?? $pesan;
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+
+        $this->pasangHarga = [];
+        $this->pilihTercecer = [];
+
+        return $pesan;
     }
 
     /**
@@ -341,33 +287,6 @@ class OrchaVendorList extends Component
      * konfirmasi bersama hanya membawa SATU argumen, dan merakit payload dari
      * markah berarti nilai apa pun di sana bisa ikut tersimpan.
      */
-    public function matikan(int $id): void
-    {
-        try {
-            $v = $this->orcha()->ambil("/vendor/{$id}/rincian")['data']['vendor'] ?? null;
-
-            if ($v === null) {
-                $this->dispatch('toast-error', message: 'Vendornya tidak ditemukan.');
-
-                return;
-            }
-
-            $this->orcha()->ubah("/vendor/{$id}", [
-                'nama' => $v['nama'],
-                'kontak' => $v['kontak'],
-                'jenis' => $v['jenis'],
-                'provinsi' => $v['provinsi'] ?? null,
-                'catatan' => $v['catatan'],
-                'aktif' => false,
-            ]);
-
-            cache()->forget('orcha.rab.katalog');
-            $this->dispatch('order-updated', message: "{$v['nama']} dimatikan. Kontaknya tetap terbaca di RAB yang sudah memakainya.");
-        } catch (OrchaTidakTerjangkau $e) {
-            $this->dispatch('toast-error', message: $e->getMessage());
-        }
-    }
-
     /**
      * Mengunduh daftar vendor sebagai Excel.
      *

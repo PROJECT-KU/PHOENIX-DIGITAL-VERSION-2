@@ -13,6 +13,22 @@
         $nomorTel = $this->nomorDari($v['kontak'] ?? null);
         $nomorWa = $this->nomorWa($v['kontak'] ?? null);
 
+        $pilihanJenis = $this->pilihanJenis();
+        $jenisKini = trim((string) ($isian['jenis'] ?? ''));
+        $jenisAsing = $jenisKini !== '' && ! in_array($jenisKini, $pilihanJenis, true);
+        $provinsiAda = array_values(array_filter([$v['provinsi'] ?? null]));
+
+        $rupaJenis = [
+            'Armada' => ['#0369a1', 'bi-bus-front'],
+            'Akomodasi' => ['#6d28d9', 'bi-building'],
+            'Konsumsi' => ['#e0912f', 'bi-cup-hot'],
+            'Tiket' => ['#1f7a44', 'bi-ticket-perforated'],
+            'Pemandu' => ['#0e7490', 'bi-person-badge'],
+        ];
+        $rupaDari = fn ($j) => $rupaJenis[$j] ?? ['#64748b', 'bi-shop'];
+
+        $rabMeta = $data['rab_meta'] ?? [];
+
         $rupaStatus = [
             'draf' => '#64748b', 'dikirim' => '#0369a1',
             'disetujui' => '#1f7a44', 'batal' => '#be123c',
@@ -45,6 +61,22 @@
                         <i class="bi bi-telephone"></i><span>Telepon</span>
                     </a>
                 @endif
+                <button type="button" wire:click="bukaUbah" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                    <i class="bi bi-pencil-square"></i><span>Ubah</span>
+                </button>
+                @if ($v['aktif'] ?? false)
+                    {{-- Keputusan mematikan vendor justru lahir di sini, saat
+                         angka belanjanya terlihat. Melempar admin kembali ke
+                         daftar berarti menyuruhnya mencari baris yang baru
+                         saja ia buka. --}}
+                    <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
+                        data-action="matikanIni"
+                        data-title="Matikan {{ $v['nama'] ?? 'vendor ini' }}?"
+                        data-text="Tidak ditawarkan lagi untuk harga baru. Kontaknya tetap terbaca di RAB yang sudah memakainya."
+                        data-confirm="Ya, matikan" data-icon="question">
+                        <i class="bi bi-pause-circle"></i><span>Matikan</span>
+                    </button>
+                @endif
                 <a href="{{ route('admin.orcha.vendor') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Daftar Vendor</span>
                 </a>
@@ -53,39 +85,58 @@
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        {{-- ===== Tiga angka yang menjawab "sudah sejauh apa dengan vendor ini" ===== --}}
+        @if ($sunting)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-pencil-square"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Ubah vendor</h3>
+                                    <span class="dsb-kartu-sub">Nomornya dibaca <strong>hidup</strong> — RAB lama pun ikut menunjuk nomor yang baru.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dsb-kartu-isi">
+                            @include('livewire.pages.admin.orcha.vendor.partials.medan')
+
+                            <div class="vd-kaki">
+                                <button type="button" wire:click="tutup" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                    <i class="bi bi-x-lg"></i><span>Batal</span>
+                                </button>
+                                <button type="button" wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan"
+                                    class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                                    <i class="bi bi-check2-circle" wire:loading.remove wire:target="simpan"></i>
+                                    <span class="dsb-putar" wire:loading wire:target="simpan"></span>
+                                    <span>Simpan</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ===== Angka yang menjawab "sudah sejauh apa dengan vendor ini" ===== --}}
+        {{-- Satu angka, bukan tiga.
+
+             "Harga terdaftar: 3" dan "Dipakai di RAB: 2" mengulang apa yang
+             bisa dihitung sendiri dari dua tabel tepat di bawahnya; keduanya
+             pindah ke kepala tabelnya masing-masing. Yang benar-benar baru
+             cuma nilai belanjanya — dan itu yang pantas sebesar ini. --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
-                <div class="dsb-kartu k-4">
-                    <div class="dsb-kartu-isi vd-angka">
-                        <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-cash-stack"></i></span>
-                        <div>
-                            <span class="dsb-kartu-sub">Sudah dibelanjakan</span>
-                            {{-- Dihitung dengan rumus yang SAMA dengan rincian biaya
-                                 RAB: bus 1,1 juta yang jadi 2 unit selama 3 hari
-                                 bernilai 6,6 juta — dan angka itulah yang dipakai
-                                 menawar harga tahun depan. --}}
-                            <strong class="vd-angka-nilai">{{ $data['belanja_teks'] ?? 'Rp 0' }}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dsb-kartu k-4">
-                    <div class="dsb-kartu-isi vd-angka">
-                        <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-tags"></i></span>
-                        <div>
-                            <span class="dsb-kartu-sub">Harga terdaftar</span>
-                            <strong class="vd-angka-nilai">{{ count($harga) }}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dsb-kartu k-4">
-                    <div class="dsb-kartu-isi vd-angka">
-                        <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-calculator"></i></span>
-                        <div>
-                            <span class="dsb-kartu-sub">Dipakai di RAB</span>
-                            <strong class="vd-angka-nilai">{{ count($rab) }}</strong>
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-isi vd-belanja">
+                        <span class="dsb-ikon" style="--c: #4f46e5"><i class="bi bi-cash-stack"></i></span>
+                        <div class="vd-belanja-teks">
+                            <span class="dsb-kartu-sub">Sudah dibelanjakan ke vendor ini</span>
+                            <strong class="vd-belanja-nilai">{{ $data['belanja_teks'] ?? 'Rp 0' }}</strong>
+                            <span class="dsb-kartu-sub">
+                                Dihitung dari seluruh RAB yang memakainya — bukan dari halaman yang sedang terlihat.
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -104,6 +155,7 @@
                                 <span class="dsb-kartu-sub">Harga master, bukan yang sudah beku di RAB.</span>
                             </div>
                         </div>
+                        <span class="dsb-chip"><i class="bi bi-tags"></i>{{ count($harga) }} harga</span>
                         <a href="{{ route('admin.orcha.master-harga', ['vendor' => $vendorId]) }}" wire:navigate
                             class="dsb-tombol is-lembut" style="--ikon: #b45309">
                             <i class="bi bi-pencil-square"></i><span>Kelola</span>
@@ -169,6 +221,7 @@
                                 <span class="dsb-kartu-sub">Terbaru di atas · nilainya memakai rumus yang sama dengan rincian biaya.</span>
                             </div>
                         </div>
+                        <span class="dsb-chip"><i class="bi bi-calculator"></i>{{ $rabMeta['total'] ?? count($rab) }} RAB</span>
                     </div>
 
                     @if ($rab === [])
@@ -214,6 +267,31 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        @if (($rabMeta['halaman_terakhir'] ?? 1) > 1)
+                            {{-- Daftarnya berhalaman; nilai belanja di atas TIDAK —
+                                 "sudah dibelanjakan Rp 6 juta" yang ternyata cuma
+                                 halaman pertama adalah angka yang salah tanpa
+                                 kelihatan salah. --}}
+                            <div class="vdd-halaman">
+                                <span class="dsb-kartu-sub">
+                                    Halaman {{ $rabMeta['halaman'] }} dari {{ $rabMeta['halaman_terakhir'] }} ·
+                                    {{ $rabMeta['total'] }} RAB
+                                </span>
+                                <span class="vdd-halaman-tombol">
+                                    <button type="button" wire:click="keHalamanRab({{ $halamanRab - 1 }})"
+                                        class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                        @disabled($halamanRab <= 1)>
+                                        <i class="bi bi-chevron-left"></i><span>Sebelumnya</span>
+                                    </button>
+                                    <button type="button" wire:click="keHalamanRab({{ $halamanRab + 1 }})"
+                                        class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                        @disabled($halamanRab >= ($rabMeta['halaman_terakhir'] ?? 1))>
+                                        <span>Berikutnya</span><i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -221,9 +299,17 @@
     </div>
 
     <style>
-        .vd-angka { display: flex; align-items: center; gap: 12px; }
-        .vd-angka > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-        .vd-angka-nilai { font-size: 1.15rem; font-weight: 800; color: var(--dsb-tinta, #1c1f26); }
+        .vd-belanja { display: flex; align-items: center; gap: 14px; }
+        .vd-belanja-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .vd-belanja-nilai { font-size: 1.6rem; font-weight: 800; line-height: 1.15; color: var(--dsb-tinta, #1c1f26); }
+
+        .vd-kaki { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+        .vdd-halaman {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+            padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9;
+        }
+        .vdd-halaman .dsb-kartu-sub { flex: 1 1 200px; }
+        .vdd-halaman-tombol { display: flex; gap: 8px; }
 
         .vdd-utama { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .vdd-utama.is-kanan { align-items: flex-end; }

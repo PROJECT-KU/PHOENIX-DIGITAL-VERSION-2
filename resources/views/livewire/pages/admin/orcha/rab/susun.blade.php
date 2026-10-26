@@ -410,6 +410,8 @@ Susun RAB || lemon
             display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 3px;
             font-size: .76rem; font-weight: 600; color: #0369a1;
         }
+        .rab-vendor-tautan { color: inherit; text-decoration: none; }
+        .rab-vendor-tautan:hover { text-decoration: underline; }
         .rab-vendor-nomor {
             padding: 1px 7px 2px; border-radius: 7px;
             background: #e0f2fe; color: #075985; font-size: .72rem; font-weight: 700;
@@ -980,7 +982,11 @@ Susun RAB || lemon
                                                         @if (! empty($b['vendor']))
                                                             <div class="rab-biaya-vendor">
                                                                 <i class="bi bi-shop"></i>
-                                                                <span>{{ $b['vendor'] }}</span>
+                                                                {{-- Buntu sebelumnya: vendornya terbaca,
+                                                                     tetapi rinciannya hanya bisa dibuka
+                                                                     lewat menu lain. --}}
+                                                                <a href="{{ route('admin.orcha.vendor.detail', $b['vendor_id']) }}" wire:navigate
+                                                                    class="rab-vendor-tautan">{{ $b['vendor'] }}</a>
                                                                 @if (! empty($b['vendor_kontak']))
                                                                     <span class="rab-vendor-nomor">{{ $b['vendor_kontak'] }}</span>
                                                                 @endif

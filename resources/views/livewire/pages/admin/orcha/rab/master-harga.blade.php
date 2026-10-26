@@ -320,6 +320,12 @@ Master Harga || lemon
                                     @if ($vendorKini && ! empty($vendorKini['kontak']))
                                         <span class="mh-vendor-kontak">
                                             <i class="bi bi-telephone"></i>{{ $vendorKini['kontak'] }}
+                                            {{-- Buntu sebelumnya: nomornya terlihat, tetapi
+                                                 tidak ada jalan ke rinciannya dari sini. --}}
+                                            <a href="{{ route('admin.orcha.vendor.detail', $vendorKini['id']) }}" wire:navigate
+                                                class="mh-vendor-tautan" title="Buka rincian {{ $vendorKini['nama'] }}">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
                                         </span>
                                     @elseif ($vendorKini)
                                         {{-- Vendor tanpa nomor tetap harus dicari saat
@@ -612,9 +618,10 @@ Master Harga || lemon
                                                         </span>
                                                     @endif
                                                     @if (! empty($baris['vendor']))
-                                                        <span class="dsb-tabel-meta mh-vendor-baris">
+                                                        <a href="{{ route('admin.orcha.vendor.detail', $baris['vendor_id']) }}" wire:navigate
+                                                            class="dsb-tabel-meta mh-vendor-baris" title="Buka rincian {{ $baris['vendor'] }}">
                                                             <i class="bi bi-shop"></i>{{ $baris['vendor'] }}@if (! empty($baris['vendor_kontak'])) · {{ $baris['vendor_kontak'] }}@endif
-                                                        </span>
+                                                        </a>
                                                     @endif
                                                     @if ($baris['catatan'])
                                                         <span class="dsb-tabel-meta mh-catatan">{{ $baris['catatan'] }}</span>
@@ -830,7 +837,8 @@ Master Harga || lemon
         }
         .mh-vendor-tautan { display: inline-flex; align-items: center; gap: 5px; color: #0f766e; font-weight: 600; text-decoration: none; }
         .mh-vendor-tautan:hover { text-decoration: underline; }
-        .mh-vendor-baris { display: inline-flex; align-items: center; gap: 5px; }
+        .mh-vendor-baris { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+        .mh-vendor-baris:hover { color: #0369a1; text-decoration: underline; }
 
         .mh-lepas {
             display: inline-flex; align-items: center; gap: 5px;

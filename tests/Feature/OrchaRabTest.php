@@ -1602,3 +1602,21 @@ test('biaya manual tanpa vendor mengirim null, bukan string kosong', function ()
         && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
         && array_key_exists('vendor_id', $r->data()) && $r['vendor_id'] === null);
 });
+
+test('vendor di master harga dan rincian biaya RAB membawa ke rinciannya', function () {
+    // Tiga jalan buntu: nomornya terbaca, tetapi rinciannya hanya bisa
+    // dibuka lewat menu lain.
+    palsukanRab();
+    $this->actingAs(adminRab());
+
+    $isi = Livewire::test(OrchaMasterHargaList::class)->call('bukaTambah')
+        ->set('isian.vendor_id', '1')->html();
+
+    expect($isi)->toContain(route('admin.orcha.vendor.detail', 1));
+
+    $this->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee(route('admin.orcha.vendor.detail', 1), false);
+
+    $this->get('/admin/orcha/master-harga')->assertOk()
+        ->assertSee(route('admin.orcha.vendor.detail', 1), false);
+});
