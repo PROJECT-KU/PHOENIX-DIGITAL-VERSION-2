@@ -31,6 +31,11 @@ class OrchaMasterHargaList extends Component
 
     public bool $tambah = false;
 
+    /** Kotak isian destinasi baru sedang terbuka. */
+    public bool $destinasiBaru = false;
+
+    public string $namaDestinasiBaru = '';
+
     public array $isian = [];
 
     /** Sakelar dipegang properti tersendiri — lihat OrchaPromoList::$aktif. */
@@ -132,6 +137,61 @@ class OrchaMasterHargaList extends Component
      * — dan muncul di RAB Bali. Mengisinya otomatis dari katalog menutup
      * kemungkinan itu tanpa menambah satu kotak pun untuk diisi admin.
      */
+    /**
+     * Menambah destinasi ke katalog tanpa meninggalkan formulir ini.
+     *
+     * Kolom destinasi kini dipilih, bukan diketik — supaya jodohnya ke harga
+     * tiket tidak bisa putus karena salah ketik. Tetapi destinasi baru memang
+     * ada, dan menyuruh admin pindah menu lalu kembali berarti kehilangan
+     * seluruh isian yang sudah diketiknya.
+     *
+     * Namanya dirapikan persis seperti yang dilakukan Orcha (spasi ganda jadi
+     * satu, ujungnya dipangkas) supaya yang terpilih di sini sama persis
+     * dengan yang tersimpan di sana — kalau tidak, jodohnya putus lagi di
+     * tempat yang baru saja diperbaiki.
+     */
+    public function tambahDestinasiKatalog(): void
+    {
+        $nama = trim(preg_replace('/\s+/', ' ', (string) $this->namaDestinasiBaru));
+
+        $this->resetValidation('namaDestinasiBaru');
+
+        if (mb_strlen($nama) < 3) {
+            $this->addError('namaDestinasiBaru', 'Nama destinasi minimal 3 huruf.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/katalog-destinasi', [
+                'nama' => $nama,
+                'provinsi' => trim((string) ($this->isian['provinsi'] ?? '')) ?: null,
+                'daerah' => trim((string) ($this->isian['daerah'] ?? '')) ?: null,
+            ]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        // Katalognya disimpan sebentar; tanpa dilupakan, destinasi yang baru
+        // saja dibuat tidak muncul di kotak pilihnya sendiri.
+        cache()->forget('orcha.rab.katalog');
+
+        $this->isian['destinasi'] = $nama;
+        $this->namaDestinasiBaru = '';
+        $this->destinasiBaru = false;
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Destinasi ditambahkan.');
+    }
+
+    public function batalDestinasiBaru(): void
+    {
+        $this->destinasiBaru = false;
+        $this->namaDestinasiBaru = '';
+        $this->resetValidation('namaDestinasiBaru');
+    }
+
     public function updatedIsianDestinasi(string $nama): void
     {
         $cocok = collect($this->katalog()['destinasi'] ?? [])->firstWhere('nama', $nama);

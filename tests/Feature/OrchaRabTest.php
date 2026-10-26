@@ -927,3 +927,95 @@ test('nilai lama yang tidak ada di katalog tetap ditawarkan dan ditandai', funct
     expect($isi)->toContain('tidak ada di katalog')
         ->and($isi)->toContain('tidak akan ikut tertarik');
 });
+
+test('destinasi di luar daftar bisa ditambahkan tanpa meninggalkan formulir', function () {
+    /*
+     | Kotak pilih hanya memuat yang sudah ada di katalog, sementara destinasi
+     | baru memang bermunculan. Tanpa jalan ini admin harus pindah menu untuk
+     | mendaftarkannya — dan seluruh isian yang sudah diketiknya hilang.
+     |
+     | Nama yang terpilih sesudahnya harus sama PERSIS dengan yang dikirim,
+     | karena jodoh harga tiket ke itinerary memang lewat nama.
+     */
+    $katalogDipanggil = 0;
+
+    Http::fake(function (Request $r) use (&$katalogDipanggil) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalogDipanggil++;
+            $data = rekamanRab('katalog');
+
+            // Sesudah ditambahkan, Orcha memang memulangkan katalog yang
+            // sudah berisi destinasi barunya.
+            if ($katalogDipanggil > 1) {
+                $data['data']['destinasi'][] = [
+                    'nama' => 'Tebing Breksi', 'provinsi' => 'DI Yogyakarta',
+                    'daerah' => 'Sleman', 'punya_tiket' => false,
+                ];
+            }
+
+            return Http::response($data);
+        }
+
+        if (str_ends_with($jalur, '/katalog-destinasi')) {
+            return Http::response(['pesan' => 'Tebing Breksi ditambahkan ke daftar.', 'data' => []], 201);
+        }
+
+        return Http::response(rekamanRab('master'));
+    });
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.daerah', 'Sleman')
+        ->set('destinasiBaru', true)
+        //  Spasi berlebih sengaja: Orcha merapikannya, dan yang terpilih di
+        //  sini harus mengikuti bentuk rapi itu, bukan ketikan mentahnya.
+        ->set('namaDestinasiBaru', '  Tebing   Breksi ')
+        ->call('tambahDestinasiKatalog');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/katalog-destinasi')
+        && $r['nama'] === 'Tebing Breksi'
+        && $r['daerah'] === 'Sleman');
+
+    $layar->assertSet('isian.destinasi', 'Tebing Breksi')
+        ->assertSet('destinasiBaru', false)
+        ->assertSet('namaDestinasiBaru', '');
+
+    // Katalognya disimpan sepuluh menit; tanpa dilupakan, destinasi yang baru
+    // saja dibuat tidak muncul di kotak pilihnya sendiri dan tampak seperti
+    // gagal tersimpan.
+    expect($katalogDipanggil)->toBeGreaterThan(1)
+        ->and($layar->html())->toContain('Tebing Breksi')
+        ->and($layar->html())->not->toContain('Tebing Breksi — tidak ada di katalog');
+});
+
+test('nama destinasi baru yang terlalu pendek tidak dikirim', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('destinasiBaru', true)
+        ->set('namaDestinasiBaru', 'ab')
+        ->call('tambahDestinasiKatalog')
+        ->assertHasErrors('namaDestinasiBaru')
+        // Kotaknya tetap terbuka berisi ketikannya, bukan tertutup diam-diam.
+        ->assertSet('destinasiBaru', true)
+        ->assertSet('namaDestinasiBaru', 'ab');
+
+    Http::assertNotSent(fn (Request $r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/katalog-destinasi'));
+});
+
+test('jalan menambah destinasi terlihat di formulir master harga', function () {
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->html();
+
+    expect($isi)->toContain('Destinasinya belum ada di daftar');
+});

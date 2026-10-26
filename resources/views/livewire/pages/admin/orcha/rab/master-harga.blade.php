@@ -27,6 +27,19 @@ Master Harga || lemon
             padding: 1px 7px 2px; border-radius: 7px;
             background: #fffbeb; border: 1px solid #fde68a; font-size: .68rem; font-weight: 700;
         }
+        .mh-baru {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px;
+            padding: 8px; border-radius: 10px;
+            background: #f0fdfa; border: 1px solid #99f6e4;
+        }
+        .mh-baru .dsb-isian { flex: 1 1 180px; min-width: 0; }
+        .mh-baru-ket { margin-top: 5px; }
+        .mh-tambah {
+            display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+            padding: 0; border: 0; background: none;
+            font-size: .76rem; font-weight: 600; color: #0f766e;
+        }
+        .mh-tambah:hover { text-decoration: underline; }
         .mh-asing {
             display: flex; align-items: flex-start; gap: 6px; margin-top: 5px;
             font-size: .74rem; line-height: 1.45; color: #92400e;
@@ -204,6 +217,37 @@ Master Harga || lemon
                                 </div>
                             @else
                                 <div class="dsb-kartu-sub">Kosongkan untuk biaya yang bukan tiket destinasi.</div>
+                            @endif
+
+                            {{-- Kotak pilih hanya memuat yang sudah ada di katalog,
+                                 sementara destinasi baru memang bermunculan. Tanpa
+                                 jalan ini admin harus pindah menu dan kehilangan
+                                 seluruh isian yang sudah diketiknya. --}}
+                            @if ($destinasiBaru)
+                                <div class="mh-baru">
+                                    <input type="text" wire:model="namaDestinasiBaru" maxlength="100"
+                                        wire:keydown.enter.prevent="tambahDestinasiKatalog"
+                                        class="dsb-isian @error('namaDestinasiBaru') is-galat @enderror"
+                                        placeholder="Nama destinasi baru, mis. Tebing Breksi">
+                                    <button type="button" wire:click="tambahDestinasiKatalog"
+                                        wire:loading.attr="disabled" wire:target="tambahDestinasiKatalog"
+                                        class="dsb-tombol is-lembut" style="--ikon: #0f766e">
+                                        <i class="bi bi-plus-lg"></i> Tambah
+                                    </button>
+                                    <button type="button" wire:click="batalDestinasiBaru"
+                                        class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
+                                </div>
+                                @error('namaDestinasiBaru')
+                                    <div class="dsb-galat">{{ $message }}</div>
+                                @else
+                                    <div class="dsb-kartu-sub mh-baru-ket">
+                                        Namanya langsung masuk katalog Orcha, jadi destinasi ini juga bisa dipilih di itinerary.
+                                    </div>
+                                @enderror
+                            @else
+                                <button type="button" wire:click="$set('destinasiBaru', true)" class="mh-tambah">
+                                    <i class="bi bi-plus-circle"></i> Destinasinya belum ada di daftar
+                                </button>
                             @endif
                         </div>
                         <div class="col-12 col-md-4">
