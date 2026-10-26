@@ -452,3 +452,68 @@ test('ketiga layar RAB memakai kerangka dasbor lemon', function () {
         expect($isi)->not->toContain('card border-0 shadow-sm rounded-4');
     }
 });
+
+test('titik impas tampil di kartu ringkasan, bukan cuma ada di API', function () {
+    /*
+     | Pertanyaan yang ditanyakan admin bukan "berapa angka BEP-nya" melainkan
+     | "rombongan sekecil ini aman atau belum" — jadi yang ditampilkan jumlah
+     | pesertanya berikut dari mana angka itu datang.
+     */
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    $ringkas = rekamanRab('show')['data']['ringkasan'];
+
+    expect($isi)->toContain('Balik modal mulai')
+        ->and($isi)->toContain($ringkas['bep_peserta'].' peserta')
+        // Asalnya ikut disebut: angka tanpa asal-usul adalah angka yang
+        // dihitung ulang di kertas, dan kertasnya yang dipakai.
+        ->and($isi)->toContain($ringkas['modal_tetap_teks'])
+        ->and($isi)->toContain($ringkas['sumbangan_per_orang_teks'])
+        ->and($isi)->toContain('Untung per orang');
+});
+
+test('kegiatan punya jam mulai dan jam selesai, lamanya ikut terbaca', function () {
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    // Dua isian waktu per kegiatan, bukan satu.
+    expect($isi)->toContain('itinerary.0.jam_selesai')
+        ->and($isi)->toContain('Jam selesai')
+        // Lamanya dari Orcha, tidak dihitung ulang di lemon.
+        ->and($isi)->toContain(rekamanRab('show')['data']['itinerary'][0]['durasi_teks']);
+});
+
+test('jam selesai kegiatan baru ikut ditebak dua jam sesudah mulainya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pilihHari', 3)
+        ->call('tambahKegiatanBaku', 'Sarapan');
+
+    $baru = collect(itineraryTerkirim())->firstWhere('nama', 'Sarapan');
+
+    expect($baru['jam'])->toBe('08:00')
+        ->and($baru['jam_selesai'])->toBe('10:00');
+});
+
+test('kegiatan berikutnya menyambung jam SELESAI, bukan jam mulai', function () {
+    /*
+     | Rekaman hari 1 berisi kegiatan 09.00–11.00. Menyambung dari jam
+     | mulainya berarti kegiatan berikutnya dijadwalkan pukul 11.00 hanya
+     | kebetulan; dari jam selesainya, ia memang bersambung. Bedanya baru
+     | terasa pada kegiatan yang panjang — perjalanan empat jam diikuti
+     | kegiatan dua jam sesudah ia MULAI berarti keduanya bertabrakan.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pilihHari', 1)
+        ->call('tambahKegiatanBaku', 'Makan siang');
+
+    expect(collect(itineraryTerkirim())->firstWhere('nama', 'Makan siang')['jam'])->toBe('11:00');
+});

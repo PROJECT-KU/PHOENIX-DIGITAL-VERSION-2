@@ -92,6 +92,10 @@ class OrchaRabSusun extends Component
         $this->itinerary = collect($data['itinerary'] ?? [])->map(fn ($k) => [
             'hari_ke' => (int) $k['hari_ke'],
             'jam' => (string) ($k['jam'] ?? ''),
+            'jam_selesai' => (string) ($k['jam_selesai'] ?? ''),
+            // Lamanya datang dari Orcha, tidak dihitung lagi di sini:
+            // hitungan yang diulang di dua tempat akan berbeda suatu hari.
+            'durasi_teks' => (string) ($k['durasi_teks'] ?? ''),
             'nama' => (string) $k['nama'],
             'keterangan' => (string) ($k['keterangan'] ?? ''),
             'destinasi' => (string) ($k['destinasi'] ?? ''),
@@ -193,9 +197,12 @@ class OrchaRabSusun extends Component
 
     public function tambahDestinasi(string $nama): void
     {
+        $mulai = $this->jamBerikutnya($this->hariAktif);
+
         $this->sisipkan([
             'hari_ke' => $this->hariAktif,
-            'jam' => $this->jamBerikutnya($this->hariAktif),
+            'jam' => $mulai,
+            'jam_selesai' => $this->tambahJam($mulai, 120),
             'nama' => $nama,
             'keterangan' => '',
             'destinasi' => $nama,
@@ -242,6 +249,18 @@ class OrchaRabSusun extends Component
         $this->kirimKe('ubah', "/rab/{$this->rabId}", ['daerah' => trim($daerah)]);
     }
 
+    /** Menggeser "08:00" sekian menit; kosong tetap kosong. */
+    private function tambahJam(string $jam, int $menit): string
+    {
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', $jam, $c) !== 1) {
+            return '';
+        }
+
+        $total = ((int) $c[1] * 60 + (int) $c[2] + $menit) % (24 * 60);
+
+        return sprintf('%02d:%02d', intdiv($total, 60), $total % 60);
+    }
+
     /**
      * Jam berikutnya untuk hari itu: 08.00, lalu +2 jam tiap kegiatan.
      *
@@ -251,20 +270,39 @@ class OrchaRabSusun extends Component
      */
     private function jamBerikutnya(int $hari): string
     {
-        $isi = collect($this->itinerary)
-            ->where('hari_ke', $hari)
-            ->pluck('jam')
-            ->filter(fn ($j) => preg_match('/^\d{1,2}:\d{2}$/', (string) $j) === 1);
+        /*
+         | Kegiatan yang SUDAH punya jam selesai menyambung di situ — ia
+         | memberi tahu kapan rombongan bebas, dan jeda yang dikarang di
+         | atasnya cuma menggeser seluruh jadwal.
+         |
+         | Yang baru punya jam mulai belum memberi tahu apa pun tentang
+         | lamanya, jadi dipakai tebakan dua jam. Tanpa pembedaan ini,
+         | kegiatan berikutnya mulai pada jam yang SAMA dengan yang sedang
+         | berlangsung — dua kegiatan bertabrakan di jadwal yang sama.
+         */
+        $jam = fn ($j) => preg_match('/^(\d{1,2}):(\d{2})$/', (string) $j, $c) === 1
+            ? (int) $c[1] * 60 + (int) $c[2]
+            : null;
 
-        if ($isi->isEmpty()) {
+        $menit = collect($this->itinerary)
+            ->where('hari_ke', $hari)
+            ->map(function ($k) use ($jam) {
+                $selesai = $jam($k['jam_selesai'] ?? '');
+
+                if ($selesai !== null) {
+                    return $selesai;
+                }
+
+                $mulai = $jam($k['jam'] ?? '');
+
+                return $mulai === null ? null : $mulai + 120;
+            })
+            ->filter(fn ($m) => $m !== null)
+            ->max();
+
+        if ($menit === null) {
             return '08:00';
         }
-
-        $menit = $isi->map(function ($j) {
-            [$h, $m] = array_map('intval', explode(':', $j));
-
-            return $h * 60 + $m;
-        })->max() + 120;
 
         // Lewat tengah malam berarti tebakannya sudah tidak masuk akal;
         // lebih baik kosong daripada menuliskan jam yang salah.
@@ -295,9 +333,12 @@ class OrchaRabSusun extends Component
 
     private function tambahKegiatanBernama(string $nama): void
     {
+        $mulai = $this->jamBerikutnya($this->hariAktif);
+
         $this->sisipkan([
             'hari_ke' => $this->hariAktif,
-            'jam' => $this->jamBerikutnya($this->hariAktif),
+            'jam' => $mulai,
+            'jam_selesai' => $this->tambahJam($mulai, 120),
             'nama' => mb_substr($nama, 0, 150),
             'keterangan' => '',
             'destinasi' => '',
@@ -366,6 +407,7 @@ class OrchaRabSusun extends Component
             ->map(fn ($k) => [
                 'hari_ke' => (int) $k['hari_ke'],
                 'jam' => $k['jam'] !== '' ? substr($k['jam'], 0, 5) : null,
+                'jam_selesai' => ($k['jam_selesai'] ?? '') !== '' ? substr($k['jam_selesai'], 0, 5) : null,
                 'nama' => trim($k['nama']),
                 'keterangan' => trim($k['keterangan']) ?: null,
                 'destinasi' => $k['destinasi'] ?: null,

@@ -52,6 +52,10 @@ Susun RAB || lemon
     ];
     $kelasStatus = $warnaStatus[$statusKini] ?? $warnaStatus['draf'];
     $bolehJadiPendaftaran = ! $sudahPendaftaran && $statusKini !== 'batal' && ! $tanpaBiaya;
+
+    $impasPeserta = $r['bep_peserta'] ?? null;
+    $adaImpas = $impasPeserta !== null;
+    $impasTercapai = (bool) ($r['bep_tercapai'] ?? false);
 @endphp
 
 <div>
@@ -102,8 +106,13 @@ Susun RAB || lemon
         .rab-hari-tab button { border: 2px solid #e2e8f0; background: #fff; border-radius: 12px; padding: .45rem .9rem; font-weight: 600; font-size: .85rem; color: var(--orc-tinta); }
         .rab-hari-tab button.aktif { border-color: var(--orc-primer); background: var(--orc-gradien); color: #fff; }
         .rab-hari-tab small { opacity: .75; font-weight: 500; margin-left: .25rem; }
-        .rab-kegiatan { display: grid; grid-template-columns: 124px 1fr auto; grid-template-areas: "jam nama aksi" ". ket ket"; gap: .5rem .6rem; align-items: center; padding: .75rem; border: var(--orc-panel-garis); border-radius: 14px; background: #fff; margin-bottom: .5rem; }
+        .rab-kegiatan { display: grid; grid-template-columns: 196px 1fr auto; grid-template-areas: "jam nama aksi" ". ket ket"; gap: .5rem .6rem; align-items: center; padding: .75rem; border: var(--orc-panel-garis); border-radius: 14px; background: #fff; margin-bottom: .5rem; }
         .rab-kegiatan .rab-jam { grid-area: jam; }
+        .rab-waktu { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .rab-waktu-isian { display: flex; align-items: center; gap: 4px; min-width: 0; }
+        .rab-waktu-isian .dsb-isian { min-width: 0; padding-left: 8px !important; padding-right: 4px; }
+        .rab-waktu-pisah { color: #94a3b8; font-size: .8rem; flex: 0 0 auto; }
+        .rab-waktu-lama { font-size: .72rem; color: var(--dsb-redup, #6b7280); font-weight: 600; }
         .rab-kegiatan .rab-nama { grid-area: nama; }
         .rab-kegiatan .rab-ket { grid-area: ket; }
         .rab-kegiatan .rab-kegiatan-aksi { grid-area: aksi; }
@@ -127,6 +136,21 @@ Susun RAB || lemon
         .rab-tabel-biaya .dsb-isian { height: 36px !important; min-height: 36px; font-size: .85rem; padding-left: .6rem !important; text-align: right; }
         .rab-kat td { background: var(--orc-panel-latar) !important; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--orc-primer); }
         .rab-basi { font-size: .75rem; color: #b42318; }
+
+        /* Titik impas: hijau bila rombongan yang ada sudah menutup biaya
+           tetapnya, kuning bila belum. Bukan angka telanjang — yang
+           ditanyakan admin "aman atau belum", dan warna menjawabnya sebelum
+           satu angka pun dibaca. */
+        .rb-impas {
+            display: flex; align-items: flex-start; gap: 10px;
+            margin-top: 12px; padding: 11px 13px; border-radius: 13px;
+            border: 1px solid; 
+        }
+        .rb-impas.is-aman { background: #f6fbf8; border-color: #d1fae5; }
+        .rb-impas.is-waspada { background: #fffbeb; border-color: #fde68a; }
+        .rb-impas-teks { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .rb-impas-teks strong { font-size: .95rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-impas-teks .dsb-kartu-sub { line-height: 1.45; }
         @media (max-width: 575.98px) {
             .rab-kegiatan { grid-template-columns: 1fr; grid-template-areas: "jam" "nama" "ket" "aksi"; }
             .rab-kegiatan-aksi { justify-content: flex-end; }
@@ -302,7 +326,24 @@ Susun RAB || lemon
 
                             @foreach ($kegiatanAktif as $i => $k)
                                 <div class="rab-kegiatan" wire:key="kg-{{ $i }}-{{ md5($k['nama'].$k['hari_ke']) }}">
-                                    <input type="time" wire:model.blur="itinerary.{{ $i }}.jam" class="dsb-isian rab-jam" title="Jam">
+                                    {{-- Rentang waktu, bukan satu jam. Yang ditanyakan
+                                         pembaca jadwal bukan "mulai kapan" melainkan
+                                         "memakan waktu berapa lama, dan kapan rombongan
+                                         bisa bergerak lagi". Lamanya dihitung Orcha dari
+                                         kedua jam ini — tidak disimpan, jadi tidak bisa
+                                         berselisih dengan jamnya. --}}
+                                    <div class="rab-jam rab-waktu">
+                                        <div class="rab-waktu-isian">
+                                            <input type="time" wire:model.blur="itinerary.{{ $i }}.jam"
+                                                class="dsb-isian" title="Jam mulai" aria-label="Jam mulai">
+                                            <span class="rab-waktu-pisah">–</span>
+                                            <input type="time" wire:model.blur="itinerary.{{ $i }}.jam_selesai"
+                                                class="dsb-isian" title="Jam selesai" aria-label="Jam selesai">
+                                        </div>
+                                        @if (($k['durasi_teks'] ?? '') !== '')
+                                            <span class="rab-waktu-lama">{{ $k['durasi_teks'] }}</span>
+                                        @endif
+                                    </div>
                                     <input type="text" wire:model.blur="itinerary.{{ $i }}.nama" maxlength="150" class="dsb-isian fw-semibold rab-nama"
                                         title="{{ $k['destinasi'] ? 'Destinasi: '.$k['destinasi'] : 'Kegiatan' }}">
                                     <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
@@ -543,6 +584,38 @@ Susun RAB || lemon
                                 <div class="rab-baris-angka garis text-success">
                                     <span class="fw-bold">Untung</span>
                                     <strong>{{ $r['untung_teks'] ?? 'Rp 0' }}@isset($r['persen_untung']) <small>({{ str_replace('.', ',', $r['persen_untung']) }}%)</small>@endisset</strong>
+                                </div>
+                                <div class="rab-baris-angka text-muted">
+                                    <span>Untung per orang</span><span>{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }}</span>
+                                </div>
+
+                                {{-- Titik impas.
+
+                                     Sewa bus, honor koordinator, dan dokumentasi dibayar
+                                     sama saja entah yang berangkat sepuluh atau lima belas
+                                     orang — dan itulah yang membuat rombongan kecil
+                                     diam-diam merugi walau harganya terlihat untung di
+                                     atas kertas. --}}
+                                <div class="rb-impas {{ $impasTercapai ? 'is-aman' : 'is-waspada' }}">
+                                    <span class="dsb-ikon is-kecil" style="--c: {{ $impasTercapai ? '#047857' : '#b45309' }}">
+                                        <i class="bi {{ $impasTercapai ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}"></i>
+                                    </span>
+                                    <div class="rb-impas-teks">
+                                        <span class="dsb-label mb-0">Balik modal mulai</span>
+                                        @if ($adaImpas)
+                                            <strong>{{ $impasPeserta }} peserta</strong>
+                                            <span class="dsb-kartu-sub">
+                                                Biaya tetap {{ $r['modal_tetap_teks'] ?? 'Rp 0' }} ·
+                                                tiap kepala menyumbang {{ $r['sumbangan_per_orang_teks'] ?? 'Rp 0' }}
+                                            </span>
+                                        @else
+                                            <strong>Belum bisa dihitung</strong>
+                                            <span class="dsb-kartu-sub">
+                                                Harga jualnya belum menutup biaya yang menempel per orang —
+                                                menambah peserta tidak menolong.
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <div class="border-top mt-3 pt-3">
