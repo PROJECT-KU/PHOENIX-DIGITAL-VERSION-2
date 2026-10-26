@@ -517,3 +517,139 @@ test('kegiatan berikutnya menyambung jam SELESAI, bukan jam mulai', function () 
 
     expect(collect(itineraryTerkirim())->firstWhere('nama', 'Makan siang')['jam'])->toBe('11:00');
 });
+
+/*
+ | ---------------------------------------------------------------------------
+ | Open trip di layar
+ | ---------------------------------------------------------------------------
+ */
+
+test('jenis perjalanan dipilih lebih dulu, dan open trip menuntut peserta minimum', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaTambah');
+
+    // Private trip sebagai bawaan: jumlah orangnya sudah pasti di kesepakatan.
+    expect($komponen->instance()->openTrip())->toBeFalse();
+
+    $komponen->set('isian.jenis', 'open')
+        ->set('isian.nama_pelanggan', 'Rombongan Umum')
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->set('isian.jumlah_peserta', 14)
+        ->set('isian.peserta_minimum', 20)   // lebih banyak daripada targetnya
+        ->call('simpan')
+        ->assertHasErrors('isian.peserta_minimum');
+});
+
+test('open trip mengirim dasar harga ke Orcha, private trip tidak membawanya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.jenis', 'open')
+        ->set('isian.nama_pelanggan', 'Rombongan Umum')
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->set('isian.jumlah_peserta', 14)
+        ->set('isian.peserta_minimum', 5)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab')
+        && ($r->data()['jenis'] ?? null) === 'open'
+        && ($r->data()['peserta_minimum'] ?? null) === 5
+        && ($r->data()['harga_dasar'] ?? null) === 'minimum');
+});
+
+test('private trip tidak membawa sisa isian open trip', function () {
+    /*
+     | Kolom yang terisi tapi tak berarti akan dibaca sebagai keadaan nyata
+     | kelak — "peserta minimum 5" pada private trip menyesatkan siapa pun
+     | yang membukanya enam bulan lagi.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.jenis', 'open')
+        ->set('isian.peserta_minimum', 5)
+        ->set('isian.jenis', 'private')          // berubah pikiran
+        ->set('isian.nama_pelanggan', 'Keluarga Hendra')
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    // array_key_exists, bukan ??: operator itu ikut menyala pada nilai null,
+    // jadi ia tidak bisa membedakan "dikirim kosong" dari "tidak dikirim".
+    Http::assertSent(fn ($r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab')
+        && array_key_exists('peserta_minimum', $r->data())
+        && $r->data()['peserta_minimum'] === null
+        && ($r->data()['harga_dasar'] ?? null) === 'peserta');
+});
+
+test('judul rakitan menyebut jenis perjalanannya', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->set('isian.jumlah_hari', 3);
+
+    expect($komponen->instance()->judulOtomatis())->toBe('Private Trip Jawa Timur 3H2M');
+
+    $komponen->set('isian.jenis', 'open');
+
+    expect($komponen->instance()->judulOtomatis())->toBe('Open Trip Jawa Timur 3H2M');
+});
+
+test('penyusun memperlihatkan dasar harga dan simulasi pesertanya', function () {
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    $r = rekamanRab('show')['data']['ringkasan'];
+
+    // Pada open trip harga dan modal dihitung dari jumlah yang BERBEDA;
+    // tanpa disebut, angkanya terbaca seolah dibagi jumlah yang sama.
+    expect($isi)->toContain('harga dihitung atas dasar')
+        ->and($isi)->toContain('Kalau yang datang sekian')
+        // Angka impas tanpa tabelnya menuntut pembacanya percaya begitu saja.
+        ->and($isi)->toContain($r['simulasi'][0]['laba_teks']);
+});
+
+test('persetujuan sadar ikut dikirim saat dijadikan pendaftaran', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('paketId', '1')
+        ->set('abaikanImpas', true)
+        ->call('jadikanPendaftaran');
+
+    Http::assertSent(fn ($r) => str_contains($r->url(), 'jadikan-pendaftaran')
+        && ($r->data()['abaikan_impas'] ?? null) === true);
+});
+
+test('penolakan dari Orcha sampai apa adanya, bukan jadi kode 422', function () {
+    /*
+     | Orcha sudah menjelaskan sendiri apa yang salah. Menggantinya dengan
+     | "Orcha membalas dengan kode 422" membuang satu-satunya kalimat yang
+     | bisa ditindaklanjuti, dan menyisakan angka yang harus dicari artinya
+     | ke orang lain.
+     */
+    Http::fake([
+        '*/jadikan-pendaftaran' => Http::response([
+            'pesan' => 'Peserta baru 2 orang, sementara trip ini baru balik modal mulai 5 orang.',
+        ], 422),
+        '*' => Http::response(rekamanRab('show')),
+    ]);
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('paketId', '1')
+        ->call('jadikanPendaftaran')
+        ->assertDispatched('toast-error', message: 'Peserta baru 2 orang, sementara trip ini baru balik modal mulai 5 orang.');
+});

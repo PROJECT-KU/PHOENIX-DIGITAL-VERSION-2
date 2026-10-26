@@ -134,7 +134,204 @@
             "bep_tercapai": true,
             "modal_variabel_per_orang_teks": "Rp 50.000",
             "sumbangan_per_orang_teks": "Rp 476.000",
-            "untung_per_orang_teks": "Rp 87.764"
-        }
+            "untung_per_orang_teks": "Rp 87.764",
+            "peserta_dasar": 17,
+            "simulasi": [
+                {
+                    "peserta": 1,
+                    "modal": 6650000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 526000,
+                    "laba": -6124000,
+                    "modal_teks": "Rp 6.650.000",
+                    "pemasukan_teks": "Rp 526.000",
+                    "laba_teks": "Rp -6.124.000"
+                },
+                {
+                    "peserta": 2,
+                    "modal": 6700000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 1052000,
+                    "laba": -5648000,
+                    "modal_teks": "Rp 6.700.000",
+                    "pemasukan_teks": "Rp 1.052.000",
+                    "laba_teks": "Rp -5.648.000"
+                },
+                {
+                    "peserta": 3,
+                    "modal": 6750000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 1578000,
+                    "laba": -5172000,
+                    "modal_teks": "Rp 6.750.000",
+                    "pemasukan_teks": "Rp 1.578.000",
+                    "laba_teks": "Rp -5.172.000"
+                },
+                {
+                    "peserta": 4,
+                    "modal": 6800000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 2104000,
+                    "laba": -4696000,
+                    "modal_teks": "Rp 6.800.000",
+                    "pemasukan_teks": "Rp 2.104.000",
+                    "laba_teks": "Rp -4.696.000"
+                },
+                {
+                    "peserta": 5,
+                    "modal": 6850000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 2630000,
+                    "laba": -4220000,
+                    "modal_teks": "Rp 6.850.000",
+                    "pemasukan_teks": "Rp 2.630.000",
+                    "laba_teks": "Rp -4.220.000"
+                },
+                {
+                    "peserta": 6,
+                    "modal": 6900000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 3156000,
+                    "laba": -3744000,
+                    "modal_teks": "Rp 6.900.000",
+                    "pemasukan_teks": "Rp 3.156.000",
+                    "laba_teks": "Rp -3.744.000"
+                },
+                {
+                    "peserta": 7,
+                    "modal": 6950000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 3682000,
+                    "laba": -3268000,
+                    "modal_teks": "Rp 6.950.000",
+                    "pemasukan_teks": "Rp 3.682.000",
+                    "laba_teks": "Rp -3.268.000"
+                },
+                {
+                    "peserta": 8,
+                    "modal": 7000000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 4208000,
+                    "laba": -2792000,
+                    "modal_teks": "Rp 7.000.000",
+                    "pemasukan_teks": "Rp 4.208.000",
+                    "laba_teks": "Rp -2.792.000"
+                },
+                {
+                    "peserta": 9,
+                    "modal": 7050000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 4734000,
+                    "laba": -2316000,
+                    "modal_teks": "Rp 7.050.000",
+                    "pemasukan_teks": "Rp 4.734.000",
+                    "laba_teks": "Rp -2.316.000"
+                },
+                {
+                    "peserta": 10,
+                    "modal": 7100000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 5260000,
+                    "laba": -1840000,
+                    "modal_teks": "Rp 7.100.000",
+                    "pemasukan_teks": "Rp 5.260.000",
+                    "laba_teks": "Rp -1.840.000"
+                },
+                {
+                    "peserta": 11,
+                    "modal": 7150000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 5786000,
+                    "laba": -1364000,
+                    "modal_teks": "Rp 7.150.000",
+                    "pemasukan_teks": "Rp 5.786.000",
+                    "laba_teks": "Rp -1.364.000"
+                },
+                {
+                    "peserta": 12,
+                    "modal": 7200000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 6312000,
+                    "laba": -888000,
+                    "modal_teks": "Rp 7.200.000",
+                    "pemasukan_teks": "Rp 6.312.000",
+                    "laba_teks": "Rp -888.000"
+                },
+                {
+                    "peserta": 13,
+                    "modal": 7250000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 6838000,
+                    "laba": -412000,
+                    "modal_teks": "Rp 7.250.000",
+                    "pemasukan_teks": "Rp 6.838.000",
+                    "laba_teks": "Rp -412.000"
+                },
+                {
+                    "peserta": 14,
+                    "modal": 7300000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 7364000,
+                    "laba": 64000,
+                    "modal_teks": "Rp 7.300.000",
+                    "pemasukan_teks": "Rp 7.364.000",
+                    "laba_teks": "Rp 64.000"
+                },
+                {
+                    "peserta": 15,
+                    "modal": 7350000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 7890000,
+                    "laba": 540000,
+                    "modal_teks": "Rp 7.350.000",
+                    "pemasukan_teks": "Rp 7.890.000",
+                    "laba_teks": "Rp 540.000"
+                },
+                {
+                    "peserta": 16,
+                    "modal": 7400000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 8416000,
+                    "laba": 1016000,
+                    "modal_teks": "Rp 7.400.000",
+                    "pemasukan_teks": "Rp 8.416.000",
+                    "laba_teks": "Rp 1.016.000"
+                },
+                {
+                    "peserta": 17,
+                    "modal": 7450000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 8942000,
+                    "laba": 1492000,
+                    "modal_teks": "Rp 7.450.000",
+                    "pemasukan_teks": "Rp 8.942.000",
+                    "laba_teks": "Rp 1.492.000"
+                },
+                {
+                    "peserta": 18,
+                    "modal": 7500000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 9468000,
+                    "laba": 1968000,
+                    "modal_teks": "Rp 7.500.000",
+                    "pemasukan_teks": "Rp 9.468.000",
+                    "laba_teks": "Rp 1.968.000"
+                },
+                {
+                    "peserta": 19,
+                    "modal": 7550000,
+                    "modal_tetap": 6600000,
+                    "pemasukan": 9994000,
+                    "laba": 2444000,
+                    "modal_teks": "Rp 7.550.000",
+                    "pemasukan_teks": "Rp 9.994.000",
+                    "laba_teks": "Rp 2.444.000"
+                }
+            ]
+        },
+        "jenis": "open",
+        "jenis_label": "Open Trip",
+        "peserta_minimum": 5,
+        "harga_dasar": "minimum"
     }
 }

@@ -68,6 +68,16 @@ class OrchaRabSusun extends Component
 
     public string $paketId = '';
 
+    /**
+     * Persetujuan sadar untuk tetap berangkat di bawah titik impas.
+     *
+     * Tidak pernah menyala sendiri: yang menekan "Jadikan Pendaftaran"
+     * biasanya sedang mengejar tenggat, dan centang yang sudah tercentang
+     * lebih dulu bukan persetujuan — ia sekadar penghalang yang sudah
+     * disingkirkan untuknya.
+     */
+    public bool $abaikanImpas = false;
+
     public function mount(int $rab): void
     {
         $this->rabId = $rab;
@@ -594,6 +604,7 @@ class OrchaRabSusun extends Component
         try {
             $baru = $this->orcha()->kirim("/rab/{$this->rabId}/jadikan-pendaftaran", [
                 'travel_package_id' => (int) $this->paketId,
+                'abaikan_impas' => $this->abaikanImpas,
             ])['data'] ?? [];
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());

@@ -53,9 +53,22 @@ Susun RAB || lemon
     $kelasStatus = $warnaStatus[$statusKini] ?? $warnaStatus['draf'];
     $bolehJadiPendaftaran = ! $sudahPendaftaran && $statusKini !== 'batal' && ! $tanpaBiaya;
 
+    $openTrip = ($rab['jenis'] ?? 'private') === 'open';
+    $pesertaDasar = (int) ($r['peserta_dasar'] ?? ($rab['jumlah_peserta'] ?? 1));
+    $simulasi = $r['simulasi'] ?? [];
     $impasPeserta = $r['bep_peserta'] ?? null;
     $adaImpas = $impasPeserta !== null;
     $impasTercapai = (bool) ($r['bep_tercapai'] ?? false);
+    $dibawahImpas = $openTrip && $impasPeserta !== null && ! $impasTercapai;
+
+    /*
+     | Perbandingannya dirakit di sini, BUKAN di @php sebaris di antara
+     | direktif. Tanda "lebih besar" di sana membuat Livewire melewatkan
+     | penanda morph @foreach-nya, dan tiap pembaruan sesudahnya rusak di
+     | Block.appendChild — tanpa satu pun galat yang menyebut sebabnya.
+     | Dijaga PenandaMorphAdminTest.
+     */
+    $amanLaba = fn (array $s) => $s['laba'] >= 0;
 @endphp
 
 <div>
@@ -151,6 +164,31 @@ Susun RAB || lemon
         .rb-impas-teks { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
         .rb-impas-teks strong { font-size: .95rem; color: var(--dsb-tinta, #1c1f26); }
         .rb-impas-teks .dsb-kartu-sub { line-height: 1.45; }
+
+        .rb-dasar {
+            display: flex; align-items: flex-start; gap: 7px; margin-bottom: 12px;
+            padding: 8px 11px; border-radius: 11px; background: #fffbeb; border: 1px solid #fde68a;
+            font-size: .78rem; color: #92400e; line-height: 1.45;
+        }
+
+        /* Simulasi: baris yang sudah tidak rugi berlatar hijau tipis, baris
+           titik impasnya bergaris kiri — angka saja menuntut pembacanya
+           membandingkan belasan baris dengan mata. */
+        .rb-sim { width: 100%; border-collapse: collapse; font-size: .76rem; }
+        .rb-sim td { padding: 3px 6px; border-bottom: 1px solid #f4f7fa; white-space: nowrap; }
+        .rb-sim tr:last-child td { border-bottom: 0; }
+        .rb-sim tr.is-aman td { background: #f3faf6; }
+        .rb-sim tr.is-impas td:first-child { box-shadow: inset 2px 0 0 #047857; font-weight: 700; }
+        .rb-sim-pax { color: var(--dsb-redup, #6b7280); }
+        .rb-sim-modal { color: #94a3b8; text-align: right; font-variant-numeric: tabular-nums; }
+        .rb-sim-laba { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .rb-sadar {
+            display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px;
+            padding: 9px 11px; border-radius: 11px; background: #fef2f2; border: 1px solid #fecaca;
+            font-size: .76rem; color: #991b1b; line-height: 1.45; cursor: pointer;
+        }
+        .rb-sadar input { margin-top: 2px; flex: 0 0 auto; }
         @media (max-width: 575.98px) {
             .rab-kegiatan { grid-template-columns: 1fr; grid-template-areas: "jam" "nama" "ket" "aksi"; }
             .rab-kegiatan-aksi { justify-content: flex-end; }
@@ -578,6 +616,17 @@ Susun RAB || lemon
                                 <div class="rab-harga-besar">{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</div>
                                 <div class="text-muted small mb-3">Total {{ $r['harga_total_teks'] ?? 'Rp 0' }} untuk {{ $rab['jumlah_peserta'] }} peserta</div>
 
+                                {{-- Pada open trip harga dan modal dihitung dari jumlah
+                                     yang BERBEDA; tanpa disebut, angka di atas terbaca
+                                     seolah dibagi jumlah peserta yang sama. --}}
+                                @if ($openTrip)
+                                    <div class="rb-dasar">
+                                        <i class="bi bi-megaphone"></i>
+                                        Open trip · harga dihitung atas dasar <strong>{{ $pesertaDasar }} peserta</strong>,
+                                        modal di bawah ini atas {{ $rab['jumlah_peserta'] }} peserta.
+                                    </div>
+                                @endif
+
                                 <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
                                 <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
                                 <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
@@ -617,6 +666,29 @@ Susun RAB || lemon
                                         @endif
                                     </div>
                                 </div>
+
+                                {{-- Tabel yang menjawab pertanyaan sebenarnya sebelum
+                                     memberangkatkan open trip: "dapat sekian orang, kita
+                                     untung atau rugi?"
+
+                                     Dihitung ulang di tiap jumlah, bukan dibagi rata —
+                                     biaya tetapnya ikut berubah saat kamar atau armada
+                                     bertambah, dan tangga itulah yang membuat satu
+                                     peserta tambahan kadang justru menambah rugi. --}}
+                                @if ($openTrip && $simulasi !== [])
+                                    <div class="border-top mt-3 pt-3">
+                                        <div class="orcha-label-kecil mb-2">Kalau yang datang sekian</div>
+                                        <table class="rb-sim">
+                                            @foreach ($simulasi as $s)
+                                                <tr class="{{ $amanLaba($s) ? 'is-aman' : '' }} {{ $s['peserta'] === $impasPeserta ? 'is-impas' : '' }}">
+                                                    <td class="rb-sim-pax">{{ $s['peserta'] }} org</td>
+                                                    <td class="rb-sim-modal">{{ $s['modal_teks'] }}</td>
+                                                    <td class="rb-sim-laba" style="color: {{ $amanLaba($s) ? '#047857' : '#be123c' }}">{{ $s['laba_teks'] }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </table>
+                                    </div>
+                                @endif
 
                                 <div class="border-top mt-3 pt-3">
                                     <div class="orcha-label-kecil mb-2">Margin</div>
@@ -683,6 +755,20 @@ Susun RAB || lemon
                                         @endforeach
                                     </select>
                                     @error('paketId')<div class="dsb-galat mb-2">{{ $message }}</div>@enderror
+
+                                    {{-- Tidak pernah tercentang sendiri. Yang menekan
+                                         tombol ini biasanya sedang mengejar tenggat, dan
+                                         centang yang sudah disingkirkan untuknya bukan
+                                         persetujuan. --}}
+                                    @if ($dibawahImpas)
+                                        <label class="rb-sadar">
+                                            <input type="checkbox" wire:model.live="abaikanImpas">
+                                            <span>
+                                                Peserta baru {{ $rab['jumlah_peserta'] }} orang, balik modal mulai
+                                                {{ $impasPeserta }} orang. Saya tetap memberangkatkan dan menerima ruginya.
+                                            </span>
+                                        </label>
+                                    @endif
                                     <button type="button" class="dsb-tombol is-lembut w-100 justify-content-center pcek-konfirmasi" style="--ikon: #047857"
                                         data-action="jadikanPendaftaran"
                                         data-title="Jadikan pendaftaran?"

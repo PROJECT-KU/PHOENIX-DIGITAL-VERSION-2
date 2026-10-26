@@ -42,6 +42,15 @@ class OrchaRabList extends Component
             'jumlah_hari' => 3,
             'jumlah_malam' => 2,
             'jumlah_peserta' => 10,
+            /*
+             | Private trip sebagai bawaan: jumlah orangnya sudah pasti di
+             | kesepakatan, jadi kursi kosong bukan risiko kantor. Open trip
+             | dipilih sendiri, karena ia menuntut keputusan lain — jumlah
+             | paling rendah yang masih mau diberangkatkan.
+             */
+            'jenis' => 'private',
+            'peserta_minimum' => 5,
+            'harga_dasar' => 'minimum',
         ];
     }
 
@@ -75,13 +84,20 @@ class OrchaRabList extends Component
      *
      * Tetap bisa ditulis sendiri; yang dihapus kewajibannya, bukan pilihannya.
      */
+    /** Open trip menuntut isian yang tidak dipakai private trip. */
+    public function openTrip(): bool
+    {
+        return ($this->isian['jenis'] ?? 'private') === 'open';
+    }
+
     public function judulOtomatis(): string
     {
+        $awalan = $this->openTrip() ? 'Open Trip ' : 'Private Trip ';
         $tujuan = trim((string) ($this->isian['daerah'] ?? '')) ?: trim((string) ($this->isian['provinsi'] ?? ''));
         $hari = max(1, (int) ($this->isian['jumlah_hari'] ?? 1));
         $malam = max(0, (int) ($this->isian['jumlah_malam'] ?? 0));
 
-        return trim('Private Trip '.$tujuan.' '.$hari.'H'.$malam.'M');
+        return trim($awalan.$tujuan.' '.$hari.'H'.$malam.'M');
     }
 
     /**
@@ -108,12 +124,26 @@ class OrchaRabList extends Component
             'isian.jumlah_hari' => 'required|integer|min:1|max:30',
             'isian.jumlah_malam' => 'required|integer|min:0|max:30|lte:isian.jumlah_hari',
             'isian.jumlah_peserta' => 'required|integer|min:1|max:500',
+            // Peserta minimum hanya berarti pada open trip, dan tidak boleh
+            // melebihi targetnya sendiri.
+            'isian.peserta_minimum' => $this->openTrip()
+                ? 'required|integer|min:1|max:500|lte:isian.jumlah_peserta'
+                : 'nullable',
         ], [
             'isian.jumlah_malam.lte' => 'Jumlah malam tidak boleh melebihi jumlah hari.',
+            'isian.peserta_minimum.lte' => 'Peserta minimum tidak boleh lebih banyak daripada targetnya.',
         ], [
             'isian.judul' => 'judul', 'isian.nama_pelanggan' => 'nama pelanggan', 'isian.provinsi' => 'provinsi',
             'isian.jumlah_hari' => 'jumlah hari', 'isian.jumlah_peserta' => 'jumlah peserta',
+            'isian.peserta_minimum' => 'peserta minimum',
         ]);
+
+        // Private trip tidak membawa isian open trip sama sekali: kolom yang
+        // terisi tapi tak berarti akan dibaca sebagai keadaan nyata kelak.
+        if (! $this->openTrip()) {
+            $this->isian['peserta_minimum'] = null;
+            $this->isian['harga_dasar'] = 'peserta';
+        }
 
         $data = array_map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v, $this->isian) + [
             // Titik awal yang masuk akal; diatur ulang di halaman penyusun.

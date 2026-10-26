@@ -111,6 +111,29 @@ RAB & Itinerary || lemon
                                  selalu diisi dengan jawaban yang sama bukan pilihan,
                                  melainkan pekerjaan. Ketiganya pindah ke balik
                                  "Sesuaikan sendiri". --}}
+                            {{-- Jenis perjalanan dipilih lebih dulu: ia menentukan
+                                 isian mana yang berikutnya masuk akal. Private trip
+                                 jumlah orangnya sudah pasti di kesepakatan; open trip
+                                 harganya diumumkan lebih dulu dan jumlah orangnya baru
+                                 ketahuan belakangan. --}}
+                            <div class="rb-jenis">
+                                @foreach ([
+                                    'private' => ['Private Trip', 'Rombongan sudah pasti — kursi kosong bukan risiko kantor', 'bi-people-fill'],
+                                    'open' => ['Open Trip', 'Harga diumumkan dulu, pesertanya menyusul', 'bi-megaphone-fill'],
+                                ] as $kunci => [$label, $ket, $ikon])
+                                    <button type="button" wire:click="$set('isian.jenis', '{{ $kunci }}')"
+                                        class="rb-jenis-pilih {{ ($isian['jenis'] ?? 'private') === $kunci ? 'is-aktif' : '' }}">
+                                        <span class="dsb-ikon is-kecil" style="--c: {{ $kunci === 'open' ? '#b45309' : '#4f46e5' }}">
+                                            <i class="bi {{ $ikon }}"></i>
+                                        </span>
+                                        <span class="rb-jenis-teks">
+                                            <strong>{{ $label }}</strong>
+                                            <span class="dsb-kartu-sub">{{ $ket }}</span>
+                                        </span>
+                                    </button>
+                                @endforeach
+                            </div>
+
                             <div class="rb-medan-rak">
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="rb-nama">Nama pelanggan <span class="rb-wajib">*</span></label>
@@ -154,11 +177,28 @@ RAB & Itinerary || lemon
                                 </div>
 
                                 <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-peserta">Jumlah peserta <span class="rb-wajib">*</span></label>
-                                    <input id="rb-peserta" type="number" min="1" max="500" wire:model="isian.jumlah_peserta"
+                                    <label class="dsb-label" for="rb-peserta">
+                                        {{ $this->openTrip() ? 'Target peserta' : 'Jumlah peserta' }} <span class="rb-wajib">*</span>
+                                    </label>
+                                    <input id="rb-peserta" type="number" min="1" max="500" wire:model.live.debounce.400ms="isian.jumlah_peserta"
                                         class="dsb-isian @error('isian.jumlah_peserta') is-galat @enderror">
                                     @error('isian.jumlah_peserta')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 </div>
+
+                                {{-- Angka yang menentukan harga open trip, dan satu-satunya
+                                     yang benar-benar melindungi kantor: jumlah paling rendah
+                                     yang masih mau diberangkatkan. Harga dipatok dari sini,
+                                     sehingga yang datang di atasnya jadi untung — bukan
+                                     penyelamat. --}}
+                                @if ($this->openTrip())
+                                    <div class="dsb-medan">
+                                        <label class="dsb-label" for="rb-minimum">Peserta minimum <span class="rb-wajib">*</span></label>
+                                        <input id="rb-minimum" type="number" min="1" max="500" wire:model.live.debounce.400ms="isian.peserta_minimum"
+                                            class="dsb-isian @error('isian.peserta_minimum') is-galat @enderror">
+                                        @error('isian.peserta_minimum')<span class="dsb-galat">{{ $message }}</span>@enderror
+                                        <span class="dsb-kartu-sub">Harga dihitung dari angka ini, bukan dari target.</span>
+                                    </div>
+                                @endif
                             </div>
 
                             {{-- Judul yang dirakit diperlihatkan, bukan dikerjakan
@@ -380,6 +420,20 @@ RAB & Itinerary || lemon
 
         /* Isian RAB baru: grid yang membagi habis lebar kartunya, bukan flex
            yang menyisakan ruang kosong di kanan baris terakhir. */
+        /* Pemilih jenis perjalanan: dua kartu, bukan kotak pilih. Keputusannya
+           menentukan isian berikutnya, jadi ia pantas terlihat sebagai
+           persimpangan — bukan sebagai satu baris di antara baris lain. */
+        .rb-jenis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .rb-jenis-pilih {
+            display: flex; align-items: flex-start; gap: 11px; text-align: left; cursor: pointer;
+            padding: 12px 14px; border-radius: 13px; background: #fff;
+            border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        .rb-jenis-pilih:hover { border-color: #c7d2fe; }
+        .rb-jenis-pilih.is-aktif { border-color: #4f46e5; background: #f6f5ff; box-shadow: 0 0 0 3px rgba(99, 102, 241, .1); }
+        .rb-jenis-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .rb-jenis-teks strong { color: var(--dsb-tinta, #1c1f26); font-size: .92rem; }
+
         .rb-medan-rak { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 16px; align-items: start; }
         .rb-medan-rak > .dsb-medan { min-width: 0; }
         .rb-medan-rak .dsb-kartu-sub { display: block; margin-top: 5px; }
@@ -417,6 +471,7 @@ RAB & Itinerary || lemon
             .rb-saring > .rb-medan-cari { flex: 1 1 100%; }
             .rb-saring > .rb-pilih { flex: 1 1 160px; max-width: none; }
             .rb-medan-rak { grid-template-columns: repeat(2, 1fr); }
+            .rb-jenis { grid-template-columns: 1fr; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu

@@ -138,7 +138,7 @@ class OrchaClient
         }
 
         if ($balasan->failed()) {
-            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan->status()));
+            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan));
         }
 
         return $balasan->json() ?? [];
@@ -167,7 +167,7 @@ class OrchaClient
         }
 
         if ($balasan->failed()) {
-            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan->status()));
+            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan));
         }
 
         // Nama berkasnya ikut apa kata Orcha; kalau tidak disebut, dibuatkan
@@ -231,7 +231,7 @@ class OrchaClient
         }
 
         if ($balasan->failed()) {
-            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan->status()));
+            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan));
         }
 
         return $balasan->json() ?? [];
@@ -408,8 +408,32 @@ class OrchaClient
         });
     }
 
-    private function pesanGagal(int $kode): string
+    private function pesanGagal(\Illuminate\Http\Client\Response $balasan): string
     {
+        $kode = $balasan->status();
+
+        /*
+         | Orcha sering sudah menjelaskan sendiri apa yang salah — "Nomor
+         | WhatsApp pelanggan belum diisi", "Peserta baru 2 orang sementara
+         | trip ini baru balik modal mulai 5 orang". Menggantinya dengan
+         | "Orcha membalas dengan kode 422" membuang satu-satunya kalimat
+         | yang bisa ditindaklanjuti admin, dan menyisakan angka yang harus
+         | dicari artinya ke orang lain.
+         |
+         | HANYA 422 — penolakan yang berasal dari aturan bisnis, yang
+         | memang cuma Orcha yang tahu rinciannya. Sisanya urusan sambungan:
+         | untuk 401 kalimat kami ("pastikan ORCHA_API_KEY sama persis di
+         | kedua aplikasi") menyebutkan langkah yang harus diambil, sementara
+         | "Kunci API tidak sah" dari Orcha hanya mengulang bahwa ada yang
+         | salah. Galat 5xx juga tetap kalimat kami, karena isinya biasanya
+         | jejak teknis yang bukan urusan admin.
+         */
+        $pesanOrcha = trim((string) ($balasan->json('pesan') ?? ''));
+
+        if ($kode === 422 && $pesanOrcha !== '') {
+            return $pesanOrcha;
+        }
+
         return match ($kode) {
             401 => 'Kunci API Orcha ditolak. Pastikan ORCHA_API_KEY sama persis di kedua aplikasi.',
             403 => 'IP server ini belum diizinkan oleh Orcha.',
