@@ -16,6 +16,22 @@ Master Harga || lemon
     <style>
         /* Kartu di luar rak 12 kolom: jaraknya diatur sendiri, karena yang
            biasanya mengaturnya adalah gap raknya. */
+        /* Baris yang nama destinasinya tidak ada di katalog: tiketnya tidak
+           akan pernah ikut tertarik ke RAB, dan sebelumnya tidak ada apa pun
+           di layar yang mengabarkannya. */
+        .mh-lepas {
+            display: inline-flex; align-items: center; gap: 5px; margin-top: 3px;
+            font-size: .76rem; font-weight: 600; color: #b45309;
+        }
+        .mh-lepas-ket {
+            padding: 1px 7px 2px; border-radius: 7px;
+            background: #fffbeb; border: 1px solid #fde68a; font-size: .68rem; font-weight: 700;
+        }
+        .mh-asing {
+            display: flex; align-items: flex-start; gap: 6px; margin-top: 5px;
+            font-size: .74rem; line-height: 1.45; color: #92400e;
+        }
+
         .mh-kartu { margin-bottom: clamp(12px, 1.2vw, 16px); }
         .mh-kartu:last-of-type { margin-bottom: 0; }
 
@@ -157,14 +173,38 @@ Master Harga || lemon
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="dsb-label">Destinasi <span class="text-muted fw-normal">(untuk tiket)</span></label>
-                            <input type="text" wire:model.blur="isian.destinasi" list="rab-daftar-destinasi" maxlength="150"
-                                class="dsb-isian" placeholder="Pilih dari katalog">
-                            <datalist id="rab-daftar-destinasi">
+                            {{-- DIPILIH, bukan diketik.
+
+                                 Harga tiket dijodohkan ke itinerary lewat nama ini
+                                 PERSIS. Sebagai ketikan bebas (dulu: input + datalist,
+                                 yang cuma menyarankan), satu huruf berbeda —
+                                 "prambanan" alih-alih "Candi Prambanan" — membuat
+                                 tiketnya tidak pernah ikut tertarik, dan RAB-nya
+                                 kekurangan modal tanpa satu pun tanda. --}}
+                            @php
+                                $destinasiKini = trim((string) ($isian['destinasi'] ?? ''));
+                                $asing = $destinasiKini !== '' && ! in_array($destinasiKini, $namaKatalog, true);
+                            @endphp
+                            <select wire:model.blur="isian.destinasi" class="dsb-isian @error('isian.destinasi') is-galat @enderror">
+                                <option value="">Tidak terikat destinasi</option>
+                                @if ($asing)
+                                    {{-- Nilai lama yang tidak ada di katalog TETAP
+                                         ditawarkan, supaya menyunting baris lain tidak
+                                         diam-diam menghapusnya. --}}
+                                    <option value="{{ $destinasiKini }}">{{ $destinasiKini }} — tidak ada di katalog</option>
+                                @endif
                                 @foreach ($destinasi as $d)
-                                    <option value="{{ $d }}"></option>
+                                    <option value="{{ $d }}">{{ $d }}</option>
                                 @endforeach
-                            </datalist>
-                            <div class="dsb-kartu-sub">Nama harus sama dengan katalog supaya ikut tertarik.</div>
+                            </select>
+                            @if ($asing)
+                                <div class="mh-asing">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    Nama ini tidak ada di katalog destinasi, jadi tiketnya tidak akan ikut tertarik saat destinasinya dipilih di itinerary.
+                                </div>
+                            @else
+                                <div class="dsb-kartu-sub">Kosongkan untuk biaya yang bukan tiket destinasi.</div>
+                            @endif
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="dsb-label">Daerah</label>
@@ -277,7 +317,13 @@ Master Harga || lemon
                                     <td data-judul="Nama">
                                         <div class="fw-bold">{{ $baris['nama'] }}</div>
                                         @if ($baris['destinasi'])
-                                            <div class="text-muted small"><i class="bi bi-geo-alt"></i> {{ $baris['destinasi'] }}</div>
+                                            @php $lepas = ! in_array($baris['destinasi'], $namaKatalog, true); @endphp
+                                            <div class="{{ $lepas ? 'mh-lepas' : 'text-muted small' }}"
+                                                @if ($lepas) title="Nama ini tidak ada di katalog destinasi, jadi tiketnya tidak akan ikut tertarik ke RAB" @endif>
+                                                <i class="bi {{ $lepas ? 'bi-exclamation-triangle-fill' : 'bi-geo-alt' }}"></i>
+                                                {{ $baris['destinasi'] }}
+                                                @if ($lepas)<span class="mh-lepas-ket">tidak cocok katalog</span>@endif
+                                            </div>
                                         @endif
                                         @if ($baris['catatan'])
                                             <div class="text-muted small fst-italic">{{ $baris['catatan'] }}</div>

@@ -889,3 +889,41 @@ test('katalog yang benar-benar kosong tetap dikabarkan apa adanya', function () 
 
     expect($isi)->toContain('Tidak ada destinasi katalog untuk provinsi ini');
 });
+
+test('destinasi di master harga DIPILIH dari katalog, bukan diketik', function () {
+    /*
+     | Harga tiket dijodohkan ke itinerary lewat nama ini persis. Sebagai
+     | ketikan bebas (input + datalist, yang cuma menyarankan), satu huruf
+     | berbeda membuat tiketnya tidak pernah ikut tertarik dan RAB-nya
+     | kekurangan modal tanpa satu pun tanda.
+     */
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->html();
+
+    expect($isi)->toContain('wire:model.blur="isian.destinasi"')
+        ->and($isi)->toContain('Tidak terikat destinasi')
+        // Datalist cuma menyarankan; yang dipakai sekarang kotak pilih.
+        ->and($isi)->not->toContain('rab-daftar-destinasi');
+});
+
+test('nilai lama yang tidak ada di katalog tetap ditawarkan dan ditandai', function () {
+    /*
+     | Menyunting baris lain tidak boleh diam-diam menghapus nilai yang sudah
+     | tersimpan — tetapi admin harus tahu bahwa nama itu tidak akan pernah
+     | menarik tiket apa pun.
+     */
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.destinasi', 'prambanan')   // ada di data, tidak ada di katalog
+        ->html();
+
+    expect($isi)->toContain('tidak ada di katalog')
+        ->and($isi)->toContain('tidak akan ikut tertarik');
+});

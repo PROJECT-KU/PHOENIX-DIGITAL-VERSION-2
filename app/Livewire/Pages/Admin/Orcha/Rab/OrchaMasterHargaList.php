@@ -229,6 +229,17 @@ class OrchaMasterHargaList extends Component
             ->when($this->isian['provinsi'] ?? '', fn ($c, $p) => $c->where('provinsi', $p))
             ->pluck('nama')->values()->all();
 
+        /*
+         | Nama destinasi di katalog, SELURUH provinsi — untuk menandai baris
+         | yang namanya tidak ada di sana.
+         |
+         | Penjodohan harga tiket ke itinerary memakai nama ini persis. Satu
+         | huruf berbeda ("prambanan" vs "Candi Prambanan") membuat tiketnya
+         | tidak pernah ikut tertarik, dan RAB-nya kekurangan modal tanpa
+         | satu pun tanda — kesalahan yang baru ketahuan saat uangnya kurang.
+         */
+        $semuaNama = collect($katalog['destinasi'] ?? [])->pluck('nama')->all();
+
         return view('livewire.pages.admin.orcha.rab.master-harga', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
@@ -237,6 +248,7 @@ class OrchaMasterHargaList extends Component
             'berkapasitas' => $kosakata['satuan_berkapasitas'] ?? ['unit_hari', 'kamar_malam'],
             'provinsi' => $katalog['provinsi'] ?? [],
             'destinasi' => $destinasi,
+            'namaKatalog' => $semuaNama,
         ])->layout('livewire.layout.templateindex');
     }
 }
