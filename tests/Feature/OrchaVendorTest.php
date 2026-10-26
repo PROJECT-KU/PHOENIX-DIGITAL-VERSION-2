@@ -473,21 +473,28 @@ test('nomor yang panjangnya janggal ditandai, bukan ditolak', function () {
         ->and($k->nomorJanggal('tanya Pak Budi'))->toBeFalse();
 });
 
-test('ekspor vendor mengikuti saringan yang sedang aktif', function () {
-    // Berkas yang isinya berbeda dari yang terlihat di layar adalah berkas
-    // yang menyesatkan.
+test('tombol PDF membawa saringan yang sedang aktif', function () {
+    /*
+     | Berkas yang isinya berbeda dari yang terlihat di layar adalah berkas
+     | yang menyesatkan. Tautan biasa, bukan aksi Livewire: berkasnya dirakit
+     | Orcha dan diteruskan apa adanya.
+     */
     palsukanVendor();
 
-    Livewire::actingAs(adminRab())
+    $isi = Livewire::actingAs(adminRab())
         ->test(OrchaVendorList::class)
         ->set('filterJenis', 'Armada')
-        ->call('unduhExcel');
+        ->set('filterStatus2', 'nonaktif')
+        ->html();
 
-    Http::assertSent(fn (Request $r) => $r->method() === 'GET'
-        && str_contains($r->url(), '/vendor')
-        && str_contains($r->url(), 'jenis=Armada')
-        // Tanpa halaman: yang terunduh seluruhnya, bukan lima belas baris.
-        && str_contains($r->url(), 'per_halaman=500'));
+    // Dicocokkan per bagian, bukan URL utuh: Blade menulis "&" sebagai
+    // "&amp;", jadi alamat yang dirakit route() tidak akan pernah sama
+    // persis dengan yang ada di markahnya.
+    expect($isi)->toContain(route('admin.orcha.vendor.pdf'))
+        ->and($isi)->toContain('jenis=Armada')
+        ->and($isi)->toContain('status=nonaktif')
+        // Excel sudah diganti; tombolnya tidak boleh tertinggal dua-duanya.
+        ->and($isi)->not->toContain('Excel');
 });
 
 test('halaman rincian bisa menyunting dan mematikan di tempat', function () {

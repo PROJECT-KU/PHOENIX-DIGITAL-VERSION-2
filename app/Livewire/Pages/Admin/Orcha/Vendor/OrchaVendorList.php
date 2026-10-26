@@ -287,44 +287,6 @@ class OrchaVendorList extends Component
      * konfirmasi bersama hanya membawa SATU argumen, dan merakit payload dari
      * markah berarti nilai apa pun di sana bisa ikut tersimpan.
      */
-    /**
-     * Mengunduh daftar vendor sebagai Excel.
-     *
-     * Yang diunduh MENGIKUTI saringan yang sedang aktif — berkas yang isinya
-     * berbeda dari yang terlihat di layar adalah berkas yang menyesatkan.
-     * Diambil tanpa halaman supaya yang terunduh seluruhnya, bukan lima
-     * belas baris pertama.
-     */
-    public function unduhExcel()
-    {
-        try {
-            $hasil = $this->orcha()->ambil('/vendor', [
-                'cari' => $this->cari,
-                'jenis' => $this->filterJenis,
-                'status' => $this->filterStatus2,
-                'provinsi' => $this->filterProvinsi,
-                'per_halaman' => 500,
-            ]);
-        } catch (OrchaTidakTerjangkau $e) {
-            $this->dispatch('toast-error', message: $e->getMessage());
-
-            return null;
-        }
-
-        $baris = $hasil['data'] ?? [];
-
-        if ($baris === []) {
-            $this->dispatch('toast-error', message: 'Tidak ada vendor yang cocok dengan saringannya.');
-
-            return null;
-        }
-
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\OrchaVendorExport($baris),
-            'vendor-orcha-'.now()->format('Ymd-Hi').'.xlsx',
-        );
-    }
-
     public function render()
     {
         $hasil = $this->muat('/vendor', $this->parameterDaftar([

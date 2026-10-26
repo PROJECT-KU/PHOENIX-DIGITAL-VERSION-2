@@ -172,6 +172,18 @@ class OrchaEksporController extends Controller
      * Jenis lain dianggap penawaran — salah ketik tidak boleh jatuh ke berkas
      * yang memuat modal.
      */
+    /**
+     * Daftar vendor sebagai PDF, mengikuti saringan yang sedang dipakai.
+     *
+     * Berkasnya dirakit Orcha — logo, alamat kantor, dan sosial di kakinya
+     * hidup di sana, dan menyalinnya ke sini berarti dua tempat yang harus
+     * diubah tiap kali alamat kantor berganti.
+     */
+    public function vendor(Request $request)
+    {
+        return $this->teruskanBerkas('/vendor/pdf', $request->only(['cari', 'jenis', 'status', 'provinsi']));
+    }
+
     public function rab(Request $request, int $rab)
     {
         $jenis = $request->query('jenis') === 'internal' ? 'internal' : 'penawaran';

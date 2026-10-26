@@ -103,15 +103,20 @@ Vendor || lemon
                                 <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
                             </button>
 
-                            {{-- Mengikuti saringan yang sedang aktif: berkas yang
-                                 isinya berbeda dari yang terlihat di layar adalah
-                                 berkas yang menyesatkan. --}}
-                            <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel"
+                            {{-- Tautan biasa, bukan aksi Livewire: berkasnya dirakit
+                                 Orcha dan diteruskan apa adanya, jadi tidak ada yang
+                                 perlu ditunggu di layar ini.
+
+                                 Saringannya ikut di alamatnya — berkas yang isinya
+                                 berbeda dari yang terlihat di layar adalah berkas
+                                 yang menyesatkan. --}}
+                            <a href="{{ route('admin.orcha.vendor.pdf', [
+                                    'cari' => $cari, 'jenis' => $filterJenis,
+                                    'status' => $filterStatus2, 'provinsi' => $filterProvinsi,
+                                ]) }}"
                                 class="dsb-tombol is-telaah" title="Unduh daftar vendor sesuai saringan">
-                                <i class="bi bi-file-earmark-spreadsheet" wire:loading.remove wire:target="unduhExcel"></i>
-                                <span class="dsb-putar" wire:loading wire:target="unduhExcel"></span>
-                                <span>Excel</span>
-                            </button>
+                                <i class="bi bi-file-earmark-pdf"></i><span>PDF</span>
+                            </a>
 
                             @if ($adaSaringan)
                                 <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas"
@@ -529,8 +534,8 @@ Vendor || lemon
         .vd-saring { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         /* Enam benda di satu baris: kotak cari yang mengalah duluan.
 
-           Dengan basis 260px ia menolak menyempit, "Excel" terdorong ke
-           baris kedua, dan barisnya menyisakan tiga perempat ruang kosong
+           Dengan basis 260px ia menolak menyempit, tombol terakhir terdorong
+           ke baris kedua, dan barisnya menyisakan tiga perempat ruang kosong
            untuk satu tombol. */
         .vd-saring > .vd-medan-cari { flex: 1 1 180px; min-width: 0; }
         .vd-saring .dsb-tombol { flex: 0 0 auto; }
