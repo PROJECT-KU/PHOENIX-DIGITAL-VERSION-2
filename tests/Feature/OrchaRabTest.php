@@ -149,8 +149,9 @@ test('penyusun menggambar itinerary, destinasi, dan ringkasan dari Orcha', funct
         ->assertSee($show['ringkasan']['harga_per_orang_teks'])
         ->assertSee('pakai harga baru')          // harga master sudah naik
         // Tombolnya kini jaring pengaman, bukan langkah wajib: biayanya
-        // ditarik sendiri saat destinasinya diklik.
-        ->assertSee('Tarik ulang dari itinerary');
+        // ditarik sendiri saat destinasinya diklik. Labelnya dipendekkan
+        // supaya bilah atas muat satu baris; maksud lengkapnya ada di title.
+        ->assertSee('Tarik ulang');
 });
 
 test('klik destinasi menyimpan itinerary utuh ke hari yang aktif', function () {
@@ -785,4 +786,50 @@ test('pil jenis dan lama setinggi kotak isian di sebelahnya', function () {
         // Lantai boleh, patokan tidak: tanpa lantai keduanya menciut saat
         // kotak isiannya turun ke baris sendiri di layar sempit.
         ->and($pil)->toContain('min-height: 34px');
+});
+
+test('rincian biaya: kolom perhitungan dibubarkan, pita kategori membawa angkanya', function () {
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+    $r = rekamanRab('show')['data']['ringkasan'];
+
+    /*
+     | Kolom "Perhitungan" berisi kalimat pendek di kolom selebar sepertiga
+     | tabel, jadi tiap baris menyisakan lubang di tengahnya. Kini kalimat itu
+     | menempel di bawah nama biayanya — tempat ia memang menjelaskan.
+     */
+    expect($isi)->not->toContain('<th>PERHITUNGAN</th>')
+        ->and($isi)->toContain('rab-biaya-hitung')
+        ->and($isi)->toContain($r['baris'][0]['penjelasan']);
+
+    // Pita kategori membawa totalnya sendiri; sebagai nama yang melintang
+    // sendirian ia cuma garis pemisah yang kebetulan bertulisan.
+    foreach ($r['per_kategori'] as $kat) {
+        expect($isi)->toContain($kat['total_teks']);
+    }
+
+    // Dan kartunya ditutup angka, bukan tautan yang menggantung.
+    expect($isi)->toContain('rab-kaki')
+        ->and($isi)->toContain('Modal total');
+});
+
+test('tabel biaya menumpuk jadi kartu di ponsel', function () {
+    /*
+     | Tanpa ini ia menggulir mendatar di dalam pembungkusnya — dan subtotal
+     | berikut tombol hapusnya tidak pernah terlihat tanpa digeser lebih
+     | dulu, padahal subtotal itulah yang dicari mata.
+     */
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
+
+    expect($gaya)->toContain('.rab-tabel-biaya thead { display: none; }');
+
+    palsukanRab();
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    // Label kolomnya menempel di tiap sel, supaya kartu ponselnya punya
+    // keterangan sendiri.
+    foreach (['Harga satuan', 'Jumlah', 'Subtotal'] as $judul) {
+        expect($isi)->toContain('data-judul="'.$judul.'"');
+    }
 });

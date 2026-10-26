@@ -94,6 +94,10 @@ Susun RAB || lemon
         'lain' => ['Kegiatan', '#64748b'],
     ];
     $rupaDari = fn (array $k) => $rupaKegiatan[$k['jenis'] ?? 'lain'] ?? $rupaKegiatan['lain'];
+
+    // Total tiap kategori, dikunci labelnya — supaya pita kategori di tabel
+    // biaya membawa angkanya sendiri, bukan cuma nama yang melintang.
+    $totalKategori = collect($r['per_kategori'] ?? [])->keyBy('label')->all();
 @endphp
 
 <div>
@@ -306,7 +310,86 @@ Susun RAB || lemon
         .rab-pilih-margin label.aktif { border-color: var(--orc-primer); color: var(--orc-primer); background: #f5f0ff; }
         .rab-pilih-margin input { display: none; }
         .rab-tabel-biaya .dsb-isian { height: 36px !important; min-height: 36px; font-size: .85rem; padding-left: .6rem !important; text-align: right; }
-        .rab-kat td { background: var(--orc-panel-latar) !important; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--orc-primer); }
+        /* Pita kategori: namanya di kiri, totalnya di kanan. */
+        .rab-kat td {
+            background: var(--orc-panel-latar) !important; font-size: .74rem; letter-spacing: .07em;
+            text-transform: uppercase; font-weight: 700; color: var(--orc-primer);
+            padding-top: .45rem !important; padding-bottom: .45rem !important;
+        }
+        /* Angkanya tidak ikut text-transform pitanya: "RP 100.000" bukan cara
+           menulis rupiah, dan huruf besar pada singkatan mata uang terbaca
+           seperti salah ketik. */
+        .rab-kat td:nth-child(2) { font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; }
+
+        /* Kaki tabel: angka yang dicari mata sesudah membaca rinciannya. */
+        .rab-kaki td {
+            background: #f8fafc; border-top: 2px solid var(--dsb-tepi, #e9edf3);
+            font-size: .82rem; font-weight: 800; color: var(--dsb-tinta, #1c1f26);
+            padding-top: .6rem !important; padding-bottom: .6rem !important;
+        }
+        .rab-kaki td:nth-child(2) { font-variant-numeric: tabular-nums; }
+
+        /* Kotak pilih master TIDAK boleh tumbuh sesuka hati.
+
+           Dengan flex-grow bebas ia memakan seluruh sisa baris, dan tombol
+           terakhir ("Biaya manual") terlempar ke baris sendiri dengan ruang
+           kosong selebar kartu di sebelahnya. Basis 300px membuat jumlah
+           basis seluruh bilah muat satu baris; sisanya tetap diberikan
+           kepadanya. */
+        .rb-biaya-pilih { flex: 1 1 300px; min-width: 0; }
+
+        /* Nama biaya + penjelasan hitungannya, bertumpuk di satu sel. */
+        .rab-biaya-nama { font-weight: 700; color: var(--dsb-tinta, #1c1f26); font-size: .88rem; }
+        .rab-biaya-hitung { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
+        .rab-pil-satuan {
+            display: inline-flex; align-items: center; padding: 1px 7px 2px; border-radius: 7px;
+            background: #eef2f7; color: var(--dsb-redup, #6b7280);
+            font-size: .68rem; font-weight: 700; white-space: nowrap;
+        }
+        .rab-hitung-teks { font-size: .76rem; color: var(--dsb-redup, #6b7280); }
+
+        /* Di ponsel tabel biaya berhenti jadi tabel: tiap baris jadi kartu
+           bertumpuk, aturan yang sama dengan daftar lemon lain. Tanpa ini ia
+           menggulir mendatar di dalam pembungkusnya — dan subtotal berikut
+           tombol hapusnya tidak pernah terlihat tanpa digeser lebih dulu,
+           padahal subtotal itulah yang dicari mata. */
+        @media (max-width: 767.98px) {
+            .rab-tabel-biaya { min-width: 0; }
+            .rab-tabel-biaya thead { display: none; }
+            .rab-tabel-biaya tbody tr, .rab-tabel-biaya tfoot tr {
+                display: block; padding: 11px 13px; border-bottom: 1px solid #f2f5f9;
+            }
+            .rab-tabel-biaya tbody td, .rab-tabel-biaya tfoot td {
+                display: flex; align-items: center; justify-content: space-between; gap: 10px;
+                padding: 3px 0 !important; border: 0; text-align: left !important;
+            }
+            .rab-tabel-biaya td[data-judul]::before {
+                content: attr(data-judul);
+                color: var(--dsb-redup, #6b7280); font-size: .7rem; font-weight: 700;
+                letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0;
+            }
+            /* Isian tidak selebar penuh di ponsel: labelnya di kiri, kotaknya
+               di kanan — sama seperti baris lain yang berpasangan. */
+            .rab-tabel-biaya td[data-judul] .dsb-isian { width: 130px; flex: 0 0 auto; }
+            .rab-tabel-biaya .rab-sel-aksi { justify-content: flex-end; }
+
+            /* Sel nama biaya tetap blok: dengan space-between namanya
+               terlempar ke kiri dan keterangannya ke kanan, padahal
+               keduanya satu kalimat yang dibaca berurutan. */
+            .rab-tabel-biaya tbody td:first-child { display: block; }
+
+            /* Bilah atas: kotak pilih sebaris penuh, dua tombolnya membagi
+               baris berikutnya — kalau tidak, "Tarik ulang" berdiri sendiri
+               dengan separuh baris kosong di sebelahnya. */
+            .rb-biaya-pilih { flex: 1 1 100%; }
+            .rb-biaya-bilah .dsb-tombol { flex: 1 1 auto; justify-content: center; }
+
+            /* Pita kategori & kaki tetap satu baris: nama di kiri, angka di
+               kanan. Sel ketiganya kosong dan hanya menambah baris hampa. */
+            .rab-tabel-biaya tr.rab-kat, .rab-tabel-biaya tr.rab-kaki { display: flex; align-items: center; justify-content: space-between; }
+            .rab-tabel-biaya tr.rab-kat td, .rab-tabel-biaya tr.rab-kaki td { display: block; }
+            .rab-tabel-biaya tr.rab-kat td:last-child, .rab-tabel-biaya tr.rab-kaki td:last-child { display: none; }
+        }
         .rab-basi { font-size: .75rem; color: #b42318; }
 
         /* Titik impas: hijau bila rombongan yang ada sudah menutup biaya
@@ -655,13 +738,13 @@ Susun RAB || lemon
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-3 rb-biaya-bilah">
                                 <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"
                                     class="dsb-tombol is-lembut" style="--ikon: #64748b"
-                                    title="Untuk destinasi yang harga tiketnya baru diisi di master setelah itinerary dibuat">
-                                    <i class="bi bi-arrow-repeat"></i> Tarik ulang dari itinerary
+                                    title="Tarik ulang biaya dari itinerary — untuk destinasi yang harga tiketnya baru diisi di master setelah itinerary dibuat">
+                                    <i class="bi bi-arrow-repeat"></i> Tarik ulang
                                 </button>
-                                <div class="flex-grow-1" style="min-width: 260px">
+                                <div class="rb-biaya-pilih">
                                     <div class="rb-gandeng">
                                         <select wire:model="pilihMaster" class="dsb-isian">
                                             <option value="">Pilih dari master harga…</option>
@@ -678,6 +761,16 @@ Susun RAB || lemon
                                         </button>
                                     </div>
                                 </div>
+
+                                {{-- Di bilah ini, bukan sebagai tautan menggantung di
+                                     kiri bawah kartu. Ia sejenis dengan dua tombol di
+                                     sebelahnya — sama-sama cara memasukkan biaya — dan
+                                     kartunya jadi bisa ditutup oleh angkanya. --}}
+                                <button type="button" wire:click="$set('bukaManual', true)"
+                                    class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                    title="Untuk biaya yang belum ada di master harga">
+                                    <i class="bi bi-pencil"></i> Biaya manual
+                                </button>
                             </div>
 
                             @if ($adaTanpaTiket)
@@ -697,26 +790,41 @@ Susun RAB || lemon
                             @endif
 
                             <div class="orcha-gulung">
+                                {{-- Kolom "Perhitungan" dibubarkan: isinya kalimat pendek
+                                     ("Rp 10.000 × 10 orang") di kolom selebar sepertiga
+                                     tabel, jadi tiap baris menyisakan lubang di
+                                     tengahnya. Kini ia menempel di bawah nama biayanya,
+                                     tempat ia memang menjelaskan. --}}
                                 <table class="table align-middle orcha-tabel rab-tabel-biaya mb-0">
                                     <thead>
                                         <tr>
-                                            <th>BIAYA</th>
-                                            <th>PERHITUNGAN</th>
-                                            <th style="width: 120px" class="text-end">HARGA</th>
-                                            <th style="width: 70px" class="text-end">QTY</th>
-                                            <th class="text-end">SUBTOTAL</th>
-                                            <th></th>
+                                            <th>Biaya</th>
+                                            <th style="width: 130px" class="text-end">Harga satuan</th>
+                                            <th style="width: 84px" class="text-end">Jumlah</th>
+                                            <th style="width: 130px" class="text-end">Subtotal</th>
+                                            <th style="width: 48px"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($barisPerKategori as $label => $isi)
-                                            <tr class="rab-kat"><td colspan="6">{{ $label }}</td></tr>
+                                            {{-- Pita kategori membawa angkanya sendiri. Sebagai
+                                                 nama yang melintang sendirian, ia cuma garis
+                                                 pemisah yang kebetulan bertulisan. --}}
+                                            <tr class="rab-kat">
+                                                <td colspan="3">{{ $label }}</td>
+                                                <td class="text-end">{{ $totalKategori[$label]['total_teks'] ?? '' }}</td>
+                                                <td></td>
+                                            </tr>
                                             @foreach ($isi as $b)
                                                 <tr wire:key="by-{{ $b['id'] }}">
                                                     <td>
-                                                        <div class="fw-semibold">{{ $b['nama'] }}</div>
-                                                        <div class="small text-muted">
-                                                            {{ $b['satuan_label'] }}{{ $b['kapasitas'] ? ' · kapasitas '.$b['kapasitas'] : '' }}
+                                                        <div class="rab-biaya-nama">{{ $b['nama'] }}</div>
+                                                        <div class="rab-biaya-hitung">
+                                                            <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
+                                                            @if ($b['kapasitas'])
+                                                                <span class="rab-pil-satuan">kapasitas {{ $b['kapasitas'] }}</span>
+                                                            @endif
+                                                            <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
                                                         </div>
                                                         @isset($b['harga_master_kini'])
                                                             <div class="rab-basi">
@@ -725,11 +833,10 @@ Susun RAB || lemon
                                                             </div>
                                                         @endisset
                                                     </td>
-                                                    <td class="small text-muted">{{ $b['penjelasan'] }}</td>
-                                                    <td><input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian"></td>
-                                                    <td><input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian"></td>
-                                                    <td class="text-end fw-bold text-nowrap">{{ $b['subtotal_teks'] }}</td>
-                                                    <td class="text-end">
+                                                    <td data-judul="Harga satuan"><input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian"></td>
+                                                    <td data-judul="Jumlah"><input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian"></td>
+                                                    <td data-judul="Subtotal" class="text-end fw-bold text-nowrap">{{ $b['subtotal_teks'] }}</td>
+                                                    <td class="text-end rab-sel-aksi">
                                                         <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
                                                             data-action="hapusBiaya" data-arg="{{ $b['id'] }}"
                                                             data-title="Hapus {{ $b['nama'] }}?" data-confirm="Ya, hapus" data-icon="warning"
@@ -742,16 +849,29 @@ Susun RAB || lemon
                                         @endforeach
                                         @if ($tanpaBiaya)
                                             <tr>
-                                                <td colspan="6" class="text-center py-4 text-muted">
+                                                <td colspan="5" class="text-center py-4 text-muted">
                                                     Belum ada biaya. Klik satu destinasi di atas — tiketnya ikut terhitung sendiri.
                                                 </td>
                                             </tr>
                                         @endif
                                     </tbody>
+                                    {{-- Kaki tabel menutup kartunya dengan angka yang
+                                         memang dicari mata sesudah membaca rinciannya —
+                                         sebelumnya kartunya berakhir pada satu tautan
+                                         yang menggantung sendirian di kiri bawah. --}}
+                                    @if (! $tanpaBiaya)
+                                        <tfoot>
+                                            <tr class="rab-kaki">
+                                                <td colspan="3">Modal total</td>
+                                                <td class="text-end">{{ $r['modal_total_teks'] ?? 'Rp 0' }}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    @endif
                                 </table>
                             </div>
 
-                            <div class="mt-3">
+                            <div class="{{ $bukaManual ? 'mt-3' : '' }}">
                                 @if ($bukaManual)
                                     <div class="border rounded-4 p-3">
                                         <div class="fw-semibold small mb-2">Biaya manual</div>
@@ -787,10 +907,6 @@ Susun RAB || lemon
                                             <button type="button" wire:click="tambahManual" class="dsb-tombol is-lembut" style="--ikon: #4f46e5"><i class="bi bi-plus-lg"></i> Tambahkan</button>
                                         </div>
                                     </div>
-                                @else
-                                    <button type="button" wire:click="$set('bukaManual', true)" class="btn btn-link btn-sm p-0 text-decoration-none">
-                                        <i class="bi bi-pencil"></i> Tambah biaya manual (tidak ada di master)
-                                    </button>
                                 @endif
                             </div>
                         </div>
