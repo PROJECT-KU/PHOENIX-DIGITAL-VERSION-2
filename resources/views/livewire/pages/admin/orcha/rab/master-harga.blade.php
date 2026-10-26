@@ -290,6 +290,43 @@ Master Harga || lemon
                                     </div>
                                 @endif
 
+                                {{-- Dari siapa harga ini dibeli. Nomornya tidak
+                                     diketik di sini — ia hidup di daftar vendor,
+                                     supaya nomor yang berganti cukup diubah sekali
+                                     dan seluruh harga yang memakainya ikut benar. --}}
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="mh-vendor">
+                                        Vendor
+                                        <span class="dsb-label-ket">kontaknya ikut ke RAB</span>
+                                    </label>
+                                    <select id="mh-vendor" wire:model.live="isian.vendor_id" class="dsb-isian">
+                                        <option value="">Belum ditentukan</option>
+                                        @foreach ($vendor as $v)
+                                            <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if (! empty($v['jenis'])) — {{ $v['jenis'] }}@endif</option>
+                                        @endforeach
+                                    </select>
+                                    @php($vendorKini = collect($vendor)->firstWhere('id', (int) ($isian['vendor_id'] ?? 0)))
+                                    @if ($vendorKini && ! empty($vendorKini['kontak']))
+                                        <span class="mh-vendor-kontak">
+                                            <i class="bi bi-telephone"></i>{{ $vendorKini['kontak'] }}
+                                        </span>
+                                    @elseif ($vendorKini)
+                                        {{-- Vendor tanpa nomor tetap harus dicari saat
+                                             dibutuhkan — jadi ketiadaannya ditandai. --}}
+                                        <span class="mh-vendor-kosong">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                            Vendor ini belum punya nomor.
+                                            <a href="{{ route('admin.orcha.vendor') }}" wire:navigate>Isi di daftar vendor</a>
+                                        </span>
+                                    @else
+                                        <span class="dsb-kartu-sub">
+                                            <a href="{{ route('admin.orcha.vendor') }}" wire:navigate class="mh-vendor-tautan">
+                                                <i class="bi bi-plus-circle"></i> Kelola daftar vendor
+                                            </a>
+                                        </span>
+                                    @endif
+                                </div>
+
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="mh-provinsi">Provinsi</label>
                                     <select id="mh-provinsi" wire:model.live="isian.provinsi" class="dsb-isian">
@@ -523,6 +560,11 @@ Master Harga || lemon
                                                             @if ($lepas)<span class="mh-lepas-ket">tidak cocok katalog</span>@endif
                                                         </span>
                                                     @endif
+                                                    @if (! empty($baris['vendor']))
+                                                        <span class="dsb-tabel-meta mh-vendor-baris">
+                                                            <i class="bi bi-shop"></i>{{ $baris['vendor'] }}@if (! empty($baris['vendor_kontak'])) · {{ $baris['vendor_kontak'] }}@endif
+                                                        </span>
+                                                    @endif
                                                     @if ($baris['catatan'])
                                                         <span class="dsb-tabel-meta mh-catatan">{{ $baris['catatan'] }}</span>
                                                     @endif
@@ -722,6 +764,18 @@ Master Harga || lemon
         .mh-utama.is-kanan { align-items: flex-end; }
         .mh-catatan { font-style: italic; }
         .mh-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+
+        .mh-vendor-kontak {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 5px;
+            font-size: .79rem; font-weight: 600; color: #0369a1;
+        }
+        .mh-vendor-kosong {
+            display: flex; align-items: flex-start; gap: 6px; margin-top: 5px;
+            font-size: .75rem; line-height: 1.45; color: #92400e;
+        }
+        .mh-vendor-tautan { display: inline-flex; align-items: center; gap: 5px; color: #0f766e; font-weight: 600; text-decoration: none; }
+        .mh-vendor-tautan:hover { text-decoration: underline; }
+        .mh-vendor-baris { display: inline-flex; align-items: center; gap: 5px; }
 
         .mh-lepas {
             display: inline-flex; align-items: center; gap: 5px;

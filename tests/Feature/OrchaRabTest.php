@@ -3,10 +3,6 @@
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun;
-use App\Models\EmployeeDetail;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -21,32 +17,6 @@ use Livewire\Livewire;
  * Balasan palsunya direkam dari API Orcha yang sebenarnya
  * (tests/Fixtures/orcha-rab), supaya bentuknya tidak bisa melenceng diam-diam.
  */
-function adminRab(array $izin = ['akses_orcha']): User
-{
-    $role = Role::create(['name' => 'uji-rab-'.uniqid(), 'description' => 'Peran untuk uji RAB']);
-
-    foreach ($izin as $nama) {
-        $permission = Permission::firstOrCreate(
-            ['name' => $nama],
-            ['display_name' => $nama, 'group' => 'orcha', 'description' => 'uji']
-        );
-        $role->permissions()->attach($permission->id);
-    }
-
-    $user = User::factory()->create(['role_id' => $role->id]);
-
-    EmployeeDetail::create([
-        'user_id' => $user->id,
-        'jabatan' => 'Admin Uji',
-        'nomor_rekening' => '1234567890',
-        'tanggal_lahir' => '1995-01-01',
-        'phone' => '081234567890',
-        'alamat' => 'Yogyakarta',
-    ]);
-
-    return $user->fresh();
-}
-
 function rekamanRab(string $nama): array
 {
     return json_decode(file_get_contents(base_path("tests/Fixtures/orcha-rab/{$nama}.json")), true);
@@ -1417,4 +1387,96 @@ test('panel kendaraan tergambar dengan unit dan sisa kursinya', function () {
         // ulang: berapa unitnya, dan berapa kursi yang menganggur.
         ->and($isi)->toContain('2 unit')
         ->and($isi)->toContain('11 kursi kosong');
+});
+
+/*
+ | ---------------------------------------------------------------------------
+ | Vendor: dari siapa sebuah harga dibeli
+ | ---------------------------------------------------------------------------
+ */
+
+test('vendor dipilih dari daftar, kontaknya terlihat di formulir', function () {
+    /*
+     | Nomornya TIDAK diketik di master harga — ia hidup di daftar vendor,
+     | supaya nomor yang berganti cukup diubah sekali dan seluruh harga yang
+     | memakainya ikut benar.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah');
+
+    expect($layar->html())->toContain('id="mh-vendor"')
+        ->and($layar->html())->toContain('PO Sumber Jaya');
+
+    $layar->set('isian.vendor_id', '1');
+
+    // Nomornya muncul begitu vendornya dipilih: yang harus dicari di menu
+    // lain adalah yang tidak sempat dicari.
+    expect($layar->html())->toContain('081234000111 (Pak Budi)');
+});
+
+test('vendor tanpa nomor ditandai di formulir harga', function () {
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.vendor_id', '3')     // Vendor Tanpa Nomor
+        ->html();
+
+    expect($isi)->toContain('belum punya nomor');
+});
+
+test('vendor terkirim sebagai id, kosong jadi null', function () {
+    // Kolomnya kunci asing — "" bukan id yang ada di tabel vendor, dan
+    // mengirimnya membuat Orcha menolak dengan galat yang tidak menyebut
+    // sebabnya.
+    palsukanRab();
+    $this->actingAs(adminRab());
+
+    Livewire::test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.vendor_id', '1')
+        ->set('isian.destinasi', 'Candi Prambanan')
+        ->set('isian.harga', '60000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with($r->url(), '/master-harga') && $r['vendor_id'] === 1);
+
+    Livewire::test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.destinasi', 'Candi Prambanan')
+        ->set('isian.harga', '60000')
+        ->call('simpan');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with($r->url(), '/master-harga')
+        && array_key_exists('vendor_id', $r->data()) && $r['vendor_id'] === null);
+});
+
+test('vendor ikut terbaca di daftar harga', function () {
+    palsukanRab();
+
+    $this->actingAs(adminRab())->get('/admin/orcha/master-harga')
+        ->assertOk()
+        ->assertSee('PO Sumber Jaya')
+        ->assertSee('081234000111 (Pak Budi)');
+});
+
+test('kontak vendor terbaca di rincian biaya RAB', function () {
+    /*
+     | Inti seluruh pekerjaan ini: menelepon vendor tidak lagi menuntut
+     | pindah menu. Nomornya dibaca HIDUP dari daftar vendor, jadi yang
+     | tertulis selalu nomor yang berlaku hari ini.
+     */
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    expect($isi)->toContain('PO Sumber Jaya')
+        ->and($isi)->toContain('081234000111 (Pak Budi)');
 });

@@ -520,6 +520,10 @@ new class extends Component
                                 // karena sama-sama mengurus angka jualan.
                                 ['admin.orcha.rab', 'bi-calculator', 'RAB & Itinerary'],
                                 ['admin.orcha.master-harga', 'bi-tags', 'Master Harga'],
+                                // Vendor tepat di bawah Master Harga: nomor
+                                // yang disimpan di sana yang muncul di tiap
+                                // baris harga dan di rincian biaya RAB.
+                                ['admin.orcha.vendor', 'bi-shop', 'Vendor'],
                                 // Bertetangga dengan Keuntungan Paket: keduanya
                                 // mengurus ANGKA jualannya, bukan isi paketnya.
                                 ['admin.orcha.promo', 'bi-gift', 'Promo Rombongan'],

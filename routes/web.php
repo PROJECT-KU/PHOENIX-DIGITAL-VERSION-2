@@ -613,6 +613,10 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/rab/{rab}/pdf', [OrchaEksporController::class, 'rab'])
         ->whereNumber('rab')->name('admin.orcha.rab.pdf');
     Route::get('/admin/orcha/master-harga', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList::class)->name('admin.orcha.master-harga');
+    // Vendor bertetangga dengan Master Harga: nomor yang disimpan di sini
+    // yang muncul di tiap baris harga, di rincian biaya RAB, dan di PDF
+    // internal.
+    Route::get('/admin/orcha/vendor', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorList::class)->name('admin.orcha.vendor');
 
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');

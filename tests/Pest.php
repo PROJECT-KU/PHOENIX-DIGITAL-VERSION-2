@@ -45,3 +45,38 @@ function something()
 {
     // ..
 }
+
+/*
+ | Admin ber-izin akses_orcha, lengkap dengan EmployeeDetail-nya.
+ |
+ | Ada di sini, bukan di salah satu berkas uji, karena dipakai beberapa
+ | berkas sekaligus — dan pembantu yang hidup di satu berkas hanya terbaca
+ | berkas lain bila kebetulan dimuat lebih dulu. Menjalankan satu berkas
+ | sendirian lalu gagal dengan "Call to undefined function" adalah kegagalan
+ | yang tidak menyebut sebabnya.
+ */
+function adminRab(array $izin = ['akses_orcha']): \App\Models\User
+{
+    $role = \App\Models\Role::create(['name' => 'uji-rab-'.uniqid(), 'description' => 'Peran untuk uji RAB']);
+
+    foreach ($izin as $nama) {
+        $permission = \App\Models\Permission::firstOrCreate(
+            ['name' => $nama],
+            ['display_name' => $nama, 'group' => 'orcha', 'description' => 'uji']
+        );
+        $role->permissions()->attach($permission->id);
+    }
+
+    $user = \App\Models\User::factory()->create(['role_id' => $role->id]);
+
+    \App\Models\EmployeeDetail::create([
+        'user_id' => $user->id,
+        'jabatan' => 'Admin Uji',
+        'nomor_rekening' => '1234567890',
+        'tanggal_lahir' => '1995-01-01',
+        'phone' => '081234567890',
+        'alamat' => 'Yogyakarta',
+    ]);
+
+    return $user->fresh();
+}

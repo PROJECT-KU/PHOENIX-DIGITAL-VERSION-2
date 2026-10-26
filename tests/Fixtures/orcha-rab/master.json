@@ -16,7 +16,10 @@
             "otomatis": false,
             "aktif": true,
             "catatan": null,
-            "diubah_pada": "2026-09-18T19:26:18+07:00"
+            "diubah_pada": "2026-09-18T19:26:18+07:00",
+            "vendor_id": 1,
+            "vendor": "PO Sumber Jaya",
+            "vendor_kontak": "081234000111 (Pak Budi)"
         },
         {
             "id": 2,
@@ -34,7 +37,10 @@
             "otomatis": false,
             "aktif": true,
             "catatan": null,
-            "diubah_pada": "2026-09-18T19:26:18+07:00"
+            "diubah_pada": "2026-09-18T19:26:18+07:00",
+            "vendor_id": null,
+            "vendor": null,
+            "vendor_kontak": null
         }
     ],
     "meta": {

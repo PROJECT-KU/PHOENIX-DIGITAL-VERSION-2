@@ -109,6 +109,7 @@ class OrchaMasterHargaList extends Component
     {
         $this->isian = [
             'kategori' => 'tiket',
+            'vendor_id' => '',
             'nama' => '',
             'provinsi' => $this->filterProvinsi !== '-' ? $this->filterProvinsi : '',
             'daerah' => '',
@@ -169,6 +170,7 @@ class OrchaMasterHargaList extends Component
 
         $this->isian = [
             'kategori' => $baris['kategori'],
+            'vendor_id' => (string) ($baris['vendor_id'] ?? ''),
             'nama' => $baris['nama'],
             'provinsi' => (string) ($baris['provinsi'] ?? ''),
             'daerah' => (string) ($baris['daerah'] ?? ''),
@@ -390,6 +392,7 @@ class OrchaMasterHargaList extends Component
 
         $this->validate([
             'isian.kategori' => 'required|string',
+            'isian.vendor_id' => 'nullable',
             'isian.nama' => 'required|string|min:2|max:150',
             'isian.satuan' => 'required|string',
             'isian.harga' => 'required',
@@ -404,6 +407,9 @@ class OrchaMasterHargaList extends Component
 
         $data = [
             'kategori' => $this->isian['kategori'],
+            // Kosong dikirim sebagai null, bukan "" — kolomnya kunci asing,
+            // dan "" bukan id yang ada di tabel vendor.
+            'vendor_id' => ($this->isian['vendor_id'] ?? '') !== '' ? (int) $this->isian['vendor_id'] : null,
             'nama' => trim($this->isian['nama']),
             'provinsi' => $this->isian['provinsi'] ?: null,
             'daerah' => trim($this->isian['daerah']) ?: null,
@@ -494,6 +500,7 @@ class OrchaMasterHargaList extends Component
             'provinsi' => $katalog['provinsi'] ?? [],
             'destinasi' => $destinasi,
             'namaKatalog' => $semuaNama,
+            'vendor' => $katalog['vendor'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

@@ -406,6 +406,14 @@ Susun RAB || lemon
 
         .rab-biaya-nama { font-weight: 700; color: var(--dsb-tinta, #1c1f26); font-size: .88rem; }
         .rab-biaya-hitung { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
+        .rab-biaya-vendor {
+            display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 3px;
+            font-size: .76rem; font-weight: 600; color: #0369a1;
+        }
+        .rab-vendor-nomor {
+            padding: 1px 7px 2px; border-radius: 7px;
+            background: #e0f2fe; color: #075985; font-size: .72rem; font-weight: 700;
+        }
         .rab-pil-satuan {
             display: inline-flex; align-items: center; padding: 1px 7px 2px; border-radius: 7px;
             background: #eef2f7; color: var(--dsb-redup, #6b7280);
@@ -959,6 +967,25 @@ Susun RAB || lemon
                                                 <tr wire:key="by-{{ $b['id'] }}">
                                                     <td>
                                                         <div class="rab-biaya-nama">{{ $b['nama'] }}</div>
+                                                        {{-- Dari siapa biaya ini dibeli, berikut
+                                                             nomornya. Dibaca hidup dari daftar
+                                                             vendor, jadi yang tertulis selalu
+                                                             nomor yang berlaku hari ini — bukan
+                                                             nomor saat penawaran dibuat.
+
+                                                             Ada di sini supaya menelepon vendor
+                                                             tidak menuntut pindah menu: yang
+                                                             harus dicari di layar lain adalah
+                                                             yang tidak sempat dicari. --}}
+                                                        @if (! empty($b['vendor']))
+                                                            <div class="rab-biaya-vendor">
+                                                                <i class="bi bi-shop"></i>
+                                                                <span>{{ $b['vendor'] }}</span>
+                                                                @if (! empty($b['vendor_kontak']))
+                                                                    <span class="rab-vendor-nomor">{{ $b['vendor_kontak'] }}</span>
+                                                                @endif
+                                                            </div>
+                                                        @endif
                                                         <div class="rab-biaya-hitung">
                                                             <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
                                                             @if ($b['kapasitas'])

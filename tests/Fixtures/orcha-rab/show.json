@@ -92,7 +92,10 @@
                     "subtotal": 850000,
                     "subtotal_teks": "Rp 850.000",
                     "variabel": true,
-                    "harga_master_kini": 60000
+                    "harga_master_kini": 60000,
+                    "vendor_id": 1,
+                    "vendor": "PO Sumber Jaya",
+                    "vendor_kontak": "081234000111 (Pak Budi)"
                 },
                 {
                     "id": 18,
@@ -110,7 +113,10 @@
                     "subtotal": 6600000,
                     "subtotal_teks": "Rp 6.600.000",
                     "variabel": false,
-                    "harga_master_kini": null
+                    "harga_master_kini": null,
+                    "vendor_id": null,
+                    "vendor": null,
+                    "vendor_kontak": null
                 }
             ],
             "per_kategori": [

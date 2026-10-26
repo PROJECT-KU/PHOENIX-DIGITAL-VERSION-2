@@ -106,7 +106,10 @@
                 "harga_teks": "Rp 60.000",
                 "kapasitas": null,
                 "otomatis": false,
-                "umum": false
+                "umum": false,
+                "vendor_id": null,
+                "vendor": null,
+                "vendor_kontak": null
             },
             {
                 "id": 2,
@@ -121,7 +124,10 @@
                 "harga_teks": "Rp 1.100.000",
                 "kapasitas": 14,
                 "otomatis": false,
-                "umum": false
+                "umum": false,
+                "vendor_id": 1,
+                "vendor": "PO Sumber Jaya",
+                "vendor_kontak": "081234000111 (Pak Budi)"
             },
             {
                 "id": 11,
@@ -136,7 +142,10 @@
                 "harga_teks": "Rp 3.200.000",
                 "kapasitas": 59,
                 "otomatis": false,
-                "umum": false
+                "umum": false,
+                "vendor_id": 1,
+                "vendor": "PO Sumber Jaya",
+                "vendor_kontak": "081234000111 (Pak Budi)"
             },
             {
                 "id": 12,
@@ -151,7 +160,10 @@
                 "harga_teks": "Rp 1.450.000",
                 "kapasitas": 19,
                 "otomatis": false,
-                "umum": false
+                "umum": false,
+                "vendor_id": 1,
+                "vendor": "PO Sumber Jaya",
+                "vendor_kontak": "081234000111 (Pak Budi)"
             }
         ],
         "paket": [
@@ -218,6 +230,26 @@
                 "disetujui": "Disetujui",
                 "batal": "Batal"
             }
-        }
+        },
+        "vendor": [
+            {
+                "id": 1,
+                "nama": "PO Sumber Jaya",
+                "kontak": "081234000111 (Pak Budi)",
+                "jenis": "Armada"
+            },
+            {
+                "id": 2,
+                "nama": "Hotel Mawar",
+                "kontak": "0274-555000",
+                "jenis": "Akomodasi"
+            },
+            {
+                "id": 3,
+                "nama": "Vendor Tanpa Nomor",
+                "kontak": null,
+                "jenis": null
+            }
+        ]
     }
 }
