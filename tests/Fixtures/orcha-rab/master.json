@@ -21,7 +21,10 @@
             "vendor": "PO Sumber Jaya",
             "vendor_kontak": "081234000111 (Pak Budi)",
             "jumlah_rab": 3,
-            "diubah_teks": "2 bulan yang lalu"
+            "diubah_teks": "2 bulan yang lalu",
+            "berlaku_sampai": "2026-10-20",
+            "berlaku_sampai_teks": "20 Oktober 2026",
+            "kedaluwarsa": true
         },
         {
             "id": 2,
@@ -44,7 +47,10 @@
             "vendor": null,
             "vendor_kontak": null,
             "jumlah_rab": 0,
-            "diubah_teks": "kemarin"
+            "diubah_teks": "kemarin",
+            "berlaku_sampai": "2027-01-27",
+            "berlaku_sampai_teks": "27 Januari 2027",
+            "kedaluwarsa": false
         }
     ],
     "meta": {
@@ -84,6 +90,13 @@
                 "disetujui": "Disetujui",
                 "batal": "Batal"
             }
+        },
+        "ringkas": {
+            "jumlah": 2,
+            "dipakai": 1,
+            "tanpa_vendor": 1,
+            "mati": 0,
+            "kedaluwarsa": 1
         }
     }
 }

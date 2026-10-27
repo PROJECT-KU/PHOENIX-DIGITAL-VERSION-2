@@ -91,6 +91,35 @@ class OrchaMasterHargaList extends Component
     #[Url(as: 'dipakai', except: '')]
     public string $filterDipakai = '';
 
+    /*
+     | Status TIDAK menyembunyikan apa pun saat kosong.
+     |
+     | Harga yang dimatikan tidak punya kolomnya sendiri — kolom yang isinya
+     | sama di hampir setiap baris tidak memberi tahu apa pun. Tetapi
+     | membuangnya dari daftar secara diam-diam menukar satu keluhan dengan
+     | keluhan yang lebih buruk: "harga saya hilang". Jadi semuanya tetap
+     | terlihat, dan saringan ini yang memanggil yang dicari.
+     */
+    #[Url(as: 'status', except: '')]
+    public string $filterStatus = '';
+
+    #[Url(as: 'urut', except: '')]
+    public string $urut = '';
+
+    /** Perintah yang akan dijalankan pada baris yang dicentang. */
+    public string $aksiMassal = '';
+
+    public string $persenMassal = '';
+
+    public string $berlakuMassal = '';
+
+    /** Harga yang riwayatnya sedang dibuka; null berarti panelnya tertutup. */
+    public ?int $riwayatUntuk = null;
+
+    public array $riwayat = [];
+
+    public array $riwayatMeta = [];
+
     /** Baris yang dicentang untuk dipasangkan ke satu vendor sekaligus. */
     public array $pilih = [];
 
@@ -135,6 +164,7 @@ class OrchaMasterHargaList extends Component
             'satuan' => 'orang',
             'harga' => '',
             'kapasitas' => '',
+            'berlaku_sampai' => '',
             'catatan' => '',
         ];
         $this->aktif = true;
@@ -172,6 +202,16 @@ class OrchaMasterHargaList extends Component
         $this->halaman = 1;
     }
 
+    public function updatedFilterStatus(): void
+    {
+        $this->halaman = 1;
+    }
+
+    public function updatedUrut(): void
+    {
+        $this->halaman = 1;
+    }
+
     public function bersihkanSaringan(): void
     {
         $this->cari = '';
@@ -179,6 +219,7 @@ class OrchaMasterHargaList extends Component
         $this->filterProvinsi = '';
         $this->filterVendor = '';
         $this->filterDipakai = '';
+        $this->filterStatus = '';
         $this->halaman = 1;
     }
 
@@ -186,7 +227,7 @@ class OrchaMasterHargaList extends Component
     {
         return $this->cari !== '' || $this->filterKategori !== ''
             || $this->filterProvinsi !== '' || $this->filterVendor !== ''
-            || $this->filterDipakai !== '';
+            || $this->filterDipakai !== '' || $this->filterStatus !== '';
     }
 
     public function bukaTambah(): void
@@ -213,6 +254,7 @@ class OrchaMasterHargaList extends Component
             'satuan' => $baris['satuan'],
             'harga' => $this->keRupiah($baris['harga']),
             'kapasitas' => (string) ($baris['kapasitas'] ?? ''),
+            'berlaku_sampai' => (string) ($baris['berlaku_sampai'] ?? ''),
             'catatan' => (string) ($baris['catatan'] ?? ''),
         ];
         $this->aktif = (bool) $baris['aktif'];
@@ -486,6 +528,8 @@ class OrchaMasterHargaList extends Component
             'isian.harga' => 'required',
             'isian.kapasitas' => $berkapasitas ? 'required|integer|min:1|max:1000' : 'nullable|integer|min:1|max:1000',
             'isian.catatan' => 'nullable|string|max:500',
+            // Kosong berarti "tidak ada batas", bukan "belum diisi".
+            'isian.berlaku_sampai' => 'nullable|date',
         ], [
             'isian.kapasitas.required' => 'Isi kapasitasnya — tanpanya jumlah unit untuk rombongan besar tidak bisa dihitung.',
             'isian.nama.required' => 'Isi namanya — atau pilih destinasinya, dan namanya terisi sendiri.',
@@ -508,6 +552,7 @@ class OrchaMasterHargaList extends Component
             // kotaknya memang disembunyikan untuk satuan itu, dan nilai yang
             // tidak terlihat tidak boleh ikut tersimpan.
             'kapasitas' => $berkapasitas ? ((int) $this->isian['kapasitas'] ?: null) : null,
+            'berlaku_sampai' => ($this->isian['berlaku_sampai'] ?? '') ?: null,
             'otomatis' => $this->otomatis,
             'aktif' => $this->aktif,
             'catatan' => trim($this->isian['catatan']) ?: null,
@@ -561,7 +606,118 @@ class OrchaMasterHargaList extends Component
     {
         $this->pilih = [];
         $this->pasangKeVendor = '';
-        $this->resetValidation('pasangKeVendor');
+        $this->aksiMassal = '';
+        $this->persenMassal = '';
+        $this->berlakuMassal = '';
+        $this->resetValidation(['pasangKeVendor', 'aksiMassal', 'persenMassal']);
+    }
+
+    /**
+     * Satu perintah untuk semua baris yang dicentang.
+     *
+     * Yang dipulangkan Orcha bukan sekadar "berhasil" melainkan BERAPA baris
+     * yang benar-benar tersentuh, dan itu yang ditampilkan — menjanjikan
+     * "12 harga dinaikkan" padahal dua di antaranya tidak berubah membuat
+     * admin berhenti mempercayai pesannya.
+     */
+    public function jalankanMassal(): void
+    {
+        $this->resetValidation(['aksiMassal', 'persenMassal']);
+
+        if ($this->pilih === []) {
+            $this->addError('aksiMassal', 'Centang dulu harga yang mau diubah.');
+
+            return;
+        }
+
+        if ($this->aksiMassal === '') {
+            $this->addError('aksiMassal', 'Pilih dulu mau diapakan.');
+
+            return;
+        }
+
+        if (in_array($this->aksiMassal, ['naik', 'turun'], true) && ! $this->persenSah()) {
+            $this->addError('persenMassal', 'Isi persennya, antara 0,1 sampai 90.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/master-harga/massal', array_filter([
+                'id' => array_map('intval', $this->pilih),
+                'aksi' => $this->aksiMassal,
+                'persen' => $this->persenSah() ? (float) str_replace(',', '.', $this->persenMassal) : null,
+                'berlaku_sampai' => $this->berlakuMassal ?: null,
+            ], fn ($n) => $n !== null));
+
+            cache()->forget('orcha.rab.katalog');
+            $this->batalPilih();
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Perubahan tersimpan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    private function persenSah(): bool
+    {
+        $angka = (float) str_replace(',', '.', $this->persenMassal);
+
+        return $this->persenMassal !== '' && $angka >= 0.1 && $angka <= 90;
+    }
+
+    /** Baris mana saja yang terpengaruh perintah massal — dipakai di kalimat pengesahannya. */
+    public function jumlahPilih(): int
+    {
+        return count($this->pilih);
+    }
+
+    /**
+     * Mencentang seluruh baris yang sedang TERLIHAT, bukan seluruh tabel.
+     *
+     * Mencentang baris yang tidak kelihatan adalah cara tercepat mematikan
+     * harga yang tidak pernah dilihat orangnya.
+     */
+    public function pilihSemua(array $id): void
+    {
+        $this->pilih = $this->pilih === [] ? array_map('strval', $id) : [];
+    }
+
+    /**
+     * Membuka formulir berisi salinan sebuah harga, sebagai baris BARU.
+     *
+     * Hiace dari dua vendor berbeda hanya berbeda di satu kotak; mengetik
+     * ulang delapan kotak lainnya adalah delapan kesempatan salah ketik.
+     * Namanya diberi "(salinan)" supaya penjaga kembaran di Orcha tidak
+     * menolaknya, sekaligus supaya yang lupa menggantinya tetap terbaca.
+     */
+    public function salin(array $baris): void
+    {
+        $this->bukaSunting(0, $baris);
+
+        $this->sunting = null;
+        $this->tambah = true;
+        $this->isian['nama'] = trim($baris['nama'].' (salinan)');
+    }
+
+    /** Riwayat perubahan harga satu baris. */
+    public function bukaRiwayat(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->ambil("/master-harga/{$id}/riwayat");
+
+            $this->riwayatUntuk = $id;
+            $this->riwayat = $balasan['data'] ?? [];
+            $this->riwayatMeta = $balasan['meta'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function tutupRiwayat(): void
+    {
+        $this->riwayatUntuk = null;
+        $this->riwayat = [];
+        $this->riwayatMeta = [];
     }
 
     public function hapus(int $id): void
@@ -598,6 +754,8 @@ class OrchaMasterHargaList extends Component
             'provinsi' => $this->filterProvinsi,
             'vendor' => $this->filterVendor,
             'dipakai' => $this->filterDipakai,
+            'status' => $this->filterStatus,
+            'urut' => $this->urut,
         ]));
 
         $katalog = $this->katalog();
@@ -624,6 +782,8 @@ class OrchaMasterHargaList extends Component
         return view('livewire.pages.admin.orcha.rab.master-harga', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
+            // Dihitung Orcha dari SELURUH tabel, bukan dari halaman ini.
+            'ringkas' => $hasil['meta']['ringkas'] ?? [],
             'kategori' => $kosakata['kategori'] ?? [],
             'satuan' => $kosakata['satuan'] ?? [],
             'provinsi' => $katalog['provinsi'] ?? [],

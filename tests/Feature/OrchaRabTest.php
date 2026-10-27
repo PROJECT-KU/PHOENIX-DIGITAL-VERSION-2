@@ -37,6 +37,16 @@ function palsukanRab(): void
             str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
             str_ends_with($jalur, '/rab') && $r->method() === 'POST' => Http::response(rekamanRab('show'), 201),
             str_ends_with($jalur, '/rab') => Http::response(rekamanRab('daftar')),
+            str_ends_with($jalur, '/master-harga/massal') => Http::response(['pesan' => '2 harga dinaikkan.', 'jumlah' => 2]),
+            str_ends_with($jalur, '/riwayat') => Http::response([
+                'data' => [[
+                    'id' => 9, 'harga_lama' => 'Rp 50.000', 'harga_baru' => 'Rp 60.000',
+                    'selisih' => '+Rp 10.000', 'naik' => true, 'persen' => 20.0,
+                    'oleh' => 'Berto', 'catatan' => null,
+                    'pada' => '18 Sep 2026, 19:26', 'pada_teks' => '2 bulan yang lalu',
+                ]],
+                'meta' => ['nama' => 'Tiket Candi Prambanan', 'harga_kini' => 'Rp 60.000'],
+            ]),
             str_contains($jalur, '/master-harga') => Http::response(rekamanRab('master')),
             default => Http::response(['data' => [], 'meta' => []]),
         };
@@ -1767,7 +1777,9 @@ test('tiap sel master harga berdiri di bawah judul kolomnya', function () {
     expect($tabel)->not->toBeEmpty();
 
     preg_match('#<thead>(.*?)</thead>#s', $tabel[1], $kepala);
-    preg_match('#<tbody>(.*?)</tr>#s', $tabel[1], $barisPertama);
+    // Baris DATA yang pertama, bukan pita kategori yang mendahuluinya —
+    // pita itu satu sel ber-colspan, dan menghitung selnya selalu memulangkan 1.
+    preg_match('#<tr wire:key="mh-(.*?)</tr>#s', $tabel[1], $barisPertama);
 
     expect($kepala)->not->toBeEmpty()
         ->and($barisPertama)->not->toBeEmpty();
@@ -1793,4 +1805,190 @@ test('tiap sel master harga berdiri di bawah judul kolomnya', function () {
     }
 
     expect($rataKepala)->toBe($rataSel);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Master harga: menemukan, mengurutkan, menyalin, dan mengubah massal
+|--------------------------------------------------------------------------
+*/
+
+test('saringan status dan pengurut diteruskan ke Orcha apa adanya', function () {
+    /*
+     | Hitungannya milik Orcha. Yang diperiksa di sini: pilihan di layar
+     | sampai ke jalur yang benar — saringan yang terlihat terpasang tetapi
+     | tidak pernah terkirim adalah cacat yang tampak seperti data salah.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterStatus', 'kedaluwarsa')
+        ->set('urut', 'termahal');
+
+    Http::assertSent(function (Request $r) {
+        $q = parse_url($r->url(), PHP_URL_QUERY) ?? '';
+        parse_str($q, $p);
+
+        return str_contains($r->url(), '/master-harga')
+            && ($p['status'] ?? null) === 'kedaluwarsa'
+            && ($p['urut'] ?? null) === 'termahal';
+    });
+});
+
+test('ringkasan dibaca dari Orcha dan setiap angkanya bisa diklik', function () {
+    /*
+     | Angka yang menunjuk pekerjaan tetapi tidak membawa ke sana cuma
+     | menambah beban. Yang diperiksa: angkanya memang digambar, dan
+     | tombolnya memasang saringan yang dijanjikan.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+
+    expect($layar->html())->toContain('Belum punya vendor')
+        ->and($layar->html())->toContain('Masa berlakunya lewat');
+
+    $layar->set('filterStatus', 'kedaluwarsa')->assertSet('filterStatus', 'kedaluwarsa');
+});
+
+test('kenaikan massal menolak persen kosong sebelum menyentuh Orcha', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1', '2'])
+        ->set('aksiMassal', 'naik')
+        ->set('persenMassal', '')
+        ->call('jalankanMassal')
+        ->assertHasErrors('persenMassal');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/massal'));
+});
+
+test('persen di luar batas tidak pernah dikirim', function () {
+    /*
+     | Satu angka nol kelebihan tidak boleh menghapus harga seisi kategori.
+     | Orcha menolaknya juga — penjagaan di layar hanya supaya galatnya
+     | terbaca sebagai kalimat, bukan sebagai kegagalan jaringan.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1'])
+        ->set('aksiMassal', 'turun')
+        ->set('persenMassal', '150')
+        ->call('jalankanMassal')
+        ->assertHasErrors('persenMassal');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/massal'));
+});
+
+test('kenaikan massal mengirim koma sebagai titik', function () {
+    /*
+     | Admin mengetik "7,5" karena begitulah angka ditulis di sini; JSON
+     | hanya mengenal titik. Tanpa penerjemahan ini yang terkirim adalah 7.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1', '2'])
+        ->set('aksiMassal', 'naik')
+        ->set('persenMassal', '7,5')
+        ->call('jalankanMassal')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/massal')
+        && $r['persen'] === 7.5
+        && $r['aksi'] === 'naik'
+        && $r['id'] === [1, 2]);
+});
+
+test('perintah massal mengosongkan centangnya setelah berhasil', function () {
+    /*
+     | Centang yang tertinggal setelah perintah dijalankan adalah perintah
+     | kedua yang menunggu ditekan tanpa disadari.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1', '2'])
+        ->set('aksiMassal', 'matikan')
+        ->call('jalankanMassal')
+        ->assertSet('pilih', [])
+        ->assertSet('aksiMassal', '');
+});
+
+test('menyalin membuka baris BARU, bukan menyunting yang disalin', function () {
+    /*
+     | Kalau mode suntingnya ikut terbawa, "salin" diam-diam menimpa baris
+     | aslinya — kerusakan yang baru ketahuan saat harga lamanya hilang.
+     */
+    palsukanRab();
+
+    $baris = rekamanRab('master')['data'][0];
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('salin', $baris);
+
+    $layar->assertSet('sunting', null)
+        ->assertSet('tambah', true)
+        ->assertSet('isian.nama', $baris['nama'].' (salinan)')
+        // Sisanya memang ikut tersalin — itulah gunanya.
+        ->assertSet('isian.kategori', $baris['kategori'])
+        ->assertSet('isian.destinasi', $baris['destinasi']);
+});
+
+test('riwayat harga dibaca dari Orcha dan ditutup tanpa meninggalkan sisa', function () {
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaRiwayat', 1);
+
+    expect($layar->html())->toContain('Riwayat harga')
+        ->and($layar->html())->toContain('+Rp 10.000');
+
+    $layar->call('tutupRiwayat')
+        ->assertSet('riwayatUntuk', null)
+        ->assertSet('riwayat', []);
+});
+
+test('centang semua hanya menyentuh baris yang sedang terlihat', function () {
+    /*
+     | Mencentang baris yang tidak kelihatan adalah cara tercepat mematikan
+     | harga yang tidak pernah dilihat orangnya.
+     */
+    palsukanRab();
+
+    $terlihat = collect(rekamanRab('master')['data'])->pluck('id')->all();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('pilihSemua', $terlihat);
+
+    expect($layar->get('pilih'))->toBe(array_map('strval', $terlihat));
+
+    // Menekannya lagi melepas semuanya.
+    $layar->call('pilihSemua', $terlihat)->assertSet('pilih', []);
+});
+
+test('masa berlaku ikut terkirim saat menyimpan', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama', 'Tiket uji')
+        ->set('isian.harga', '50.000')
+        ->set('isian.berlaku_sampai', '2027-03-01')
+        ->call('simpan');
+
+    Http::assertSent(fn (Request $r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/master-harga')
+        && $r->method() === 'POST'
+        && $r['berlaku_sampai'] === '2027-03-01');
 });
