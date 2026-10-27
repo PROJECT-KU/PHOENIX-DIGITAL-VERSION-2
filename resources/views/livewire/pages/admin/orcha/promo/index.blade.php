@@ -170,6 +170,62 @@ Promo Rombongan || lemon
                                 </div>
                             </div>
 
+                            {{-- ===== Batas aman menurut sistem =====
+
+                                 Angka promo selama ini ditebak: "lima persen
+                                 terdengar wajar". Tebakan itu aman pada paket
+                                 bermargin tebal dan diam-diam merugikan pada yang
+                                 tipis — dan tingkatnya berlaku untuk SELURUH paket,
+                                 jadi yang menanggung lebih dulu justru yang paling
+                                 rapuh.
+
+                                 Yang ditampilkan batasnya, bukan keputusannya.
+                                 Admin tetap boleh memilih angka lain. --}}
+                            @if (($saran['bisa_dihitung'] ?? false) === true)
+                                <div class="promo-saran mt-3">
+                                    <div class="promo-saran-kepala">
+                                        <i class="bi bi-calculator"></i>
+                                        <strong>Batas aman untuk {{ $saran['jumlah_rekan'] }} rekan</strong>
+                                    </div>
+
+                                    <p class="promo-saran-alasan">{{ $saran['alasan'] }}</p>
+
+                                    <div class="promo-saran-aksi">
+                                        @if (($saran['persen_saran'] ?? 0) >= 1)
+                                            <button type="button" wire:click="pakaiSaranPersen" class="orcha-btn orcha-btn-lembut promo-saran-btn">
+                                                <i class="bi bi-check2"></i>
+                                                <span>Pakai {{ $saran['persen_saran'] }}% ({{ $saran['potongan_saran_teks'] }})</span>
+                                            </button>
+                                        @endif
+
+                                        @if ($saran['gratis_aman'] ?? false)
+                                            <button type="button" wire:click="pakaiSaranGratis" class="orcha-btn orcha-btn-lembut promo-saran-btn">
+                                                <i class="bi bi-check2"></i><span>Pakai gratis 1 orang</span>
+                                            </button>
+                                        @else
+                                            {{-- Dikatakan apa adanya: menggratiskan satu orang
+                                                 di tingkat ini memakan lebih dari separuh untung
+                                                 yang dibawanya. --}}
+                                            <span class="promo-saran-tolak">
+                                                <i class="bi bi-x-circle"></i>
+                                                Gratis 1 orang belum aman di tingkat ini
+                                                ({{ $saran['untung_sesudah_gratis_teks'] }})
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <p class="promo-saran-kaki">
+                                        Di atas <strong>{{ $saran['persen_maksimal'] }}%</strong>, rombongan sebesar ini
+                                        tidak lagi menambah untung sama sekali.
+                                    </p>
+                                </div>
+                            @elseif (($saran['sebab'] ?? '') !== '')
+                                <div class="promo-saran is-kosong mt-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    <span>{{ $saran['sebab'] }}</span>
+                                </div>
+                            @endif
+
                             {{-- Sakelar memakai kartu, bukan togel telanjang.
 
                                  Togel tanpa keterangan memaksa admin menebak apa yang
@@ -361,4 +417,37 @@ Promo Rombongan || lemon
     </div>
 
     @include('livewire.pages.admin.orcha.partials.skrip')
+
+    {{-- Gaya ditulis inline: public/build tidak ikut deploy, jadi apa pun
+         yang lewat Vite tidak pernah sampai ke server. --}}
+    <style>
+        .promo-saran {
+            padding: 13px 15px; border-radius: 13px;
+            background: #f0f9ff; border: 1px solid #bae6fd;
+        }
+        .promo-saran.is-kosong {
+            display: flex; align-items: center; gap: 8px;
+            background: #f8fafc; border-color: #e2e8f0;
+            font-size: .82rem; color: #64748b;
+        }
+        .promo-saran-kepala {
+            display: flex; align-items: center; gap: 7px;
+            font-size: .86rem; color: #075985;
+        }
+        .promo-saran-alasan {
+            margin: 6px 0 10px; font-size: .79rem; line-height: 1.5; color: #0c4a6e;
+        }
+        .promo-saran-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        /* Hijau: menerima saran adalah jalan yang aman, dan warnanya
+           mengatakan itu sebelum kalimatnya dibaca. */
+        .promo-saran-btn { border-color: #86efac; color: #15803d; background: #fff; }
+        .promo-saran-btn:hover { background: #15803d; color: #fff; border-color: transparent; }
+        .promo-saran-tolak {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .78rem; font-weight: 600; color: #b45309;
+        }
+        .promo-saran-kaki {
+            margin: 10px 0 0; font-size: .75rem; color: #0369a1;
+        }
+    </style>
 </div>

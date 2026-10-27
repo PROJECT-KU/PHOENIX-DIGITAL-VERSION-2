@@ -54,6 +54,15 @@ class OrchaPromoList extends Component
      */
     public string $jenis = 'persen';
 
+    /*
+     | Batas aman yang dihitung Orcha untuk tingkat yang sedang diisi.
+     |
+     | Angka promo selama ini ditebak — "lima persen terdengar wajar".
+     | Tebakan itu aman pada paket bermargin tebal dan diam-diam merugikan
+     | pada yang tipis, padahal tingkatnya berlaku untuk SELURUH paket.
+     */
+    public array $saran = [];
+
     private function kosongkan(): void
     {
         $this->isian = [
@@ -63,6 +72,55 @@ class OrchaPromoList extends Component
         ];
         $this->jenis = 'persen';
         $this->aktif = true;
+        $this->saran = [];
+    }
+
+    /** Minimal peserta berubah → batas amannya dihitung ulang. */
+    public function updatedIsianMinPeserta(): void
+    {
+        $this->muatSaran();
+    }
+
+    private function muatSaran(): void
+    {
+        $min = (int) ($this->isian['min_peserta'] ?? 0);
+
+        if ($min < 2) {
+            $this->saran = [];
+
+            return;
+        }
+
+        try {
+            $this->saran = $this->orcha()->ambil('/promo-rombongan/saran', ['min_peserta' => $min])['data'] ?? [];
+        } catch (OrchaTidakTerjangkau) {
+            // Diam: saran yang tidak bisa dihitung bukan galat yang perlu
+            // menghentikan admin mengisi formulirnya.
+            $this->saran = [];
+        }
+    }
+
+    /** Memakai angka yang disarankan sistem. */
+    public function pakaiSaranPersen(): void
+    {
+        if (($this->saran['persen_saran'] ?? 0) < 1) {
+            return;
+        }
+
+        $this->jenis = 'persen';
+        $this->isian['potongan_persen'] = (string) $this->saran['persen_saran'];
+        $this->isian['gratis_orang'] = '';
+    }
+
+    public function pakaiSaranGratis(): void
+    {
+        if (! ($this->saran['gratis_aman'] ?? false)) {
+            return;
+        }
+
+        $this->jenis = 'gratis';
+        $this->isian['gratis_orang'] = '1';
+        $this->isian['potongan_persen'] = '';
     }
 
     public function mount(): void
@@ -95,6 +153,7 @@ class OrchaPromoList extends Component
         ];
 
         $this->aktif = (bool) $baris['aktif'];
+        $this->muatSaran();
     }
 
     public function tutup(): void
