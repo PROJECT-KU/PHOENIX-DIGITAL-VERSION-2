@@ -1083,10 +1083,6 @@ Master Harga || lemon
                                         <i class="bi bi-check2-square"></i>
                                         <strong>{{ count($pilih) }}</strong> harga dicentang
                                     </span>
-                                    <button type="button" wire:click="batalPilih" class="dsb-tombol is-lembut mh-pasang-batal"
-                                        title="Lepas semua centangnya">
-                                        <i class="bi bi-x-lg"></i><span>Batal</span>
-                                    </button>
 
                                     {{-- SATU daftar perintah, bukan dua bagian.
 
@@ -1178,6 +1174,17 @@ Master Harga || lemon
                                             @endswitch
                                         </span>
 
+                                        {{-- Batal dan Jalankan satu kelompok, di ujung baris
+                                             yang sama. Terpisah — Batal menggantung di pojok
+                                             kartu, Jalankan di baris bawah — keduanya terbaca
+                                             seperti dua perintah yang tidak berhubungan, dan
+                                             mata harus melompat untuk menemukan keduanya. --}}
+                                        <span class="mh-perintah-tombol">
+                                            <button type="button" wire:click="batalPilih" class="dsb-tombol is-lembut"
+                                                title="Lepas semua centangnya">
+                                                <i class="bi bi-x-lg"></i><span>Batal</span>
+                                            </button>
+
                                         @if ($aksiMassal === 'vendor')
                                             <button type="button" wire:click="pasangVendor"
                                                 wire:loading.attr="disabled" wire:target="pasangVendor"
@@ -1199,15 +1206,21 @@ Master Harga || lemon
                                                 <i class="bi {{ $aksiMassal === 'hapus' ? 'bi-trash' : 'bi-pause-circle' }}"></i><span>Jalankan</span>
                                             </button>
                                         @else
+                                            {{-- is-utama, bukan is-telaah: ini aksi pokok
+                                                 kartunya, bukan "melihat". Sebagai tombol
+                                                 bergaris ia terbaca pucat — apalagi saat
+                                                 nonaktif — dan tidak ada yang menarik mata
+                                                 ke tempat perintahnya dijalankan. --}}
                                             <button type="button" wire:click="jalankanMassal"
                                                 wire:loading.attr="disabled" wire:target="jalankanMassal"
                                                 @disabled($aksiMassal === '')
-                                                class="dsb-tombol is-telaah mh-perintah-jalan">
+                                                class="dsb-tombol is-utama mh-perintah-jalan">
                                                 <i class="bi bi-lightning-charge" wire:loading.remove wire:target="jalankanMassal"></i>
                                                 <span class="dsb-putar" wire:loading wire:target="jalankanMassal"></span>
                                                 <span>Jalankan</span>
                                             </button>
                                         @endif
+                                        </span>
                                     </div>
 
                                     @error('aksiMassal')
@@ -1599,10 +1612,9 @@ Master Harga || lemon
         .mh-pasang .dsb-isian { background: #fff; }
         .mh-pasang .dsb-tombol { flex: 0 0 auto; }
         .mh-pasang-kaki { flex: 1 1 100%; margin-top: 0 !important; }
-        /* "Batal" duduk di ujung kanan judulnya, bukan di antara kotak
-           perintah: ia melepas pilihan, bukan menjalankan sesuatu. */
-        .mh-pasang-judul { flex: 1 1 auto; }
-        .mh-pasang .mh-pasang-batal { height: 36px; padding: 0 13px; font-size: .8rem; }
+        /* Judulnya mengambil barisnya sendiri: ia keterangan, bukan kendali.
+           Yang bisa ditekan semuanya berkumpul di baris perintah di bawahnya. */
+        .mh-pasang-judul { flex: 1 1 100%; }
 
         /* Satu baris perintah: verba, pelengkapnya, lalu Jalankan.
            Pelengkapnya melar mengisi sisa lebar — baris yang separuhnya
@@ -1618,7 +1630,10 @@ Master Harga || lemon
             flex: 1 1 220px; min-width: 0;
             font-size: .79rem; line-height: 1.45; color: var(--dsb-redup, #6b7280);
         }
-        .mh-perintah > .mh-perintah-jalan { flex: 0 0 auto; }
+        /* Dua tombol sebagai satu blok: ia tidak pernah pecah ke dua baris
+           berbeda, dan jaraknya ke kotak perintah tetap sama berapa pun
+           panjang keterangannya. */
+        .mh-perintah > .mh-perintah-tombol { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
         .mh-perintah .mh-perintah-isi .dsb-isian { width: 100%; }
 
         .mh-centang { width: 34px; }
@@ -1838,8 +1853,11 @@ Master Harga || lemon
             .mh-perintah > .mh-perintah-aksi,
             .mh-perintah > .mh-perintah-isi,
             .mh-perintah > .mh-perintah-isi.mh-persen,
-            .mh-perintah > .mh-perintah-jalan { flex: 1 1 100%; }
-            .mh-perintah > .mh-perintah-jalan { justify-content: center; }
+            .mh-perintah > .mh-perintah-tombol { flex: 1 1 100%; }
+            /* Kedua tombol membagi barisnya rata; yang menjalankan diberi
+               porsi lebih besar karena itu yang dituju. */
+            .mh-perintah > .mh-perintah-tombol .dsb-tombol { flex: 1 1 0; justify-content: center; }
+            .mh-perintah > .mh-perintah-tombol .mh-perintah-jalan { flex: 2 1 0; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu
