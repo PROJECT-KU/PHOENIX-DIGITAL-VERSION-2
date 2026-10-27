@@ -8,6 +8,7 @@ Master Harga || lemon
          hal yang memang khas Orcha (sakelar kartu, isian rupiah, paginasi). --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
+    @include('livewire.pages.admin.orcha.partials.select-cari')
 
     @php
         $jumlahData = (int) ($meta['total'] ?? count($daftar));
@@ -111,24 +112,34 @@ Master Harga || lemon
                                 @endforeach
                             </select>
 
-                            <select class="dsb-isian mh-pilih" wire:model.live="filterProvinsi" aria-label="Saring menurut provinsi">
-                                <option value="">Semua provinsi</option>
-                                <option value="-">Berlaku umum (semua provinsi)</option>
-                                @foreach ($provinsi as $p)
-                                    <option value="{{ $p }}">{{ $p }}</option>
-                                @endforeach
-                            </select>
+                            {{-- wire:key memuat NILAINYA juga, bukan cuma daftarnya:
+                                 di dalam wire:ignore, nilai yang diubah dari server
+                                 (mis. "Tampilkan semua") tidak akan tercermin kecuali
+                                 nodenya diganti utuh. --}}
+                            <div class="mh-pilih" wire:key="f-prov-{{ $filterProvinsi }}" wire:ignore
+                                x-data x-init="pasangSelectCari($el, 'filterProvinsi', { placeholder: 'Semua provinsi' })">
+                                <select class="dsb-isian" aria-label="Saring menurut provinsi">
+                                    <option value="">Semua provinsi</option>
+                                    <option value="-" @selected($filterProvinsi === '-')>Berlaku umum (semua provinsi)</option>
+                                    @foreach ($provinsi as $p)
+                                        <option value="{{ $p }}" @selected($filterProvinsi === $p)>{{ $p }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                            <select class="dsb-isian mh-pilih" wire:model.live="filterVendor" aria-label="Saring menurut vendor">
-                                <option value="">Semua vendor</option>
-                                {{-- "Belum ada vendor" adalah daftar pekerjaan yang
-                                     tersisa, dan itu yang paling sering dicari
-                                     sesudah daftar vendornya ada. --}}
-                                <option value="-">Belum ada vendor</option>
-                                @foreach ($vendor as $v)
-                                    <option value="{{ $v['id'] }}">{{ $v['nama'] }}</option>
-                                @endforeach
-                            </select>
+                            <div class="mh-pilih" wire:key="f-ven-{{ $filterVendor }}-{{ count($vendor) }}" wire:ignore
+                                x-data x-init="pasangSelectCari($el, 'filterVendor', { placeholder: 'Semua vendor' })">
+                                <select class="dsb-isian" aria-label="Saring menurut vendor">
+                                    <option value="">Semua vendor</option>
+                                    {{-- "Belum ada vendor" adalah daftar pekerjaan yang
+                                         tersisa, dan itu yang paling sering dicari
+                                         sesudah daftar vendornya ada. --}}
+                                    <option value="-" @selected($filterVendor === '-')>Belum ada vendor</option>
+                                    @foreach ($vendor as $v)
+                                        <option value="{{ $v['id'] }}" @selected((string) $filterVendor === (string) $v['id'])>{{ $v['nama'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
                             <select class="dsb-isian mh-pilih" wire:model.live="filterDipakai" aria-label="Saring menurut pemakaian">
                                 <option value="">Dipakai &amp; belum</option>
@@ -286,19 +297,27 @@ Master Harga || lemon
                                         </label>
                                         {{-- DIPILIH, bukan diketik: harga tiket dijodohkan
                                              ke itinerary lewat nama ini PERSIS. --}}
-                                        <select id="mh-destinasi" wire:model.live="isian.destinasi"
-                                            class="dsb-isian @error('isian.destinasi') is-galat @enderror">
-                                            <option value="">Tidak terikat destinasi</option>
-                                            @if ($destinasiAsing)
-                                                {{-- Nilai lama yang tidak ada di katalog TETAP
-                                                     ditawarkan, supaya menyunting baris lain
-                                                     tidak diam-diam menghapusnya. --}}
-                                                <option value="{{ $destinasiKini }}">{{ $destinasiKini }} — tidak ada di katalog</option>
-                                            @endif
-                                            @foreach ($destinasi as $d)
-                                                <option value="{{ $d }}">{{ $d }}</option>
-                                            @endforeach
-                                        </select>
+                                        {{-- Daftarnya puluhan dan IKUT BERUBAH mengikuti
+                                             provinsi, jadi kuncinya memuat daftar beserta
+                                             nilainya — node yang kuncinya berubah diganti
+                                             utuh, dan Select2 dipasang ulang dengan
+                                             pilihan yang baru. --}}
+                                        <div wire:key="dst-{{ md5($destinasiKini.'|'.implode('|', $destinasi)) }}" wire:ignore
+                                            x-data x-init="pasangSelectCari($el, 'isian.destinasi', { placeholder: 'Tidak terikat destinasi' })">
+                                            <select id="mh-destinasi"
+                                                class="dsb-isian @error('isian.destinasi') is-galat @enderror">
+                                                <option value="">Tidak terikat destinasi</option>
+                                                @if ($destinasiAsing)
+                                                    {{-- Nilai lama yang tidak ada di katalog TETAP
+                                                         ditawarkan, supaya menyunting baris lain
+                                                         tidak diam-diam menghapusnya. --}}
+                                                    <option value="{{ $destinasiKini }}" selected>{{ $destinasiKini }} — tidak ada di katalog</option>
+                                                @endif
+                                                @foreach ($destinasi as $d)
+                                                    <option value="{{ $d }}" @selected($destinasiKini === $d)>{{ $d }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
 
                                         @unless ($destinasiBaru)
                                             <button type="button" wire:click="$set('destinasiBaru', true)" class="mh-tambah">
@@ -317,12 +336,15 @@ Master Harga || lemon
                                         Vendor
                                         <span class="dsb-label-ket">kontaknya ikut ke RAB</span>
                                     </label>
-                                    <select id="mh-vendor" wire:model.live="isian.vendor_id" class="dsb-isian">
-                                        <option value="">Belum ditentukan</option>
-                                        @foreach ($vendor as $v)
-                                            <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if (! empty($v['jenis'])) — {{ $v['jenis'] }}@endif</option>
-                                        @endforeach
-                                    </select>
+                                    <div wire:key="ven-{{ $isian['vendor_id'] ?? '' }}-{{ count($vendor) }}" wire:ignore
+                                        x-data x-init="pasangSelectCari($el, 'isian.vendor_id', { placeholder: 'Belum ditentukan' })">
+                                        <select id="mh-vendor" class="dsb-isian">
+                                            <option value="">Belum ditentukan</option>
+                                            @foreach ($vendor as $v)
+                                                <option value="{{ $v['id'] }}" @selected((string) ($isian['vendor_id'] ?? '') === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['jenis'])) — {{ $v['jenis'] }}@endif</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     @php($vendorKini = collect($vendor)->firstWhere('id', (int) ($isian['vendor_id'] ?? 0)))
                                     @if ($vendorKini && ! empty($vendorKini['kontak']))
                                         <span class="mh-vendor-kontak">
@@ -354,12 +376,15 @@ Master Harga || lemon
 
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="mh-provinsi">Provinsi</label>
-                                    <select id="mh-provinsi" wire:model.live="isian.provinsi" class="dsb-isian">
-                                        <option value="">Berlaku umum (semua provinsi)</option>
-                                        @foreach ($provinsi as $p)
-                                            <option value="{{ $p }}">{{ $p }}</option>
-                                        @endforeach
-                                    </select>
+                                    <div wire:key="prov-{{ $isian['provinsi'] ?? '' }}" wire:ignore
+                                        x-data x-init="pasangSelectCari($el, 'isian.provinsi', { placeholder: 'Berlaku umum (semua provinsi)' })">
+                                        <select id="mh-provinsi" class="dsb-isian">
+                                            <option value="">Berlaku umum (semua provinsi)</option>
+                                            @foreach ($provinsi as $p)
+                                                <option value="{{ $p }}" @selected(($isian['provinsi'] ?? '') === $p)>{{ $p }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="dsb-medan">
@@ -623,13 +648,15 @@ Master Harga || lemon
                                         <strong>{{ count($pilih) }}</strong> harga dicentang
                                     </span>
 
-                                    <select wire:model="pasangKeVendor"
-                                        class="dsb-isian @error('pasangKeVendor') is-galat @enderror">
-                                        <option value="">Pasangkan ke vendor…</option>
-                                        @foreach ($vendor as $v)
-                                            <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
-                                        @endforeach
-                                    </select>
+                                    <div class="mh-pasang-pilih" wire:key="pasang-{{ $pasangKeVendor }}-{{ count($vendor) }}" wire:ignore
+                                        x-data x-init="pasangSelectCari($el, 'pasangKeVendor', { placeholder: 'Pasangkan ke vendor…' })">
+                                        <select class="dsb-isian @error('pasangKeVendor') is-galat @enderror">
+                                            <option value="">Pasangkan ke vendor…</option>
+                                            @foreach ($vendor as $v)
+                                                <option value="{{ $v['id'] }}" @selected((string) $pasangKeVendor === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
                                     <button type="button" wire:click="pasangVendor"
                                         wire:loading.attr="disabled" wire:target="pasangVendor"
@@ -960,7 +987,8 @@ Master Harga || lemon
             flex: 1 1 100%; display: flex; align-items: center; gap: 7px;
             font-size: .84rem; font-weight: 700; color: #047857;
         }
-        .mh-pasang .dsb-isian { flex: 1 1 240px; min-width: 0; background: #fff; }
+        .mh-pasang .mh-pasang-pilih { flex: 1 1 240px; min-width: 0; }
+        .mh-pasang .dsb-isian { background: #fff; }
         .mh-pasang .dsb-tombol { flex: 0 0 auto; }
         .mh-pasang-kaki { flex: 1 1 100%; margin-top: 0 !important; }
 
