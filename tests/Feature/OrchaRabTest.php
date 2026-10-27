@@ -30,6 +30,12 @@ function palsukanRab(): void
         return match (true) {
             str_contains($jalur, '/rab/katalog') => Http::response(rekamanRab('katalog')),
             str_ends_with($jalur, '/rab/3/tarik-biaya') => Http::response(rekamanRab('tarik')),
+            str_ends_with($jalur, '/rab/3/itinerary') => Http::response(
+                rekamanRab('show') + ['tiket_dibuang' => ['Tiket Borobudur']]
+            ),
+            str_contains($jalur, '/rab/3/biaya/') && $r->method() === 'DELETE' => Http::response(
+                rekamanRab('show') + ['destinasi_tertinggal' => 'Candi Prambanan']
+            ),
             str_ends_with($jalur, '/rab/3/pdf') => Http::response('%PDF-1.7 palsu', 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="rab.pdf"',
@@ -2525,4 +2531,70 @@ test('perubahan data perjalanan yang belum disimpan ditandai, dan batal mengemba
     $layar->call('batalKepala');
 
     expect($layar->instance()->kepalaBerubah())->toBeFalse();
+});
+
+test('tiket yang ikut terbuang bersama itinerary dikatakan, tidak hilang diam-diam', function () {
+    /*
+     | Baris biaya yang hilang sendiri tanpa sepatah kata membuat total
+     | berubah tanpa sebab yang terlihat — dan yang pertama dicurigai
+     | justru hitungannya.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('hapusKegiatan', 0)
+        ->assertDispatched('order-updated', fn ($nama, $p) => str_contains($p['message'], 'Tiket Borobudur')
+            && str_contains($p['message'], 'tidak lagi dikunjungi'));
+});
+
+test('menghapus tiket yang tempatnya masih dikunjungi menawarkan membuang kunjungannya', function () {
+    /*
+     | Itinerary tidak diubah diam-diam: ia rencana yang dibaca pelanggan.
+     | Yang ditawarkan pilihannya, bukan akibatnya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('hapusBiaya', 11);
+
+    $layar->assertSet('tiketTertinggal', 'Candi Prambanan');
+
+    expect($layar->html())->toContain('masih ada di itinerary')
+        ->and($layar->html())->toContain('Buang juga dari itinerary');
+
+    // Dan menolak tawaran itu tidak menyentuh itinerary.
+    $layar->call('lupakanTertinggal')->assertSet('tiketTertinggal', '');
+});
+
+test('membuang kunjungan hanya menghapus yang destinasinya cocok', function () {
+    palsukanRab();
+
+    /*
+     | Itinerary-nya diambil dari rekaman Orcha apa adanya: menyetelnya
+     | lewat ->set() memicu simpan, dan jawabannya menimpa kembali isinya
+     | dengan rekaman itu — uji yang mengandaikan isian sendiri akan
+     | memeriksa sesuatu yang sudah tidak ada.
+     */
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('tiketTertinggal', 'Candi Prambanan')
+        ->call('buangKunjungan');
+
+    Http::assertSent(function (Request $r) {
+        if (! str_contains($r->url(), '/rab/3/itinerary') || ! is_array($r['itinerary'])) {
+            return false;
+        }
+
+        $destinasi = collect($r['itinerary'])->pluck('destinasi')->all();
+
+        // Kunjungan Prambanan hilang; Malioboro dan kegiatan tanpa
+        // destinasi tetap di tempatnya.
+        return ! in_array('Candi Prambanan', $destinasi, true)
+            && in_array('Malioboro', $destinasi, true)
+            && count($destinasi) === 2;
+    });
+
+    $layar->assertSet('tiketTertinggal', '');
 });

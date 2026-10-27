@@ -338,6 +338,14 @@ Susun RAB || lemon
             display: inline-block; width: 7px; height: 7px; margin-left: 5px;
             border-radius: 999px; background: #b45309;
         }
+        .rab-tertinggal {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            margin-bottom: 14px; padding: 11px 14px; border-radius: 13px;
+            background: #eff6ff; border: 1px solid #bfdbfe;
+        }
+        .rab-tertinggal > i { color: #1d4ed8; font-size: 1.02rem; }
+        .rab-tertinggal-teks { flex: 1 1 240px; min-width: 0; font-size: .83rem; line-height: 1.45; color: #1e3a8a; }
+
         .rab-tertahan-ket {
             display: inline-flex; align-items: center; gap: 6px; margin-right: auto;
             font-size: .79rem; font-weight: 600; color: #92400e;
@@ -872,9 +880,37 @@ Susun RAB || lemon
                                 <div class="orcha-bagian-nomor">2</div>
                                 <div>
                                     <div class="orcha-bagian-judul">Rincian biaya</div>
-                                    <div class="orcha-bagian-sub">Tiket dari itinerary sudah masuk sendiri. Sisanya — armada, hotel, pemandu — dipilih dari master harga.</div>
+                                    <div class="orcha-bagian-sub">Tiket dari itinerary ikut masuk dan ikut pergi sendiri. Sisanya — armada, hotel, pemandu — dipilih dari master harga.</div>
                                 </div>
                             </div>
+
+                            {{-- ===== Tiket dihapus, tempatnya masih dikunjungi =====
+
+                                 Arah sebaliknya. Dibiarkan begitu, tiketnya akan
+                                 tertarik lagi pada "Tarik ulang" berikutnya —
+                                 penghapusan yang hidup lagi tanpa ada yang
+                                 menyadarinya. Itinerary tidak diubah diam-diam:
+                                 ia rencana yang dibaca pelanggan. --}}
+                            @if ($tiketTertinggal !== '')
+                                <div class="rab-tertinggal">
+                                    <i class="bi bi-info-circle-fill"></i>
+                                    <span class="rab-tertinggal-teks">
+                                        Kunjungan ke <strong>{{ $tiketTertinggal }}</strong> masih ada di itinerary,
+                                        jadi tiketnya akan ikut tertarik lagi saat <strong>Tarik ulang</strong>.
+                                    </span>
+                                    <button type="button" wire:click="buangKunjungan"
+                                        wire:loading.attr="disabled" wire:target="buangKunjungan"
+                                        class="dsb-tombol is-awas">
+                                        <i class="bi bi-calendar-x" wire:loading.remove wire:target="buangKunjungan"></i>
+                                        <span class="dsb-putar" wire:loading wire:target="buangKunjungan"></span>
+                                        <span>Buang juga dari itinerary</span>
+                                    </button>
+                                    <button type="button" wire:click="lupakanTertinggal" class="dsb-tombol is-lembut"
+                                        title="Biarkan kunjungannya">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            @endif
 
                             {{-- ===== Kendaraan yang muat untuk rombongan ini =====
 

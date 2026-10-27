@@ -73,6 +73,14 @@ class OrchaRabSusun extends Component
      */
     public array $kepalaAwal = [];
 
+    /*
+     | Tiket yang baru dihapus sementara tempatnya MASIH ada di itinerary.
+     |
+     | Tanpa tanda, ia akan tertarik lagi pada "Tarik ulang" berikutnya —
+     | penghapusan yang hidup lagi tanpa ada yang menyadarinya.
+     */
+    public string $tiketTertinggal = '';
+
     /** Destinasi di itinerary yang belum punya harga tiket di master. */
     public array $tanpaTiket = [];
 
@@ -464,7 +472,7 @@ class OrchaRabSusun extends Component
         $this->simpanItinerary();
     }
 
-    private function simpanItinerary(): void
+    private function simpanItinerary(?string $pesan = null): void
     {
         $data = collect($this->itinerary)
             ->filter(fn ($k) => trim((string) $k['nama']) !== '')
@@ -478,7 +486,22 @@ class OrchaRabSusun extends Component
                 'destinasi' => $k['destinasi'] ?: null,
             ])->values()->all();
 
-        $this->kirimKe('ubah', "/rab/{$this->rabId}/itinerary", ['itinerary' => $data]);
+        $balasan = $this->kirimKe('ubah', "/rab/{$this->rabId}/itinerary", ['itinerary' => $data], $pesan);
+
+        /*
+         | Tiket yang ikut terbuang DIKATAKAN.
+         |
+         | Baris biaya yang hilang sendiri tanpa sepatah kata membuat total
+         | berubah tanpa sebab yang terlihat — dan yang pertama dicurigai
+         | justru hitungannya.
+         */
+        $dibuang = $balasan['tiket_dibuang'] ?? [];
+
+        if ($dibuang !== [] && $pesan === null) {
+            $this->dispatch('order-updated', message: count($dibuang) === 1
+                ? "Tiket {$dibuang[0]} ikut dibuang — tempatnya tidak lagi dikunjungi."
+                : count($dibuang).' tiket ikut dibuang karena tempatnya tidak lagi dikunjungi.');
+        }
     }
 
     /* -------------------------------- BIAYA -------------------------------- */
@@ -628,7 +651,33 @@ class OrchaRabSusun extends Component
 
     public function hapusBiaya(int $id): void
     {
-        $this->kirimKe('hapus', "/rab/{$this->rabId}/biaya/{$id}", [], 'Biaya dihapus.');
+        $balasan = $this->kirimKe('hapus', "/rab/{$this->rabId}/biaya/{$id}", [], 'Biaya dihapus.');
+
+        // Itinerary TIDAK diubah diam-diam: ia rencana yang dibaca
+        // pelanggan. Yang ditawarkan pilihannya, bukan akibatnya.
+        $this->tiketTertinggal = (string) ($balasan['destinasi_tertinggal'] ?? '');
+    }
+
+    /** Membuang kunjungan yang tiketnya baru saja dihapus. */
+    public function buangKunjungan(): void
+    {
+        if ($this->tiketTertinggal === '') {
+            return;
+        }
+
+        $kunci = mb_strtolower(trim($this->tiketTertinggal));
+
+        $this->itinerary = collect($this->itinerary)
+            ->reject(fn ($k) => mb_strtolower(trim((string) ($k['destinasi'] ?? ''))) === $kunci)
+            ->values()->all();
+
+        $this->tiketTertinggal = '';
+        $this->simpanItinerary('Kunjungannya ikut dibuang dari itinerary.');
+    }
+
+    public function lupakanTertinggal(): void
+    {
+        $this->tiketTertinggal = '';
     }
 
     /* -------------------------------- MARGIN ------------------------------- */
