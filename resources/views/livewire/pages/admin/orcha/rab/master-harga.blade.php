@@ -861,11 +861,10 @@ Master Harga || lemon
 
                         @if ($dipakai === [])
                             <div class="dsb-kartu-isi">
-                                <div class="dsb-kosong">
-                                    <span class="dsb-kosong-ikon"><i class="bi bi-diagram-3"></i></span>
-                                    <p class="dsb-kosong-judul">Belum dipakai RAB mana pun</p>
-                                    <p class="dsb-kosong-ket">Harga ini aman diubah atau dihapus tanpa menyentuh penawaran.</p>
-                                </div>
+                                <p class="mh-jejak-nihil">
+                                    <i class="bi bi-diagram-3"></i>
+                                    Belum dipakai RAB mana pun — aman diubah atau dihapus tanpa menyentuh penawaran.
+                                </p>
                             </div>
                         @else
                             <div class="dsb-tabel-bungkus">
@@ -907,6 +906,65 @@ Master Harga || lemon
             </section>
         @endif
 
+        {{-- ================== PERUBAHAN TERAKHIR ==================
+
+             Kartunya sendiri, bukan disisipkan ke dalam kartu tabel. Di
+             dalam sana ia mendorong tabelnya ke bawah setiap kali dibuka —
+             dan yang dibuka orang justru supaya bisa membandingkannya
+             dengan tabel itu. --}}
+        @if ($riwayatSemuaBuka)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-clock-history"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Perubahan terakhir</h3>
+                                    <span class="dsb-kartu-sub">
+                                        Yang tercatat hanya perubahan angkanya — mengganti nama, vendor, atau catatan
+                                        tidak meninggalkan jejak. Tekan namanya untuk membuka riwayat harga itu sendiri.
+                                    </span>
+                                </div>
+                            </div>
+                            <button type="button" wire:click="tutupRiwayatSemua" class="dsb-tombol is-lembut">
+                                <i class="bi bi-x-lg"></i><span>Tutup</span>
+                            </button>
+                        </div>
+
+                        <div class="dsb-kartu-isi mh-riwayat-semua">
+                            @if ($riwayatSemua === [])
+                                {{-- Satu baris, bukan blok kosong setinggi layar: tidak
+                                     ada apa-apa untuk dilihat, dan ruang yang disediakan
+                                     untuk ketiadaan itu tetap harus digulir. --}}
+                                <p class="mh-jejak-nihil">
+                                    <i class="bi bi-clock-history"></i>
+                                    Belum ada harga yang pernah berubah angkanya.
+                                </p>
+                            @else
+                                <ol class="mh-jejak">
+                                    @foreach ($riwayatSemua as $r)
+                                        <li wire:key="jejak-{{ $r['id'] }}">
+                                            <span class="mh-jejak-tanggal">{{ $r['pada_teks'] }}</span>
+                                            <button type="button" wire:click="bukaRiwayat({{ $r['harga_id'] }})"
+                                                class="mh-jejak-nama">{{ $r['harga_nama'] ?: 'harga yang sudah dihapus' }}</button>
+                                            <span class="mh-jejak-angka">
+                                                {{ $r['harga_lama'] }} &rarr; <strong>{{ $r['harga_baru'] }}</strong>
+                                            </span>
+                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
+                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
+                                            </span>
+                                            @if ($r['oleh'])<span class="mh-jejak-oleh">oleh {{ $r['oleh'] }}</span>@endif
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
         {{-- ================== RIWAYAT HARGA ==================
 
              Yang tersimpan di baris hanya angka hari ini. "Naik berapa sejak
@@ -933,15 +991,14 @@ Master Harga || lemon
                         </div>
 
                         @if ($riwayat === [])
+                            {{-- Satu baris, bukan blok kosong setinggi layar. Panel ini
+                                 dibuka dari dalam daftar, jadi tidak ada apa pun untuk
+                                 dilihat harus berarti "sedikit tempat", bukan sebaliknya. --}}
                             <div class="dsb-kartu-isi">
-                                <div class="dsb-kosong">
-                                    <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
-                                    <p class="dsb-kosong-judul">Harganya belum pernah berubah</p>
-                                    <p class="dsb-kosong-ket">
-                                        Yang tercatat di sini hanya perubahan angkanya — mengganti nama, vendor,
-                                        atau catatan tidak meninggalkan jejak.
-                                    </p>
-                                </div>
+                                <p class="mh-jejak-nihil">
+                                    <i class="bi bi-clock-history"></i>
+                                    Harganya belum pernah berubah — yang tercatat hanya perubahan angkanya.
+                                </p>
                             </div>
                         @else
                             <div class="dsb-tabel-bungkus">
@@ -1000,7 +1057,7 @@ Master Harga || lemon
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12" wire:loading.class="dsb-sedang-muat"
                     wire:target="cari,filterKategori,filterProvinsi,filterStatus,urut,bersihkanSaringan,bersihkanCari,keHalaman">
-                    <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala mh-daftar-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: var(--dsb-utama)"><i class="bi bi-tags"></i></span>
                             <div>
@@ -1032,31 +1089,6 @@ Master Harga || lemon
                             </a>
                         </span>
                     </div>
-
-                    @if ($riwayatSemuaBuka)
-                        <div class="dsb-kartu-isi mh-riwayat-semua">
-                            @if ($riwayatSemua === [])
-                                <p class="dsb-kartu-sub">Belum ada harga yang pernah berubah angkanya.</p>
-                            @else
-                                <ol class="mh-jejak">
-                                    @foreach ($riwayatSemua as $r)
-                                        <li wire:key="jejak-{{ $r['id'] }}">
-                                            <span class="mh-jejak-tanggal">{{ $r['pada_teks'] }}</span>
-                                            <button type="button" wire:click="bukaRiwayat({{ $r['harga_id'] }})"
-                                                class="mh-jejak-nama">{{ $r['harga_nama'] ?: 'harga yang sudah dihapus' }}</button>
-                                            <span class="mh-jejak-angka">
-                                                {{ $r['harga_lama'] }} &rarr; <strong>{{ $r['harga_baru'] }}</strong>
-                                            </span>
-                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
-                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
-                                            </span>
-                                            @if ($r['oleh'])<span class="mh-jejak-oleh">oleh {{ $r['oleh'] }}</span>@endif
-                                        </li>
-                                    @endforeach
-                                </ol>
-                            @endif
-                        </div>
-                    @endif
 
                     @if ($daftar === [])
                         <div class="dsb-kartu-isi">
@@ -1651,7 +1683,16 @@ Master Harga || lemon
             display: inline-flex; align-items: center; gap: 5px;
             font-size: .78rem; font-weight: 600; color: #b45309;
         }
-        .mh-kepala-aksi { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        /* Kelompok aksi tidak pecah DI DALAM dirinya: kalau kehabisan tempat,
+           seluruh kelompoknya yang turun — "Perubahan terakhir" di satu baris
+           dan "PDF" sendirian di bawahnya terbaca seperti dua hal yang tidak
+           berhubungan. Judul kartunya yang mengalah lebih dulu. */
+        .mh-kepala-aksi { display: flex; align-items: center; flex-wrap: nowrap; gap: 10px; }
+        .mh-kepala-aksi .dsb-tombol { flex: 0 0 auto; }
+        /* Kepala kartunya boleh melipat: di layar sempit kelompok aksi turun
+           utuh ke bawah judulnya. */
+        .mh-daftar-kepala { flex-wrap: wrap; }
+        .mh-daftar-kepala > .dsb-kartu-kepala-kiri { flex: 1 1 320px; }
 
         .mh-dipakai { font-weight: 700; font-size: .86rem; color: var(--dsb-utama, #4f46e5); }
         .mh-tanda {
@@ -1792,7 +1833,14 @@ Master Harga || lemon
             background: none; border: 0; padding: 0; cursor: pointer;
             border-bottom: 1px dashed currentColor;
         }
-        .mh-riwayat-semua { padding-top: 0; }
+        /* Daftarnya menggulir di dalam kartunya sendiri. Dua puluh baris
+           perubahan yang mendorong tabel sampai keluar layar membuat orang
+           menutup panelnya hanya untuk bisa melihat tabelnya lagi. */
+        .mh-riwayat-semua { padding-top: 0; max-height: 330px; overflow-y: auto; }
+        .mh-jejak-nihil {
+            display: flex; align-items: center; gap: 8px; margin: 0;
+            font-size: .84rem; color: var(--dsb-redup, #6b7280);
+        }
         .mh-jejak { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
         .mh-jejak li {
             display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
