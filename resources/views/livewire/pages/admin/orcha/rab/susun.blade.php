@@ -76,13 +76,6 @@ Susun RAB || lemon
     $tanggalTeks = ! empty($rab['tanggal_mulai'])
         ? \Illuminate\Support\Carbon::parse($rab['tanggal_mulai'])->locale('id')->translatedFormat('j M Y')
         : 'Tanggal belum pasti';
-    $warnaStatus = [
-        'draf' => 'bg-secondary-subtle text-secondary-emphasis',
-        'dikirim' => 'bg-primary-subtle text-primary-emphasis',
-        'disetujui' => 'bg-success-subtle text-success-emphasis',
-        'batal' => 'bg-danger-subtle text-danger-emphasis',
-    ];
-    $kelasStatus = $warnaStatus[$statusKini] ?? $warnaStatus['draf'];
     $bolehJadiPendaftaran = ! $sudahPendaftaran && $statusKini !== 'batal' && ! $tanpaBiaya;
 
     $openTrip = ($rab['jenis'] ?? 'private') === 'open';
@@ -254,8 +247,33 @@ Susun RAB || lemon
             .rab-lengket { position: static; }
         }
 
-        .rab-fakta { display: flex; flex-wrap: wrap; gap: .5rem; }
-        .rab-fakta span { background: var(--orc-panel-latar); border: var(--orc-panel-garis); border-radius: 999px; padding: .3rem .8rem; font-size: .82rem; color: var(--orc-tinta); }
+        /* Kolom kiri yang MENYERAP sisa ruang. Tanpa ini
+           justify-content-between menyisakan lubang di tengah kartu, dan
+           keping faktanya terlipat lebih awal daripada seharusnya. */
+        .rb-kepala-info { flex: 1 1 auto; min-width: 0; }
+        .rb-kepala-aksi { display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; flex: 0 0 auto; }
+        .rb-aksi-baris { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+        .rb-aksi-label {
+            font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+            color: var(--dsb-redup, #94a3b8); white-space: nowrap;
+        }
+        /* Satu latar membuat ketiga tombol terbaca sebagai SATU kelompok,
+           jadi "Penawaran" dan "Internal" tidak perlu mengulang kata PDF. */
+        .rb-aksi-berkas {
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+            border-radius: 15px; padding: .35rem .6rem;
+        }
+        @media (min-width: 992px) {
+            .rb-kepala-aksi { align-items: flex-end; }
+            .rb-aksi-baris { justify-content: flex-end; }
+        }
+
+        .rab-fakta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .9rem; }
+        .rab-fakta span {
+            background: var(--orc-panel-latar); border: var(--orc-panel-garis); border-radius: 999px;
+            padding: .28rem .7rem; font-size: .8rem; color: var(--orc-tinta); white-space: nowrap;
+        }
+        .rab-fakta i { color: var(--dsb-redup, #94a3b8); margin-right: .15rem; }
         .rab-hari-tab { display: flex; flex-wrap: wrap; gap: .5rem; }
         .rab-hari-tab button { border: 2px solid #e2e8f0; background: #fff; border-radius: 12px; padding: .45rem .9rem; font-weight: 600; font-size: .85rem; color: var(--orc-tinta); }
         .rab-hari-tab button.aktif { border-color: var(--orc-primer); background: var(--orc-gradien); color: #fff; }
@@ -699,10 +717,12 @@ Susun RAB || lemon
             <div class="dsb-kartu k-12 rb-kartu">
                 <div class="dsb-kartu-isi">
                     <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
-                        <div>
+                        <div class="rb-kepala-info">
+                            {{-- Statusnya TIDAK dilencanakan di sini: kotak pilih di
+                                 sebelah kanan sudah menuliskannya, dan dua kata yang
+                                 sama di satu kartu terbaca seperti salah satunya basi. --}}
                             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                 <span class="orcha-kode">{{ $rab['kode'] }}</span>
-                                <span class="badge {{ $kelasStatus }}">{{ $rab['status_label'] }}</span>
                                 @if ($rab['kedaluwarsa'])
                                     <span class="badge bg-warning-subtle text-warning-emphasis">Lewat masa berlaku</span>
                                 @endif
@@ -712,53 +732,67 @@ Susun RAB || lemon
                                 {{ $rab['nama_pelanggan'] }}
                                 @if ($rab['whatsapp']) · {{ $rab['whatsapp'] }} @endif
                             </div>
-                            <div class="rab-fakta">
-                                <span><i class="bi bi-geo-alt"></i> {{ $rab['daerah'] ? $rab['daerah'].', ' : '' }}{{ $rab['provinsi'] }}</span>
-                                <span><i class="bi bi-calendar3"></i> {{ $tanggalTeks }}</span>
-                                <span><i class="bi bi-moon-stars"></i> {{ $rab['jumlah_hari'] }} hari {{ $rab['jumlah_malam'] }} malam</span>
-                                <span><i class="bi bi-people"></i> {{ $rab['jumlah_peserta'] }} peserta</span>
-                            </div>
                         </div>
 
-                        <div class="d-flex flex-wrap gap-2 align-items-start justify-content-lg-end">
-                            <select class="dsb-isian rb-isian-ringkas" wire:change="ubahStatus($event.target.value)" title="Status RAB">
-                                @foreach ($kosakata['status'] ?? [] as $kunci => $label)
-                                    <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            {{-- Panel ini hanya tersimpan saat Simpan ditekan.
-                                 Tanpa tanda, menutupnya atau berpindah halaman
-                                 membuang perubahannya tanpa sepatah kata. --}}
-                            <button type="button" wire:click="$toggle('bukaKepala')"
-                                class="dsb-tombol is-lembut {{ $this->kepalaBerubah() ? 'rab-tertahan' : '' }}"
-                                style="--ikon: {{ $this->kepalaBerubah() ? '#b45309' : '#64748b' }}">
-                                <i class="bi bi-sliders"></i> Data perjalanan
-                                @if ($this->kepalaBerubah())<span class="rab-titik" title="Ada perubahan yang belum disimpan"></span>@endif
-                            </button>
-                            {{-- Penawaran SELESAI disiapkan di layar ini, dan di
-                                 sinilah orang menekan kirim — bukan di daftar. --}}
-                            @if ($tautanWa)
-                                <a href="{{ $tautanWa }}" target="_blank" rel="noopener"
-                                    class="dsb-tombol is-lembut" style="--ikon: #1f7a44"
-                                    title="Kirim penawarannya lewat WhatsApp">
-                                    <i class="bi bi-whatsapp"></i> WhatsApp
+                        {{-- DUA baris yang disengaja, bukan satu baris yang kebetulan
+                             pecah. Enam kendali berjajar membuat yang terakhir —
+                             PDF Internal — terdampar sendirian di baris kedua,
+                             dan tombol yang menggantung terbaca seperti sisa. --}}
+                        <div class="rb-kepala-aksi">
+                            <div class="rb-aksi-baris">
+                                <select class="dsb-isian rb-isian-ringkas" wire:change="ubahStatus($event.target.value)" title="Status RAB">
+                                    @foreach ($kosakata['status'] ?? [] as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                {{-- Panel ini hanya tersimpan saat Simpan ditekan.
+                                     Tanpa tanda, menutupnya atau berpindah halaman
+                                     membuang perubahannya tanpa sepatah kata. --}}
+                                <button type="button" wire:click="$toggle('bukaKepala')"
+                                    class="dsb-tombol is-lembut {{ $this->kepalaBerubah() ? 'rab-tertahan' : '' }}"
+                                    style="--ikon: {{ $this->kepalaBerubah() ? '#b45309' : '#64748b' }}">
+                                    <i class="bi bi-sliders"></i> Data perjalanan
+                                    @if ($this->kepalaBerubah())<span class="rab-titik" title="Ada perubahan yang belum disimpan"></span>@endif
+                                </button>
+                                {{-- Penawaran SELESAI disiapkan di layar ini, dan di
+                                     sinilah orang menekan kirim — bukan di daftar. --}}
+                                @if ($tautanWa)
+                                    <a href="{{ $tautanWa }}" target="_blank" rel="noopener"
+                                        class="dsb-tombol is-lembut" style="--ikon: #1f7a44"
+                                        title="Kirim penawarannya lewat WhatsApp">
+                                        <i class="bi bi-whatsapp"></i> WhatsApp
+                                    </a>
+                                @endif
+                            </div>
+
+                            <div class="rb-aksi-baris rb-aksi-berkas">
+                                {{-- Nama tombolnya dipendekkan jadi "Penawaran" dan
+                                     "Internal"; label inilah yang menyebut PDF sekali
+                                     untuk ketiganya. --}}
+                                <span class="rb-aksi-label">PDF</span>
+                                {{-- Dilihat dulu. Memeriksa hasilnya berarti unduh → buka →
+                                     tutup → ulang, berkali-kali dalam satu penawaran. --}}
+                                <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran', 'pratinjau' => 1]) }}"
+                                    target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #0369a1"
+                                    title="Lihat penawarannya tanpa mengunduh">
+                                    <i class="bi bi-eye"></i> Lihat
                                 </a>
-                            @endif
-                            {{-- Dilihat dulu. Memeriksa hasilnya berarti unduh → buka →
-                                 tutup → ulang, berkali-kali dalam satu penawaran. --}}
-                            <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran', 'pratinjau' => 1]) }}"
-                                target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #0369a1"
-                                title="Lihat penawarannya tanpa mengunduh">
-                                <i class="bi bi-eye"></i> Lihat
-                            </a>
-                            <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran']) }}" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
-                                <i class="bi bi-file-earmark-pdf"></i> PDF Penawaran
-                            </a>
-                            <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'internal']) }}" class="dsb-tombol is-lembut" style="--ikon: #64748b"
-                                title="Berisi modal & margin — jangan dikirim ke pelanggan">
-                                <i class="bi bi-lock"></i> PDF Internal
-                            </a>
+                                <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran']) }}" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                                    <i class="bi bi-file-earmark-pdf"></i> Penawaran
+                                </a>
+                                <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'internal']) }}" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                    title="Berisi modal & margin — jangan dikirim ke pelanggan">
+                                    <i class="bi bi-lock"></i> Internal
+                                </a>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="rab-fakta">
+                        <span><i class="bi bi-geo-alt"></i> {{ $rab['daerah'] ? $rab['daerah'].', ' : '' }}{{ $rab['provinsi'] }}</span>
+                        <span><i class="bi bi-calendar3"></i> {{ $tanggalTeks }}</span>
+                        <span><i class="bi bi-moon-stars"></i> {{ $rab['jumlah_hari'] }} hari {{ $rab['jumlah_malam'] }} malam</span>
+                        <span><i class="bi bi-people"></i> {{ $rab['jumlah_peserta'] }} peserta</span>
                     </div>
 
                     @if ($bukaKepala)
