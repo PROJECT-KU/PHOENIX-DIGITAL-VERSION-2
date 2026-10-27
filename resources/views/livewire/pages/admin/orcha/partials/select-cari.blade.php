@@ -54,7 +54,15 @@
 
             $select.select2(Object.assign({
                 width: '100%',
-                dropdownParent: window.jQuery(el),
+                /*
+                 | TANPA dropdownParent — dibiarkan menempel ke <body>.
+                 |
+                 | Menempelkannya ke pembungkusnya terlihat lebih rapi di kode
+                 | dan rusak di layar: .dsb-kartu memakai overflow:hidden untuk
+                 | sudut membulatnya, jadi daftar yang terbuka terpotong tepi
+                 | kartu. Yang terlihat cuma satu-dua baris pertama, dan kotak
+                 | carinya separuh.
+                 */
                 minimumResultsForSearch: 8,
                 language: {
                     noResults: () => 'Tidak ada yang cocok',
@@ -90,6 +98,8 @@
         .select2-container--default.select2-container--open .select2-selection--single {
             border-color: #c7d2fe; box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
         }
+        /* Menempel di <body>, jadi harus di atas kartu, bilah, dan sidebar. */
+        .select2-container--open { z-index: 1065; }
         .select2-dropdown {
             border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 12px;
             box-shadow: 0 18px 38px -22px rgba(15, 23, 42, .45); overflow: hidden;

@@ -100,3 +100,30 @@ test('kotak pilih berdaftar panjang memang dipasangi pencarian', function () {
         expect($isi)->toContain($penanda);
     }
 });
+
+test('daftar select-cari tidak ditempelkan ke dalam kartu', function () {
+    /*
+     | dropdownParent yang menunjuk pembungkusnya terlihat lebih rapi di
+     | kode dan rusak di layar: .dsb-kartu memakai overflow:hidden untuk
+     | sudut membulatnya, jadi daftar yang terbuka dipotong tepi kartu —
+     | yang terlihat cuma satu-dua baris pertama. Tidak ada galat; kotaknya
+     | tetap terbuka, isinya saja yang hilang.
+     |
+     | Dibiarkan menempel ke <body> (bawaan Select2), dan karena itu butuh
+     | z-index sendiri supaya tidak tertimbun kartu atau sidebar.
+     */
+    $partial = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/partials/select-cari.blade.php')
+    );
+
+    // Kata "dropdownParent" boleh muncul di keterangan, asal tidak dipasang.
+    expect($partial)->not->toMatch('/dropdownParent\s*:/')
+        ->and($partial)->toContain('.select2-container--open { z-index:');
+
+    // Alasannya masih berlaku: kartunya memang memotong isinya.
+    $gaya = file_get_contents(
+        resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php')
+    );
+
+    expect($gaya)->toMatch('/\.dsb-kartu\s*\{[^}]*overflow:\s*hidden/');
+});
