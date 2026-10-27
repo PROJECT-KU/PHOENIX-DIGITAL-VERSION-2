@@ -790,7 +790,15 @@ Susun RAB || lemon
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="dsb-label">Tanggal berangkat</label>
-                                    <input type="date" wire:model="kepala.tanggal_mulai" class="dsb-isian">
+                                    <input type="date" wire:model.live="kepala.tanggal_mulai" class="dsb-isian">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    {{-- Yang disepakati dengan pelanggan tanggalnya, bukan
+                                         jumlah harinya — dan yang meleset satu hari
+                                         menggeser seluruh modal akomodasi. --}}
+                                    <label class="dsb-label">Tanggal pulang</label>
+                                    <input type="date" wire:model.live="kepala.tanggal_pulang" class="dsb-isian"
+                                        min="{{ $kepala['tanggal_mulai'] ?? '' }}">
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="dsb-label">Penawaran berlaku sampai</label>

@@ -200,7 +200,7 @@ RAB & Itinerary || lemon
                             </div>
 
                             <div class="rb-medan-rak">
-                                <div class="dsb-medan">
+                                <div class="dsb-medan rb-medan-lebar">
                                     <label class="dsb-label" for="rb-nama">Nama pelanggan <span class="rb-wajib">*</span></label>
                                     <input id="rb-nama" type="text" maxlength="120" wire:model="isian.nama_pelanggan"
                                         class="dsb-isian @error('isian.nama_pelanggan') is-galat @enderror"
@@ -229,8 +229,21 @@ RAB & Itinerary || lemon
 
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="rb-tgl">Tanggal berangkat</label>
-                                    <input id="rb-tgl" type="date" wire:model="isian.tanggal_mulai" class="dsb-isian">
+                                    <input id="rb-tgl" type="date" wire:model.live="isian.tanggal_mulai" class="dsb-isian">
                                     <span class="dsb-kartu-sub">Boleh dikosongkan bila belum pasti.</span>
+                                </div>
+
+                                <div class="dsb-medan">
+                                    {{-- Yang disepakati dengan pelanggan TANGGALNYA
+                                         ("berangkat 10, pulang 12"), bukan jumlah harinya.
+                                         Menyuruh admin menerjemahkannya sendiri adalah
+                                         hitungan kepala yang mudah meleset satu — dan yang
+                                         meleset satu hari menggeser seluruh modal
+                                         akomodasi. --}}
+                                    <label class="dsb-label" for="rb-tgl-pulang">Tanggal pulang</label>
+                                    <input id="rb-tgl-pulang" type="date" wire:model.live="isian.tanggal_pulang"
+                                        class="dsb-isian" min="{{ $isian['tanggal_mulai'] ?? '' }}">
+                                    <span class="dsb-kartu-sub">Jumlah hari &amp; malam terisi sendiri dari rentangnya.</span>
                                 </div>
 
                                 <div class="dsb-medan">
@@ -689,6 +702,10 @@ RAB & Itinerary || lemon
 
         .rb-medan-rak { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 16px; align-items: start; }
         .rb-medan-rak > .dsb-medan { min-width: 0; }
+        /* Tujuh medan di kisi tiga kolom menyisakan satu yang berdiri
+           sendirian di baris terakhir. Nama pelanggan — yang memang paling
+           butuh ruang — mengambil dua kolom, jadi barisnya terbagi 3/3/2. */
+        .rb-medan-rak > .rb-medan-lebar { grid-column: span 2; }
         .rb-medan-rak .dsb-kartu-sub { display: block; margin-top: 5px; }
         .rb-medan-lipat { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
         .rb-wajib { color: #dc2626; }
@@ -768,6 +785,7 @@ RAB & Itinerary || lemon
             .rb-saring > .rb-medan-cari { flex: 1 1 100%; }
             .rb-saring > .rb-pilih { flex: 1 1 160px; max-width: none; }
             .rb-medan-rak { grid-template-columns: repeat(2, 1fr); }
+            .rb-medan-rak > .rb-medan-lebar { grid-column: span 1; }
             .rb-jenis { grid-template-columns: 1fr; }
         }
 

@@ -2733,3 +2733,91 @@ test('tombol lihat membuka PDF tanpa mengunduhnya', function () {
 
     expect($isi)->toContain('pratinjau=1');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Tanggal pulang: hari & malam terbaca sendiri dari rentangnya
+|--------------------------------------------------------------------------
+*/
+
+test('tanggal pulang mengisi jumlah hari dan malam, hari berangkat ikut terhitung', function () {
+    /*
+     | Yang disepakati dengan pelanggan TANGGALNYA ("berangkat 10, pulang
+     | 12"), bukan jumlah harinya. Menyuruh admin menerjemahkannya sendiri
+     | adalah hitungan kepala yang mudah meleset satu — dan yang meleset
+     | satu hari menggeser seluruh modal akomodasi.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaTambah')
+        ->set('isian.tanggal_mulai', '2026-11-10')
+        ->set('isian.tanggal_pulang', '2026-11-12')
+        // 10 → 12 adalah 3 hari 2 malam, bukan 2 hari.
+        ->assertSet('isian.jumlah_hari', 3)
+        ->assertSet('isian.jumlah_malam', 2);
+});
+
+test('mengubah jumlah hari menggeser tanggal pulangnya', function () {
+    /*
+     | Dua arah, supaya ketiga angka itu tidak pernah saling bertentangan
+     | di layar.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaTambah')
+        ->set('isian.tanggal_mulai', '2026-11-10')
+        ->set('isian.jumlah_hari', 5)
+        ->assertSet('isian.tanggal_pulang', '2026-11-14')
+        ->assertSet('isian.jumlah_malam', 4);
+});
+
+test('pulang sebelum berangkat diabaikan, bukan dihitung negatif', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaTambah')
+        ->set('isian.tanggal_mulai', '2026-11-10')
+        ->set('isian.tanggal_pulang', '2026-11-05')
+        // Tetap di nilai bawaannya; tidak ada "0 hari" atau angka minus.
+        ->assertSet('isian.jumlah_hari', 3);
+});
+
+test('tanggal pulang tidak ikut dikirim ke Orcha', function () {
+    /*
+     | Di sana ia DITURUNKAN dari tanggal mulai + jumlah hari, bukan
+     | disimpan. Mengirimnya berarti menitipkan angka kedua untuk hal yang
+     | sama — dan yang kedua itulah yang akan berselisih begitu jumlah
+     | harinya diubah lewat jalur lain.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama_pelanggan', 'Keluarga Uji')
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->set('isian.tanggal_mulai', '2026-11-10')
+        ->set('isian.tanggal_pulang', '2026-11-12')
+        ->call('simpan');
+
+    Http::assertSent(fn (Request $r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab')
+        && $r->method() === 'POST'
+        && $r['jumlah_hari'] === 3
+        && ! array_key_exists('tanggal_pulang', $r->data()));
+});
+
+test('panel data perjalanan ikut menghitung dari rentang tanggalnya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('kepala.tanggal_mulai', '2026-12-01')
+        ->set('kepala.tanggal_pulang', '2026-12-04')
+        ->assertSet('kepala.jumlah_hari', 4)
+        ->assertSet('kepala.jumlah_malam', 3);
+});

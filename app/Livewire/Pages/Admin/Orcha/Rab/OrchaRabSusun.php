@@ -169,6 +169,10 @@ class OrchaRabSusun extends Component
             'email' => (string) ($data['email'] ?? ''),
             'daerah' => (string) ($data['daerah'] ?? ''),
             'tanggal_mulai' => (string) ($data['tanggal_mulai'] ?? ''),
+            // Diturunkan Orcha dari tanggal mulai + jumlah hari. Ikut
+            // dipegang di sini supaya bisa disunting, tetapi TIDAK dikirim
+            // balik — lihat simpanKepala().
+            'tanggal_pulang' => (string) ($data['tanggal_pulang'] ?? ''),
             'jumlah_hari' => (int) $data['jumlah_hari'],
             'jumlah_malam' => (int) $data['jumlah_malam'],
             'jumlah_peserta' => (int) $data['jumlah_peserta'],
@@ -178,6 +182,47 @@ class OrchaRabSusun extends Component
         ];
 
         $this->kepalaAwal = $this->kepala;
+    }
+
+    public function updatedKepalaTanggalPulang(): void
+    {
+        $this->hitungHariDariTanggal();
+    }
+
+    public function updatedKepalaTanggalMulai(): void
+    {
+        $this->hitungHariDariTanggal();
+    }
+
+    /**
+     * Jumlah hari & malam dihitung dari rentang tanggalnya.
+     *
+     * Hari keberangkatan ikut terhitung: 10 → 12 adalah 3 hari 2 malam.
+     * Pulang sebelum berangkat diabaikan — menolaknya diam-diam lebih baik
+     * daripada menulis "0 hari" yang lalu menghapus seluruh itinerary.
+     */
+    private function hitungHariDariTanggal(): void
+    {
+        $mulai = trim((string) ($this->kepala['tanggal_mulai'] ?? ''));
+        $pulang = trim((string) ($this->kepala['tanggal_pulang'] ?? ''));
+
+        if ($mulai === '' || $pulang === '') {
+            return;
+        }
+
+        try {
+            $a = \Carbon\Carbon::parse($mulai)->startOfDay();
+            $b = \Carbon\Carbon::parse($pulang)->startOfDay();
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($b->lessThan($a)) {
+            return;
+        }
+
+        $this->kepala['jumlah_hari'] = $a->diffInDays($b) + 1;
+        $this->kepala['jumlah_malam'] = $a->diffInDays($b);
     }
 
     /** Ada perubahan di panel data perjalanan yang belum dikirim. */
@@ -888,7 +933,11 @@ class OrchaRabSusun extends Component
             return;
         }
 
-        $data = collect($this->kepala)->map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v)->all();
+        $data = collect($this->kepala)
+            // tanggal_pulang tidak dikirim: di Orcha ia diturunkan, bukan
+            // disimpan. Dua angka untuk hal yang sama pasti berselisih.
+            ->except('tanggal_pulang')
+            ->map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v)->all();
 
         if ($this->kirimKe('ubah', "/rab/{$this->rabId}", $data, 'Data perjalanan disimpan.')) {
             $this->bukaKepala = false;

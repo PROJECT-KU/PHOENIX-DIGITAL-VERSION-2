@@ -72,6 +72,9 @@ class OrchaRabList extends Component
             'provinsi' => '',
             'daerah' => '',
             'tanggal_mulai' => '',
+            // Diturunkan dari tanggal mulai + jumlah hari; tidak dikirim ke
+            // Orcha, karena di sana pun ia diturunkan, bukan disimpan.
+            'tanggal_pulang' => '',
             'jumlah_hari' => 3,
             'jumlah_malam' => 2,
             'jumlah_peserta' => 10,
@@ -136,10 +139,77 @@ class OrchaRabList extends Component
     /**
      * Malam mengikuti hari: 3 hari hampir selalu 2 malam. Admin yang ingin
      * lain tinggal mengubahnya, tetapi tidak perlu mengingat untuk mengubah.
+     *
+     * Tanggal pulang ikut bergeser supaya ketiga angka itu tidak pernah
+     * saling bertentangan di layar.
      */
     public function updatedIsianJumlahHari($hari): void
     {
         $this->isian['jumlah_malam'] = max(0, (int) $hari - 1);
+        $this->selaraskanTanggalPulang();
+    }
+
+    /**
+     * Tanggal pulang diisi → jumlah hari & malam dihitung dari rentangnya.
+     *
+     * Yang disepakati dengan pelanggan tanggalnya ("berangkat 10, pulang
+     * 12"), bukan jumlah harinya. Menyuruh admin menerjemahkannya sendiri
+     * adalah hitungan kepala yang mudah meleset satu — dan yang meleset
+     * satu hari menggeser seluruh modal akomodasi.
+     */
+    public function updatedIsianTanggalPulang(): void
+    {
+        $this->hitungDariTanggal();
+    }
+
+    public function updatedIsianTanggalMulai(): void
+    {
+        $this->hitungDariTanggal();
+    }
+
+    private function hitungDariTanggal(): void
+    {
+        $mulai = trim((string) ($this->isian['tanggal_mulai'] ?? ''));
+        $pulang = trim((string) ($this->isian['tanggal_pulang'] ?? ''));
+
+        if ($mulai === '' || $pulang === '') {
+            return;
+        }
+
+        try {
+            $a = \Carbon\Carbon::parse($mulai)->startOfDay();
+            $b = \Carbon\Carbon::parse($pulang)->startOfDay();
+        } catch (\Throwable) {
+            return;
+        }
+
+        // Pulang sebelum berangkat tidak dihitung — angkanya akan negatif,
+        // dan menolaknya diam-diam lebih baik daripada menulis "0 hari".
+        if ($b->lessThan($a)) {
+            return;
+        }
+
+        // Hari keberangkatan ikut terhitung: 10 → 12 adalah 3 hari 2 malam.
+        $this->isian['jumlah_hari'] = $a->diffInDays($b) + 1;
+        $this->isian['jumlah_malam'] = $a->diffInDays($b);
+    }
+
+    /** Menggeser tanggal pulang mengikuti jumlah hari yang baru. */
+    private function selaraskanTanggalPulang(): void
+    {
+        $mulai = trim((string) ($this->isian['tanggal_mulai'] ?? ''));
+
+        if ($mulai === '') {
+            return;
+        }
+
+        try {
+            $this->isian['tanggal_pulang'] = \Carbon\Carbon::parse($mulai)
+                ->addDays(max(1, (int) $this->isian['jumlah_hari']) - 1)
+                ->toDateString();
+        } catch (\Throwable) {
+            // Tanggal yang belum selesai diketik bukan galat.
+        }
     }
 
     public function simpan(): void
@@ -178,11 +248,20 @@ class OrchaRabList extends Component
             $this->isian['harga_dasar'] = 'peserta';
         }
 
-        $data = array_map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v, $this->isian) + [
-            // Titik awal yang masuk akal; diatur ulang di halaman penyusun.
-            'margin_jenis' => 'persen',
-            'margin_nilai' => 20,
-        ];
+        /*
+         | tanggal_pulang TIDAK ikut dikirim.
+         |
+         | Di Orcha ia diturunkan dari tanggal mulai + jumlah hari, bukan
+         | disimpan. Mengirimnya berarti menitipkan angka kedua untuk hal
+         | yang sama — dan yang kedua itulah yang akan berselisih begitu
+         | jumlah harinya diubah lewat jalur lain.
+         */
+        $data = array_map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v,
+            collect($this->isian)->except('tanggal_pulang')->all()) + [
+                // Titik awal yang masuk akal; diatur ulang di halaman penyusun.
+                'margin_jenis' => 'persen',
+                'margin_nilai' => 20,
+            ];
 
         try {
             $baru = $this->orcha()->kirim('/rab', $data)['data'] ?? null;
