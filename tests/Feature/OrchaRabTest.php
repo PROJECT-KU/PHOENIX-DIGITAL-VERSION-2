@@ -37,7 +37,28 @@ function palsukanRab(): void
             str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
             str_ends_with($jalur, '/rab') && $r->method() === 'POST' => Http::response(rekamanRab('show'), 201),
             str_ends_with($jalur, '/rab') => Http::response(rekamanRab('daftar')),
-            str_ends_with($jalur, '/master-harga/massal') => Http::response(['pesan' => '2 harga dinaikkan.', 'jumlah' => 2]),
+            str_ends_with($jalur, '/master-harga/massal') => Http::response(['pesan' => '2 harga dinaikkan.', 'jumlah' => 2, 'batch' => 7]),
+            str_ends_with($jalur, '/massal/7/batal') => Http::response(['pesan' => '2 harga dikembalikan seperti semula.', 'jumlah' => 2]),
+            str_ends_with($jalur, '/master-harga/banyak') => Http::response([
+                'pesan' => '2 harga ditambahkan. 1 baris dilewati.',
+                'masuk' => 2,
+                'gagal' => [['baris' => 1, 'nama' => 'Tiket Borobudur', 'sebab' => 'sudah ada di wilayah yang sama']],
+            ], 201),
+            str_ends_with($jalur, '/master-harga/riwayat') => Http::response(['data' => [[
+                'id' => 9, 'harga_id' => 1, 'harga_nama' => 'Tiket Candi Prambanan',
+                'harga_lama' => 'Rp 50.000', 'harga_baru' => 'Rp 60.000',
+                'selisih' => '+Rp 10.000', 'naik' => true, 'persen' => 20.0,
+                'oleh' => 'Berto', 'catatan' => null,
+                'pada' => '18 Sep 2026, 19:26', 'pada_teks' => '2 bulan yang lalu',
+            ]]]),
+            str_ends_with($jalur, '/dipakai') => Http::response([
+                'data' => [[
+                    'rab_id' => 3, 'kode' => 'RAB-0003', 'judul' => 'Open Trip Dieng',
+                    'status' => 'draft', 'tanggal' => '12 Des 2026',
+                    'harga_beku' => 'Rp 50.000', 'beda' => 'lebih murah dari sekarang',
+                ]],
+                'meta' => ['nama' => 'Tiket Candi Prambanan', 'harga_kini' => 'Rp 60.000'],
+            ]),
             str_ends_with($jalur, '/riwayat') => Http::response([
                 'data' => [[
                     'id' => 9, 'harga_lama' => 'Rp 50.000', 'harga_baru' => 'Rp 60.000',
@@ -1991,4 +2012,179 @@ test('masa berlaku ikut terkirim saat menyimpan', function () {
     Http::assertSent(fn (Request $r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/master-harga')
         && $r->method() === 'POST'
         && $r['berlaku_sampai'] === '2027-03-01');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Master harga: jalan keluar, tambah banyak, batalkan, telusur
+|--------------------------------------------------------------------------
+*/
+
+test('penolakan kembaran tinggal di formulir berikut jalan keluarnya', function () {
+    /*
+     | Penolakan ini menuntut KEPUTUSAN — ganti namanya, atau memang dua
+     | harga yang berbeda. Keputusan tidak bisa diambil dari toast yang
+     | sudah lenyap, jadi ia harus tinggal di layar.
+     */
+    Http::fake(function (Request $r) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+        if (str_ends_with($jalur, '/master-harga') && $r->method() === 'POST') {
+            return Http::response([
+                'pesan' => 'Sudah ada harga bernama "Tiket Candi Prambanan" di wilayah yang sama.',
+                'kembaran' => ['id' => 1, 'nama' => 'Tiket Candi Prambanan', 'harga_teks' => 'Rp 60.000'],
+            ], 422);
+        }
+
+        return Http::response(rekamanRab('master'));
+    });
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama', 'Tiket Candi Prambanan')
+        ->set('isian.harga', '60.000')
+        ->call('simpan');
+
+    // Formulirnya TIDAK ditutup, dan pesannya tergambar berikut tombolnya.
+    $layar->assertSet('tambah', true);
+
+    expect($layar->get('kembaranPesan'))->toContain('Sudah ada harga bernama')
+        ->and($layar->get('kembaranBaris')['harga_teks'])->toBe('Rp 60.000')
+        ->and($layar->html())->toContain('Tetap simpan');
+});
+
+test('tetap simpan menerobos penjaga lewat paksa=1', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.nama', 'Tiket Candi Prambanan')
+        ->set('isian.harga', '60.000')
+        ->call('simpanPaksa');
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga?paksa=1')
+        && $r->method() === 'POST');
+});
+
+test('tambah lagi mempertahankan yang khas sesinya, mengosongkan yang khas barisnya', function () {
+    /*
+     | Dua puluh tiket Jogja berarti kategori, provinsi, satuan, dan
+     | vendornya sama dua puluh kali. Mengosongkan semuanya membuat "tambah
+     | lagi" sama lelahnya dengan membuka formulir baru.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('lanjutTambah', true)
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->set('isian.nama', 'Tiket Satu')
+        ->set('isian.harga', '50.000')
+        ->call('simpan');
+
+    $layar->assertSet('tambah', true)
+        ->assertSet('isian.nama', '')
+        ->assertSet('isian.harga', '')
+        ->assertSet('isian.provinsi', 'DI Yogyakarta')
+        ->assertSet('isian.kategori', 'tiket');
+});
+
+test('tempelan spreadsheet dipecah apa adanya, tab maupun titik koma', function () {
+    /*
+     | Menyalin dari Excel memberi tab, dari sebagian tabel web memberi
+     | titik koma, dan admin tidak bisa diminta tahu bedanya. "Rp 50.000"
+     | dan "50000" sama-sama angka yang sama.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('tempelIsi', "Tiket Borobudur\tRp 50.000\nTiket Dieng;30000;Dataran Tinggi Dieng\n\n   \nTanpa harga");
+
+    $baris = $layar->instance()->barisTempel();
+
+    expect($baris)->toHaveCount(2)
+        ->and($baris[0])->toBe(['nama' => 'Tiket Borobudur', 'harga' => 50000, 'destinasi' => null])
+        ->and($baris[1])->toBe(['nama' => 'Tiket Dieng', 'harga' => 30000, 'destinasi' => 'Dataran Tinggi Dieng']);
+});
+
+test('baris tempelan yang dilewati tetap terlihat setelah sisanya masuk', function () {
+    /*
+     | Baris yang gugur adalah pekerjaan yang masih harus diselesaikan —
+     | kalau ia hilang bersama panelnya, tidak ada yang tahu ia pernah ada.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->call('bukaTempel')
+        ->set('tempelIsi', "Tiket Borobudur\t50000\nTiket Dieng\t30000\nTiket Ketep\t15000")
+        ->call('simpanTempel');
+
+    $layar->assertSet('tempelBuka', true);
+
+    expect($layar->get('tempelGagal'))->toHaveCount(1)
+        ->and($layar->html())->toContain('sudah ada di wilayah yang sama');
+});
+
+test('perintah massal menawarkan pembatalan tepat sesudahnya', function () {
+    /*
+     | Tawaran yang datang belakangan tidak pernah dipakai: saat orang sadar
+     | salah, yang dicarinya tombol di tempat ia menekan tadi.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1', '2'])
+        ->set('aksiMassal', 'naik')
+        ->set('persenMassal', '10')
+        ->call('jalankanMassal');
+
+    $layar->assertSet('batchTerakhir', 7);
+    expect($layar->html())->toContain('Batalkan, kembalikan seperti semula');
+
+    $layar->call('batalkanBatch')->assertSet('batchTerakhir', null);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/massal/7/batal'));
+});
+
+test('kolom Dipakai membuka daftar RAB berikut harga yang dibekukan di sana', function () {
+    /*
+     | Yang ditampilkan harga yang DIBEKUKAN di RAB itu, bukan harga hari
+     | ini — justru selisihnya yang jadi alasan orang membukanya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaDipakai', 1);
+
+    expect($layar->html())->toContain('RAB-0003')
+        ->and($layar->html())->toContain('Rp 50.000')
+        ->and($layar->html())->toContain('lebih murah dari sekarang');
+
+    $layar->call('tutupDipakai')->assertSet('dipakaiUntuk', null);
+});
+
+test('perubahan terakhir seluruh daftar terbaca dalam satu panel', function () {
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaRiwayatSemua');
+
+    expect($layar->html())->toContain('Tiket Candi Prambanan')
+        ->and($layar->html())->toContain('+Rp 10.000');
+
+    $layar->call('tutupRiwayatSemua')->assertSet('riwayatSemua', []);
 });

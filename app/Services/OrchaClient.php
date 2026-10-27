@@ -227,7 +227,10 @@ class OrchaClient
                 ?: $balasan->json('pesan')
                 ?: $balasan->json('message');
 
-            throw new OrchaTidakTerjangkau($pesan ?: 'Isian ditolak oleh Orcha.');
+            // Isinya ikut dibawa: sebagian penolakan menyebut baris mana yang
+            // bentrok, dan layar bisa menawarkan jalan keluarnya.
+            throw (new OrchaTidakTerjangkau($pesan ?: 'Isian ditolak oleh Orcha.'))
+                ->dengan($balasan->json() ?? []);
         }
 
         if ($balasan->failed()) {

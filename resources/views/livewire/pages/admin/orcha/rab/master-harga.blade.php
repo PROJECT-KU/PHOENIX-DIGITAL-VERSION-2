@@ -221,7 +221,7 @@ Master Harga || lemon
                             </select>
 
                             <select class="dsb-isian mh-pilih" wire:model.live="urut" aria-label="Urutkan daftar">
-                                <option value="">Urut: dikelompokkan</option>
+                                <option value="">Urut: kelompok</option>
                                 <option value="termahal">Paling mahal dulu</option>
                                 <option value="termurah">Paling murah dulu</option>
                                 <option value="terbaru">Terakhir diubah</option>
@@ -679,7 +679,40 @@ Master Harga || lemon
                                 </label>
                             </div>
 
+                            {{-- Penolakan yang menuntut KEPUTUSAN tinggal di
+                                 formulirnya, bukan lewat sebagai toast. Keputusan
+                                 tidak bisa diambil dari kalimat yang sudah lenyap. --}}
+                            @if ($kembaranPesan !== '')
+                                <div class="mh-kembar">
+                                    <i class="bi bi-exclamation-octagon-fill"></i>
+                                    <div class="mh-kembar-teks">
+                                        <strong>{{ $kembaranPesan }}</strong>
+                                        @if (! empty($kembaranBaris['nama']))
+                                            <span class="dsb-kartu-sub">
+                                                Yang sudah ada: <strong>{{ $kembaranBaris['nama'] }}</strong>
+                                                @if (! empty($kembaranBaris['harga_teks'])) — {{ $kembaranBaris['harga_teks'] }} @endif
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <button type="button" wire:click="simpanPaksa"
+                                        wire:loading.attr="disabled" wire:target="simpanPaksa"
+                                        class="dsb-tombol is-awas">
+                                        <i class="bi bi-check2" wire:loading.remove wire:target="simpanPaksa"></i>
+                                        <span class="dsb-putar" wire:loading wire:target="simpanPaksa"></span>
+                                        <span>Tetap simpan</span>
+                                    </button>
+                                </div>
+                            @endif
+
                             <div class="mh-kaki">
+                                {{-- Hanya saat menambah: "lalu tambah lagi" pada
+                                     formulir sunting tidak berarti apa-apa. --}}
+                                @unless ($sunting)
+                                    <label class="mh-lanjut" title="Formulirnya tetap terbuka, kategori & provinsinya dipertahankan">
+                                        <input type="checkbox" class="form-check-input mt-0" wire:model="lanjutTambah">
+                                        <span>Tambah lagi setelah simpan</span>
+                                    </label>
+                                @endunless
                                 <button type="button" wire:click="tutup" class="dsb-tombol is-lembut">
                                     <i class="bi bi-x-lg"></i><span>Batal</span>
                                 </button>
@@ -690,7 +723,172 @@ Master Harga || lemon
                                     <span>Simpan</span>
                                 </button>
                             </div>
+
+                            {{-- ===== Tempel dari spreadsheet =====
+
+                                 Memasukkan lima puluh tiket berarti lima puluh kali
+                                 buka-isi-simpan, dan di tengah pengulangan sebanyak
+                                 itu salah ketik berhenti terasa seperti kemungkinan.
+                                 Kotak di atas yang menentukan kategori, satuan,
+                                 provinsi, dan vendornya — yang ditempel hanya yang
+                                 berbeda tiap baris. --}}
+                            @unless ($sunting)
+                                <div class="mh-tempel-bungkus">
+                                    @if (! $tempelBuka)
+                                        <button type="button" wire:click="bukaTempel" class="dsb-tombol is-telaah">
+                                            <i class="bi bi-clipboard-plus"></i><span>Tempel banyak baris dari Excel</span>
+                                        </button>
+                                    @else
+                                        @php($terbaca = $this->barisTempel())
+                                        <div class="mh-tempel">
+                                            <div class="mh-tempel-kepala">
+                                                <strong>Tempel dari Excel</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    Satu baris satu harga: <strong>nama</strong>, TAB,
+                                                    <strong>harga</strong>, lalu boleh TAB lagi untuk destinasinya.
+                                                    Kategori, satuan, provinsi, dan vendornya diambil dari kotak di atas.
+                                                </span>
+                                            </div>
+
+                                            {{-- Nilainya DICETAK di dalam tagnya, bukan
+                                                 diandalkan dari wire:model: isi textarea
+                                                 adalah isi elemennya, dan yang dikosongkan
+                                                 dari server harus benar-benar hilang di
+                                                 layar setelah barisnya masuk. --}}
+                                            <textarea wire:model.live="tempelIsi" rows="5"
+                                                class="dsb-isian @error('tempelIsi') is-galat @enderror"
+                                                placeholder="Tiket Borobudur&#9;50.000&#10;Tiket Dieng&#9;30.000">{{ $tempelIsi }}</textarea>
+
+                                            @error('tempelIsi')<span class="dsb-galat">{{ $message }}</span>@enderror
+
+                                            @if ($tempelGagal !== [])
+                                                {{-- Yang dilewati tidak ikut hilang bersama
+                                                     panelnya: ia pekerjaan yang masih tersisa. --}}
+                                                <div class="mh-tempel-gagal">
+                                                    <strong>{{ count($tempelGagal) }} baris dilewati:</strong>
+                                                    @foreach ($tempelGagal as $g)
+                                                        <span>{{ $g['nama'] }} — {{ $g['sebab'] }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
+                                            <div class="mh-tempel-kaki">
+                                                <span class="dsb-chip">
+                                                    <i class="bi bi-list-ol"></i>{{ count($terbaca) }} baris terbaca
+                                                </span>
+                                                <button type="button" wire:click="tutupTempel" class="dsb-tombol is-lembut">
+                                                    <i class="bi bi-x-lg"></i><span>Tutup</span>
+                                                </button>
+                                                <button type="button" wire:click="simpanTempel"
+                                                    wire:loading.attr="disabled" wire:target="simpanTempel"
+                                                    class="dsb-tombol is-aman">
+                                                    <i class="bi bi-download" wire:loading.remove wire:target="simpanTempel"></i>
+                                                    <span class="dsb-putar" wire:loading wire:target="simpanTempel"></span>
+                                                    <span>Masukkan semua</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endunless
                         </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== TAWARAN BATALKAN ==================
+
+             Menempel pada perintah yang baru saja jalan. Tawaran yang datang
+             belakangan — di layar lain, di menu lain — tidak pernah dipakai,
+             karena saat orang sadar salah, yang dicarinya tombol di tempat ia
+             menekan tadi. --}}
+        @if ($batchTerakhir !== null)
+            <section class="dsb-bagian">
+                <div class="mh-batal-pita">
+                    <i class="bi bi-check2-circle"></i>
+                    <span class="mh-batal-teks">{{ $batchPesan }}</span>
+                    <button type="button" wire:click="batalkanBatch"
+                        wire:loading.attr="disabled" wire:target="batalkanBatch"
+                        class="dsb-tombol is-awas">
+                        <i class="bi bi-arrow-counterclockwise" wire:loading.remove wire:target="batalkanBatch"></i>
+                        <span class="dsb-putar" wire:loading wire:target="batalkanBatch"></span>
+                        <span>Batalkan, kembalikan seperti semula</span>
+                    </button>
+                    <button type="button" wire:click="lupakanBatch" class="dsb-tombol is-lembut" title="Tutup tawaran ini">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== DIPAKAI DI RAB MANA ==================
+
+             Kolom "Dipakai" memberi angkanya; angka yang tidak bisa dibuka
+             menyuruh orang mencocokkan nama sendiri di daftar RAB. --}}
+        @if ($dipakaiUntuk !== null)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-utama)"><i class="bi bi-diagram-3"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Dipakai di — {{ $dipakaiMeta['nama'] ?? '' }}</h3>
+                                    <span class="dsb-kartu-sub">
+                                        Yang tertulis di tiap baris adalah harga yang <strong>dibekukan</strong> di RAB itu,
+                                        bukan harga sekarang ({{ $dipakaiMeta['harga_kini'] ?? '-' }}).
+                                    </span>
+                                </div>
+                            </div>
+                            <button type="button" wire:click="tutupDipakai" class="dsb-tombol is-lembut">
+                                <i class="bi bi-x-lg"></i><span>Tutup</span>
+                            </button>
+                        </div>
+
+                        @if ($dipakai === [])
+                            <div class="dsb-kartu-isi">
+                                <div class="dsb-kosong">
+                                    <span class="dsb-kosong-ikon"><i class="bi bi-diagram-3"></i></span>
+                                    <p class="dsb-kosong-judul">Belum dipakai RAB mana pun</p>
+                                    <p class="dsb-kosong-ket">Harga ini aman diubah atau dihapus tanpa menyentuh penawaran.</p>
+                                </div>
+                            </div>
+                        @else
+                            <div class="dsb-tabel-bungkus">
+                                <table class="dsb-tabel">
+                                    <thead>
+                                        <tr>
+                                            <th>RAB</th>
+                                            <th>Tanggal</th>
+                                            <th class="text-end">Harga di RAB itu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($dipakai as $d)
+                                            <tr wire:key="pakai-{{ $d['rab_id'] }}">
+                                                <td data-judul="RAB">
+                                                    <span class="mh-utama">
+                                                        <a href="{{ route('admin.orcha.rab.susun', $d['rab_id']) }}" wire:navigate
+                                                            class="dsb-tabel-judul mh-vendor-sel">{{ $d['kode'] }}</a>
+                                                        <span class="dsb-tabel-meta">{{ $d['judul'] }}</span>
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Tanggal">{{ $d['tanggal'] ?: '—' }}</td>
+                                                <td data-judul="Harga di RAB itu" class="text-end">
+                                                    <span class="mh-utama is-kanan">
+                                                        <span class="dsb-tabel-judul dsb-tabel-angka">{{ $d['harga_beku'] }}</span>
+                                                        @if ($d['beda'])
+                                                            <span class="dsb-tabel-meta mh-satuan">{{ $d['beda'] }}</span>
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </section>
@@ -801,6 +999,12 @@ Master Harga || lemon
                         </div>
                         <span class="mh-kepala-aksi">
                             <span class="dsb-chip"><i class="bi bi-list-check"></i>{{ number_format($jumlahData, 0, ',', '.') }} harga</span>
+                            {{-- "Apa saja yang berubah minggu ini" selama ini hanya
+                                 bisa dijawab dengan membuka harga satu per satu. --}}
+                            <button type="button" wire:click="{{ $riwayatSemuaBuka ? 'tutupRiwayatSemua' : 'bukaRiwayatSemua' }}"
+                                class="dsb-tombol is-telaah" title="Perubahan harga terakhir di seluruh daftar">
+                                <i class="bi bi-clock-history"></i><span>Perubahan terakhir</span>
+                            </button>
                             {{-- Tombol unduh duduk di kepala TABELNYA, bukan di bilah
                                  saringan: yang diunduh memang isi tabel ini, dan bilah
                                  saringan yang memuat tujuh benda tidak pernah muat
@@ -815,6 +1019,31 @@ Master Harga || lemon
                             </a>
                         </span>
                     </div>
+
+                    @if ($riwayatSemuaBuka)
+                        <div class="dsb-kartu-isi mh-riwayat-semua">
+                            @if ($riwayatSemua === [])
+                                <p class="dsb-kartu-sub">Belum ada harga yang pernah berubah angkanya.</p>
+                            @else
+                                <ol class="mh-jejak">
+                                    @foreach ($riwayatSemua as $r)
+                                        <li wire:key="jejak-{{ $r['id'] }}">
+                                            <span class="mh-jejak-tanggal">{{ $r['pada_teks'] }}</span>
+                                            <button type="button" wire:click="bukaRiwayat({{ $r['harga_id'] }})"
+                                                class="mh-jejak-nama">{{ $r['harga_nama'] ?: 'harga yang sudah dihapus' }}</button>
+                                            <span class="mh-jejak-angka">
+                                                {{ $r['harga_lama'] }} &rarr; <strong>{{ $r['harga_baru'] }}</strong>
+                                            </span>
+                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
+                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
+                                            </span>
+                                            @if ($r['oleh'])<span class="mh-jejak-oleh">oleh {{ $r['oleh'] }}</span>@endif
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            @endif
+                        </div>
+                    @endif
 
                     @if ($daftar === [])
                         <div class="dsb-kartu-isi">
@@ -1086,7 +1315,9 @@ Master Harga || lemon
                                                              penawaran — tetapi RAB yang sudah dibuat
                                                              TIDAK ikut berubah, karena harganya
                                                              dibekukan saat dimasukkan. --}}
-                                                        <span class="mh-dipakai">{{ $baris['jumlah_rab'] }}&times;</span>
+                                                        <button type="button" class="mh-dipakai mh-dipakai-btn"
+                                                            wire:click="bukaDipakai({{ $baris['id'] }})"
+                                                            title="Lihat RAB mana saja yang memakainya">{{ $baris['jumlah_rab'] }}&times;</button>
                                                     @else
                                                         <span class="mh-belum">belum</span>
                                                     @endif
@@ -1427,6 +1658,69 @@ Master Harga || lemon
         .mh-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
         .mh-halaman > * { margin-bottom: 0 !important; margin-top: 0 !important; }
 
+        /* ===== Penolakan kembaran ===== */
+        .mh-kembar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            margin-top: 14px; padding: 13px 15px; border-radius: 13px;
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+        }
+        .mh-kembar > i { font-size: 1.05rem; color: var(--dsb-awas, #b45309); }
+        .mh-kembar-teks { flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+        /* ===== Tambah lagi & tempel ===== */
+        .mh-lanjut {
+            display: inline-flex; align-items: center; gap: 7px; margin-right: auto;
+            font-size: .82rem; font-weight: 600; color: var(--dsb-redup, #6b7280); cursor: pointer;
+        }
+        .mh-tempel-bungkus { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e5e9f0; }
+        .mh-tempel { display: flex; flex-direction: column; gap: 10px; }
+        .mh-tempel-kepala { display: flex; flex-direction: column; gap: 3px; }
+        .mh-tempel textarea.dsb-isian {
+            /* Monospace: yang ditempel berkolom, dan kolom hanya terlihat
+               lurus bila tiap hurufnya selebar huruf lain. */
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: .82rem; line-height: 1.6; padding: 11px 13px; height: auto;
+        }
+        .mh-tempel-kaki { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .mh-tempel-kaki .dsb-chip { margin-right: auto; }
+        .mh-tempel-gagal {
+            display: flex; flex-direction: column; gap: 2px;
+            padding: 11px 13px; border-radius: 11px;
+            background: #fff7ed; border: 1px solid #fed7aa;
+            font-size: .78rem; color: #9a3412;
+        }
+
+        /* ===== Tawaran batalkan ===== */
+        .mh-batal-pita {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            padding: 12px 15px; border-radius: 15px;
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+        }
+        .mh-batal-pita > i { color: var(--dsb-aman, #1f7a44); font-size: 1.05rem; }
+        .mh-batal-teks { flex: 1 1 220px; font-size: .86rem; font-weight: 600; color: #166534; min-width: 0; }
+
+        /* ===== Dipakai di & perubahan terakhir ===== */
+        .mh-dipakai-btn {
+            background: none; border: 0; padding: 0; cursor: pointer;
+            border-bottom: 1px dashed currentColor;
+        }
+        .mh-riwayat-semua { padding-top: 0; }
+        .mh-jejak { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+        .mh-jejak li {
+            display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+            padding: 9px 0; border-bottom: 1px solid #f3f5f9; font-size: .84rem;
+        }
+        .mh-jejak li:last-child { border-bottom: 0; }
+        .mh-jejak-tanggal { flex: 0 0 120px; color: var(--dsb-redup, #6b7280); font-size: .78rem; }
+        .mh-jejak-nama {
+            background: none; border: 0; padding: 0; cursor: pointer;
+            font-weight: 700; color: var(--dsb-tinta, #1c1f26); text-align: left;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .mh-jejak-nama:hover { color: var(--dsb-utama, #4f46e5); }
+        .mh-jejak-angka { color: var(--dsb-redup, #6b7280); }
+        .mh-jejak-oleh { color: var(--dsb-redup, #6b7280); font-size: .78rem; }
+
         /* Keterangan label turun ke barisnya sendiri di layar sempit:
            di samping judulnya ia membelah dua-duanya jadi dua baris. */
         @media (max-width: 575.98px) {
@@ -1446,6 +1740,25 @@ Master Harga || lemon
             .mh-saring > .mh-medan-cari { flex: 1 1 100%; }
             .mh-saring > .mh-pilih { flex: 1 1 150px; max-width: none; }
             .mh-sakelar { grid-template-columns: 1fr; }
+        }
+
+        /* Lima ubin yang menumpuk satu-satu memakan satu layar penuh sebelum
+           kotak carinya terlihat. Di laptop ia ringkasan; di ponsel ia
+           penghalang. Dua kolom membuatnya tetap terbaca dalam tiga baris. */
+        @media (max-width: 767.98px) {
+            .mh-ubin-rak { gap: 9px; }
+            .mh-ubin { flex: 1 1 calc(50% - 5px); padding: 10px 12px; }
+            .mh-ubin-nilai { font-size: 1.25rem; }
+            .mh-ubin-ket { font-size: .68rem; }
+
+            /* Tombol tambah berhenti didorong ke kanan: di layar sempit ia
+               berdiri sendiri di barisnya, dan "didorong ke ujung" hanya
+               menyisakan lubang di kirinya.
+
+               Dipilih lewat .mh-saring juga, bukan .mh-tambah saja: aturan
+               .mh-saring .dsb-tombol di atas berbobot lebih tinggi, dan
+               tanpa ini flex-nya tidak pernah berubah. */
+            .mh-saring .mh-tambah { margin-left: 0; flex: 1 1 100%; justify-content: center; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu
@@ -1469,6 +1782,15 @@ Master Harga || lemon
                lebar isinya mendorong kartunya keluar layar. */
             .mh-tabel tbody td > * { min-width: 0; }
             .mh-utama, .mh-status { align-items: flex-end; text-align: right; }
+
+            /* Pita kategori cuma satu sel tanpa data-judul, jadi aturan
+               "label kiri, nilai kanan" melemparkan tulisannya ke tepi kanan
+               — terbaca seperti nilai dari label yang hilang. */
+            .mh-tabel tbody tr.mh-pita { padding: 0; }
+            .mh-tabel tbody tr.mh-pita td {
+                display: block; text-align: left !important;
+                padding: 8px 15px; border-left-width: 3px;
+            }
         }
     </style>
 

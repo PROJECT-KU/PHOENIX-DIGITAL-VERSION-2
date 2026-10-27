@@ -113,6 +113,47 @@ class OrchaMasterHargaList extends Component
 
     public string $berlakuMassal = '';
 
+    /*
+     | Penolakan "sudah ada harga bernama sama" yang sedang menunggu jawaban.
+     |
+     | Orcha punya pintu darurat (?paksa=1) untuk dua harga yang memang
+     | berbeda — dua vendor, dua musim. Tanpa gagang di layar, admin yang
+     | berniat menyimpan keduanya tidak punya jalan selain mengarang nama.
+     */
+    public string $kembaranPesan = '';
+
+    /** Kiriman berikutnya menerobos penjaga kembaran. */
+    public bool $paksaBerikutnya = false;
+
+    public array $kembaranBaris = [];
+
+    /** Tetap di formulir setelah menyimpan, untuk memasukkan baris berikutnya. */
+    public bool $lanjutTambah = false;
+
+    /** Panel tempel-dari-spreadsheet. */
+    public bool $tempelBuka = false;
+
+    public string $tempelIsi = '';
+
+    public array $tempelGagal = [];
+
+    /** Perintah massal terakhir yang masih bisa dibatalkan. */
+    public ?int $batchTerakhir = null;
+
+    public string $batchPesan = '';
+
+    /** Harga yang sedang ditelusuri "dipakai di RAB mana". */
+    public ?int $dipakaiUntuk = null;
+
+    public array $dipakai = [];
+
+    public array $dipakaiMeta = [];
+
+    /** Panel "apa saja yang berubah belakangan", seluruh daftar. */
+    public bool $riwayatSemuaBuka = false;
+
+    public array $riwayatSemua = [];
+
     /** Harga yang riwayatnya sedang dibuka; null berarti panelnya tertutup. */
     public ?int $riwayatUntuk = null;
 
@@ -271,6 +312,9 @@ class OrchaMasterHargaList extends Component
     {
         $this->sunting = null;
         $this->tambah = false;
+        $this->kembaranPesan = '';
+        $this->kembaranBaris = [];
+        $this->lanjutTambah = false;
         $this->kosongkan();
     }
 
@@ -558,16 +602,75 @@ class OrchaMasterHargaList extends Component
             'catatan' => trim($this->isian['catatan']) ?: null,
         ];
 
+        $this->kirimSimpan($data, $this->paksaBerikutnya);
+    }
+
+    /** Menyimpan lagi, kali ini menerobos penjaga kembaran. */
+    public function simpanPaksa(): void
+    {
+        $this->paksaBerikutnya = true;
+        $this->simpan();
+        $this->paksaBerikutnya = false;
+    }
+
+    /**
+     * Satu jalur kirim untuk simpan biasa maupun simpan paksa.
+     *
+     * Penolakan "sudah ada harga bernama sama" TIDAK ditampilkan sebagai
+     * toast yang hilang sendiri: ia menuntut keputusan — ganti namanya,
+     * atau memang dua harga yang berbeda — dan keputusan tidak bisa diambil
+     * dari kalimat yang sudah lenyap. Jadi ia tinggal di formulirnya,
+     * berikut tombol jalan keluarnya.
+     */
+    private function kirimSimpan(array $data, bool $paksa): void
+    {
+        $this->kembaranPesan = '';
+        $this->kembaranBaris = [];
+
+        $imbuh = $paksa ? '?paksa=1' : '';
+
         try {
             $this->sunting
-                ? $this->orcha()->ubah("/master-harga/{$this->sunting}", $data)
-                : $this->orcha()->kirim('/master-harga', $data);
+                ? $this->orcha()->ubah("/master-harga/{$this->sunting}{$imbuh}", $data)
+                : $this->orcha()->kirim("/master-harga{$imbuh}", $data);
 
-            $this->tutup();
-            $this->dispatch('order-updated', message: 'Harga disimpan.');
+            $lanjut = $this->lanjutTambah && ! $this->sunting;
+
+            if ($lanjut) {
+                $this->siapkanBarisBerikutnya();
+            } else {
+                $this->tutup();
+            }
+
+            $this->dispatch('order-updated', message: $lanjut
+                ? 'Harga disimpan. Lanjut ke baris berikutnya.'
+                : 'Harga disimpan.');
         } catch (OrchaTidakTerjangkau $e) {
+            if ($kembar = $e->kembaran()) {
+                $this->kembaranPesan = $e->getMessage();
+                $this->kembaranBaris = $kembar;
+
+                return;
+            }
+
             $this->dispatch('toast-error', message: $e->getMessage());
         }
+    }
+
+    /**
+     * Mengosongkan yang khas baris ini, MEMPERTAHANKAN yang khas sesinya.
+     *
+     * Memasukkan dua puluh tiket Jogja berarti kategori, provinsi, satuan,
+     * dan vendornya sama dua puluh kali. Mengosongkan semuanya tiap kali
+     * membuat "tambah lagi" sama lelahnya dengan membuka formulir baru.
+     */
+    private function siapkanBarisBerikutnya(): void
+    {
+        $this->isian['nama'] = '';
+        $this->isian['destinasi'] = '';
+        $this->isian['harga'] = '';
+        $this->isian['catatan'] = '';
+        $this->resetValidation();
     }
 
     /**
@@ -652,6 +755,16 @@ class OrchaMasterHargaList extends Component
 
             cache()->forget('orcha.rab.katalog');
             $this->batalPilih();
+
+            /*
+             | Tawaran "batalkan" muncul SEKARANG, menempel pada perintah yang
+             | baru saja jalan. Tawaran yang datang belakangan — di layar lain,
+             | di menu lain — tidak pernah dipakai, karena saat orang sadar
+             | salah, yang dicarinya tombol di tempat ia menekan tadi.
+             */
+            $this->batchTerakhir = $balasan['batch'] ?? null;
+            $this->batchPesan = $balasan['pesan'] ?? '';
+
             $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Perubahan tersimpan.');
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());
@@ -718,6 +831,164 @@ class OrchaMasterHargaList extends Component
         $this->riwayatUntuk = null;
         $this->riwayat = [];
         $this->riwayatMeta = [];
+    }
+
+    /** Mengembalikan seluruh baris perintah massal terakhir ke nilai lamanya. */
+    public function batalkanBatch(): void
+    {
+        if ($this->batchTerakhir === null) {
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim("/master-harga/massal/{$this->batchTerakhir}/batal");
+
+            cache()->forget('orcha.rab.katalog');
+            $this->batchTerakhir = null;
+            $this->batchPesan = '';
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Dikembalikan seperti semula.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function lupakanBatch(): void
+    {
+        $this->batchTerakhir = null;
+        $this->batchPesan = '';
+    }
+
+    /** RAB mana saja yang memakai sebuah harga. */
+    public function bukaDipakai(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->ambil("/master-harga/{$id}/dipakai");
+
+            $this->dipakaiUntuk = $id;
+            $this->dipakai = $balasan['data'] ?? [];
+            $this->dipakaiMeta = $balasan['meta'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function tutupDipakai(): void
+    {
+        $this->dipakaiUntuk = null;
+        $this->dipakai = [];
+        $this->dipakaiMeta = [];
+    }
+
+    /** "Apa saja yang berubah belakangan" — seluruh daftar, bukan satu baris. */
+    public function bukaRiwayatSemua(): void
+    {
+        try {
+            $this->riwayatSemua = $this->orcha()->ambil('/master-harga/riwayat')['data'] ?? [];
+            $this->riwayatSemuaBuka = true;
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function tutupRiwayatSemua(): void
+    {
+        $this->riwayatSemuaBuka = false;
+        $this->riwayatSemua = [];
+    }
+
+    public function bukaTempel(): void
+    {
+        $this->tempelBuka = true;
+        $this->tempelIsi = '';
+        $this->tempelGagal = [];
+        $this->resetValidation('tempelIsi');
+    }
+
+    public function tutupTempel(): void
+    {
+        $this->tempelBuka = false;
+        $this->tempelIsi = '';
+        $this->tempelGagal = [];
+    }
+
+    /**
+     * Memecah tempelan spreadsheet jadi baris nama + harga.
+     *
+     * Pemisahnya tab ATAU titik koma — menyalin dari Excel memberi tab,
+     * menyalin dari sebagian tabel web memberi titik koma, dan admin tidak
+     * bisa diminta tahu bedanya. Angkanya dibersihkan dari "Rp", titik, dan
+     * spasi; "Rp 50.000" dan "50000" sama-sama diterima.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function barisTempel(): array
+    {
+        $hasil = [];
+
+        foreach (preg_split('/\r\n|\r|\n/', $this->tempelIsi) as $baris) {
+            $baris = trim($baris);
+
+            if ($baris === '') {
+                continue;
+            }
+
+            $bagian = preg_split('/\t|;/', $baris);
+            $nama = trim($bagian[0] ?? '');
+            $angka = preg_replace('/[^0-9]/', '', $bagian[1] ?? '');
+
+            if ($nama === '' || $angka === '') {
+                continue;
+            }
+
+            $hasil[] = [
+                'nama' => $nama,
+                'harga' => (int) $angka,
+                'destinasi' => trim($bagian[2] ?? '') ?: null,
+            ];
+        }
+
+        return $hasil;
+    }
+
+    public function simpanTempel(): void
+    {
+        $this->resetValidation('tempelIsi');
+        $this->tempelGagal = [];
+
+        $baris = $this->barisTempel();
+
+        if ($baris === []) {
+            $this->addError('tempelIsi', 'Belum ada baris yang terbaca. Tiap baris: nama, lalu TAB, lalu harganya.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/master-harga/banyak', [
+                'baris' => $baris,
+                'kategori' => $this->isian['kategori'],
+                'satuan' => $this->isian['satuan'],
+                'provinsi' => $this->isian['provinsi'] ?: null,
+                'daerah' => trim((string) $this->isian['daerah']) ?: null,
+                'vendor_id' => ($this->isian['vendor_id'] ?? '') !== '' ? (int) $this->isian['vendor_id'] : null,
+                'kapasitas' => $this->perluKapasitas() ? ((int) $this->isian['kapasitas'] ?: null) : null,
+            ]);
+
+            cache()->forget('orcha.rab.katalog');
+
+            // Yang gagal TIDAK ikut hilang bersama panelnya: baris yang
+            // dilewati adalah pekerjaan yang masih harus diselesaikan.
+            $this->tempelGagal = $balasan['gagal'] ?? [];
+            $this->tempelIsi = '';
+
+            if ($this->tempelGagal === []) {
+                $this->tutupTempel();
+            }
+
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Harga ditambahkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->addError('tempelIsi', $e->getMessage());
+        }
     }
 
     public function hapus(int $id): void
