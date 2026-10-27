@@ -184,6 +184,14 @@ class OrchaEksporController extends Controller
         return $this->teruskanBerkas('/vendor/pdf', $request->only(['cari', 'jenis', 'status', 'provinsi']));
     }
 
+    /** Daftar master harga sebagai PDF, mengikuti saringan yang sedang dipakai. */
+    public function masterHarga(Request $request)
+    {
+        return $this->teruskanBerkas('/master-harga/pdf', $request->only([
+            'cari', 'kategori', 'provinsi', 'vendor', 'dipakai',
+        ]));
+    }
+
     public function rab(Request $request, int $rab)
     {
         $jenis = $request->query('jenis') === 'internal' ? 'internal' : 'penawaran';

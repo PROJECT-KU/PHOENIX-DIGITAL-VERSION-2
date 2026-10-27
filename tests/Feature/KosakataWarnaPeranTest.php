@@ -56,11 +56,11 @@ test('lencana dan tombol tabel benar-benar membaca --c', function () {
 
 test('layar vendor memakai nama peran, bukan kode heksa', function () {
     /*
-     | Vendor adalah acuannya. Kalau di sini pun warnanya ditulis sebagai
-     | heksa, layar berikutnya akan menyalin heksa itu — dan kosakatanya
-     | mati sebelum dipakai.
+     | Vendor dan Master Harga adalah acuannya. Kalau di sini pun warnanya
+     | ditulis sebagai heksa, layar berikutnya akan menyalin heksa itu — dan
+     | kosakatanya mati sebelum dipakai.
      */
-    foreach (['vendor/index', 'vendor/detail'] as $layar) {
+    foreach (['vendor/index', 'vendor/detail', 'rab/master-harga'] as $layar) {
         $isi = file_get_contents(resource_path("views/livewire/pages/admin/orcha/{$layar}.blade.php"));
 
         // Tidak ada lagi --ikon/--c berisi heksa di markahnya.
@@ -75,7 +75,8 @@ test('tiap peran tombol terpakai di layar acuan', function () {
     // Kosakata yang tidak pernah dipakai di layar acuannya tidak akan
     // ditiru layar berikutnya.
     $isi = file_get_contents(resource_path('views/livewire/pages/admin/orcha/vendor/index.blade.php'))
-        .file_get_contents(resource_path('views/livewire/pages/admin/orcha/vendor/detail.blade.php'));
+        .file_get_contents(resource_path('views/livewire/pages/admin/orcha/vendor/detail.blade.php'))
+        .file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/master-harga.blade.php'));
 
     foreach (['is-utama', 'is-aman', 'is-telaah', 'is-awas', 'is-lembut'] as $peran) {
         expect($isi)->toContain("dsb-tombol {$peran}");

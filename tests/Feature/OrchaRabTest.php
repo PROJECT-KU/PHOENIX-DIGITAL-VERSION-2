@@ -1620,3 +1620,121 @@ test('vendor di master harga dan rincian biaya RAB membawa ke rinciannya', funct
     $this->get('/admin/orcha/master-harga')->assertOk()
         ->assertSee(route('admin.orcha.vendor.detail', 1), false);
 });
+
+test('master harga menyebut dipakai berapa kali dan kapan terakhir diubah', function () {
+    /*
+     | Dua angka yang menjawab pertanyaan yang sama: harga ini masih relevan
+     | atau tidak. Keduanya sudah ada di balasan Orcha sejak lama dan tidak
+     | pernah ditampilkan.
+     */
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/master-harga')->assertOk()->getContent();
+
+    expect($isi)->toContain('3&times;')
+        ->and($isi)->toContain('2 bulan yang lalu')
+        // Yang belum pernah dipakai ditulis "belum", bukan angka nol —
+        // nol di kolom berisi angka terbaca sebagai jumlah.
+        ->and($isi)->toContain('belum');
+});
+
+test('vendor punya kolom sendiri, yang belum ada ditandai', function () {
+    // Sebagai baris kecil di bawah nama, "mana yang belum ada vendornya"
+    // harus dipindai satu per satu.
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/master-harga')->assertOk()->getContent();
+
+    expect($isi)->toContain('Dibeli dari')
+        ->and($isi)->toContain('mh-tanpa-vendor');
+});
+
+test('harga yang belum pernah dipakai bisa disaring dari layar', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterDipakai', 'belum');
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga')
+        && $r->method() === 'GET' && str_contains($r->url(), 'dipakai=belum'));
+});
+
+test('tombol PDF master harga membawa saringannya', function () {
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterKategori', 'tiket')
+        ->set('filterDipakai', 'belum')
+        ->html();
+
+    // Dicocokkan per bagian: Blade menulis "&" sebagai "&amp;".
+    expect($isi)->toContain(route('admin.orcha.master-harga.pdf'))
+        ->and($isi)->toContain('kategori=tiket')
+        ->and($isi)->toContain('dipakai=belum');
+});
+
+test('beberapa harga bisa dipasangkan ke satu vendor sekaligus', function () {
+    /*
+     | Satu vendor biasanya memasok beberapa harga. Lewat formulir,
+     | memasangnya berarti membuka, menyimpan, dan menutup sebanyak
+     | barisnya, untuk satu keputusan yang sama.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1', '2'])
+        ->set('pasangKeVendor', '1')
+        ->call('pasangVendor')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1/pasang')
+        && $r['harga'] === [1, 2]);
+
+    // Pilihannya dilepas supaya bilahnya tidak menggantung sesudah selesai.
+    $layar->assertSet('pilih', [])->assertSet('pasangKeVendor', '');
+});
+
+test('memasangkan tanpa memilih vendor ditahan, tidak dikirim', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('pilih', ['1'])
+        ->call('pasangVendor')
+        ->assertHasErrors('pasangKeVendor');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/pasang'));
+});
+
+test('penolakan harga kembar dari Orcha sampai apa adanya ke admin', function () {
+    /*
+     | Orcha menjelaskan sendiri kembarannya yang mana. Menggantinya dengan
+     | "Orcha membalas dengan kode 422" membuang satu-satunya kalimat yang
+     | bisa ditindaklanjuti.
+     */
+    Http::fake(function (Request $r) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_ends_with($jalur, '/master-harga') && $r->method() === 'POST') {
+            return Http::response([
+                'pesan' => 'Sudah ada harga untuk destinasi "Candi Prambanan" di wilayah yang sama.',
+            ], 422);
+        }
+
+        return str_contains($jalur, '/rab/katalog')
+            ? Http::response(rekamanRab('katalog'))
+            : Http::response(rekamanRab('master'));
+    });
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.destinasi', 'Candi Prambanan')
+        ->set('isian.harga', '60000')
+        ->call('simpan')
+        ->assertDispatched('toast-error', message: 'Sudah ada harga untuk destinasi "Candi Prambanan" di wilayah yang sama.');
+});

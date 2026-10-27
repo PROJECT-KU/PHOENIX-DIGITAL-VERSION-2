@@ -88,6 +88,14 @@ class OrchaMasterHargaList extends Component
     #[Url(as: 'vendor', except: '')]
     public string $filterVendor = '';
 
+    #[Url(as: 'dipakai', except: '')]
+    public string $filterDipakai = '';
+
+    /** Baris yang dicentang untuk dipasangkan ke satu vendor sekaligus. */
+    public array $pilih = [];
+
+    public string $pasangKeVendor = '';
+
     /** Kotak isian destinasi baru sedang terbuka. */
     public bool $destinasiBaru = false;
 
@@ -159,19 +167,26 @@ class OrchaMasterHargaList extends Component
         $this->halaman = 1;
     }
 
+    public function updatedFilterDipakai(): void
+    {
+        $this->halaman = 1;
+    }
+
     public function bersihkanSaringan(): void
     {
         $this->cari = '';
         $this->filterKategori = '';
         $this->filterProvinsi = '';
         $this->filterVendor = '';
+        $this->filterDipakai = '';
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
         return $this->cari !== '' || $this->filterKategori !== ''
-            || $this->filterProvinsi !== '' || $this->filterVendor !== '';
+            || $this->filterProvinsi !== '' || $this->filterVendor !== ''
+            || $this->filterDipakai !== '';
     }
 
     public function bukaTambah(): void
@@ -510,6 +525,45 @@ class OrchaMasterHargaList extends Component
         }
     }
 
+    /**
+     * Memasang satu vendor ke beberapa harga sekaligus.
+     *
+     * Satu vendor biasanya memasok beberapa harga — Hiace, Elf, dan bus
+     * besar dari pemilik armada yang sama. Lewat formulir, memasangnya
+     * berarti membuka, menyimpan, dan menutup sebanyak barisnya, untuk satu
+     * keputusan yang sama.
+     */
+    public function pasangVendor(): void
+    {
+        $this->resetValidation('pasangKeVendor');
+
+        if ($this->pilih === [] || $this->pasangKeVendor === '') {
+            $this->addError('pasangKeVendor', 'Centang harganya dulu, lalu pilih vendornya.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim("/vendor/{$this->pasangKeVendor}/pasang", [
+                'harga' => array_map('intval', $this->pilih),
+            ]);
+
+            cache()->forget('orcha.rab.katalog');
+            $this->pilih = [];
+            $this->pasangKeVendor = '';
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor dipasangkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function batalPilih(): void
+    {
+        $this->pilih = [];
+        $this->pasangKeVendor = '';
+        $this->resetValidation('pasangKeVendor');
+    }
+
     public function hapus(int $id): void
     {
         $this->hapusData("/master-harga/{$id}", 'Harga dihapus. RAB yang sudah memakainya tidak berubah.');
@@ -543,6 +597,7 @@ class OrchaMasterHargaList extends Component
             'kategori' => $this->filterKategori,
             'provinsi' => $this->filterProvinsi,
             'vendor' => $this->filterVendor,
+            'dipakai' => $this->filterDipakai,
         ]));
 
         $katalog = $this->katalog();
