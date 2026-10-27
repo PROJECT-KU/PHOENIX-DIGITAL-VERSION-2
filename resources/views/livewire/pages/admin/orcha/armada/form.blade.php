@@ -159,7 +159,7 @@
                                     <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
                                     <select class="form-select" wire:model.live="jenis">
                                         @foreach ($pilihanJenis as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                            <option value="{{ $kunci }}" @selected((string) $this->jenis === (string) $kunci)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -623,7 +623,7 @@
                                             {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
                                             wire:model.live="kondisiIsian.{{ $kunci }}">
                                             @foreach ($daftarKondisi as $nilai => $teks)
-                                                <option value="{{ $nilai }}">{{ $teks }}</option>
+                                                <option value="{{ $nilai }}" @selected((string) ($this->kondisiIsian[$kunci] ?? '') === (string) $nilai)>{{ $teks }}</option>
                                             @endforeach
                                         </select>
                                     </div>

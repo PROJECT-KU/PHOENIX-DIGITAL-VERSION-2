@@ -20,9 +20,9 @@ Paket Wisata Orcha || lemon
 
                     <div class="col-8 col-lg-2">
                         <select wire:model.live="filterStatus" class="form-select">
-                            <option value="">Semua kategori</option>
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua kategori</option>
                             @foreach ($pilihan as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

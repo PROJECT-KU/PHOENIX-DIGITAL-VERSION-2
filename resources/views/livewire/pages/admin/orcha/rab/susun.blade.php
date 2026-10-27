@@ -897,11 +897,11 @@ Susun RAB || lemon
                                 <div class="rb-biaya-pilih">
                                     <div class="rb-gandeng">
                                         <select wire:model="pilihMaster" class="dsb-isian">
-                                            <option value="">Pilih dari master harga…</option>
+                                            <option value="" @selected((string) $this->pilihMaster === '')>Pilih dari master harga…</option>
                                             @foreach ($masterPerKategori as $label => $isi)
                                                 <optgroup label="{{ $label }}">
                                                     @foreach ($isi as $m)
-                                                        <option value="{{ $m['id'] }}">{{ $m['nama'] }} — {{ $m['harga_teks'] }} / {{ $m['satuan_label'] }}</option>
+                                                        <option value="{{ $m['id'] }}" @selected((string) $this->pilihMaster === (string) $m['id'])>{{ $m['nama'] }} — {{ $m['harga_teks'] }} / {{ $m['satuan_label'] }}</option>
                                                     @endforeach
                                                 </optgroup>
                                             @endforeach
@@ -1056,14 +1056,14 @@ Susun RAB || lemon
                                             <div class="col-6 col-md-2">
                                                 <select wire:model="manual.kategori" class="dsb-isian">
                                                     @foreach ($kosakata['kategori'] ?? [] as $kunci => $label)
-                                                        <option value="{{ $kunci }}">{{ $label }}</option>
+                                                        <option value="{{ $kunci }}" @selected((string) ($this->manual['kategori'] ?? '') === (string) $kunci)>{{ $label }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
                                             <div class="col-6 col-md-2">
                                                 <select wire:model.live="manual.satuan" class="dsb-isian">
                                                     @foreach ($kosakata['satuan'] ?? [] as $kunci => $label)
-                                                        <option value="{{ $kunci }}">{{ $label }}</option>
+                                                        <option value="{{ $kunci }}" @selected((string) ($this->manual['satuan'] ?? '') === (string) $kunci)>{{ $label }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -1079,9 +1079,9 @@ Susun RAB || lemon
                                                  biaya manual tidak pernah bisa punya kontak. --}}
                                             <div class="col-12">
                                                 <select wire:model="manual.vendor_id" class="dsb-isian">
-                                                    <option value="">Vendor — belum ditentukan</option>
+                                                    <option value="" @selected((string) ($this->manual['vendor_id'] ?? '') === '')>Vendor — belum ditentukan</option>
                                                     @foreach ($katalog['vendor'] ?? [] as $v)
-                                                        <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
+                                                        <option value="{{ $v['id'] }}" @selected((string) ($this->manual['vendor_id'] ?? '') === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -1206,7 +1206,7 @@ Susun RAB || lemon
                                         <span class="text-muted">Bulatkan ke atas per</span>
                                         <select wire:model.live="pembulatan" class="dsb-isian rb-isian-ringkas">
                                             @foreach ([1 => 'Rp 1', 1000 => 'Rp 1.000', 5000 => 'Rp 5.000', 10000 => 'Rp 10.000'] as $nilai => $teks)
-                                                <option value="{{ $nilai }}">{{ $teks }}</option>
+                                                <option value="{{ $nilai }}" @selected((string) $this->pembulatan === (string) $nilai)>{{ $teks }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -1239,9 +1239,9 @@ Susun RAB || lemon
                                         Harga jual, modal per orang, dan biaya tetapnya terisi sendiri dari RAB ini — laporan keuntungan akan sama persis.
                                     </p>
                                     <select wire:model="paketId" class="dsb-isian mb-2 @error('paketId') is-galat @enderror">
-                                        <option value="">Pilih paket induk…</option>
+                                        <option value="" @selected((string) $this->paketId === '')>Pilih paket induk…</option>
                                         @foreach ($katalog['paket'] ?? [] as $p)
-                                            <option value="{{ $p['id'] }}">{{ $p['nama'] }}</option>
+                                            <option value="{{ $p['id'] }}" @selected((string) $this->paketId === (string) $p['id'])>{{ $p['nama'] }}</option>
                                         @endforeach
                                     </select>
                                     @error('paketId')<div class="dsb-galat mb-2">{{ $message }}</div>@enderror

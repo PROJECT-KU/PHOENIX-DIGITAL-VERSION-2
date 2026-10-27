@@ -30,7 +30,7 @@
                                     <label class="form-label small fw-semibold">Kategori <span class="text-danger">*</span></label>
                                     <select class="form-select" wire:model="kategori">
                                         @foreach ($pilihanKategori as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                            <option value="{{ $kunci }}" @selected((string) $this->kategori === (string) $kunci)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -267,7 +267,7 @@
                             <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
                             <select class="form-select mb-3" wire:model.live="status">
                                 @foreach ($pilihanStatusPaket as $kunci => $label)
-                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                    <option value="{{ $kunci }}" @selected((string) $this->status === (string) $kunci)>{{ $label }}</option>
                                 @endforeach
                             </select>
 

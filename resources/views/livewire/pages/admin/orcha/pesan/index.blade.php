@@ -19,9 +19,9 @@ Pesan Kontak Orcha || lemon
                     </div>
                     <div class="col-12 col-sm-6 col-lg-3">
                         <select wire:model.live="filterStatus" class="form-select">
-                            <option value="">Semua keperluan</option>
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua keperluan</option>
                             @foreach ($pilihanKeperluan as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

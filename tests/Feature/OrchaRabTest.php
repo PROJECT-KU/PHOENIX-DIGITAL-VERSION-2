@@ -39,12 +39,19 @@ function palsukanRab(): void
             str_ends_with($jalur, '/rab') => Http::response(rekamanRab('daftar')),
             str_ends_with($jalur, '/master-harga/massal') => Http::response(['pesan' => '2 harga dinaikkan.', 'jumlah' => 2, 'batch' => 7]),
             str_ends_with($jalur, '/massal/7/batal') => Http::response(['pesan' => '2 harga dikembalikan seperti semula.', 'jumlah' => 2]),
+            str_ends_with($jalur, '/master-harga/id-cocok') => Http::response([
+                'data' => [1, 2, 3, 4, 5, 6, 7], 'meta' => ['jumlah' => 7],
+            ]),
+            str_ends_with($jalur, '/master-harga/salin-provinsi') => Http::response([
+                'pesan' => '4 harga disalin ke Bali. 1 dilewati karena namanya sudah ada di sana.',
+                'masuk' => 4, 'lewat' => 1,
+            ], 201),
             str_ends_with($jalur, '/master-harga/banyak') => Http::response([
                 'pesan' => '2 harga ditambahkan. 1 baris dilewati.',
                 'masuk' => 2,
                 'gagal' => [['baris' => 1, 'nama' => 'Tiket Borobudur', 'sebab' => 'sudah ada di wilayah yang sama']],
             ], 201),
-            str_ends_with($jalur, '/master-harga/riwayat') => Http::response(['data' => [[
+            str_contains($jalur, '/master-harga/riwayat') => Http::response(['meta' => ['jumlah' => 340, 'batas' => 100], 'data' => [[
                 'id' => 9, 'harga_id' => 1, 'harga_nama' => 'Tiket Candi Prambanan',
                 'harga_lama' => 'Rp 50.000', 'harga_baru' => 'Rp 60.000',
                 'selisih' => '+Rp 10.000', 'naik' => true, 'persen' => 20.0,
@@ -2236,4 +2243,139 @@ test('saringan yang terbawa dari alamat tergambar sebagai terpilih', function ()
     expect($isi)->toMatch('/<option value="mati"[^>]*\bselected\b/')
         ->and($isi)->toMatch('/<option value="termahal"[^>]*\bselected\b/')
         ->and($isi)->toMatch('/<option value="belum"[^>]*\bselected\b/');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Master harga: halaman, pilih semua yang cocok, salin provinsi, urut kolom
+|--------------------------------------------------------------------------
+*/
+
+test('jumlah baris per halaman dipilih admin, tetapi hanya dari daftar yang dikenal', function () {
+    /*
+     | Angkanya datang dari URL. "?baris=100000" akan meminta Orcha
+     | memulangkan seluruh tabel dalam satu permintaan — jadi yang di luar
+     | daftar dikembalikan ke sepuluh, bukan dipercaya apa adanya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+
+    $layar->set('barisHalaman', 50);
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), 'per_halaman=50'));
+
+    $layar->set('barisHalaman', 100000);
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), 'per_halaman=10'));
+});
+
+test('centang semua yang cocok meminta id ke Orcha, bukan merakit dari halaman', function () {
+    /*
+     | Yang terlihat cuma sepuluh dari seratus. Mencentang yang terlihat
+     | lalu menyebutnya "semua" adalah janji yang tidak ditepati — dan
+     | perintah massal berikutnya menyentuh lebih sedikit baris daripada
+     | yang dikira admin.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterKategori', 'tiket')
+        ->call('pilihSemuaCocok');
+
+    expect($layar->get('pilih'))->toBe(['1', '2', '3', '4', '5', '6', '7']);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/id-cocok')
+        && str_contains($r->url(), 'kategori=tiket'));
+});
+
+test('salin antar provinsi menolak tujuan yang sama dengan asalnya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaSalin')
+        ->set('salinDari', 'Bali')
+        ->set('salinKe', 'Bali')
+        ->call('salinProvinsi')
+        ->assertHasErrors('salinKe');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'salin-provinsi'));
+});
+
+test('salin antar provinsi mengirim asal dan tujuan, lalu menutup panelnya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaSalin')
+        ->set('salinDari', 'DI Yogyakarta')
+        ->set('salinKe', 'Bali')
+        ->call('salinProvinsi')
+        ->assertSet('salinBuka', false);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/salin-provinsi')
+        && $r['dari'] === 'DI Yogyakarta' && $r['ke'] === 'Bali');
+});
+
+test('menekan judul kolom mengurutkan, dan menekannya lagi membalik arah', function () {
+    /*
+     | Itu yang dicoba orang lebih dulu, sebelum kotak "Urut" ditemukan.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+
+    $layar->call('urutkanLewatKolom', 'harga')->assertSet('urut', 'termahal');
+    expect($layar->instance()->arahUrut('harga'))->toBe('turun');
+
+    $layar->call('urutkanLewatKolom', 'harga')->assertSet('urut', 'termurah');
+    expect($layar->instance()->arahUrut('harga'))->toBe('naik');
+
+    // Pindah ke kolom lain, bukan membalik yang ini.
+    $layar->call('urutkanLewatKolom', 'dipakai')->assertSet('urut', 'tersering');
+    expect($layar->instance()->arahUrut('harga'))->toBeNull();
+});
+
+test('tanggal berlaku yang sudah lewat diperingatkan, bukan ditolak', function () {
+    /*
+     | Harga lama yang memang sudah kedaluwarsa sah dicatat apa adanya.
+     | Yang tidak boleh adalah diterima DIAM-DIAM: salah ketik "2020" saat
+     | menambah harga baru lalu tidak pernah ketahuan.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.berlaku_sampai', now()->subYear()->toDateString());
+
+    expect($layar->instance()->berlakuSudahLewat())->toBeTrue()
+        ->and($layar->html())->toContain('Tanggal ini sudah lewat');
+
+    // Dan tetap bisa disimpan.
+    $layar->set('isian.nama', 'Tiket lama')->set('isian.harga', '10.000')
+        ->call('simpan')->assertHasNoErrors();
+
+    $layar->set('isian.berlaku_sampai', now()->addYear()->toDateString());
+    expect($layar->instance()->berlakuSudahLewat())->toBeFalse();
+});
+
+test('panel perubahan terakhir mengatakan berapa yang tidak ditampilkan', function () {
+    /*
+     | Daftar yang dipotong diam-diam membuat orang mengira itulah
+     | seluruhnya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaRiwayatSemua');
+
+    expect($layar->html())->toContain('dari')
+        ->and($layar->html())->toContain('340');
+
+    // Periode dipersempit → dimintakan ulang ke Orcha.
+    $layar->set('riwayatHari', 7);
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/riwayat')
+        && str_contains($r->url(), 'hari=7'));
 });

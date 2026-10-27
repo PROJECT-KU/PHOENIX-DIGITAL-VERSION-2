@@ -66,9 +66,9 @@ RAB & Itinerary || lemon
                             </div>
 
                             <select class="dsb-isian rb-pilih" wire:model.live="filterStatus" aria-label="Saring menurut status">
-                                <option value="">Semua status</option>
+                                <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
                                 @foreach ($status as $kunci => $label)
-                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                    <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
                                 @endforeach
                             </select>
 
@@ -154,9 +154,9 @@ RAB & Itinerary || lemon
                                     <label class="dsb-label" for="rb-prov">Provinsi tujuan <span class="rb-wajib">*</span></label>
                                     <select id="rb-prov" wire:model.live="isian.provinsi"
                                         class="dsb-isian @error('isian.provinsi') is-galat @enderror">
-                                        <option value="">Pilih provinsi</option>
+                                        <option value="" @selected((string) ($this->isian['provinsi'] ?? '') === '')>Pilih provinsi</option>
                                         @foreach ($provinsi as $p)
-                                            <option value="{{ $p }}">{{ $p }}</option>
+                                            <option value="{{ $p }}" @selected((string) ($this->isian['provinsi'] ?? '') === (string) $p)>{{ $p }}</option>
                                         @endforeach
                                     </select>
                                     @error('isian.provinsi')<span class="dsb-galat">{{ $message }}</span>@enderror

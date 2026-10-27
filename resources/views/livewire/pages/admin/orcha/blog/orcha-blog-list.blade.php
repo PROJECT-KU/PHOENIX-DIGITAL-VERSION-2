@@ -42,17 +42,17 @@ Blog Orcha || lemon
 
                     <div class="col-6 col-lg-2">
                         <select wire:model.live="filterStatus" class="form-select">
-                            <option value="">Semua status</option>
-                            <option value="draf">📝 Draf</option>
-                            <option value="tayang">🌐 Tayang</option>
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
+                            <option value="draf" @selected((string) $this->filterStatus === 'draf')>📝 Draf</option>
+                            <option value="tayang" @selected((string) $this->filterStatus === 'tayang')>🌐 Tayang</option>
                         </select>
                     </div>
 
                     <div class="col-6 col-lg-3">
                         <select wire:model.live="filterKategori" class="form-select">
-                            <option value="">Semua kategori</option>
+                            <option value="" @selected((string) $this->filterKategori === '')>Semua kategori</option>
                             @foreach ($daftarKategori as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->filterKategori === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -41,7 +41,7 @@ Pendaftaran Trip || lemon
                          ketahuan saat rombongannya sudah berkumpul. --}}
                     <div style="flex:2 1 220px">
                         <select wire:model.live="filterPaket" class="form-select">
-                            <option value="">Semua paket</option>
+                            <option value="" @selected((string) $this->filterPaket === '')>Semua paket</option>
                             {{-- @selected ditulis meski nilainya diikat wire:model.
 
                                  Tanpa itu, markup dari server tidak pernah menandai pilihan yang
@@ -49,7 +49,7 @@ Pendaftaran Trip || lemon
                                  memajang paket lama sementara daftarnya sudah tidak disaring —
                                  layar yang berbohong tentang keadaannya sendiri. --}}
                             @foreach ($pilihanPaket as $paket)
-                                <option value="{{ $paket['id'] }}" @selected((string) $filterPaket === (string) $paket['id'])>
+                                <option value="{{ $paket['id'] }}" @selected((string) $this->filterPaket === (string) $paket['id'])>
                                     {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
                                         · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
                                     @endif
@@ -60,7 +60,7 @@ Pendaftaran Trip || lemon
 
                     <div style="flex:1 1 160px">
                         <select wire:model.live="filterStatus" class="form-select">
-                            <option value="">Semua status</option>
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
                             @foreach ($pilihanStatus as $kunci => $label)
                                 <option value="{{ $kunci }}" @selected($filterStatus === $kunci)>{{ $label }}</option>
                             @endforeach

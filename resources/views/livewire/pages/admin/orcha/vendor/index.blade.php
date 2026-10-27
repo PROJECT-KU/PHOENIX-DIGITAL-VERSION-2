@@ -78,25 +78,25 @@ Vendor || lemon
                             </div>
 
                             <select class="dsb-isian vd-pilih" wire:model.live="filterJenis" aria-label="Saring menurut jenis">
-                                <option value="">Semua jenis</option>
-                                <option value="-">Belum berjenis</option>
+                                <option value="" @selected((string) $this->filterJenis === '')>Semua jenis</option>
+                                <option value="-" @selected((string) $this->filterJenis === '-')>Belum berjenis</option>
                                 @foreach ($jenisAda as $j)
-                                    <option value="{{ $j }}">{{ $j }}</option>
+                                    <option value="{{ $j }}" @selected((string) $this->filterJenis === (string) $j)>{{ $j }}</option>
                                 @endforeach
                             </select>
 
                             <select class="dsb-isian vd-pilih" wire:model.live="filterProvinsi" aria-label="Saring menurut wilayah">
-                                <option value="">Semua wilayah</option>
-                                <option value="-">Tanpa wilayah</option>
+                                <option value="" @selected((string) $this->filterProvinsi === '')>Semua wilayah</option>
+                                <option value="-" @selected((string) $this->filterProvinsi === '-')>Tanpa wilayah</option>
                                 @foreach ($provinsiAda as $p)
-                                    <option value="{{ $p }}">{{ $p }}</option>
+                                    <option value="{{ $p }}" @selected((string) $this->filterProvinsi === (string) $p)>{{ $p }}</option>
                                 @endforeach
                             </select>
 
                             <select class="dsb-isian vd-pilih" wire:model.live="filterStatus2" aria-label="Saring menurut status">
-                                <option value="">Aktif &amp; nonaktif</option>
-                                <option value="aktif">Hanya aktif</option>
-                                <option value="nonaktif">Hanya nonaktif</option>
+                                <option value="" @selected((string) $this->filterStatus2 === '')>Aktif &amp; nonaktif</option>
+                                <option value="aktif" @selected((string) $this->filterStatus2 === 'aktif')>Hanya aktif</option>
+                                <option value="nonaktif" @selected((string) $this->filterStatus2 === 'nonaktif')>Hanya nonaktif</option>
                             </select>
 
                             <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
@@ -312,10 +312,10 @@ Vendor || lemon
                                 </div>
 
                                 <select wire:model="gabungKe" class="dsb-isian @error('gabungKe') is-galat @enderror">
-                                    <option value="">Pilih vendor tujuan…</option>
+                                    <option value="" @selected((string) $this->gabungKe === '')>Pilih vendor tujuan…</option>
                                     @foreach ($daftar as $v)
                                         @if ($v['id'] !== $gabungDari)
-                                            <option value="{{ $v['id'] }}">{{ $v['nama'] }}@if ($v['kontak']) — {{ $v['kontak'] }}@endif</option>
+                                            <option value="{{ $v['id'] }}" @selected((string) $this->gabungKe === (string) $v['id'])>{{ $v['nama'] }}@if ($v['kontak']) — {{ $v['kontak'] }}@endif</option>
                                         @endif
                                     @endforeach
                                 </select>

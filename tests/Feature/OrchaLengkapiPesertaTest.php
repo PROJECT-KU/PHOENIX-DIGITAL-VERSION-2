@@ -288,7 +288,9 @@ test('titik jemput dipilih dari daftar, bukan diketik bebas', function () {
     $rapat = preg_replace('/\s+/', ' ', $halaman->html());
 
     expect($rapat)
-        ->toContain('<option value="">— belum dipilih —</option>')
+        // Atribut @selected menyisakan spasi saat tidak aktif, jadi yang
+        // diperiksa isinya — bukan markah yang persis.
+        ->toContain('>— belum dipilih —</option>')
         // Nilai yang sedang dipakai harus ditandai dari server, kalau tidak
         // pemilihnya menampilkan "belum dipilih" untuk peserta yang titiknya ada.
         ->toContain('value="Klaten" selected>');

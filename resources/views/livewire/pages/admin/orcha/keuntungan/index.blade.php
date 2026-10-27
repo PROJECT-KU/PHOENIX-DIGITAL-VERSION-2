@@ -51,25 +51,25 @@ Keuntungan Paket || lemon
                         <label class="form-label small fw-semibold mb-1">Dihitung menurut</label>
                         <select class="form-select" wire:model.live="dasar">
                             @foreach ($pilihanDasar as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->dasar === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-6 col-lg-2">
                         <label class="form-label small fw-semibold mb-1">Kategori</label>
                         <select class="form-select" wire:model.live="kategori">
-                            <option value="">Semua kategori</option>
+                            <option value="" @selected((string) $this->kategori === '')>Semua kategori</option>
                             @foreach ($pilihanKategori as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->kategori === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-6 col-lg-3">
                         <label class="form-label small fw-semibold mb-1">Paket</label>
                         <select class="form-select" wire:model.live="paketId">
-                            <option value="">Semua paket</option>
+                            <option value="" @selected((string) $this->paketId === '')>Semua paket</option>
                             @foreach ($daftarPaket as $paket)
-                                <option value="{{ $paket['id'] }}">
+                                <option value="{{ $paket['id'] }}" @selected((string) $this->paketId === (string) $paket['id'])>
                                     {{ $paket['nama'] }}{{ $paket['modal_terisi'] ? '' : ' (modal belum diisi)' }}
                                 </option>
                             @endforeach

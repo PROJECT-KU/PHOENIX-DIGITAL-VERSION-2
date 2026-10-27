@@ -92,17 +92,17 @@ class OrchaMasterHargaList extends Component
     public string $filterDipakai = '';
 
     /*
-     | Status TIDAK menyembunyikan apa pun saat kosong.
+     | $filterStatus TIDAK dideklarasikan di sini.
      |
-     | Harga yang dimatikan tidak punya kolomnya sendiri — kolom yang isinya
-     | sama di hampir setiap baris tidak memberi tahu apa pun. Tetapi
-     | membuangnya dari daftar secara diam-diam menukar satu keluhan dengan
-     | keluhan yang lebih buruk: "harga saya hilang". Jadi semuanya tetap
-     | terlihat, dan saringan ini yang memanggil yang dicari.
+     | Ia sudah milik trait MemanggilOrcha, lengkap dengan #[Url] dan
+     | pengirimannya sebagai parameter `status`. Mendeklarasikannya ulang
+     | akan MENIMPA atribut trait-nya diam-diam — PHP mengizinkannya selama
+     | tipe & nilai awalnya sama, jadi tidak ada galat apa pun. Layar Vendor
+     | memakai nama $filterStatus2 justru untuk menghindari bentrok ini.
+     |
+     | Artinya saat kosong daftarnya memuat SEMUANYA: menyembunyikan yang
+     | mati diam-diam menukar satu keluhan dengan "harga saya hilang".
      */
-    #[Url(as: 'status', except: '')]
-    public string $filterStatus = '';
-
     #[Url(as: 'urut', except: '')]
     public string $urut = '';
 
@@ -136,6 +136,29 @@ class OrchaMasterHargaList extends Component
     public string $tempelIsi = '';
 
     public array $tempelGagal = [];
+
+    /*
+     | Berapa baris per halaman.
+     |
+     | Sepuluh benar untuk membaca sekilas, dan salah begitu daftarnya
+     | diurutkan: "mana yang paling mahal" dijawab dengan menggulir dua
+     | puluh halaman. Pilihannya dibatasi supaya tidak ada yang meminta
+     | seribu baris sekaligus.
+     */
+    #[Url(as: 'baris', except: 10)]
+    public int $barisHalaman = 10;
+
+    /** Panel salin harga antar provinsi. */
+    public bool $salinBuka = false;
+
+    public string $salinDari = '';
+
+    public string $salinKe = '';
+
+    /** Berapa hari ke belakang yang ditampilkan panel "Perubahan terakhir". */
+    public int $riwayatHari = 0;
+
+    public array $riwayatSemuaMeta = [];
 
     /** Perintah massal terakhir yang masih bisa dibatalkan. */
     public ?int $batchTerakhir = null;
@@ -251,6 +274,23 @@ class OrchaMasterHargaList extends Component
     public function updatedUrut(): void
     {
         $this->halaman = 1;
+    }
+
+    public function updatedBarisHalaman(): void
+    {
+        $this->halaman = 1;
+    }
+
+    /**
+     * Menimpa bawaan trait (10) dengan pilihan admin.
+     *
+     * Dibatasi ke daftar yang dikenal, bukan dipercaya apa adanya: angka
+     * ini datang dari URL, dan "?baris=100000" akan meminta Orcha
+     * memulangkan seluruh tabel dalam satu permintaan.
+     */
+    protected function perHalaman(): int
+    {
+        return in_array($this->barisHalaman, [10, 25, 50, 100], true) ? $this->barisHalaman : 10;
     }
 
     public function bersihkanSaringan(): void
@@ -883,7 +923,13 @@ class OrchaMasterHargaList extends Component
     public function bukaRiwayatSemua(): void
     {
         try {
-            $this->riwayatSemua = $this->orcha()->ambil('/master-harga/riwayat')['data'] ?? [];
+            $balasan = $this->orcha()->ambil('/master-harga/riwayat', array_filter([
+                'hari' => $this->riwayatHari ?: null,
+                'batas' => 100,
+            ]));
+
+            $this->riwayatSemua = $balasan['data'] ?? [];
+            $this->riwayatSemuaMeta = $balasan['meta'] ?? [];
             $this->riwayatSemuaBuka = true;
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());
@@ -894,6 +940,150 @@ class OrchaMasterHargaList extends Component
     {
         $this->riwayatSemuaBuka = false;
         $this->riwayatSemua = [];
+        $this->riwayatSemuaMeta = [];
+    }
+
+    public function updatedRiwayatHari(): void
+    {
+        if ($this->riwayatSemuaBuka) {
+            $this->bukaRiwayatSemua();
+        }
+    }
+
+    /**
+     * Mencentang SELURUH baris yang cocok saringan, bukan yang terlihat.
+     *
+     * Id-nya diminta ke Orcha, bukan dirakit dari halaman ini — yang
+     * terlihat cuma sepuluh dari seratus, dan mencentang yang terlihat lalu
+     * menyebutnya "semua" adalah janji yang tidak ditepati.
+     */
+    public function pilihSemuaCocok(): void
+    {
+        try {
+            $balasan = $this->orcha()->ambil('/master-harga/id-cocok', $this->parameterDaftar([
+                'kategori' => $this->filterKategori,
+                'provinsi' => $this->filterProvinsi,
+                'vendor' => $this->filterVendor,
+                'dipakai' => $this->filterDipakai,
+            ]));
+
+            $this->pilih = array_map('strval', $balasan['data'] ?? []);
+            $this->dispatch('order-updated', message: count($this->pilih).' harga dicentang — seluruh yang cocok saringan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function bukaSalin(): void
+    {
+        $this->salinBuka = true;
+        $this->salinDari = $this->filterProvinsi !== '-' ? $this->filterProvinsi : '';
+        $this->salinKe = '';
+        $this->resetValidation(['salinDari', 'salinKe']);
+    }
+
+    public function tutupSalin(): void
+    {
+        $this->salinBuka = false;
+        $this->salinDari = '';
+        $this->salinKe = '';
+        $this->resetValidation(['salinDari', 'salinKe']);
+    }
+
+    /** Menyalin seluruh harga satu provinsi ke provinsi lain. */
+    public function salinProvinsi(): void
+    {
+        $this->resetValidation(['salinDari', 'salinKe']);
+
+        if ($this->salinDari === '' || $this->salinKe === '') {
+            $this->addError('salinKe', 'Pilih provinsi asal dan tujuannya.');
+
+            return;
+        }
+
+        if ($this->salinDari === $this->salinKe) {
+            $this->addError('salinKe', 'Provinsi tujuannya sama dengan asalnya.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/master-harga/salin-provinsi', [
+                'dari' => $this->salinDari, 'ke' => $this->salinKe,
+            ]);
+
+            cache()->forget('orcha.rab.katalog');
+            $this->tutupSalin();
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Harga disalin.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->addError('salinKe', $e->getMessage());
+        }
+    }
+
+    /**
+     * Menekan judul kolom untuk mengurutkan.
+     *
+     * Dua arah dalam satu tombol: menekan kolom yang sedang dipakai
+     * membalik urutannya, menekan kolom lain pindah ke sana. Itu yang
+     * dicoba orang lebih dulu, sebelum kotak "Urut" ditemukan.
+     */
+    public function urutkanLewatKolom(string $kolom): void
+    {
+        $pasangan = [
+            'harga' => ['termahal', 'termurah'],
+            'dipakai' => ['tersering', ''],
+            'diubah' => ['terbaru', 'terlama'],
+        ];
+
+        if (! isset($pasangan[$kolom])) {
+            return;
+        }
+
+        [$pertama, $kedua] = $pasangan[$kolom];
+        $this->urut = $this->urut === $pertama ? $kedua : $pertama;
+        $this->halaman = 1;
+    }
+
+    /** Arah panah pada judul kolom; null berarti kolomnya tidak sedang dipakai. */
+    public function arahUrut(string $kolom): ?string
+    {
+        return match ($kolom) {
+            'harga' => match ($this->urut) {
+                'termahal' => 'turun',
+                'termurah' => 'naik',
+                default => null,
+            },
+            'dipakai' => $this->urut === 'tersering' ? 'turun' : null,
+            'diubah' => match ($this->urut) {
+                'terbaru' => 'turun',
+                'terlama' => 'naik',
+                default => null,
+            },
+            default => null,
+        };
+    }
+
+    /**
+     * Tanggal berlaku yang sudah lewat, pada baris yang BARU dibuat.
+     *
+     * Tidak ditolak — harga lama yang memang sudah kedaluwarsa sah dicatat
+     * apa adanya. Tetapi mengetik "2020" saat menambah harga baru hampir
+     * selalu salah ketik, dan diterima diam-diam adalah yang membuatnya
+     * tidak pernah ketahuan.
+     */
+    public function berlakuSudahLewat(): bool
+    {
+        $tanggal = trim((string) ($this->isian['berlaku_sampai'] ?? ''));
+
+        if ($tanggal === '') {
+            return false;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($tanggal)->isBefore(now()->startOfDay());
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     public function bukaTempel(): void
@@ -1025,7 +1215,8 @@ class OrchaMasterHargaList extends Component
             'provinsi' => $this->filterProvinsi,
             'vendor' => $this->filterVendor,
             'dipakai' => $this->filterDipakai,
-            'status' => $this->filterStatus,
+            // 'status' tidak ditulis di sini: parameterDaftar() di trait
+            // sudah mengirimnya dari $filterStatus yang sama.
             'urut' => $this->urut,
         ]));
 

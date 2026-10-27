@@ -43,9 +43,9 @@ Bagian Pemeriksaan Kendaraan || lemon
                     </div>
                     <div class="col-12 col-sm-8 col-lg-4">
                         <select wire:model.live="filterStatus" class="form-select">
-                            <option value="">Semua jenis unit</option>
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua jenis unit</option>
                             @foreach ($jenisKendaraan as $kunci => $label)
-                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

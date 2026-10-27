@@ -463,16 +463,16 @@ Serah Terima Kendaraan || lemon
                                                 <select class="form-select form-select-sm"
                                                     wire:model="kondisiAwal.{{ $kunci }}">
                                                     @foreach ($pilihanKondisi as $k => $l)
-                                                        <option value="{{ $k }}">{{ $l }}</option>
+                                                        <option value="{{ $k }}" @selected((string) ($this->kondisiAwal[$kunci] ?? '') === (string) $k)>{{ $l }}</option>
                                                     @endforeach
                                                 </select>
                                             </td>
                                             <td>
                                                 <select class="form-select form-select-sm"
                                                     wire:model.live="kondisiAkhir.{{ $kunci }}">
-                                                    <option value="">— belum diperiksa —</option>
+                                                    <option value="" @selected((string) ($this->kondisiAkhir[$kunci] ?? '') === '')>— belum diperiksa —</option>
                                                     @foreach ($pilihanKondisi as $k => $l)
-                                                        <option value="{{ $k }}">{{ $l }}</option>
+                                                        <option value="{{ $k }}" @selected((string) ($this->kondisiAkhir[$kunci] ?? '') === (string) $k)>{{ $l }}</option>
                                                     @endforeach
                                                 </select>
                                             </td>

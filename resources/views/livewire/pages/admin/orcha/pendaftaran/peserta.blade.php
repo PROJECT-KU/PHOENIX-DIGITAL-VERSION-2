@@ -260,7 +260,7 @@ Daftar Peserta || lemon
                             @if ($pilihanTitik !== [])
                                 <select class="form-select form-select-sm"
                                     wire:model="barisPeserta.{{ $urutan }}.titik_jemput">
-                                    <option value="">— belum dipilih —</option>
+                                    <option value="" @selected((string) ($this->barisPeserta[$urutan]['titik_jemput'] ?? '') === '')>— belum dipilih —</option>
                                     @foreach ($pilihanTitik as $titik)
                                         {{-- Dicocokkan tanpa memedulikan besar-kecil huruf:
                                              data lama menyimpan "klaten" sedangkan daftar

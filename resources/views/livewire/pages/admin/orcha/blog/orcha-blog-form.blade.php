@@ -156,8 +156,8 @@
                             Status <span class="text-danger">*</span>
                         </label>
                         <select wire:model.live="status" class="form-select @error('status') is-invalid @enderror">
-                            <option value="draf">📝 Draf (belum tampil)</option>
-                            <option value="tayang">🌐 Publikasikan (tampil)</option>
+                            <option value="draf" @selected((string) $this->status === 'draf')>📝 Draf (belum tampil)</option>
+                            <option value="tayang" @selected((string) $this->status === 'tayang')>🌐 Publikasikan (tampil)</option>
                         </select>
                         @error('status') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
 

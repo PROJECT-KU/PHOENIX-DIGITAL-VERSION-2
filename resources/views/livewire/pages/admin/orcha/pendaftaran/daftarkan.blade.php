@@ -200,7 +200,7 @@ Daftarkan Rombongan || lemon
                             <label class="form-label small fw-semibold">Paket <span class="text-danger">*</span></label>
                             <select wire:model.live="paketId"
                                 class="form-select @error('paketId') is-invalid @enderror">
-                                <option value="">Pilih paket...</option>
+                                <option value="" @selected((string) $this->paketId === '')>Pilih paket...</option>
 
                                 {{-- Dikelompokkan menurut kategori, dan private trip
                                      serta study tour didahulukan: merekalah yang
@@ -231,13 +231,13 @@ Daftarkan Rombongan || lemon
                                     <optgroup label="{{ $label }}">
                                         @forelse ($terkelompok[$kunci] ?? [] as $paket)
                                             <option value="{{ $paket['id'] }}"
-                                                @selected((string) $paketId === (string) $paket['id'])>
+                                                @selected((string) $this->paketId === (string) $paket['id'])>
                                                 {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
                                                     · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
                                                 @endif
                                             </option>
                                         @empty
-                                            <option value="" disabled>
+                                            <option value="" disabled @selected((string) $this->paketId === '')>
                                                 — belum ada paket {{ $label }} —
                                             </option>
                                         @endforelse

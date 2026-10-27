@@ -50,9 +50,9 @@
                     @if ($jenis === 'destinasi')
                         <div class="col-12 col-lg-3">
                             <select wire:model.live="filterStatus" class="form-select">
-                                <option value="">Semua wilayah</option>
+                                <option value="" @selected((string) $this->filterStatus === '')>Semua wilayah</option>
                                 @foreach ($pilihanWilayah as $kunci => $label)
-                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                    <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -298,7 +298,7 @@
                                 <label class="form-label small fw-semibold">Wilayah <span class="text-danger">*</span></label>
                                 <select class="form-select mb-3" wire:model="wilayah">
                                     @foreach ($pilihanWilayah as $kunci => $label)
-                                        <option value="{{ $kunci }}">{{ $label }}</option>
+                                        <option value="{{ $kunci }}" @selected((string) $this->wilayah === (string) $kunci)>{{ $label }}</option>
                                     @endforeach
                                 </select>
 
@@ -315,7 +315,7 @@
                                 <label class="form-label small fw-semibold">Rating <span class="text-danger">*</span></label>
                                 <select class="form-select mb-3" wire:model="rating">
                                     @for ($bintang = 5; $bintang >= 1; $bintang--)
-                                        <option value="{{ $bintang }}">
+                                        <option value="{{ $bintang }}" @selected((string) $this->rating === (string) $bintang)>
                                             {{ str_repeat('★', $bintang) }} ({{ $bintang }})
                                         </option>
                                     @endfor

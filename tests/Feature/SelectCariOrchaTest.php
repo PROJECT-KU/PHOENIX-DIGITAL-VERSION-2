@@ -127,3 +127,68 @@ test('daftar select-cari tidak ditempelkan ke dalam kartu', function () {
 
     expect($gaya)->toMatch('/\.dsb-kartu\s*\{[^}]*overflow:\s*hidden/');
 });
+
+test('tiap kotak pilih Orcha menandai nilainya dari server', function () {
+    /*
+     | <select> + wire:model TIDAK menandai nilai yang dipegang komponen:
+     | Blade merender seluruh <option> tanpa `selected`, jadi peramban
+     | menampilkan PILIHAN PERTAMA daftar.
+     |
+     | Gejalanya menipu karena halamannya tetap tergambar rapi — membuka
+     | "Ubah" pada baris transportasi memperlihatkan kategorinya sebagai
+     | "Tiket & Retribusi", dan menekan Simpan mengubah kategorinya
+     | diam-diam. Yang salah baru ketahuan jauh belakangan.
+     */
+    $nakal = [];
+
+    foreach (\Illuminate\Support\Facades\File::allFiles(resource_path('views/livewire/pages/admin/orcha')) as $berkas) {
+        $isi = file_get_contents($berkas->getPathname());
+
+        preg_match_all('/<select\b[^>]*>/s', $isi, $tag, PREG_OFFSET_CAPTURE);
+
+        foreach ($tag[0] as [$pembuka, $posisi]) {
+            if (! preg_match('/wire:model[^=]*="/', $pembuka)) {
+                continue;
+            }
+
+            $tutup = strpos($isi, '</select>', $posisi);
+            $badan = substr($isi, $posisi + strlen($pembuka), $tutup - $posisi - strlen($pembuka));
+
+            if (! str_contains($badan, '<option')) {
+                continue;
+            }
+
+            // Tiap <option> harus membawa penandanya sendiri.
+            $jumlahOpsi = substr_count($badan, '<option');
+            $jumlahTanda = substr_count($badan, '@selected(');
+
+            if ($jumlahTanda < $jumlahOpsi) {
+                $nakal[] = $berkas->getFilename().' ('.$jumlahOpsi.' option, '.$jumlahTanda.' @selected)';
+            }
+        }
+    }
+
+    expect($nakal)->toBe([]);
+});
+
+test('penanda kotak pilih membaca properti lewat $this, bukan variabel lepas', function () {
+    /*
+     | Blade membocorkan variabel @foreach ke sisa berkasnya. Di Jejak Audit
+     | ada properti $baris DAN @foreach ($data as $baris) — penanda yang
+     | menulis "$baris" membandingkan seluruh baris tabel dengan sebuah
+     | angka, dan halamannya mati dengan "Array to string conversion".
+     |
+     | $this->baris tidak bisa tertimpa siapa pun.
+     */
+    $nakal = [];
+
+    foreach (\Illuminate\Support\Facades\File::allFiles(resource_path('views/livewire/pages/admin/orcha')) as $berkas) {
+        $isi = file_get_contents($berkas->getPathname());
+
+        if (preg_match_all('/@selected\(\(string\) \$(?!this->)(\w+)/', $isi, $m)) {
+            $nakal[] = $berkas->getFilename().': $'.implode(', $', array_unique($m[1]));
+        }
+    }
+
+    expect($nakal)->toBe([]);
+});

@@ -62,13 +62,13 @@ Daftar Tunggu || lemon
 
                     <div style="flex:1 1 200px">
                         <select class="form-select" wire:model.live="filterPaket">
-                            <option value="">Semua trip</option>
+                            <option value="" @selected((string) $this->filterPaket === '')>Semua trip</option>
                             @foreach ($paketPilihan as $id => $nama)
                                 {{-- @selected ditulis meski nilainya diikat wire:model:
                                      tanpa itu markup dari server tidak pernah menandai
                                      pilihan yang sedang aktif, dan kotaknya memajang
                                      trip lama sementara daftarnya sudah tidak disaring. --}}
-                                <option value="{{ $id }}" @selected((string) $filterPaket === (string) $id)>
+                                <option value="{{ $id }}" @selected((string) $this->filterPaket === (string) $id)>
                                     {{ $nama }}
                                 </option>
                             @endforeach

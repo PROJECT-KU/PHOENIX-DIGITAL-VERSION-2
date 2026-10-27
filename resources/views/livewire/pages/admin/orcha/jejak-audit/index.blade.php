@@ -170,9 +170,9 @@ Jejak Audit Orcha || lemon
 
                             <select class="dsb-isian ja-pilih" wire:model.live="filterAdmin"
                                 aria-label="Saring menurut admin">
-                                <option value="">Semua admin</option>
+                                <option value="" @selected((string) $this->filterAdmin === '')>Semua admin</option>
                                 @foreach ($pilihanAdmin as $nama)
-                                    <option value="{{ $nama }}">{{ $nama }}</option>
+                                    <option value="{{ $nama }}" @selected((string) $this->filterAdmin === (string) $nama)>{{ $nama }}</option>
                                 @endforeach
                             </select>
 
@@ -182,11 +182,11 @@ Jejak Audit Orcha || lemon
                                  terakhir itu yang dulu harus dihitung sendiri. --}}
                             <select class="dsb-isian ja-pilih" wire:model.live="rentang"
                                 aria-label="Saring menurut waktu">
-                                <option value="">Kapan saja</option>
+                                <option value="" @selected((string) $this->rentang === '')>Kapan saja</option>
                                 @foreach ($this::RENTANG_CEPAT as $kunci => [$label, $mundur])
-                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                    <option value="{{ $kunci }}" @selected((string) $this->rentang === (string) $kunci)>{{ $label }}</option>
                                 @endforeach
-                                <option value="{{ $this::PILIH_SENDIRI }}">Pilih tanggal sendiri…</option>
+                                <option value="{{ $this::PILIH_SENDIRI }}" @selected((string) $this->rentang === (string) $this::PILIH_SENDIRI)>Pilih tanggal sendiri…</option>
                             </select>
 
                             {{-- SATU panel untuk seluruh saringan selebihnya — tanggal
@@ -245,9 +245,9 @@ Jejak Audit Orcha || lemon
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="ja-aksi">Jenis perubahan</label>
                                     <select id="ja-aksi" class="dsb-isian" wire:model.live="filterAksi">
-                                        <option value="">Semua jenis perubahan</option>
+                                        <option value="" @selected((string) $this->filterAksi === '')>Semua jenis perubahan</option>
                                         @foreach ($pilihanAksi as $aksi)
-                                            <option value="{{ $aksi }}">{{ $aksi }}</option>
+                                            <option value="{{ $aksi }}" @selected((string) $this->filterAksi === (string) $aksi)>{{ $aksi }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -447,7 +447,7 @@ Jejak Audit Orcha || lemon
                             <span>Tampilkan</span>
                             <select class="dsb-isian" wire:model.live="baris" aria-label="Jumlah baris per halaman">
                                 @foreach ($this::PILIHAN_BARIS as $n)
-                                    <option value="{{ $n }}">{{ $n }}</option>
+                                    <option value="{{ $n }}" @selected((string) $this->baris === (string) $n)>{{ $n }}</option>
                                 @endforeach
                             </select>
                             <span>baris</span>
