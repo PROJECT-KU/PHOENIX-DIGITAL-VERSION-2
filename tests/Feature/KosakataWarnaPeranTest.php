@@ -81,3 +81,31 @@ test('tiap peran tombol terpakai di layar acuan', function () {
         expect($isi)->toContain("dsb-tombol {$peran}");
     }
 });
+
+test('tombol berlatar penuh tetap berhuruf putih saat disorot', function () {
+    /*
+     | Aturan sorot umum menukar warna huruf jadi mendekati hitam. Benar
+     | untuk tombol berdasar putih — tetapi pada tombol BERLATAR PENUH
+     | hasilnya huruf gelap di atas warna pekat, dan tulisannya nyaris
+     | tidak terbaca.
+     |
+     | Cacatnya diam: tombolnya tetap tergambar, tetap bisa ditekan, dan
+     | baru terasa salah saat kursor kebetulan lewat di atasnya.
+     */
+    $gaya = gayaDasbor();
+
+    // Ragam yang latarnya diisi warna sejak diam — ketahuan dari
+    // "background: #xxxxxx; color: #fff" pada aturan dasarnya.
+    preg_match_all('/\.dsb-tombol\.(is-[a-z]+) \{ background: #[0-9a-f]{6}; color: #fff;/', $gaya, $cocok);
+
+    expect($cocok[1])->not->toBeEmpty();
+
+    foreach ($cocok[1] as $ragam) {
+        expect($gaya)->toContain(".dsb-tombol.{$ragam}:hover");
+
+        // Dan aturan sorotnya memang mempertahankan huruf putih.
+        preg_match('/\.dsb-tombol\.'.preg_quote($ragam, '/').':hover \{([^}]*)\}/', $gaya, $sorot);
+
+        expect($sorot[1] ?? '')->toContain('color: #fff');
+    }
+});

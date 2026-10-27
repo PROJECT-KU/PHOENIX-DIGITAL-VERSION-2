@@ -357,6 +357,18 @@
         .dsb-tombol:hover { transform: translateY(-2px); }
         .dsb-tombol.is-bahaya:hover { background: #dc2626; color: #fff; border-color: transparent; }
         .dsb-tombol.is-lembut:hover { border-color: #cbd5e1; color: #1c1f26; }
+
+        /* Yang BERLATAR PENUH tidak boleh ikut menggelapkan hurufnya.
+
+           Aturan umum di bawah menukar warna teks jadi mendekati hitam —
+           benar untuk tombol berdasar putih, tetapi pada tombol berlatar
+           ungu/hijau/jingga hasilnya huruf gelap di atas warna pekat, dan
+           tulisannya nyaris tidak terbaca. Yang berubah cukup latarnya:
+           sedikit lebih tua, hurufnya tetap putih. */
+        .dsb-tombol.is-utama:hover { background: #6d28d9; color: #fff; border-color: transparent; }
+        .dsb-tombol.is-hijau:hover { background: #15803d; color: #fff; border-color: transparent; }
+        .dsb-tombol.is-kuning:hover { background: #b45309; color: #fff; border-color: transparent; }
+
         .dsb-tombol:hover { border-color: #cbd5e1; color: #1c1f26; }
     }
 
