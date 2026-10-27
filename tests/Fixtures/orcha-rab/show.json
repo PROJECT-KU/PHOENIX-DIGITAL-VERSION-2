@@ -95,7 +95,9 @@
                     "harga_master_kini": 60000,
                     "vendor_id": 1,
                     "vendor": "PO Sumber Jaya",
-                    "vendor_kontak": "081234000111 (Pak Budi)"
+                    "vendor_kontak": "081234000111 (Pak Budi)",
+                    "selisih_master": -10000,
+                    "catatan": null
                 },
                 {
                     "id": 18,
@@ -116,7 +118,9 @@
                     "harga_master_kini": null,
                     "vendor_id": null,
                     "vendor": null,
-                    "vendor_kontak": null
+                    "vendor_kontak": null,
+                    "selisih_master": null,
+                    "catatan": null
                 }
             ],
             "per_kategori": [
@@ -348,11 +352,21 @@
                     "pemasukan_teks": "Rp 9.994.000",
                     "laba_teks": "Rp 2.444.000"
                 }
-            ]
+            ],
+            "harga_asli": 526000,
+            "harga_asli_teks": "Rp 526.000",
+            "nego_selisih": 0,
+            "nego_selisih_teks": "Rp 0",
+            "nego_aktif": false,
+            "nego_rugi": false,
+            "harga_batas": 439000,
+            "harga_batas_teks": "Rp 439.000"
         },
         "jenis": "open",
         "jenis_label": "Open Trip",
         "peserta_minimum": 5,
-        "harga_dasar": "minimum"
+        "harga_dasar": "minimum",
+        "harga_nego": null,
+        "alasan_nego": null
     }
 }

@@ -54,6 +54,9 @@ function palsukanRab(): void
                 ]],
                 'meta' => ['kode' => 'RAB-2609-A7K3', 'harga_kini_teks' => 'Rp 9.500.000'],
             ]),
+            str_ends_with($jalur, '/ke-master') => Http::response(
+                rekamanRab('show') + ['pesan' => 'Master harga "Tiket Candi Prambanan" turun jadi Rp 40.000. RAB berikutnya memakai angka ini.']
+            ),
             str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
             str_ends_with($jalur, '/rab') && $r->method() === 'POST' => Http::response(rekamanRab('show'), 201),
             str_ends_with($jalur, '/rab') => Http::response(rekamanRab('daftar')),
@@ -175,7 +178,10 @@ test('penyusun menggambar itinerary, destinasi, dan ringkasan dari Orcha', funct
         ->assertSee($show['kode'])
         ->assertSee('Candi Prambanan')
         ->assertSee($show['ringkasan']['harga_per_orang_teks'])
-        ->assertSee('pakai harga baru')          // harga master sudah naik
+        // Beda harga ditawarkan DUA arah: angkanya sendiri tidak bisa
+        // membedakan "master naik" dari "tim menemukan lebih murah".
+        ->assertSee('pakai harga master')
+        ->assertSee('simpan ke master')
         // Tombolnya kini jaring pengaman, bukan langkah wajib: biayanya
         // ditarik sendiri saat destinasinya diklik. Labelnya dipendekkan
         // supaya bilah atas muat satu baris; maksud lengkapnya ada di title.
@@ -2836,4 +2842,132 @@ test('judul, kota, dan jumlah malam terlihat tanpa membuka apa pun', function ()
         // jadinya apa?" sebelum penawarannya tercetak.
         ->assertSee('Judul & jumlah malam terisi sendiri')
         ->assertDontSee('Sesuaikan sendiri');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Negosiasi & temuan harga
+|--------------------------------------------------------------------------
+*/
+
+test('harga yang ditawar pelanggan dikirim sebagai angka, bukan teks bertitik', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('hargaNego', '1.150.000');
+
+    Http::assertSent(function (Request $r) {
+        return str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3')
+            && $r->method() === 'PATCH'
+            && $r['harga_nego'] === 1150000;
+    });
+});
+
+test('alasan ikut terkirim selama kesepakatannya ada', function () {
+    // Balasannya MEMANTULKAN yang disimpan, seperti Orcha sungguhan. Fixture
+    // yang statis mengembalikan harga nego ke kosong tiap kali disimpan,
+    // dan isian berikutnya jadi tidak punya harga untuk ditempeli.
+    $tersimpan = [];
+    Http::fake(function (Request $r) use (&$tersimpan) {
+        $tersimpan = array_merge($tersimpan, array_filter($r->data(), fn ($v) => $v !== null));
+        $show = rekamanRab('show');
+        $show['data']['harga_nego'] = $tersimpan['harga_nego'] ?? null;
+        $show['data']['alasan_nego'] = $tersimpan['alasan_nego'] ?? null;
+
+        return Http::response($show);
+    });
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('hargaNego', '1.150.000')
+        ->set('alasanNego', 'Pelanggan lama');
+
+    Http::assertSent(fn (Request $r) => ($r['alasan_nego'] ?? null) === 'Pelanggan lama'
+        && $r['harga_nego'] === 1150000);
+});
+
+test('mengosongkan harga nego melepas kesepakatan, bukan mengirim nol', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('hargaNego', '')
+        ->call('simpanNego');
+
+    // null berarti "tidak ada kesepakatan"; nol akan tersimpan sebagai
+    // harga Rp 0 di Orcha yang belum tentu menolaknya.
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['harga_nego'] === null);
+});
+
+test('batas aman diisikan dari angka Orcha, bukan diketik ulang', function () {
+    palsukanRab();
+
+    $batas = rekamanRab('show')['data']['ringkasan']['harga_batas'];
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBatasAman');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['harga_nego'] === $batas);
+});
+
+test('alasan tanpa harga tidak menyimpan apa pun', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('alasanNego', 'Belum deal');
+
+    // Yang disimpan adalah kesepakatannya; alasan cuma keterangannya.
+    Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH' && isset($r['alasan_nego']));
+});
+
+test('harga temuan bisa disimpan ke master berikut catatannya', function () {
+    palsukanRab();
+    $id = rekamanRab('show')['data']['ringkasan']['baris'][0]['id'];
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set("catatanBaris.{$id}", 'Hasil nego langsung, low season')
+        ->call('simpanKeMaster', $id);
+
+    // Catatannya disimpan lewat barisnya sendiri...
+    Http::assertSent(function (Request $r) use ($id) {
+        return str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), "/rab/3/biaya/{$id}")
+            && $r->method() === 'PATCH'
+            && $r['catatan'] === 'Hasil nego langsung, low season';
+    });
+
+    // ...dan "simpan ke master" tidak mengirimnya lagi: dua sumber untuk
+    // satu kalimat akan berselisih.
+    Http::assertSent(function (Request $r) use ($id) {
+        return str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), "/rab/3/biaya/{$id}/ke-master")
+            && $r->method() === 'POST';
+    });
+});
+
+test('arah selisih master disebut dengan kata, bukan tanda minus', function () {
+    palsukanRab();
+
+    $murah = ['selisih_master' => -10000];
+    $mahal = ['selisih_master' => 15000];
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    expect($komponen->instance()->temuanLebihMurah($murah))->toBeTrue()
+        ->and($komponen->instance()->temuanLebihMurah($mahal))->toBeFalse()
+        // Yang dibaca admin adalah besarnya, arahnya diceritakan kalimatnya.
+        ->and($komponen->instance()->selisihMasterTeks($murah))->toBe('10.000')
+        ->and($komponen->instance()->selisihMasterTeks($mahal))->toBe('15.000');
+});
+
+test('panel nego terbuka sendiri bila kesepakatannya sudah ada', function () {
+    Http::fake(function (Request $r) {
+        $show = rekamanRab('show');
+        $show['data']['harga_nego'] = 1_150_000;
+        $show['data']['alasan_nego'] = 'Pelanggan lama';
+        $show['data']['ringkasan']['nego_aktif'] = true;
+
+        return Http::response($show);
+    });
+
+    // Angka yang mengubah harga jual tidak boleh bersembunyi di balik tombol.
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->assertSet('bukaNego', true)
+        ->assertSet('hargaNego', '1.150.000')
+        ->assertSee('disepakati');
 });

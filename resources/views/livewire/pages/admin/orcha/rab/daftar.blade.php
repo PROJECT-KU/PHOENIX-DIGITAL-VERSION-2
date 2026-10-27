@@ -556,7 +556,15 @@ RAB & Itinerary || lemon
                                             <td data-judul="Harga" class="text-end">
                                                 <span class="rb-utama is-kanan">
                                                     <span class="dsb-tabel-judul dsb-tabel-angka">{{ $baris['harga_total_teks'] }}</span>
-                                                    <span class="dsb-tabel-meta dsb-tabel-angka">{{ $baris['harga_per_orang_teks'] }}/org</span>
+                                                    <span class="dsb-tabel-meta dsb-tabel-angka">
+                                                        {{ $baris['harga_per_orang_teks'] }}/org
+                                                        {{-- Harga hasil kesepakatan tidak bergerak saat margin
+                                                             diubah. Tanpa tanda ini, baris yang "tidak ikut naik"
+                                                             saat harga massal dinaikkan terbaca seperti kelewat. --}}
+                                                        @if (! empty($baris['harga_nego']))
+                                                            <span class="rb-nego-cap" title="Harga disepakati, bukan dihitung dari margin">nego</span>
+                                                        @endif
+                                                    </span>
                                                 </span>
                                             </td>
                                             <td data-judul="Untung" class="text-end">
@@ -729,6 +737,11 @@ RAB & Itinerary || lemon
         /* Warna untung mengikuti tipisnya margin — lihat rupaUntung() di
            komponennya. Yang merugi tidak boleh tergambar seperti yang
            sehat. */
+        .rb-nego-cap {
+            display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px;
+            background: #eef2ff; color: #4338ca; font-size: .68rem; font-weight: 700;
+            letter-spacing: .03em; text-transform: uppercase; vertical-align: 1px;
+        }
         .rb-untung { font-weight: 700; }
         .rb-untung.is-sehat { color: var(--dsb-aman, #047857); }
         .rb-untung.is-tipis { color: var(--dsb-awas, #b45309); }

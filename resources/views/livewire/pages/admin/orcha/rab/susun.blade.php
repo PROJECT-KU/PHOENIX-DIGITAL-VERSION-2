@@ -86,6 +86,14 @@ Susun RAB || lemon
     $impasTercapai = (bool) ($r['bep_tercapai'] ?? false);
     $dibawahImpas = $openTrip && $impasPeserta !== null && ! $impasTercapai;
 
+    // Negosiasi. Dirakit di sini bersama perbandingan lain, bukan di @php
+    // sebaris di antara direktif — lihat catatan di bawah.
+    $negoAktif = (bool) ($r['nego_aktif'] ?? false);
+    $negoRugi = (bool) ($r['nego_rugi'] ?? false);
+    $negoSelisih = (int) ($r['nego_selisih'] ?? 0);
+    $negoTurun = $negoSelisih < 0;
+    $negoSelisihTeks = 'Rp '.number_format(abs($negoSelisih), 0, ',', '.');
+
     /*
      | Perbandingannya dirakit di sini, BUKAN di @php sebaris di antara
      | direktif. Tanda "lebih besar" di sana membuat Livewire melewatkan
@@ -582,6 +590,49 @@ Susun RAB || lemon
             .rab-tabel-biaya tr.rab-kat td:last-child, .rab-tabel-biaya tr.rab-kaki td:last-child { display: none; }
         }
         .rab-basi { font-size: .75rem; color: #b42318; }
+        /* Beda harga BUKAN peringatan: ia bisa berarti harga master naik
+           ATAU tim menemukan yang lebih murah. Merah membuat kabar baik
+           terbaca seperti kesalahan. */
+        .rab-basi.is-beda { color: #64748b; }
+        .rab-basi.is-beda a { color: #4f46e5; }
+        .rb-catatan-baris { margin-top: 5px; font-size: .78rem; padding-top: 5px; padding-bottom: 5px; }
+
+        /* ------------------------------ NEGOSIASI ------------------------------ */
+        .rb-nego-tanda {
+            display: flex; align-items: flex-start; gap: 7px; margin: -8px 0 14px;
+            font-size: .8rem; color: #4338ca; line-height: 1.45;
+        }
+        .rb-nego-tanda i { margin-top: 2px; }
+        .rb-nego {
+            margin: 14px 0; border: 1px solid var(--dsb-tepi, #e9edf3);
+            border-radius: 14px; background: #fff; overflow: hidden;
+        }
+        .rb-nego.is-hidup { border-color: #c7d2fe; background: #f8f9ff; }
+        .rb-nego-kepala {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border: 0; background: transparent; text-align: left;
+        }
+        .rb-nego-judul { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+        .rb-nego-judul strong { font-size: .88rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-nego-judul .dsb-kartu-sub { line-height: 1.4; }
+        .rb-nego-panah { font-size: .7rem; color: #94a3b8; transition: transform .18s ease; }
+        .rb-nego-panah.is-buka { transform: rotate(180deg); }
+        .rb-nego-isi {
+            display: flex; flex-direction: column; gap: 10px;
+            padding: 0 12px 12px; border-top: 1px solid #eef1f6; padding-top: 12px;
+        }
+        .rb-nego-batas {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 9px 11px; border-radius: 11px; background: #fffbeb; border: 1px solid #fde68a;
+            font-size: .78rem; color: #92400e; line-height: 1.45;
+        }
+        .rb-nego-lepas { align-self: flex-start; }
+        .rb-nego-rugi {
+            display: flex; align-items: flex-start; gap: 7px;
+            padding: 9px 12px; background: #fef2f2; border-top: 1px solid #fecaca;
+            font-size: .78rem; color: #b42318; line-height: 1.45;
+        }
+        .rb-nego-rugi i { margin-top: 2px; }
 
         /* Titik impas: hijau bila rombongan yang ada sudah menutup biaya
            tetapnya, kuning bila belum. Bukan angka telanjang — yang
@@ -1352,10 +1403,30 @@ Susun RAB || lemon
                                                             <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
                                                         </div>
                                                         @isset($b['harga_master_kini'])
-                                                            <div class="rab-basi">
-                                                                Master kini Rp {{ number_format($b['harga_master_kini'], 0, ',', '.') }} ·
-                                                                <a href="#" wire:click.prevent="pakaiHargaMaster({{ $b['id'] }})">pakai harga baru</a>
+                                                            {{-- KEDUA arah ditawarkan, dan sengaja tidak ditebak
+                                                                 mana yang dimaksud.
+
+                                                                 Angkanya sendiri tidak bisa membedakan "tim
+                                                                 menemukan hotel lebih murah" dari "harga master
+                                                                 naik": keduanya sama-sama membuat baris ini lebih
+                                                                 murah daripada master. Yang tahu bedanya cuma orang
+                                                                 yang menyuntingnya, jadi dialah yang memilih. --}}
+                                                            <div class="rab-basi is-beda">
+                                                                <i class="bi bi-arrow-left-right"></i>
+                                                                Master Rp {{ number_format($b['harga_master_kini'], 0, ',', '.') }} ·
+                                                                baris ini Rp {{ $this->selisihMasterTeks($b) }} lebih
+                                                                {{ $this->temuanLebihMurah($b) ? 'murah' : 'mahal' }} ·
+                                                                <a href="#" wire:click.prevent="pakaiHargaMaster({{ $b['id'] }})"
+                                                                    title="Harga master yang dipakai di baris ini">pakai harga master</a> ·
+                                                                <a href="#" wire:click.prevent="simpanKeMaster({{ $b['id'] }})"
+                                                                    title="Master harga ikut berubah, dan RAB berikutnya memakai angka ini">simpan ke master</a>
                                                             </div>
+                                                            {{-- Harga yang berbeda tanpa sebabnya tidak bisa dipakai
+                                                                 lagi: beberapa bulan kemudian tidak ada yang bisa
+                                                                 membedakannya dari salah ketik. --}}
+                                                            <input type="text" maxlength="200" class="dsb-isian rb-catatan-baris"
+                                                                wire:model.blur="catatanBaris.{{ $b['id'] }}"
+                                                                placeholder="Kenapa berbeda? mis. hasil nego, low season, kamar triple">
                                                         @endisset
                                                     </td>
                                                     <td data-judul="Harga satuan"><input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian"></td>
@@ -1478,6 +1549,17 @@ Susun RAB || lemon
                                     <div class="rab-harga-besar">{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</div>
                                     <div class="text-muted small mb-3">Total {{ $r['harga_total_teks'] ?? 'Rp 0' }} untuk {{ $rab['jumlah_peserta'] }} peserta</div>
 
+                                    {{-- Angka besar di atas berhenti jadi hasil hitungan
+                                         begitu ada kesepakatan. Tanpa baris ini, admin yang
+                                         mengubah margin lalu melihat harganya tidak bergerak
+                                         akan mengira layarnya rusak. --}}
+                                    @if ($negoAktif)
+                                        <div class="rb-nego-tanda">
+                                            <i class="bi bi-hand-thumbs-up"></i>
+                                            <span>Harga <strong>disepakati</strong>, bukan dihitung — hitungannya {{ $r['harga_asli_teks'] ?? 'Rp 0' }}.</span>
+                                        </div>
+                                    @endif
+
                                     {{-- Pada open trip harga dan modal dihitung dari jumlah
                                          yang BERBEDA; tanpa disebut, angka di atas terbaca
                                          seolah dibagi jumlah peserta yang sama. --}}
@@ -1495,6 +1577,83 @@ Susun RAB || lemon
                                     <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
                                     <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
                                     <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
+
+                                    {{-- PELANGGAN MENAWAR.
+
+                                         Harga jual biasanya diturunkan dari modal + margin.
+                                         Saat menawar arahnya terbalik: yang diketahui admin
+                                         adalah angkanya, bukan margin berapa persen yang
+                                         kebetulan menghasilkan angka itu. Tanpa panel ini
+                                         satu-satunya jalan adalah mengutak-atik margin
+                                         sampai harganya kebetulan jatuh pas — dan karena
+                                         pembulatannya ke atas, angka persis sering memang
+                                         tidak bisa dicapai. --}}
+                                    <div class="rb-nego {{ $negoAktif ? 'is-hidup' : '' }}">
+                                        <button type="button" wire:click="$toggle('bukaNego')" class="rb-nego-kepala">
+                                            <span class="dsb-ikon is-kecil" style="--c: {{ $negoAktif ? '#4f46e5' : '#94a3b8' }}">
+                                                <i class="bi bi-chat-left-dots"></i>
+                                            </span>
+                                            <span class="rb-nego-judul">
+                                                <strong>Pelanggan menawar</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    @if ($negoAktif)
+                                                        Disepakati {{ $r['harga_per_orang_teks'] ?? 'Rp 0' }} · {{ $negoTurun ? 'turun' : 'naik' }} {{ $negoSelisihTeks }}
+                                                    @else
+                                                        Ketik harga yang diminta, untungnya dihitung ulang
+                                                    @endif
+                                                </span>
+                                            </span>
+                                            <i class="bi bi-chevron-down rb-nego-panah {{ $bukaNego ? 'is-buka' : '' }}"></i>
+                                        </button>
+
+                                        @if ($bukaNego)
+                                            <div class="rb-nego-isi">
+                                                <div class="dsb-medan">
+                                                    <label class="dsb-label" for="rb-nego-harga">Harga disepakati per orang</label>
+                                                    <input id="rb-nego-harga" type="text" inputmode="numeric" class="dsb-isian"
+                                                        wire:model.blur="hargaNego" placeholder="{{ $r['harga_asli_teks'] ?? 'Rp 0' }}">
+                                                    <span class="dsb-kartu-sub">Kosongkan untuk kembali ke harga hitungan.</span>
+                                                </div>
+
+                                                <div class="dsb-medan">
+                                                    <label class="dsb-label" for="rb-nego-alasan">Alasan</label>
+                                                    <input id="rb-nego-alasan" type="text" maxlength="200" class="dsb-isian"
+                                                        wire:model.blur="alasanNego" placeholder="mis. pelanggan lama, rombongan ketiga tahun ini">
+                                                    <span class="dsb-kartu-sub">Ikut tercetak di PDF internal, tidak di penawaran.</span>
+                                                </div>
+
+                                                {{-- Batas aman diberikan sebagai TOMBOL, bukan sekadar
+                                                     angka yang harus diketik ulang. Mengetik ulang angka
+                                                     yang tertulis di sebelahnya adalah kesempatan salah
+                                                     ketik yang tidak perlu ada — dan salah ketiknya
+                                                     berupa harga di bawah modal. --}}
+                                                <div class="rb-nego-batas">
+                                                    <span>
+                                                        Di bawah <strong>{{ $r['harga_batas_teks'] ?? 'Rp 0' }}</strong> per orang, trip ini rugi.
+                                                    </span>
+                                                    <button type="button" wire:click="pakaiBatasAman" class="dsb-tombol is-lembut" style="--ikon: #b45309">
+                                                        <i class="bi bi-shield-check"></i><span>Pakai batas aman</span>
+                                                    </button>
+                                                </div>
+
+                                                @if ($negoAktif)
+                                                    <button type="button" wire:click="hapusNego" class="dsb-tombol is-lembut rb-nego-lepas" style="--ikon: #64748b">
+                                                        <i class="bi bi-arrow-counterclockwise"></i><span>Lepas kesepakatan</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        {{-- Kesepakatan di bawah modal TIDAK ditolak: kadang
+                                             memang itu keputusannya. Yang wajib adalah
+                                             angkanya terlihat. --}}
+                                        @if ($negoRugi)
+                                            <div class="rb-nego-rugi">
+                                                <i class="bi bi-exclamation-octagon"></i>
+                                                <span>Harga ini <strong>di bawah modal</strong> — trip ini rugi {{ $r['untung_teks'] ?? 'Rp 0' }}.</span>
+                                            </div>
+                                        @endif
+                                    </div>
 
                                     {{-- Untung diangkat jadi kartunya sendiri: ia jawaban
                                          dari seluruh layar ini, bukan baris keempat dalam

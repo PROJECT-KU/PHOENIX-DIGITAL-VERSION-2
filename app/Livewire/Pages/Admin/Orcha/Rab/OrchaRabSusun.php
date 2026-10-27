@@ -109,6 +109,25 @@ class OrchaRabSusun extends Component
      */
     public bool $abaikanImpas = false;
 
+    /*
+    |---------------------------------------------------------------------
+    | Negosiasi
+    |---------------------------------------------------------------------
+    |
+    | Harga jual biasanya DITURUNKAN dari modal + margin. Saat pelanggan
+    | menawar, yang diketahui admin justru angkanya — bukan margin berapa
+    | persen yang kebetulan menghasilkan angka itu. Panel ini membalik
+    | arahnya, dan hitungan untungnya ikut dibalik oleh Orcha.
+    */
+    public bool $bukaNego = false;
+
+    public string $hargaNego = '';
+
+    public string $alasanNego = '';
+
+    /** Catatan per baris: kenapa harganya berbeda dari master. */
+    public array $catatanBaris = [];
+
     public function mount(int $rab): void
     {
         $this->rabId = $rab;
@@ -157,10 +176,21 @@ class OrchaRabSusun extends Component
 
         $this->hargaBaris = [];
         $this->jumlahBaris = [];
+        $this->catatanBaris = [];
         foreach ($data['ringkasan']['baris'] ?? [] as $b) {
             $this->hargaBaris[$b['id']] = $this->keRupiah($b['harga_satuan']) ?: '0';
             $this->jumlahBaris[$b['id']] = (string) $b['jumlah'];
+            $this->catatanBaris[$b['id']] = (string) ($b['catatan'] ?? '');
         }
+
+        // Dibaca dengan ?? : Orcha yang belum dideploy tidak mengirim kunci
+        // ini sama sekali, dan layar yang mati karenanya jauh lebih buruk
+        // daripada panel nego yang belum berfungsi.
+        $this->hargaNego = $this->keRupiah($data['harga_nego'] ?? 0);
+        $this->alasanNego = (string) ($data['alasan_nego'] ?? '');
+        // Panelnya dibuka sendiri bila kesepakatannya sudah ada: angka yang
+        // mengubah harga jual tidak boleh bersembunyi di balik tombol.
+        $this->bukaNego = $this->bukaNego || $this->hargaNego !== '';
 
         $this->kepala = [
             'judul' => (string) $data['judul'],
@@ -829,6 +859,120 @@ class OrchaRabSusun extends Component
     public function pakaiHargaMaster(int $id): void
     {
         $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", ['pakai_harga_master' => true], 'Harga diperbarui ke harga master.');
+    }
+
+    /**
+     * Membawa harga temuan tim PULANG ke master harga.
+     *
+     * Kebalikan dari pakaiHargaMaster(). Tim yang menemukan hotel lebih
+     * murah menyuntingnya di RAB ini, dan tanpa tombol ini temuannya mati di
+     * satu penawaran: RAB berikutnya menarik harga lama, dan negosiasi yang
+     * sama diulang bulan depan oleh orang yang tidak tahu jawabannya sudah
+     * pernah ditemukan.
+     *
+     * Orcha yang menolak bila barisnya tidak punya master atau harganya
+     * sudah sama; alasannya sampai ke layar sebagai toast.
+     */
+    public function simpanKeMaster(int $id): void
+    {
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya/{$id}/ke-master");
+    }
+
+    /**
+     * Baris ini lebih murah daripada harga master — temuan, bukan harga basi.
+     *
+     * Arahnya yang menentukan tawaran mana yang masuk akal di layar: lebih
+     * mahal berarti harga master sudah bergerak dan baris inilah yang usang;
+     * lebih murah berarti sebaliknya.
+     *
+     * Dihitung di sini, bukan di Blade: perbandingan di dalam direktif
+     * adalah jenis penanda yang membuat morph Livewire timpang.
+     */
+    public function temuanLebihMurah(array $baris): bool
+    {
+        return (int) ($baris['selisih_master'] ?? 0) < 0;
+    }
+
+    public function selisihMasterTeks(array $baris): string
+    {
+        return $this->keRupiah(abs((int) ($baris['selisih_master'] ?? 0)));
+    }
+
+    public function updatedCatatanBaris($nilai, $id): void
+    {
+        $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
+            'catatan' => trim((string) $nilai) ?: null,
+        ]);
+    }
+
+    /* ------------------------------ NEGOSIASI ------------------------------ */
+
+    /**
+     * Harga yang disepakati, bukan harga yang dihitung.
+     *
+     * Tidak menolak angka yang membuat rugi: kadang memang itu keputusannya
+     * — menutup kerugian lewat trip lain, atau menjaga pelanggan lama. Yang
+     * wajib adalah angkanya terlihat, dan itu tugas panel di layar.
+     */
+    public function simpanNego(): void
+    {
+        $nilai = $this->angkaDari($this->hargaNego);
+
+        if ($nilai <= 0) {
+            $this->hapusNego();
+
+            return;
+        }
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}", [
+            'harga_nego' => $nilai,
+            'alasan_nego' => trim($this->alasanNego) ?: null,
+        ], 'Harga kesepakatan disimpan.');
+    }
+
+    public function updatedHargaNego(): void
+    {
+        $this->simpanNego();
+    }
+
+    public function updatedAlasanNego(): void
+    {
+        // Alasan tanpa harga tidak menyimpan apa pun: yang disimpan adalah
+        // kesepakatannya, dan alasan adalah keterangannya.
+        if ($this->angkaDari($this->hargaNego) > 0) {
+            $this->simpanNego();
+        }
+    }
+
+    /** Kembali ke harga hitungan modal + margin. */
+    public function hapusNego(): void
+    {
+        $this->hargaNego = '';
+        $this->alasanNego = '';
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}", [
+            'harga_nego' => null,
+            'alasan_nego' => null,
+        ], 'Kesepakatan dilepas — harga kembali dihitung dari modal & margin.');
+    }
+
+    /**
+     * Mengisi harga kesepakatan dengan batas aman terendah.
+     *
+     * Angka ini sudah dihitung Orcha. Menyuruh admin mengetik ulang angka
+     * yang tertulis persis di sebelahnya adalah kesempatan salah ketik yang
+     * tidak perlu ada — dan salah ketiknya berupa harga di bawah modal.
+     */
+    public function pakaiBatasAman(): void
+    {
+        $batas = (int) ($this->dataRab['ringkasan']['harga_batas'] ?? 0);
+
+        if ($batas <= 0) {
+            return;
+        }
+
+        $this->hargaNego = $this->keRupiah($batas);
+        $this->simpanNego();
     }
 
     public function hapusBiaya(int $id): void
