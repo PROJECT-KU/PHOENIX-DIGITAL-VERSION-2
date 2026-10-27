@@ -206,10 +206,19 @@ Promo Rombongan || lemon
                                             {{-- Dikatakan apa adanya: menggratiskan satu orang
                                                  di tingkat ini memakan lebih dari separuh untung
                                                  yang dibawanya. --}}
-                                            <span class="promo-saran-tolak">
-                                                <i class="bi bi-x-circle"></i>
-                                                Gratis 1 orang belum aman di tingkat ini
-                                                ({{ $saran['untung_sesudah_gratis_teks'] }})
+                                            {{-- Tiga keadaan, bukan dua: "masih untung tetapi
+                                                 tipis" berbeda dari "rugi", dan angka POSITIF di
+                                                 sebelah kata "belum aman" terbaca seperti salah
+                                                 hitung. --}}
+                                            <span class="promo-saran-tolak {{ ($saran['gratis_masih_untung'] ?? false) ? 'is-tipis' : '' }}">
+                                                <i class="bi bi-{{ ($saran['gratis_masih_untung'] ?? false) ? 'exclamation-triangle' : 'x-circle' }}"></i>
+                                                @if ($saran['gratis_masih_untung'] ?? false)
+                                                    Gratis 1 orang masih untung, tetapi tipis
+                                                    ({{ $saran['untung_sesudah_gratis_teks'] }})
+                                                @else
+                                                    Gratis 1 orang membuat rombongan ini rugi
+                                                    ({{ $saran['untung_sesudah_gratis_teks'] }})
+                                                @endif
                                             </span>
                                         @endif
                                     </div>
@@ -444,8 +453,9 @@ Promo Rombongan || lemon
         .promo-saran-btn:hover { background: #15803d; color: #fff; border-color: transparent; }
         .promo-saran-tolak {
             display: inline-flex; align-items: center; gap: 6px;
-            font-size: .78rem; font-weight: 600; color: #b45309;
+            font-size: .78rem; font-weight: 600; color: #be123c;
         }
+        .promo-saran-tolak.is-tipis { color: #b45309; }
         .promo-saran-kaki {
             margin: 10px 0 0; font-size: .75rem; color: #0369a1;
         }
