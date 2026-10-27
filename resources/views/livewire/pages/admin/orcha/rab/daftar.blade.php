@@ -169,13 +169,13 @@ RAB & Itinerary || lemon
                         </div>
 
                         <div class="dsb-kartu-isi">
-                            {{-- Enam kotak, bukan sembilan.
-
-                                 Judul, kota, dan jumlah malam semuanya punya jawaban
-                                 yang hampir selalu benar — dan tiga kotak yang hampir
-                                 selalu diisi dengan jawaban yang sama bukan pilihan,
-                                 melainkan pekerjaan. Ketiganya pindah ke balik
-                                 "Sesuaikan sendiri". --}}
+                            {{-- Judul, kota, dan jumlah malam punya jawaban yang
+                                 hampir selalu benar, jadi ketiganya terisi sendiri —
+                                 tetapi kotaknya TETAP TERLIHAT. Menyembunyikannya di
+                                 balik tombol menghemat ruang dengan menyembunyikan
+                                 juga bahwa ketiganya boleh diubah. Baris rakitan di
+                                 bawah memperlihatkan hasilnya, kotaknya menerima
+                                 timpaan. --}}
                             {{-- Jenis perjalanan dipilih lebih dulu: ia menentukan
                                  isian mana yang berikutnya masuk akal. Private trip
                                  jumlah orangnya sudah pasti di kesepakatan; open trip
@@ -281,7 +281,9 @@ RAB & Itinerary || lemon
 
                             {{-- Judul yang dirakit diperlihatkan, bukan dikerjakan
                                  diam-diam: yang tidak terlihat sebelum disimpan akan
-                                 mengejutkan saat muncul di PDF penawaran. --}}
+                                 mengejutkan saat muncul di PDF penawaran. Baris ini
+                                 tetap ada walau kotaknya terbuka — ia menjawab
+                                 "kalau saya biarkan kosong, jadinya apa?". --}}
                             <div class="rb-rakitan">
                                 <span class="dsb-ikon is-kecil" style="--c: #047857"><i class="bi bi-magic"></i></span>
                                 <div class="rb-rakitan-teks">
@@ -291,39 +293,33 @@ RAB & Itinerary || lemon
                                         <span class="rb-rakitan-malam">· {{ (int) $isian['jumlah_malam'] }} malam</span>
                                     </strong>
                                 </div>
-                                <button type="button" wire:click="$toggle('rinci')" class="dsb-tombol is-lembut"
-                                    style="--ikon: #64748b" aria-expanded="{{ $rinci ? 'true' : 'false' }}">
-                                    <i class="bi bi-sliders"></i><span>Sesuaikan sendiri</span>
-                                    <i class="bi bi-chevron-down rb-panah {{ $rinci ? 'is-buka' : '' }}"></i>
-                                </button>
+                                <span class="rb-rakitan-ket">Boleh ditimpa di bawah</span>
                             </div>
 
-                            @if ($rinci)
-                                <div class="rb-medan-rak rb-medan-lipat">
-                                    <div class="dsb-medan">
-                                        <label class="dsb-label" for="rb-judul">Judul perjalanan</label>
-                                        <input id="rb-judul" type="text" maxlength="150" wire:model.live.debounce.400ms="isian.judul"
-                                            class="dsb-isian @error('isian.judul') is-galat @enderror"
-                                            placeholder="{{ $judulRakitan }}">
-                                        @error('isian.judul')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                        <span class="dsb-kartu-sub">Kosong berarti pakai judul rakitan di atas.</span>
-                                    </div>
-
-                                    <div class="dsb-medan">
-                                        <label class="dsb-label" for="rb-daerah">Kota / daerah</label>
-                                        <input id="rb-daerah" type="text" maxlength="80" wire:model.live.debounce.400ms="isian.daerah"
-                                            class="dsb-isian" placeholder="Yogyakarta">
-                                        <span class="dsb-kartu-sub">Ikut terbaca di judul rakitan.</span>
-                                    </div>
-
-                                    <div class="dsb-medan">
-                                        <label class="dsb-label" for="rb-malam">Jumlah malam</label>
-                                        <input id="rb-malam" type="number" min="0" max="30" wire:model="isian.jumlah_malam"
-                                            class="dsb-isian @error('isian.jumlah_malam') is-galat @enderror">
-                                        @error('isian.jumlah_malam')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                    </div>
+                            <div class="rb-medan-rak rb-medan-sambung">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-judul">Judul perjalanan</label>
+                                    <input id="rb-judul" type="text" maxlength="150" wire:model.live.debounce.400ms="isian.judul"
+                                        class="dsb-isian @error('isian.judul') is-galat @enderror"
+                                        placeholder="{{ $judulRakitan }}">
+                                    @error('isian.judul')<span class="dsb-galat">{{ $message }}</span>@enderror
+                                    <span class="dsb-kartu-sub">Kosong berarti pakai judul rakitan di atas.</span>
                                 </div>
-                            @endif
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-daerah">Kota / daerah</label>
+                                    <input id="rb-daerah" type="text" maxlength="80" wire:model.live.debounce.400ms="isian.daerah"
+                                        class="dsb-isian" placeholder="Yogyakarta">
+                                    <span class="dsb-kartu-sub">Ikut terbaca di judul rakitan.</span>
+                                </div>
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-malam">Jumlah malam</label>
+                                    <input id="rb-malam" type="number" min="0" max="30" wire:model="isian.jumlah_malam"
+                                        class="dsb-isian @error('isian.jumlah_malam') is-galat @enderror">
+                                    @error('isian.jumlah_malam')<span class="dsb-galat">{{ $message }}</span>@enderror
+                                </div>
+                            </div>
 
                             <div class="rb-kaki">
                                 <button type="button" wire:click="tutup" class="dsb-tombol is-lembut" style="--ikon: #64748b">
@@ -707,7 +703,7 @@ RAB & Itinerary || lemon
            butuh ruang — mengambil dua kolom, jadi barisnya terbagi 3/3/2. */
         .rb-medan-rak > .rb-medan-lebar { grid-column: span 2; }
         .rb-medan-rak .dsb-kartu-sub { display: block; margin-top: 5px; }
-        .rb-medan-lipat { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+        .rb-medan-sambung { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
         .rb-wajib { color: #dc2626; }
 
         /* Baris "terisi sendiri": memperlihatkan hasil rakitan sebelum
@@ -721,8 +717,7 @@ RAB & Itinerary || lemon
         .rb-rakitan-teks { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; }
         .rb-rakitan-judul { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
         .rb-rakitan-malam { color: var(--dsb-redup, #6b7280); font-weight: 500; }
-        .rb-panah { font-size: .7rem; color: #94a3b8; transition: transform .18s ease; }
-        .rb-panah.is-buka { transform: rotate(180deg); }
+        .rb-rakitan-ket { font-size: .78rem; color: var(--dsb-redup, #94a3b8); white-space: nowrap; }
 
         .rb-kaki { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
 

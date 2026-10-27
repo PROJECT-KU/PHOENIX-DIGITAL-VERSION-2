@@ -20,15 +20,6 @@ class OrchaRabList extends Component
 
     public bool $tambah = false;
 
-    /**
-     * Isian yang jarang diubah, disembunyikan sampai diminta.
-     *
-     * Judul, kota, dan jumlah malam semuanya punya jawaban yang hampir selalu
-     * benar — dan tiga kotak yang hampir selalu diisi dengan jawaban yang sama
-     * bukan pilihan, melainkan pekerjaan. Yang ingin lain tinggal membukanya.
-     */
-    public bool $rinci = false;
-
     public array $isian = [];
 
     /*
@@ -98,7 +89,6 @@ class OrchaRabList extends Component
     public function bukaTambah(): void
     {
         $this->tambah = true;
-        $this->rinci = false;
         $this->kosongkan();
         $this->resetValidation();
     }
@@ -106,7 +96,6 @@ class OrchaRabList extends Component
     public function tutup(): void
     {
         $this->tambah = false;
-        $this->rinci = false;
         $this->kosongkan();
     }
 

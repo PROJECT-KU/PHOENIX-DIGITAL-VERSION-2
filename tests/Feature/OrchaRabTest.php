@@ -2821,3 +2821,19 @@ test('panel data perjalanan ikut menghitung dari rentang tanggalnya', function (
         ->assertSet('kepala.jumlah_hari', 4)
         ->assertSet('kepala.jumlah_malam', 3);
 });
+
+test('judul, kota, dan jumlah malam terlihat tanpa membuka apa pun', function () {
+    palsukanRab();
+
+    // Ketiganya terisi sendiri, tetapi kotaknya TIDAK disembunyikan: yang
+    // tersembunyi di balik tombol menyembunyikan juga bahwa ia boleh diubah.
+    Livewire::actingAs(adminRab())->test(OrchaRabList::class)
+        ->call('bukaTambah')
+        ->assertSee('Judul perjalanan')
+        ->assertSee('Kota / daerah')
+        ->assertSee('Jumlah malam')
+        // Baris rakitannya tetap ada — ia menjawab "kalau dibiarkan kosong,
+        // jadinya apa?" sebelum penawarannya tercetak.
+        ->assertSee('Judul & jumlah malam terisi sendiri')
+        ->assertDontSee('Sesuaikan sendiri');
+});
