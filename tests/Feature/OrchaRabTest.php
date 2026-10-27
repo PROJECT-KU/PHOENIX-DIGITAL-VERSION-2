@@ -2188,3 +2188,52 @@ test('perubahan terakhir seluruh daftar terbaca dalam satu panel', function () {
 
     $layar->call('tutupRiwayatSemua')->assertSet('riwayatSemua', []);
 });
+
+test('kotak pilih menggambarkan nilai yang tersimpan, bukan pilihan pertama', function () {
+    /*
+     | <select> TIDAK otomatis menandai pilihan yang dipegang komponen —
+     | wire:model mengurus perubahan, bukan gambar awalnya. Tanpa
+     | @selected(), membuka "Ubah" pada baris transportasi menggambarkan
+     | kategorinya sebagai "Tiket & Retribusi" (pilihan pertama daftar),
+     | dan menekan Simpan mengubah kategorinya diam-diam.
+     |
+     | Cacat yang tidak berbunyi: halamannya tetap tergambar rapi, dan yang
+     | salah baru ketahuan saat harga transportasi berpindah ke tiket.
+     */
+    palsukanRab();
+
+    $baris = collect(rekamanRab('master')['data'])->firstWhere('kategori', 'transportasi');
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaSunting', $baris['id'], $baris)
+        ->html();
+
+    preg_match('#<select id="mh-kategori".*?</select>#s', $isi, $kategori);
+    preg_match('#<select id="mh-satuan".*?</select>#s', $isi, $satuan);
+
+    expect($kategori[0])->toMatch('/<option value="transportasi"[^>]*\bselected\b/')
+        ->and($kategori[0])->not->toMatch('/<option value="tiket"[^>]*\bselected\b/')
+        ->and($satuan[0])->toMatch('/<option value="unit_hari"[^>]*\bselected\b/');
+});
+
+test('saringan yang terbawa dari alamat tergambar sebagai terpilih', function () {
+    /*
+     | Saringan ini hidup di URL (#[Url]), jadi tautan yang dibagikan atau
+     | halaman yang dimuat ulang datang dengan nilainya sudah terpasang.
+     | Kalau kotaknya tetap membaca "Aktif & dimatikan" sementara daftarnya
+     | hanya memuat yang mati, yang terbaca admin adalah data yang salah.
+     */
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->set('filterStatus', 'mati')
+        ->set('urut', 'termahal')
+        ->set('filterDipakai', 'belum')
+        ->html();
+
+    expect($isi)->toMatch('/<option value="mati"[^>]*\bselected\b/')
+        ->and($isi)->toMatch('/<option value="termahal"[^>]*\bselected\b/')
+        ->and($isi)->toMatch('/<option value="belum"[^>]*\bselected\b/');
+});

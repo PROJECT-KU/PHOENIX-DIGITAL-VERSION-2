@@ -168,7 +168,7 @@ Master Harga || lemon
                             <select class="dsb-isian mh-pilih" wire:model.live="filterKategori" aria-label="Saring menurut kategori">
                                 <option value="">Semua kategori</option>
                                 @foreach ($kategori as $kunci => $label)
-                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                    <option value="{{ $kunci }}" @selected($filterKategori === $kunci)>{{ $label }}</option>
                                 @endforeach
                             </select>
 
@@ -203,10 +203,10 @@ Master Harga || lemon
 
                             <select class="dsb-isian mh-pilih" wire:model.live="filterDipakai" aria-label="Saring menurut pemakaian">
                                 <option value="">Semua harga</option>
-                                <option value="ya">Sudah pernah dipakai</option>
+                                <option value="ya" @selected($filterDipakai === 'ya')>Sudah pernah dipakai</option>
                                 {{-- Daftar baris yang boleh dirapikan tanpa menyentuh
                                      penawaran mana pun. --}}
-                                <option value="belum">Belum pernah dipakai</option>
+                                <option value="belum" @selected($filterDipakai === 'belum')>Belum pernah dipakai</option>
                             </select>
 
                             {{-- Harga mati tidak punya kolomnya sendiri — kolom yang
@@ -215,26 +215,34 @@ Master Harga || lemon
                                  ini yang memanggil yang dicari. --}}
                             <select class="dsb-isian mh-pilih" wire:model.live="filterStatus" aria-label="Saring menurut status">
                                 <option value="">Aktif &amp; dimatikan</option>
-                                <option value="aktif">Hanya yang aktif</option>
-                                <option value="mati">Hanya yang dimatikan</option>
-                                <option value="kedaluwarsa">Masa berlakunya lewat</option>
+                                @foreach ([
+                                    'aktif' => 'Hanya yang aktif',
+                                    'mati' => 'Hanya yang dimatikan',
+                                    'kedaluwarsa' => 'Masa berlakunya lewat',
+                                ] as $kunci => $label)
+                                    <option value="{{ $kunci }}" @selected($filterStatus === $kunci)>{{ $label }}</option>
+                                @endforeach
                             </select>
 
                             <select class="dsb-isian mh-pilih" wire:model.live="urut" aria-label="Urutkan daftar">
                                 <option value="">Urut: kelompok</option>
-                                <option value="termahal">Paling mahal dulu</option>
-                                <option value="termurah">Paling murah dulu</option>
-                                <option value="terbaru">Terakhir diubah</option>
-                                {{-- Yang paling lama tidak disentuh: calon harga basi. --}}
-                                <option value="terlama">Paling lama tak disentuh</option>
-                                <option value="tersering">Paling sering dipakai</option>
+                                @foreach ([
+                                    'termahal' => 'Paling mahal dulu',
+                                    'termurah' => 'Paling murah dulu',
+                                    'terbaru' => 'Terakhir diubah',
+                                    // Yang paling lama tidak disentuh: calon harga basi.
+                                    'terlama' => 'Paling lama tak disentuh',
+                                    'tersering' => 'Paling sering dipakai',
+                                ] as $kunci => $label)
+                                    <option value="{{ $kunci }}" @selected($urut === $kunci)>{{ $label }}</option>
+                                @endforeach
                             </select>
 
                             {{-- Didorong ke ujung kanan barisnya. Dengan enam kotak
                                  saringan, tombolnya kini melipat ke baris kedua —
                                  dan tombol tunggal yang menggantung di kiri terbaca
                                  seperti sisa, bukan seperti aksi utama. --}}
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama mh-tambah">
+                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama mh-tambah-harga">
                                 <i class="bi bi-plus-lg"></i><span>Tambah Harga</span>
                             </button>
 
@@ -281,9 +289,14 @@ Master Harga || lemon
                             <div class="mh-medan-rak">
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="mh-kategori">Kategori <span class="dsb-wajib">*</span></label>
+                                    {{-- @selected() wajib, terutama di sini: membuka "Ubah"
+                                         pada baris transportasi tanpa ini menggambarkan
+                                         kategorinya sebagai "Tiket & Retribusi" — pilihan
+                                         pertama daftar — padahal yang tersimpan bukan itu.
+                                         Menekan Simpan lalu mengubah kategorinya diam-diam. --}}
                                     <select id="mh-kategori" wire:model.live="isian.kategori" class="dsb-isian">
                                         @foreach ($kategori as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                            <option value="{{ $kunci }}" @selected(($isian['kategori'] ?? '') === $kunci)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -295,7 +308,7 @@ Master Harga || lemon
                                     </label>
                                     <select id="mh-satuan" wire:model.live="isian.satuan" class="dsb-isian">
                                         @foreach ($satuan as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                            <option value="{{ $kunci }}" @selected(($isian['satuan'] ?? '') === $kunci)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -1070,103 +1083,143 @@ Master Harga || lemon
                                         <i class="bi bi-check2-square"></i>
                                         <strong>{{ count($pilih) }}</strong> harga dicentang
                                     </span>
-
-                                    <div class="mh-pasang-pilih" wire:key="pasang-{{ $pasangKeVendor }}-{{ count($vendor) }}" wire:ignore
-                                        x-data x-init="pasangSelectCari($el, 'pasangKeVendor', { placeholder: 'Pasangkan ke vendor…' })">
-                                        <select class="dsb-isian @error('pasangKeVendor') is-galat @enderror">
-                                            <option value="">Pasangkan ke vendor…</option>
-                                            @foreach ($vendor as $v)
-                                                <option value="{{ $v['id'] }}" @selected((string) $pasangKeVendor === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <button type="button" wire:click="pasangVendor"
-                                        wire:loading.attr="disabled" wire:target="pasangVendor"
-                                        class="dsb-tombol is-aman">
-                                        <i class="bi bi-link-45deg" wire:loading.remove wire:target="pasangVendor"></i>
-                                        <span class="dsb-putar" wire:loading wire:target="pasangVendor"></span>
-                                        <span>Pasangkan</span>
-                                    </button>
-                                    <button type="button" wire:click="batalPilih" class="dsb-tombol is-lembut">
+                                    <button type="button" wire:click="batalPilih" class="dsb-tombol is-lembut mh-pasang-batal"
+                                        title="Lepas semua centangnya">
                                         <i class="bi bi-x-lg"></i><span>Batal</span>
                                     </button>
 
-                                    @error('pasangKeVendor')
-                                        <span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>
-                                    @else
-                                        <span class="dsb-kartu-sub mh-pasang-kaki">
-                                            Hanya kolom vendornya yang berubah — harga, satuan, dan kapasitasnya tidak disentuh.
-                                        </span>
-                                    @enderror
+                                    {{-- SATU daftar perintah, bukan dua bagian.
 
-                                    {{-- ===== Perintah lain untuk baris yang sama =====
-
-                                         Kenaikan harga vendor datang serentak: seluruh
-                                         armadanya naik di tanggal yang sama. Lewat
-                                         formulir itu berarti membuka dan menyimpan
-                                         belasan kali, dan tiap kali adalah satu
-                                         kesempatan salah ketik. --}}
-                                    <div class="mh-massal">
-                                        <select class="dsb-isian mh-massal-aksi @error('aksiMassal') is-galat @enderror"
+                                         Sebelumnya "pasangkan ke vendor" punya barisnya
+                                         sendiri dan perintah lain menumpang di bawahnya —
+                                         dua model yang harus dipelajari terpisah, dan satu
+                                         baris yang separuhnya kosong. Keduanya kini verba
+                                         dalam daftar yang sama, dengan satu tombol
+                                         Jalankan. --}}
+                                    <div class="mh-perintah">
+                                        <select class="dsb-isian mh-perintah-aksi @error('aksiMassal') is-galat @enderror"
                                             wire:model.live="aksiMassal" aria-label="Mau diapakan">
-                                            <option value="">Atau lakukan ini…</option>
-                                            <option value="naik">Naikkan harganya</option>
-                                            <option value="turun">Turunkan harganya</option>
-                                            <option value="berlaku">Setel masa berlakunya</option>
-                                            <option value="matikan">Matikan</option>
-                                            <option value="hidupkan">Hidupkan lagi</option>
-                                            <option value="hapus">Hapus</option>
+                                            {{-- @selected() wajib: nilai yang dipegang
+                                                 komponen TIDAK otomatis tergambar sebagai
+                                                 pilihan terpilih. Tanpa ini kotaknya tetap
+                                                 membaca "Mau diapakan?" meski perintahnya
+                                                 sudah dipilih — dan kotak pelengkap yang
+                                                 muncul di sebelahnya jadi tidak masuk akal. --}}
+                                            <option value="">Mau diapakan?</option>
+                                            @foreach ([
+                                                'vendor' => 'Pasangkan ke vendor',
+                                                'naik' => 'Naikkan harganya',
+                                                'turun' => 'Turunkan harganya',
+                                                'berlaku' => 'Setel masa berlakunya',
+                                                'matikan' => 'Matikan',
+                                                'hidupkan' => 'Hidupkan lagi',
+                                                'hapus' => 'Hapus',
+                                            ] as $kunci => $label)
+                                                <option value="{{ $kunci }}" @selected($aksiMassal === $kunci)>{{ $label }}</option>
+                                            @endforeach
                                         </select>
 
-                                        @if (in_array($aksiMassal, ['naik', 'turun'], true))
-                                            <div class="mh-persen">
+                                        {{-- Kotak pelengkapnya mengisi sisa baris, jadi tidak
+                                             ada ruang menganggur di kanan perintahnya. --}}
+                                        @if ($aksiMassal === 'vendor')
+                                            <div class="mh-perintah-isi" wire:key="pasang-{{ $pasangKeVendor }}-{{ count($vendor) }}" wire:ignore
+                                                x-data x-init="pasangSelectCari($el, 'pasangKeVendor', { placeholder: 'Pilih vendornya…' })">
+                                                <select class="dsb-isian @error('pasangKeVendor') is-galat @enderror">
+                                                    <option value="">Pilih vendornya…</option>
+                                                    @foreach ($vendor as $v)
+                                                        <option value="{{ $v['id'] }}" @selected((string) $pasangKeVendor === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['kontak'])) — {{ $v['kontak'] }}@endif</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @elseif (in_array($aksiMassal, ['naik', 'turun'], true))
+                                            <div class="mh-perintah-isi mh-persen">
                                                 <input type="text" inputmode="decimal" wire:model="persenMassal"
                                                     class="dsb-isian @error('persenMassal') is-galat @enderror"
                                                     placeholder="10" aria-label="Berapa persen">
                                                 <span class="mh-persen-tanda">%</span>
                                             </div>
+                                        @elseif ($aksiMassal === 'berlaku')
+                                            <div class="mh-perintah-isi">
+                                                <input type="date" wire:model="berlakuMassal" class="dsb-isian"
+                                                    aria-label="Berlaku sampai tanggal">
+                                            </div>
                                         @endif
 
-                                        @if ($aksiMassal === 'berlaku')
-                                            <input type="date" wire:model="berlakuMassal" class="dsb-isian mh-massal-tanggal"
-                                                aria-label="Berlaku sampai tanggal">
-                                        @endif
+                                        {{-- Keterangannya duduk DI BARIS yang sama, mengisi
+                                             sisa lebarnya. Sebagai baris sendiri ia
+                                             meninggalkan ruang menganggur di kanan
+                                             perintahnya; di sini ia justru yang mengisinya,
+                                             dan kalimatnya berganti menurut perintahnya —
+                                             apa yang TIDAK ikut berubah selalu jadi
+                                             pertanyaan berikutnya. --}}
+                                        <span class="mh-perintah-ket">
+                                            @switch($aksiMassal)
+                                                @case('vendor')
+                                                    Hanya kolom vendornya yang berubah — harga, satuan, dan kapasitasnya tidak disentuh.
+                                                    @break
+                                                @case('naik')
+                                                @case('turun')
+                                                    Dibulatkan ke ratusan rupiah dan tercatat di riwayat harganya. RAB yang sudah jadi tidak ikut berubah.
+                                                    @break
+                                                @case('berlaku')
+                                                    Lewat tanggal ini harganya tetap dipakai — barisnya saja yang ditandai.
+                                                    @break
+                                                @case('hapus')
+                                                    RAB yang sudah memakainya tetap utuh — tetapi penghapusan tidak bisa dibatalkan.
+                                                    @break
+                                                @case('matikan')
+                                                    Tetap tersimpan, hanya tidak muncul lagi saat menyusun RAB baru.
+                                                    @break
+                                                @case('hidupkan')
+                                                    Muncul lagi sebagai pilihan saat menyusun RAB.
+                                                    @break
+                                                @default
+                                                    Berlaku untuk {{ count($pilih) }} baris yang dicentang. RAB yang sudah jadi tidak pernah ikut berubah.
+                                            @endswitch
+                                        </span>
 
-                                        @if ($aksiMassal !== '')
-                                            {{-- Yang merusak dikonfirmasi; yang bisa
-                                                 dibatalkan sendiri tidak — dialog yang
-                                                 muncul untuk segalanya berhenti dibaca. --}}
-                                            @if (in_array($aksiMassal, ['hapus', 'matikan'], true))
-                                                <button type="button"
-                                                    class="dsb-tombol {{ $aksiMassal === 'hapus' ? 'is-bahaya' : 'is-awas' }} pcek-konfirmasi"
-                                                    data-action="jalankanMassal"
-                                                    data-title="{{ $aksiMassal === 'hapus' ? 'Hapus' : 'Matikan' }} {{ count($pilih) }} harga?"
-                                                    data-text="RAB yang sudah memakainya tidak berubah."
-                                                    data-confirm="Ya, lanjutkan" data-icon="warning">
-                                                    <i class="bi {{ $aksiMassal === 'hapus' ? 'bi-trash' : 'bi-pause-circle' }}"></i><span>Jalankan</span>
-                                                </button>
-                                            @else
-                                                <button type="button" wire:click="jalankanMassal"
-                                                    wire:loading.attr="disabled" wire:target="jalankanMassal"
-                                                    class="dsb-tombol is-telaah">
-                                                    <i class="bi bi-lightning-charge" wire:loading.remove wire:target="jalankanMassal"></i>
-                                                    <span class="dsb-putar" wire:loading wire:target="jalankanMassal"></span>
-                                                    <span>Jalankan</span>
-                                                </button>
-                                            @endif
-                                        @endif
-
-                                        @error('aksiMassal')<span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>@enderror
-                                        @error('persenMassal')<span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>@enderror
-
-                                        @if (in_array($aksiMassal, ['naik', 'turun'], true))
-                                            <span class="dsb-kartu-sub mh-pasang-kaki">
-                                                Hasilnya dibulatkan ke ratusan rupiah, dan tiap perubahan tercatat di riwayat
-                                                harganya. RAB yang sudah jadi tidak ikut berubah.
-                                            </span>
+                                        @if ($aksiMassal === 'vendor')
+                                            <button type="button" wire:click="pasangVendor"
+                                                wire:loading.attr="disabled" wire:target="pasangVendor"
+                                                class="dsb-tombol is-aman mh-perintah-jalan">
+                                                <i class="bi bi-link-45deg" wire:loading.remove wire:target="pasangVendor"></i>
+                                                <span class="dsb-putar" wire:loading wire:target="pasangVendor"></span>
+                                                <span>Jalankan</span>
+                                            </button>
+                                        @elseif (in_array($aksiMassal, ['hapus', 'matikan'], true))
+                                            {{-- Yang merusak dikonfirmasi; yang bisa dibatalkan
+                                                 sendiri tidak — dialog yang muncul untuk
+                                                 segalanya berhenti dibaca. --}}
+                                            <button type="button"
+                                                class="dsb-tombol mh-perintah-jalan {{ $aksiMassal === 'hapus' ? 'is-bahaya' : 'is-awas' }} pcek-konfirmasi"
+                                                data-action="jalankanMassal"
+                                                data-title="{{ $aksiMassal === 'hapus' ? 'Hapus' : 'Matikan' }} {{ count($pilih) }} harga?"
+                                                data-text="RAB yang sudah memakainya tidak berubah."
+                                                data-confirm="Ya, lanjutkan" data-icon="warning">
+                                                <i class="bi {{ $aksiMassal === 'hapus' ? 'bi-trash' : 'bi-pause-circle' }}"></i><span>Jalankan</span>
+                                            </button>
+                                        @else
+                                            <button type="button" wire:click="jalankanMassal"
+                                                wire:loading.attr="disabled" wire:target="jalankanMassal"
+                                                @disabled($aksiMassal === '')
+                                                class="dsb-tombol is-telaah mh-perintah-jalan">
+                                                <i class="bi bi-lightning-charge" wire:loading.remove wire:target="jalankanMassal"></i>
+                                                <span class="dsb-putar" wire:loading wire:target="jalankanMassal"></span>
+                                                <span>Jalankan</span>
+                                            </button>
                                         @endif
                                     </div>
+
+                                    @error('aksiMassal')
+                                        <span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>
+                                    @enderror
+                                    @error('persenMassal')
+                                        <span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>
+                                    @enderror
+                                    @error('pasangKeVendor')
+                                        <span class="dsb-galat mh-pasang-kaki">{{ $message }}</span>
+                                    @enderror
+
                                 </div>
                             </div>
                         @endif
@@ -1543,10 +1596,30 @@ Master Harga || lemon
             flex: 1 1 100%; display: flex; align-items: center; gap: 7px;
             font-size: .84rem; font-weight: 700; color: #047857;
         }
-        .mh-pasang .mh-pasang-pilih { flex: 1 1 240px; min-width: 0; }
         .mh-pasang .dsb-isian { background: #fff; }
         .mh-pasang .dsb-tombol { flex: 0 0 auto; }
         .mh-pasang-kaki { flex: 1 1 100%; margin-top: 0 !important; }
+        /* "Batal" duduk di ujung kanan judulnya, bukan di antara kotak
+           perintah: ia melepas pilihan, bukan menjalankan sesuatu. */
+        .mh-pasang-judul { flex: 1 1 auto; }
+        .mh-pasang .mh-pasang-batal { height: 36px; padding: 0 13px; font-size: .8rem; }
+
+        /* Satu baris perintah: verba, pelengkapnya, lalu Jalankan.
+           Pelengkapnya melar mengisi sisa lebar — baris yang separuhnya
+           kosong terbaca seperti ada yang belum selesai dipasang. */
+        .mh-perintah { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+        .mh-perintah > .mh-perintah-aksi { flex: 0 1 215px; }
+        /* Pelengkapnya selebar yang memang dibutuhkan — kotak persen yang
+           melar sepanjang baris terbaca seperti kotak yang salah. Sisa
+           lebarnya diisi keterangan, bukan dibiarkan kosong. */
+        .mh-perintah > .mh-perintah-isi { flex: 0 1 260px; min-width: 0; }
+        .mh-perintah > .mh-perintah-isi.mh-persen { flex: 0 0 125px; }
+        .mh-perintah > .mh-perintah-ket {
+            flex: 1 1 220px; min-width: 0;
+            font-size: .79rem; line-height: 1.45; color: var(--dsb-redup, #6b7280);
+        }
+        .mh-perintah > .mh-perintah-jalan { flex: 0 0 auto; }
+        .mh-perintah .mh-perintah-isi .dsb-isian { width: 100%; }
 
         .mh-centang { width: 34px; }
         .mh-centang .form-check-input { margin: 0; }
@@ -1575,7 +1648,11 @@ Master Harga || lemon
         /* Merah, bukan abu-abu seperti MATI: yang satu keputusan yang memang
            diambil, yang satu tanggal yang terlewat tanpa ada yang tahu. */
         .mh-tanda.is-lewat { background: #fee2e2; color: #b42318; }
-        .mh-tambah { margin-left: auto; }
+        /* NAMA SENDIRI, bukan .mh-tambah — kelas itu sudah dipakai tombol
+           kecil "Destinasinya belum ada di daftar", yang justru membuang
+           padding dan latarnya. Dipakai ulang di sini, tombol besarnya
+           kehilangan padding dan tulisannya menempel ke tepi. */
+        .mh-tambah-harga { margin-left: auto; }
 
         /* ===== Ringkasan ===== */
         .mh-ubin-rak { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -1608,11 +1685,7 @@ Master Harga || lemon
         .mh-tabel tbody tr.mh-pita td i { margin-right: 6px; }
         .mh-tabel tbody tr.mh-pita:hover td { background: #f8fafc; }
 
-        /* ===== Perintah massal ===== */
-        .mh-massal { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        .mh-massal .mh-massal-aksi { flex: 0 1 190px; background: #fff; }
-        .mh-massal .mh-massal-tanggal { flex: 0 1 165px; background: #fff; }
-        .mh-persen { position: relative; flex: 0 1 110px; }
+        .mh-persen { position: relative; }
         .mh-persen .dsb-isian { background: #fff; padding-right: 30px; }
         .mh-persen-tanda {
             position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
@@ -1758,7 +1831,15 @@ Master Harga || lemon
                Dipilih lewat .mh-saring juga, bukan .mh-tambah saja: aturan
                .mh-saring .dsb-tombol di atas berbobot lebih tinggi, dan
                tanpa ini flex-nya tidak pernah berubah. */
-            .mh-saring .mh-tambah { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+            .mh-saring .mh-tambah-harga { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+
+            /* Baris perintah menumpuk utuh: dua kotak yang lebarnya berbeda
+               sedikit, bertumpuk, terbaca seperti salah sejajar. */
+            .mh-perintah > .mh-perintah-aksi,
+            .mh-perintah > .mh-perintah-isi,
+            .mh-perintah > .mh-perintah-isi.mh-persen,
+            .mh-perintah > .mh-perintah-jalan { flex: 1 1 100%; }
+            .mh-perintah > .mh-perintah-jalan { justify-content: center; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu
