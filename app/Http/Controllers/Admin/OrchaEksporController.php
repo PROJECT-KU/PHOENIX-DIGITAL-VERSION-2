@@ -196,7 +196,18 @@ class OrchaEksporController extends Controller
     {
         $jenis = $request->query('jenis') === 'internal' ? 'internal' : 'penawaran';
 
-        return $this->teruskanBerkas("/rab/{$rab}/pdf", ['jenis' => $jenis]);
+        /*
+         | Dilihat dulu, bukan langsung diunduh.
+         |
+         | Memeriksa hasilnya berarti unduh → buka → tutup → ulang, berkali
+         | kali dalam satu penawaran. Berkasnya sama persis; yang berbeda
+         | cuma apakah peramban menampilkannya atau menyimpannya.
+         */
+        return $this->teruskanBerkas(
+            "/rab/{$rab}/pdf",
+            ['jenis' => $jenis],
+            inline: $request->boolean('pratinjau'),
+        );
     }
 
     /** Berkas dibuat di Orcha lalu diteruskan apa adanya, tanpa digambar ulang. */
@@ -204,17 +215,24 @@ class OrchaEksporController extends Controller
      * @param  array<string, mixed>  $parameter
      * @param  string  $jenis  jenis MIME berkasnya; semua berkas Orcha kini PDF
      */
-    private function teruskanBerkas(string $jalur, array $parameter = [], string $jenis = 'application/pdf')
-    {
+    private function teruskanBerkas(
+        string $jalur,
+        array $parameter = [],
+        string $jenis = 'application/pdf',
+        bool $inline = false,
+    ) {
         try {
             $berkas = $this->orcha->berkas($jalur, $parameter);
         } catch (OrchaTidakTerjangkau $e) {
             abort(503, $e->getMessage());
         }
 
+        // "inline" menampilkan di peramban, "attachment" menyimpan. Nama
+        // berkasnya tetap dibawa supaya tombol simpan di penampil PDF
+        // memberi nama yang sama dengan unduhan biasa.
         return response($berkas['isi'], 200, [
             'Content-Type' => $jenis,
-            'Content-Disposition' => 'attachment; filename="'.$berkas['nama'].'"',
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="'.$berkas['nama'].'"',
         ]);
     }
 

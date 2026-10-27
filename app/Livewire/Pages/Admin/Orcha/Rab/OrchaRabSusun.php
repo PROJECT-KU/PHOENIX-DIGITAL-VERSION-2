@@ -81,6 +81,19 @@ class OrchaRabSusun extends Component
      */
     public string $tiketTertinggal = '';
 
+    /*
+     | Kegiatan yang baru saja dihapus, disimpan untuk dikembalikan.
+     |
+     | Satu kegiatan bisa berisi jam, keterangan, dan destinasi yang
+     | diketik tangan. Dialog konfirmasi menahan kesalahan yang disadari;
+     | yang tidak disadari — klik meleset di baris sebelahnya — hanya bisa
+     | ditolong oleh urungkan.
+     */
+    public array $kegiatanTerhapus = [];
+
+    /** Semua hari ditampilkan sekaligus, bukan satu tab per hari. */
+    public bool $semuaHari = false;
+
     /** Destinasi di itinerary yang belum punya harga tiket di master. */
     public array $tanpaTiket = [];
 
@@ -434,8 +447,132 @@ class OrchaRabSusun extends Component
 
     public function hapusKegiatan(int $i): void
     {
+        if (! isset($this->itinerary[$i])) {
+            return;
+        }
+
+        $this->kegiatanTerhapus = $this->itinerary[$i];
+
         unset($this->itinerary[$i]);
         $this->itinerary = array_values($this->itinerary);
+        $this->simpanItinerary();
+    }
+
+    /**
+     * Tautan WhatsApp berisi pesan yang sudah terketik.
+     *
+     * Ada di daftar sejak kemarin, tetapi penawaran justru SELESAI
+     * disiapkan di layar ini — dan di sinilah orang menekan kirim.
+     */
+    public function tautanWa(): ?string
+    {
+        $angka = preg_replace('/\D/', '', (string) ($this->dataRab['whatsapp'] ?? ''));
+
+        if (strlen($angka) < 8) {
+            return null;
+        }
+
+        if (str_starts_with($angka, '0')) {
+            $angka = '62'.ltrim($angka, '0');
+        }
+
+        $r = $this->dataRab['ringkasan'] ?? [];
+
+        $pesan = 'Halo'.($this->dataRab['nama_pelanggan'] ? ' '.$this->dataRab['nama_pelanggan'] : '')
+            .', berikut penawaran '.($this->dataRab['judul'] ?: 'perjalanan').' ('.$this->dataRab['kode'].'). '
+            .'Harga '.($r['harga_per_orang_teks'] ?? '-').' per orang untuk '.$this->dataRab['jumlah_peserta'].' peserta. '
+            .'Berkas rinciannya menyusul ya.';
+
+        return 'https://wa.me/'.$angka.'?text='.rawurlencode($pesan);
+    }
+
+    /** Mengembalikan kegiatan yang baru saja dihapus. */
+    public function urungkanHapus(): void
+    {
+        if ($this->kegiatanTerhapus === []) {
+            return;
+        }
+
+        $this->sisipkan($this->kegiatanTerhapus);
+        $this->kegiatanTerhapus = [];
+    }
+
+    public function lupakanUrungkan(): void
+    {
+        $this->kegiatanTerhapus = [];
+    }
+
+    /**
+     * Menyalin seluruh kegiatan satu hari ke hari lain.
+     *
+     * Trip tiga hari yang polanya mirip — sarapan, destinasi, makan siang,
+     * hotel — diketik tiga kali tanpa ini. Yang disalin susunannya; jam dan
+     * destinasinya ikut, karena justru itulah yang membuat menyalin lebih
+     * cepat daripada mengetik ulang.
+     */
+    public function salinHari(int $ke): void
+    {
+        $sumber = collect($this->itinerary)->where('hari_ke', $this->hariAktif)->values();
+
+        if ($sumber->isEmpty() || $ke === $this->hariAktif) {
+            return;
+        }
+
+        foreach ($sumber as $kegiatan) {
+            $kegiatan['hari_ke'] = $ke;
+            $this->itinerary[] = $kegiatan;
+        }
+
+        $this->simpanItinerary($sumber->count().' kegiatan disalin ke hari '.$ke.'.');
+        $this->hariAktif = $ke;
+    }
+
+    /** Mengosongkan satu hari sekaligus. */
+    public function kosongkanHari(): void
+    {
+        $jumlah = collect($this->itinerary)->where('hari_ke', $this->hariAktif)->count();
+
+        if ($jumlah === 0) {
+            return;
+        }
+
+        $this->itinerary = collect($this->itinerary)
+            ->reject(fn ($k) => (int) $k['hari_ke'] === $this->hariAktif)
+            ->values()->all();
+
+        // Satu hari penuh tidak muat di penyangga urungkan satu kegiatan —
+        // dikatakan apa adanya supaya tidak ada yang mengira bisa dibatalkan.
+        $this->kegiatanTerhapus = [];
+        $this->simpanItinerary("Hari {$this->hariAktif} dikosongkan ({$jumlah} kegiatan). Tidak bisa diurungkan.");
+    }
+
+    /**
+     * Menyusun ulang kegiatan satu hari menurut urutan yang diseret.
+     *
+     * Memindahkan kegiatan dari urutan delapan ke satu berarti tujuh kali
+     * menekan panah. Yang dikirim dari layar urutan indeksnya; yang
+     * disusun di sini barisnya.
+     */
+    public function susunUlang(array $indeks): void
+    {
+        $baru = [];
+
+        foreach ($indeks as $i) {
+            if (isset($this->itinerary[(int) $i])) {
+                $baru[] = $this->itinerary[(int) $i];
+            }
+        }
+
+        // Kegiatan hari LAIN tidak ikut dikirim — ditambahkan kembali apa
+        // adanya, kalau tidak seluruh hari di luar yang sedang dibuka
+        // hilang begitu satu baris digeser.
+        foreach ($this->itinerary as $i => $kegiatan) {
+            if (! in_array((string) $i, array_map('strval', $indeks), true)) {
+                $baru[] = $kegiatan;
+            }
+        }
+
+        $this->itinerary = $baru;
         $this->simpanItinerary();
     }
 

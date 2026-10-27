@@ -2600,3 +2600,136 @@ test('membuang kunjungan hanya menghapus yang destinasinya cocok', function () {
 
     $layar->assertSet('tiketTertinggal', '');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penyusun: urungkan, salin hari, semua hari, dan kirim
+|--------------------------------------------------------------------------
+*/
+
+test('kegiatan yang dihapus bisa dikembalikan', function () {
+    /*
+     | Dialog konfirmasi menahan kesalahan yang DISADARI. Yang tidak
+     | disadari — klik meleset di baris sebelahnya — hanya bisa ditolong
+     | oleh urungkan.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $nama = $layar->get('itinerary')[0]['nama'];
+
+    $layar->call('hapusKegiatan', 0);
+
+    expect($layar->get('kegiatanTerhapus')['nama'])->toBe($nama)
+        ->and($layar->html())->toContain('Kembalikan');
+
+    // Rekaman Orcha menimpa daftarnya tiap kali disimpan, jadi yang
+    // diperiksa isi yang DIKIRIM, bukan yang tergambar sesudahnya.
+    $layar->call('urungkanHapus')->assertSet('kegiatanTerhapus', []);
+
+    Http::assertSent(function (Request $r) use ($nama) {
+        return str_contains($r->url(), '/rab/3/itinerary')
+            && is_array($r['itinerary'])
+            && collect($r['itinerary'])->pluck('nama')->contains($nama);
+    });
+});
+
+test('menyalin hari membawa seluruh kegiatannya ke hari lain', function () {
+    /*
+     | Trip tiga hari yang polanya mirip — sarapan, destinasi, makan siang,
+     | hotel — diketik tiga kali tanpa ini.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $hari1 = collect($layar->get('itinerary'))->where('hari_ke', 1)->count();
+
+    $layar->call('salinHari', 2);
+
+    Http::assertSent(function (Request $r) use ($hari1) {
+        if (! str_contains($r->url(), '/rab/3/itinerary') || ! is_array($r['itinerary'])) {
+            return false;
+        }
+
+        return collect($r['itinerary'])->where('hari_ke', 2)->count() >= $hari1;
+    });
+
+    // Yang menyalin dibawa ke hari tujuannya — kalau tidak, hasil
+    // salinannya tidak pernah terlihat.
+    $layar->assertSet('hariAktif', 2);
+});
+
+test('menyalin ke hari yang sama tidak melakukan apa pun', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('salinHari', 1);
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/rab/3/itinerary'));
+});
+
+test('mengosongkan hari membuang kegiatannya dan mengatakan tak bisa diurungkan', function () {
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $layar->call('kosongkanHari')
+        // Penyangga urungkan dikosongkan: satu hari penuh tidak muat di sana,
+        // dan tombol yang menjanjikan lebih dari yang bisa ditepati lebih
+        // buruk daripada tidak ada tombol.
+        ->assertSet('kegiatanTerhapus', []);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/rab/3/itinerary')
+        && collect($r['itinerary'])->where('hari_ke', 1)->isEmpty());
+});
+
+test('susun ulang tidak menghilangkan kegiatan hari lain', function () {
+    /*
+     | Yang dikirim dari layar hanya indeks hari yang sedang dibuka. Tanpa
+     | penjagaan ini, menggeser satu baris akan membuang seluruh hari lain
+     | — dan hilangnya baru ketahuan saat PDF dicetak.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $semula = count($layar->get('itinerary'));
+    $hari1 = collect($layar->get('itinerary'))
+        ->filter(fn ($k) => (int) $k['hari_ke'] === 1)->keys()->all();
+
+    // Dibalik urutannya.
+    $layar->call('susunUlang', array_reverse($hari1));
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/rab/3/itinerary')
+        && count($r['itinerary']) === $semula);
+});
+
+test('tautan WhatsApp tersedia di penyusun, bukan cuma di daftar', function () {
+    /*
+     | Penawaran SELESAI disiapkan di layar ini, dan di sinilah orang
+     | menekan kirim.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $tautan = $layar->instance()->tautanWa();
+
+    expect($tautan)->toStartWith('https://wa.me/62')
+        ->and(urldecode($tautan))->toContain(rekamanRab('show')['data']['kode']);
+});
+
+test('tombol lihat membuka PDF tanpa mengunduhnya', function () {
+    /*
+     | Memeriksa hasilnya berarti unduh → buka → tutup → ulang, berkali-kali
+     | dalam satu penawaran.
+     */
+    palsukanRab();
+
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->getContent();
+
+    expect($isi)->toContain('pratinjau=1');
+});

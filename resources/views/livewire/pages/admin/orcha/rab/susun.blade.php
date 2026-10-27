@@ -20,6 +20,23 @@ Susun RAB || lemon
         $kegiatanPerHari[$k['hari_ke']][$i] = $k;
     }
     $kegiatanAktif = $kegiatanPerHari[$hariAktif] ?? [];
+
+    /*
+     | Hari mana saja yang digambar.
+     |
+     | Dihitung DI SINI, bukan lewat direktif php sebaris di tengah berkas:
+     | blok php berikutnya akan ikut tertelan sampai penutupnya, dan
+     | galatnya menunjuk penutup perulangan yang tidak bersalah.
+     |
+     | Nama direktifnya sengaja TIDAK ditulis utuh di komentar ini —
+     | penjaga penanda morph memindai sumbernya mentah, dan kata di dalam
+     | komentar pun ikut terhitung sebagai direktif.
+     */
+    $hariDitampilkan = $semuaHari ? $kegiatanPerHari : [$hariAktif => $kegiatanAktif];
+
+    // Dirakit di sini juga, dengan alasan yang sama: direktif php sebaris
+    // di tengah berkas membuat blok php berikutnya ikut tertelan.
+    $tautanWa = $ada ? $this->tautanWa() : null;
     $hariAktifKosong = $kegiatanAktif === [];
     $idxPertama = array_key_first($kegiatanAktif);
     $idxTerakhir = array_key_last($kegiatanAktif);
@@ -362,6 +379,39 @@ Susun RAB || lemon
             display: inline-block; width: 7px; height: 7px; margin-left: 5px;
             border-radius: 999px; background: #b45309;
         }
+        .rb-pegangan {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 32px; color: #cbd5e1; flex: 0 0 auto;
+        }
+        .rb-pegangan:hover { color: #94a3b8; }
+
+        .rb-hari-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .rb-hari-aksi-label {
+            font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+            color: var(--dsb-redup, #6b7280); margin-right: auto;
+        }
+        .rb-hari-salin { width: auto; height: 34px; padding: 0 30px 0 11px; font-size: .8rem; }
+        .rab-hari-tab .rb-semua-hari { margin-left: auto; }
+        .rb-hari-kepala {
+            display: flex; align-items: baseline; gap: 8px; margin: 14px 0 8px;
+            padding-bottom: 6px; border-bottom: 1px solid #eef2f7;
+        }
+        .rb-hari-kepala span {
+            font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+            color: var(--orc-primer, #4f46e5);
+        }
+        .rb-hari-kepala small { font-size: .72rem; color: var(--dsb-redup, #6b7280); }
+
+        /* Urungkan: biru, bukan merah. Ia jalan keluar dari kesalahan,
+           bukan kesalahan itu sendiri. */
+        .rb-urung {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+            padding: 10px 13px; border-radius: 12px;
+            background: #eff6ff; border: 1px solid #bfdbfe;
+        }
+        .rb-urung > i { color: #1d4ed8; }
+        .rb-urung-teks { flex: 1 1 180px; min-width: 0; font-size: .82rem; color: #1e3a8a; }
+
         .rab-tertinggal {
             display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
             margin-bottom: 14px; padding: 11px 14px; border-radius: 13px;
@@ -685,6 +735,22 @@ Susun RAB || lemon
                                 <i class="bi bi-sliders"></i> Data perjalanan
                                 @if ($this->kepalaBerubah())<span class="rab-titik" title="Ada perubahan yang belum disimpan"></span>@endif
                             </button>
+                            {{-- Penawaran SELESAI disiapkan di layar ini, dan di
+                                 sinilah orang menekan kirim — bukan di daftar. --}}
+                            @if ($tautanWa)
+                                <a href="{{ $tautanWa }}" target="_blank" rel="noopener"
+                                    class="dsb-tombol is-lembut" style="--ikon: #1f7a44"
+                                    title="Kirim penawarannya lewat WhatsApp">
+                                    <i class="bi bi-whatsapp"></i> WhatsApp
+                                </a>
+                            @endif
+                            {{-- Dilihat dulu. Memeriksa hasilnya berarti unduh → buka →
+                                 tutup → ulang, berkali-kali dalam satu penawaran. --}}
+                            <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran', 'pratinjau' => 1]) }}"
+                                target="_blank" rel="noopener" class="dsb-tombol is-lembut" style="--ikon: #0369a1"
+                                title="Lihat penawarannya tanpa mengunduh">
+                                <i class="bi bi-eye"></i> Lihat
+                            </a>
                             <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran']) }}" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                 <i class="bi bi-file-earmark-pdf"></i> PDF Penawaran
                             </a>
@@ -807,11 +873,68 @@ Susun RAB || lemon
                             <div class="rb-itin-jadwal">
                             <div class="rab-hari-tab mb-3">
                                 @for ($h = 1; $h <= $jumlahHari; $h++)
-                                    <button type="button" wire:click="pilihHari({{ $h }})" class="{{ $h === $hariAktif ? 'aktif' : '' }}">
+                                    <button type="button" wire:click="pilihHari({{ $h }})"
+                                        class="{{ $h === $hariAktif && ! $semuaHari ? 'aktif' : '' }}">
                                         Hari {{ $h }}<small>{{ count($kegiatanPerHari[$h] ?? []) }}</small>
                                     </button>
                                 @endfor
+
+                                {{-- Memeriksa alur lima hari berarti lima kali klik, dan
+                                     membandingkan antarhari mustahil. --}}
+                                <button type="button" wire:click="$toggle('semuaHari')"
+                                    class="rb-semua-hari {{ $semuaHari ? 'aktif' : '' }}"
+                                    title="Tampilkan seluruh hari sekaligus">
+                                    <i class="bi bi-list-ul"></i> Semua
+                                </button>
                             </div>
+
+                            @unless ($semuaHari)
+                                <div class="rb-hari-aksi mb-3">
+                                    <span class="rb-hari-aksi-label">Hari {{ $hariAktif }}</span>
+
+                                    @if ($jumlahHari > 1)
+                                        <select class="dsb-isian rb-hari-salin"
+                                            wire:change="salinHari($event.target.value); $event.target.value = ''"
+                                            aria-label="Salin hari ini ke hari lain">
+                                            <option value="">Salin ke hari…</option>
+                                            @for ($h = 1; $h <= $jumlahHari; $h++)
+                                                @if ($h !== $hariAktif)
+                                                    <option value="{{ $h }}">Hari {{ $h }}</option>
+                                                @endif
+                                            @endfor
+                                        </select>
+                                    @endif
+
+                                    @unless ($hariAktifKosong)
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
+                                            data-action="kosongkanHari"
+                                            data-title="Kosongkan hari {{ $hariAktif }}?"
+                                            data-text="{{ count($kegiatanAktif) }} kegiatan akan dibuang, dan ini tidak bisa diurungkan."
+                                            data-confirm="Ya, kosongkan" data-icon="warning"
+                                            title="Buang seluruh kegiatan hari ini">
+                                            <i class="bi bi-eraser"></i>
+                                        </button>
+                                    @endunless
+                                </div>
+                            @endunless
+
+                            {{-- Urungkan: dialog menahan kesalahan yang disadari; yang
+                                 tidak disadari — klik meleset di baris sebelahnya — hanya
+                                 bisa ditolong oleh ini. --}}
+                            @if ($kegiatanTerhapus !== [])
+                                <div class="rb-urung mb-3">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    <span class="rb-urung-teks">
+                                        <strong>{{ $kegiatanTerhapus['nama'] ?: 'Kegiatan tanpa nama' }}</strong> dihapus.
+                                    </span>
+                                    <button type="button" wire:click="urungkanHapus" class="dsb-tombol is-awas">
+                                        <i class="bi bi-arrow-counterclockwise"></i><span>Kembalikan</span>
+                                    </button>
+                                    <button type="button" wire:click="lupakanUrungkan" class="dsb-tombol is-lembut" title="Tutup">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            @endif
 
                             @if ($hariAktifKosong)
                                 <div class="rb-hari-kosong">
@@ -823,9 +946,25 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
-                            @foreach ($kegiatanAktif as $i => $k)
+                            @foreach ($hariDitampilkan as $hariIni => $kegiatanHari)
+                                @if ($semuaHari)
+                                    {{-- Kepala hari hanya muncul di mode semua hari: pada
+                                         satu hari ia mengulang apa yang sudah tertulis di
+                                         tab yang sedang menyala. --}}
+                                    <div class="rb-hari-kepala">
+                                        <span>Hari {{ $hariIni }}</span>
+                                        <small>{{ count($kegiatanHari) }} kegiatan</small>
+                                    </div>
+                                @endif
+
+                            {{-- Seret hanya pada satu hari: di mode semua hari, urutan
+                                 yang dikirim akan bercampur antarhari dan hasilnya
+                                 susunan yang tidak diminta siapa pun. --}}
+                            <div @if (! $semuaHari) x-data x-init="pasangSeretUrut($el, 'susunUlang')" @endif>
+                            @foreach ($kegiatanHari as $i => $k)
                                 @php [$labelJenis, $warnaJenis] = $rupaDari($k); @endphp
                                 <div class="rab-kegiatan" style="--c: {{ $warnaJenis }}"
+                                    data-urut="{{ $i }}"
                                     wire:key="kg-{{ $i }}-{{ md5($k['nama'].$k['hari_ke']) }}">
                                     {{-- Rentang waktu, bukan satu jam. Yang ditanyakan
                                          pembaca jadwal bukan "mulai kapan" melainkan
@@ -857,6 +996,11 @@ Susun RAB || lemon
                                             class="dsb-isian rab-ket" placeholder="Keterangan untuk pelanggan (boleh kosong)">
                                     </div>
                                     <div class="rab-kegiatan-aksi">
+                                        @unless ($semuaHari)
+                                            <span class="rb-pegangan" data-seret-pegangan title="Seret untuk memindahkan">
+                                                <i class="bi bi-grip-vertical"></i>
+                                            </span>
+                                        @endunless
                                         <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat" wire:click="geser({{ $i }}, -1)"
                                             title="Naikkan" @disabled($i === $idxPertama)><i class="bi bi-arrow-up"></i></button>
                                         <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat" wire:click="geser({{ $i }}, 1)"
@@ -867,11 +1011,20 @@ Susun RAB || lemon
                                                 <option value="{{ $h }}" @selected($h === $hariAktif)>H{{ $h }}</option>
                                             @endfor
                                         </select>
-                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus" wire:click="hapusKegiatan({{ $i }})" title="Hapus kegiatan">
+                                        {{-- Dikonfirmasi, sama seperti menghapus biaya di
+                                             sebelahnya. Satu kegiatan bisa berisi jam,
+                                             keterangan, dan destinasi yang diketik tangan. --}}
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
+                                            data-action="hapusKegiatan" data-arg="{{ $i }}"
+                                            data-title="Hapus kegiatan ini?"
+                                            data-text="{{ $k['nama'] ?: 'Kegiatan tanpa nama' }}"
+                                            data-confirm="Ya, hapus" data-icon="warning" title="Hapus kegiatan">
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     </div>
                                 </div>
+                            @endforeach
+                            </div>
                             @endforeach
 
                             {{-- Kegiatan yang tidak ada di daftar mana pun. Tetap di
@@ -1487,5 +1640,6 @@ Susun RAB || lemon
         @endif
     </div>
 
+    @include('livewire.pages.admin.orcha.partials.seret-urut')
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>
