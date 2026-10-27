@@ -1035,8 +1035,8 @@ test('nilai lama yang tidak ada di katalog tetap ditawarkan dan ditandai', funct
         ->set('isian.destinasi', 'prambanan')   // ada di data, tidak ada di katalog
         ->html();
 
-    expect($isi)->toContain('tidak ada di katalog')
-        ->and($isi)->toContain('tidak akan ikut tertarik');
+    expect($isi)->toContain('tidak ada di daftar destinasi')
+        ->and($isi)->toContain('tidak akan ikut terbawa saat');
 });
 
 test('destinasi di luar daftar bisa ditambahkan tanpa meninggalkan formulir', function () {
@@ -1187,7 +1187,7 @@ test('nama rakitan diperlihatkan sebelum disimpan', function () {
         ->set('isian.daerah', 'Sleman')
         ->html();
 
-    expect($isi)->toContain('Namanya terisi sendiri')
+    expect($isi)->toContain('Nama ini akan terisi sendiri')
         ->and($isi)->toContain('Hotel di Sleman');
 });
 
@@ -1252,7 +1252,7 @@ test('tiket tanpa destinasi diberi tahu akibatnya', function () {
     palsukanRab();
     $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->call('bukaTambah');
 
-    expect($layar->html())->toContain('tidak pernah ikut tertarik ke RAB');
+    expect($layar->html())->toContain('tidak akan pernah ikut terbawa ke RAB');
 
     // Yang ditandai "wajib" memang masuk sendiri, jadi peringatannya gugur.
     $layar->set('otomatis', true);

@@ -73,8 +73,8 @@ Master Harga || lemon
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
                 <h1 class="dsb-judul">Master Harga</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">Harga tiket, armada, hotel, dan pemandu — ditulis sekali, dipakai seluruh RAB.</span>
-                    <span class="d-block">Yang diisi di sini tidak perlu diketik ulang pada tiap penawaran.</span>
+                    <span class="d-block">Daftar harga beli: tiket, sewa kendaraan, hotel, dan pemandu. Ditulis sekali di sini.</span>
+                    <span class="d-block">Saat menghitung biaya trip (RAB), harganya tinggal dipilih — tidak perlu diketik ulang.</span>
                 </p>
             </div>
 
@@ -142,7 +142,7 @@ Master Harga || lemon
                             </div>
 
                             <select class="dsb-isian mh-pilih" wire:model.live="filterDipakai" aria-label="Saring menurut pemakaian">
-                                <option value="">Dipakai &amp; belum</option>
+                                <option value="">Semua harga</option>
                                 <option value="ya">Sudah pernah dipakai</option>
                                 {{-- Daftar baris yang boleh dirapikan tanpa menyentuh
                                      penawaran mana pun. --}}
@@ -175,7 +175,7 @@ Master Harga || lemon
                                 <div>
                                     <h3 class="dsb-kartu-judul">{{ $sunting ? 'Ubah Harga' : 'Harga Baru' }}</h3>
                                     <span class="dsb-kartu-sub">
-                                        Harga <strong>dibekukan</strong> saat masuk ke sebuah RAB — perubahan di sini hanya berlaku untuk RAB berikutnya.
+                                        Begitu harga ini dipakai di sebuah RAB, angkanya <strong>tersimpan di RAB itu</strong>. Mengubahnya di sini tidak mengubah RAB yang sudah jadi — hanya RAB yang dibuat sesudahnya.
                                     </span>
                                 </div>
                             </div>
@@ -293,7 +293,7 @@ Master Harga || lemon
                                     <div class="dsb-medan">
                                         <label class="dsb-label" for="mh-destinasi">
                                             Destinasi
-                                            <span class="dsb-label-ket">dijodohkan ke itinerary</span>
+                                            <span class="dsb-label-ket">dicocokkan dengan tempat di jadwal perjalanan</span>
                                         </label>
                                         {{-- DIPILIH, bukan diketik: harga tiket dijodohkan
                                              ke itinerary lewat nama ini PERSIS. --}}
@@ -334,7 +334,7 @@ Master Harga || lemon
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="mh-vendor">
                                         Vendor
-                                        <span class="dsb-label-ket">kontaknya ikut ke RAB</span>
+                                        <span class="dsb-label-ket">nomornya ikut terbawa ke RAB</span>
                                     </label>
                                     <div wire:key="ven-{{ $isian['vendor_id'] ?? '' }}-{{ count($vendor) }}" wire:ignore
                                         x-data x-init="pasangSelectCari($el, 'isian.vendor_id', { placeholder: 'Belum ditentukan' })">
@@ -471,7 +471,7 @@ Master Harga || lemon
                                             <span class="dsb-galat mh-baru-kaki">{{ $message }}</span>
                                         @else
                                             <span class="dsb-kartu-sub mh-baru-kaki">
-                                                Namanya langsung masuk katalog Orcha, jadi bisa dipilih di itinerary juga.
+                                                Namanya langsung masuk ke daftar destinasi Orcha, jadi bisa dipakai saat menyusun jadwal perjalanan juga.
                                                 @if (trim((string) ($isian['provinsi'] ?? '')) !== '')
                                                     Provinsi <strong>{{ $isian['provinsi'] }}</strong> ikut terkirim.
                                                 @endif
@@ -499,8 +499,8 @@ Master Harga || lemon
 
                                 <div class="dsb-medan is-lebar">
                                     <label class="dsb-label" for="mh-catatan">
-                                        Catatan internal
-                                        <span class="dsb-label-ket">tidak pernah ikut ke PDF pelanggan</span>
+                                        Catatan untuk tim sendiri
+                                        <span class="dsb-label-ket">tidak pernah terlihat pelanggan</span>
                                     </label>
                                     <input id="mh-catatan" type="text" wire:model="isian.catatan" maxlength="500"
                                         class="dsb-isian" placeholder="Vendor, nomor kontak, harga berlaku sampai…">
@@ -515,7 +515,7 @@ Master Harga || lemon
                                 <div class="mh-rakitan">
                                     <span class="dsb-ikon is-kecil" style="--c: var(--dsb-aman)"><i class="bi bi-magic"></i></span>
                                     <div class="mh-rakitan-teks">
-                                        <span class="dsb-kartu-sub">Namanya terisi sendiri</span>
+                                        <span class="dsb-kartu-sub">Nama ini akan terisi sendiri</span>
                                         <strong class="mh-rakitan-judul">{{ $namaRakitan }}</strong>
                                     </div>
                                 </div>
@@ -525,18 +525,19 @@ Master Harga || lemon
                                 <div class="mh-peringatan">
                                     <i class="bi bi-exclamation-triangle-fill"></i>
                                     <span>
-                                        <strong>{{ $destinasiKini }}</strong> tidak ada di katalog destinasi.
-                                        Tiket ini tidak akan ikut tertarik saat destinasinya dipilih di itinerary —
-                                        pilih nama dari daftar, atau tambahkan destinasinya ke katalog.
+                                        <strong>{{ $destinasiKini }}</strong> tidak ada di daftar destinasi.
+                                        Karena namanya tidak cocok, harga tiket ini tidak akan ikut terbawa saat
+                                        tempat itu dimasukkan ke jadwal perjalanan. Pilih namanya dari daftar,
+                                        atau tambahkan destinasinya lebih dulu.
                                     </span>
                                 </div>
                             @elseif ($this->tiketTanpaDestinasi())
                                 <div class="mh-peringatan">
                                     <i class="bi bi-exclamation-triangle-fill"></i>
                                     <span>
-                                        Tiket tanpa destinasi tidak pernah ikut tertarik ke RAB — penariknya mencari
-                                        harga lewat nama destinasi di itinerary. Pilih destinasinya, atau tandai
-                                        <strong>wajib</strong> supaya tetap masuk sendiri.
+                                        Tiket yang tidak diisi destinasinya tidak akan pernah ikut terbawa ke RAB,
+                                        karena sistem mencarinya lewat nama tempat di jadwal perjalanan. Pilih
+                                        destinasinya, atau tandai <strong>wajib</strong> supaya tetap masuk sendiri.
                                     </span>
                                 </div>
                             @endif
@@ -548,8 +549,8 @@ Master Harga || lemon
                                         <span class="judul">{{ $otomatis ? 'Wajib — masuk sendiri' : 'Dipilih manual' }}</span>
                                         <span class="ket">
                                             {{ $otomatis
-                                                ? 'Otomatis masuk ke setiap RAB baru di provinsinya.'
-                                                : 'Ditambahkan ke RAB bila admin memilihnya.' }}
+                                                ? 'Ikut masuk sendiri ke setiap RAB baru di provinsinya.'
+                                                : 'Hanya ikut kalau dipilih sendiri saat menyusun RAB.' }}
                                         </span>
                                     </span>
                                     <span class="form-check form-switch mb-0">
@@ -564,7 +565,7 @@ Master Harga || lemon
                                         <span class="ket">
                                             {{ $aktif
                                                 ? 'Muncul sebagai pilihan saat menyusun RAB.'
-                                                : 'Tersimpan, tetapi tidak ditawarkan di RAB baru.' }}
+                                                : 'Tetap tersimpan, tetapi tidak muncul lagi saat menyusun RAB baru.' }}
                                         </span>
                                     </span>
                                     <span class="form-check form-switch mb-0">
@@ -601,7 +602,7 @@ Master Harga || lemon
                             <div>
                                 <h3 class="dsb-kartu-judul">Harga tersimpan</h3>
                                 <span class="dsb-kartu-sub">
-                                    Tandai <strong>wajib</strong> untuk biaya yang selalu ada — makan, parkir, asuransi — dan ia masuk sendiri ke setiap RAB baru di provinsinya.
+                                    Biaya yang selalu ada — makan, parkir, asuransi — sebaiknya ditandai <strong>wajib</strong>, supaya ikut masuk sendiri ke setiap RAB baru di provinsinya.
                                 </span>
                             </div>
                         </div>
@@ -691,11 +692,11 @@ Master Harga || lemon
                                         {{-- Vendor dapat kolomnya sendiri: sebagai baris
                                              kecil di bawah nama, "mana yang belum ada
                                              vendornya" harus dipindai satu per satu. --}}
-                                        <th>Dibeli dari</th>
+                                        <th title="Vendor tempat kita membelinya, beserta nomornya">Dibeli dari</th>
                                         <th class="text-end">Harga</th>
                                         {{-- Dua angka yang menjawab pertanyaan yang sama:
                                              harga ini masih relevan atau tidak. --}}
-                                        <th class="text-center">Dipakai</th>
+                                        <th class="text-center" title="Berapa RAB yang sudah memakai harga ini. RAB yang sudah jadi tidak ikut berubah saat harganya diubah di sini.">Dipakai</th>
                                         {{-- Tidak ada kolom status. Satu kolom berisi
                                              "Aktif" di hampir setiap baris tidak memberi
                                              tahu apa pun, dan yang satu-dua menyimpang
@@ -727,10 +728,10 @@ Master Harga || lemon
                                                     </span>
                                                     @if ($baris['destinasi'])
                                                         <span class="{{ $lepas ? 'mh-lepas' : 'dsb-tabel-meta' }}"
-                                                            @if ($lepas) title="Nama ini tidak ada di katalog destinasi, jadi tiketnya tidak akan ikut tertarik ke RAB" @endif>
+                                                            @if ($lepas) title="Nama ini tidak ada di daftar destinasi, jadi tiketnya tidak akan ikut terbawa ke RAB" @endif>
                                                             <i class="bi {{ $lepas ? 'bi-exclamation-triangle-fill' : 'bi-geo-alt' }}"></i>
                                                             {{ $baris['destinasi'] }}
-                                                            @if ($lepas)<span class="mh-lepas-ket">tidak cocok katalog</span>@endif
+                                                            @if ($lepas)<span class="mh-lepas-ket">nama tidak terdaftar</span>@endif
                                                         </span>
                                                     @endif
                                                     @if ($baris['catatan'])
@@ -862,6 +863,12 @@ Master Harga || lemon
            membagi habis lebarnya. */
         .mh-medan-rak { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; }
         .mh-medan-rak > .dsb-medan { flex: 1 1 215px; min-width: 0; }
+        /* Semua label setinggi dua baris, meski isinya satu baris: keterangan
+           di sebelah label panjangnya berbeda-beda, dan label yang melipat
+           mendorong kotaknya sendiri turun sementara tetangganya diam —
+           barisnya lalu terlihat patah. Tingginya dipatok, bukan
+           keterangannya yang dipendekkan, supaya kalimatnya boleh jelas. */
+        .mh-medan-rak > .dsb-medan > .dsb-label { min-height: 36px; align-items: flex-start; }
         .mh-medan-rak > .dsb-medan.is-lebar { flex-basis: 100%; }
         .mh-medan-rak .dsb-kartu-sub,
         .mh-medan-rak .dsb-galat { display: block; margin-top: 5px; }
