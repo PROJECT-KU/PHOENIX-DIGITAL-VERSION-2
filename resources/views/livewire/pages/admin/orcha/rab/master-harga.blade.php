@@ -398,7 +398,7 @@ Master Harga || lemon
                                     <div class="dsb-medan">
                                         <label class="dsb-label" for="mh-destinasi">
                                             Destinasi
-                                            <span class="dsb-label-ket">dicocokkan dengan tempat di jadwal perjalanan</span>
+                                            <span class="dsb-label-ket" title="Harga tiket ini ikut terbawa saat tempat yang sama dimasukkan ke jadwal perjalanan">dicocokkan ke jadwal</span>
                                         </label>
                                         {{-- DIPILIH, bukan diketik: harga tiket dijodohkan
                                              ke itinerary lewat nama ini PERSIS. --}}
@@ -620,10 +620,14 @@ Master Harga || lemon
                                                  kedaluwarsa sah dicatat apa adanya. Tetapi
                                                  diterima DIAM-DIAM adalah yang membuat salah
                                                  ketik "2020" tidak pernah ketahuan. --}}
+                                            {{-- Kalimatnya dibungkus satu <span>: pembungkus
+                                                 luarnya flex, dan tanpa ini tiap potongan teks
+                                                 jadi item flex sendiri — kata bercetak tebal
+                                                 di tengah kalimat terlempar ke kolomnya
+                                                 sendiri berikut spasi yang janggal. --}}
                                             <span class="mh-ingat">
                                                 <i class="bi bi-exclamation-triangle-fill"></i>
-                                                Tanggal ini sudah lewat — harganya akan langsung ditandai
-                                                <strong>LEWAT</strong>. Biarkan begitu bila memang disengaja.
+                                                <span>Tanggal ini sudah lewat — harganya akan langsung ditandai <strong>LEWAT</strong>. Biarkan begitu bila memang disengaja.</span>
                                             </span>
                                         @else
                                             <span class="dsb-kartu-sub">
@@ -1675,12 +1679,20 @@ Master Harga || lemon
            membagi habis lebarnya. */
         .mh-medan-rak { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; }
         .mh-medan-rak > .dsb-medan { flex: 1 1 215px; min-width: 0; }
-        /* Semua label setinggi dua baris, meski isinya satu baris: keterangan
-           di sebelah label panjangnya berbeda-beda, dan label yang melipat
-           mendorong kotaknya sendiri turun sementara tetangganya diam —
-           barisnya lalu terlihat patah. Tingginya dipatok, bukan
-           keterangannya yang dipendekkan, supaya kalimatnya boleh jelas. */
-        .mh-medan-rak > .dsb-medan > .dsb-label { min-height: 36px; align-items: flex-start; }
+        /* Label setinggi isinya, TANPA min-height.
+           Mematoknya dua baris memang menyejajarkan kotak saat ada
+           keterangan yang melipat — tetapi harganya jarak menganggur di
+           bawah SETIAP label satu baris, dan itu yang pertama terlihat.
+           Jadi keterangannya yang dijaga tetap pendek (lihat .dsb-label-ket
+           di bawah), bukan tingginya yang dipaksa. */
+        .mh-medan-rak > .dsb-medan > .dsb-label { align-items: baseline; }
+        /* Keterangan tidak boleh melipat: begitu ia dua baris, kotak di
+           bawahnya turun sendirian sementara tetangganya diam. Kalau
+           kepanjangan ia dipotong dengan elipsis, dan kalimat utuhnya
+           tetap terbaca lewat sorotan. */
+        .mh-medan-rak .dsb-label-ket {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        }
         .mh-medan-rak > .dsb-medan.is-lebar { flex-basis: 100%; }
         .mh-medan-rak .dsb-kartu-sub,
         .mh-medan-rak .dsb-galat { display: block; margin-top: 5px; }
