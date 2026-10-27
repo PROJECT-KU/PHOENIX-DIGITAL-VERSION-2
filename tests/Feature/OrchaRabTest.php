@@ -643,7 +643,9 @@ test('titik impas tampil di kartu ringkasan, bukan cuma ada di API', function ()
         // dihitung ulang di kertas, dan kertasnya yang dipakai.
         ->and($isi)->toContain($ringkas['modal_tetap_teks'])
         ->and($isi)->toContain($ringkas['sumbangan_per_orang_teks'])
-        ->and($isi)->toContain('Untung per orang');
+        // Untung per kepala tetap disebut — kini di kartu untungnya sendiri,
+        // sebagai "<angka> per orang", bukan sebagai baris berlabel.
+        ->and($isi)->toContain($ringkas['untung_per_orang_teks'].' per orang');
 });
 
 test('kegiatan punya jam mulai dan jam selesai, lamanya ikut terbaca', function () {

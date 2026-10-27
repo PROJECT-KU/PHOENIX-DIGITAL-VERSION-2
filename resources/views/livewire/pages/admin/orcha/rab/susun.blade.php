@@ -86,6 +86,30 @@ Susun RAB || lemon
     $amanLaba = fn (array $s) => $s['laba'] >= 0;
 
     /*
+     | Angka pendek untuk tabel simulasi.
+     |
+     | Panel ringkasannya cuma selebar sepertiga layar, dan tiga kolom
+     | rupiah penuh membuat kolom terakhir — justru yang paling dicari —
+     | terpotong tepi kartu. Yang dibaca di tabel ini besarannya, bukan
+     | rupiah ke rupiah; angka telitinya sudah ada di atas.
+     */
+    $pendek = function ($angka) {
+        $n = (int) $angka;
+        $tanda = $n < 0 ? '−' : '';
+        $a = abs($n);
+
+        if ($a >= 1_000_000) {
+            return $tanda.'Rp '.rtrim(rtrim(number_format($a / 1_000_000, 1, ',', '.'), '0'), ',').' jt';
+        }
+
+        if ($a >= 1_000) {
+            return $tanda.'Rp '.number_format($a / 1_000, 0, ',', '.').' rb';
+        }
+
+        return $tanda.'Rp '.number_format($a, 0, ',', '.');
+    };
+
+    /*
      | Warna per jenis kegiatan — peta yang SAMA dengan kedua PDF, supaya
      | satu perjalanan tidak memakai warna berbeda untuk hal yang sama di
      | layar dan di berkas yang dicetak dari layar itu.
@@ -515,14 +539,66 @@ Susun RAB || lemon
         /* Simulasi: baris yang sudah tidak rugi berlatar hijau tipis, baris
            titik impasnya bergaris kiri — angka saja menuntut pembacanya
            membandingkan belasan baris dengan mata. */
+        /* Digulung di dalam kotaknya: enam belas baris membuat panel
+           ringkasan memanjang keluar layar, dan yang pertama hilang dari
+           pandangan justru harga jualnya di paling atas. */
+        .rb-sim-bungkus { max-height: 232px; overflow-y: auto; border-radius: 10px; border: 1px solid #eef2f7; }
         .rb-sim { width: 100%; border-collapse: collapse; font-size: .76rem; }
-        .rb-sim td { padding: 3px 6px; border-bottom: 1px solid #f4f7fa; white-space: nowrap; }
-        .rb-sim tr:last-child td { border-bottom: 0; }
+        .rb-sim thead th {
+            position: sticky; top: 0; z-index: 1;
+            padding: 6px 8px; background: #f8fafc; border-bottom: 1px solid #e9edf3;
+            font-size: .67rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+            color: var(--dsb-redup, #6b7280); white-space: nowrap;
+        }
+        .rb-sim td { padding: 4px 8px; border-bottom: 1px solid #f4f7fa; white-space: nowrap; }
+        .rb-sim tbody tr:last-child td { border-bottom: 0; }
         .rb-sim tr.is-aman td { background: #f3faf6; }
+        .rb-sim tr.is-impas td { background: #ecfdf5; }
         .rb-sim tr.is-impas td:first-child { box-shadow: inset 2px 0 0 #047857; font-weight: 700; }
         .rb-sim-pax { color: var(--dsb-redup, #6b7280); }
+        .rb-sim-tanda {
+            display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 999px;
+            background: #d1fae5; color: #047857; font-size: .6rem; font-weight: 800;
+            letter-spacing: .04em; text-transform: uppercase;
+        }
         .rb-sim-modal { color: #94a3b8; text-align: right; font-variant-numeric: tabular-nums; }
         .rb-sim-laba { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .rb-sim-laba.is-untung { color: #047857; }
+        .rb-sim-laba.is-rugi { color: #be123c; }
+
+        /* ===== Untung: jawaban layar ini, bukan baris keempat ===== */
+        .rb-untung-kartu {
+            display: flex; flex-direction: column; gap: 1px;
+            margin: 10px 0 2px; padding: 11px 13px; border-radius: 13px;
+            border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 7%, #fff);
+        }
+        .rb-untung-kartu.is-sehat { --c: #047857; }
+        .rb-untung-kartu.is-tipis { --c: #b45309; }
+        .rb-untung-kartu.is-rugi { --c: #be123c; }
+        .rb-untung-kepala {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+            color: var(--c);
+        }
+        .rb-untung-persen {
+            padding: 1px 7px; border-radius: 999px; letter-spacing: 0;
+            background: color-mix(in srgb, var(--c) 14%, #fff);
+        }
+        .rb-untung-nilai { font-size: 1.22rem; font-weight: 800; color: var(--c); line-height: 1.2; }
+        .rb-untung-kaki { font-size: .74rem; color: var(--dsb-redup, #6b7280); }
+
+        /* ===== Belum ada biaya ===== */
+        .rb-belum {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            padding: 22px 16px; text-align: center;
+        }
+        .rb-belum-ikon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 42px; height: 42px; margin-bottom: 3px; border-radius: 13px;
+            background: #f1f5f9; color: #94a3b8; font-size: 1.1rem;
+        }
+        .rb-belum strong { font-size: .92rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-belum span:last-child { font-size: .78rem; line-height: 1.5; color: var(--dsb-redup, #6b7280); }
 
         .rb-sadar {
             display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px;
@@ -1183,82 +1259,133 @@ Susun RAB || lemon
                     <div class="rab-lengket">
                         <div class="dsb-kartu k-12 rb-kartu">
                             <div class="dsb-kartu-isi">
-                                <div class="orcha-label-kecil mb-1">Harga per orang</div>
-                                <div class="rab-harga-besar">{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</div>
-                                <div class="text-muted small mb-3">Total {{ $r['harga_total_teks'] ?? 'Rp 0' }} untuk {{ $rab['jumlah_peserta'] }} peserta</div>
+                                {{-- $tanpaBiaya yang sudah dipakai tabel di sebelah,
+                                     bukan penanda kembar: dua penanda untuk keadaan yang
+                                     sama akan berselisih begitu salah satunya diubah. --}}
+                                @if ($tanpaBiaya)
+                                    {{-- Satu kalimat, bukan sembilan angka nol berjajar.
 
-                                {{-- Pada open trip harga dan modal dihitung dari jumlah
-                                     yang BERBEDA; tanpa disebut, angka di atas terbaca
-                                     seolah dibagi jumlah peserta yang sama. --}}
-                                @if ($openTrip)
-                                    <div class="rb-dasar">
-                                        <i class="bi bi-megaphone"></i>
-                                        Open trip · harga dihitung atas dasar <strong>{{ $pesertaDasar }} peserta</strong>,
-                                        modal di bawah ini atas {{ $rab['jumlah_peserta'] }} peserta.
+                                         Angka nol yang berderet terbaca seperti hitungan
+                                         yang gagal, bukan seperti pekerjaan yang belum
+                                         dimulai — dan inilah yang pertama dilihat admin
+                                         saat RAB-nya baru dibuat. --}}
+                                    <div class="rb-belum">
+                                        <span class="rb-belum-ikon"><i class="bi bi-calculator"></i></span>
+                                        <strong>Angkanya muncul setelah ada biaya</strong>
+                                        <span>
+                                            Tarik tiket dari itinerary, atau pilih armada &amp; hotel di
+                                            <strong>Rincian biaya</strong>. Harga jual, untung, dan titik
+                                            impasnya dihitung dari situ.
+                                        </span>
                                     </div>
-                                @endif
+                                @else
+                                    <div class="orcha-label-kecil mb-1">Harga per orang</div>
+                                    <div class="rab-harga-besar">{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</div>
+                                    <div class="text-muted small mb-3">Total {{ $r['harga_total_teks'] ?? 'Rp 0' }} untuk {{ $rab['jumlah_peserta'] }} peserta</div>
 
-                                <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
-                                <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
-                                <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
-                                <div class="rab-baris-angka garis text-success">
-                                    <span class="fw-bold">Untung</span>
-                                    <strong>{{ $r['untung_teks'] ?? 'Rp 0' }}@isset($r['persen_untung']) <small>({{ str_replace('.', ',', $r['persen_untung']) }}%)</small>@endisset</strong>
-                                </div>
-                                <div class="rab-baris-angka text-muted">
-                                    <span>Untung per orang</span><span>{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }}</span>
-                                </div>
+                                    {{-- Pada open trip harga dan modal dihitung dari jumlah
+                                         yang BERBEDA; tanpa disebut, angka di atas terbaca
+                                         seolah dibagi jumlah peserta yang sama. --}}
+                                    @if ($openTrip)
+                                        {{-- Kalimatnya dibungkus satu <span>: pembungkusnya
+                                             flex, dan tanpa ini tiap potongan teks jadi item
+                                             flex sendiri — kata bercetak tebal di tengah
+                                             kalimat terlempar ke kolomnya sendiri. --}}
+                                        <div class="rb-dasar">
+                                            <i class="bi bi-megaphone"></i>
+                                            <span>Open trip · harga dihitung atas dasar <strong>{{ $pesertaDasar }} peserta</strong>, modal di bawah ini atas {{ $rab['jumlah_peserta'] }} peserta.</span>
+                                        </div>
+                                    @endif
 
-                                {{-- Titik impas.
+                                    <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
+                                    <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
+                                    <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
 
-                                     Sewa bus, honor koordinator, dan dokumentasi dibayar
-                                     sama saja entah yang berangkat sepuluh atau lima belas
-                                     orang — dan itulah yang membuat rombongan kecil
-                                     diam-diam merugi walau harganya terlihat untung di
-                                     atas kertas. --}}
-                                <div class="rb-impas {{ $impasTercapai ? 'is-aman' : 'is-waspada' }}">
-                                    <span class="dsb-ikon is-kecil" style="--c: {{ $impasTercapai ? '#047857' : '#b45309' }}">
-                                        <i class="bi {{ $impasTercapai ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}"></i>
-                                    </span>
-                                    <div class="rb-impas-teks">
-                                        <span class="dsb-label mb-0">Balik modal mulai</span>
-                                        @if ($adaImpas)
-                                            <strong>{{ $impasPeserta }} peserta</strong>
-                                            <span class="dsb-kartu-sub">
-                                                Biaya tetap {{ $r['modal_tetap_teks'] ?? 'Rp 0' }} ·
-                                                tiap kepala menyumbang {{ $r['sumbangan_per_orang_teks'] ?? 'Rp 0' }}
-                                            </span>
-                                        @else
-                                            <strong>Belum bisa dihitung</strong>
-                                            <span class="dsb-kartu-sub">
-                                                Harga jualnya belum menutup biaya yang menempel per orang —
-                                                menambah peserta tidak menolong.
-                                            </span>
-                                        @endif
+                                    {{-- Untung diangkat jadi kartunya sendiri: ia jawaban
+                                         dari seluruh layar ini, bukan baris keempat dalam
+                                         deretan yang semuanya berbobot sama. --}}
+                                    @php($untungSehat = (float) ($r['persen_untung'] ?? 0) >= 10)
+                                    @php($untungRugi = (float) ($r['persen_untung'] ?? 0) < 0)
+                                    <div class="rb-untung-kartu {{ $untungRugi ? 'is-rugi' : ($untungSehat ? 'is-sehat' : 'is-tipis') }}">
+                                        <div class="rb-untung-kepala">
+                                            <span>Untung</span>
+                                            @isset($r['persen_untung'])
+                                                <span class="rb-untung-persen">{{ str_replace('.', ',', $r['persen_untung']) }}%</span>
+                                            @endisset
+                                        </div>
+                                        <strong class="rb-untung-nilai">{{ $r['untung_teks'] ?? 'Rp 0' }}</strong>
+                                        <span class="rb-untung-kaki">{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }} per orang</span>
                                     </div>
-                                </div>
 
-                                {{-- Tabel yang menjawab pertanyaan sebenarnya sebelum
-                                     memberangkatkan open trip: "dapat sekian orang, kita
-                                     untung atau rugi?"
+                                    {{-- Titik impas.
 
-                                     Dihitung ulang di tiap jumlah, bukan dibagi rata —
-                                     biaya tetapnya ikut berubah saat kamar atau armada
-                                     bertambah, dan tangga itulah yang membuat satu
-                                     peserta tambahan kadang justru menambah rugi. --}}
-                                @if ($openTrip && $simulasi !== [])
-                                    <div class="border-top mt-3 pt-3">
-                                        <div class="orcha-label-kecil mb-2">Kalau yang datang sekian</div>
-                                        <table class="rb-sim">
-                                            @foreach ($simulasi as $s)
-                                                <tr class="{{ $amanLaba($s) ? 'is-aman' : '' }} {{ $s['peserta'] === $impasPeserta ? 'is-impas' : '' }}">
-                                                    <td class="rb-sim-pax">{{ $s['peserta'] }} org</td>
-                                                    <td class="rb-sim-modal">{{ $s['modal_teks'] }}</td>
-                                                    <td class="rb-sim-laba" style="color: {{ $amanLaba($s) ? '#047857' : '#be123c' }}">{{ $s['laba_teks'] }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </table>
+                                         Sewa bus, honor koordinator, dan dokumentasi dibayar
+                                         sama saja entah yang berangkat sepuluh atau lima belas
+                                         orang — dan itulah yang membuat rombongan kecil
+                                         diam-diam merugi walau harganya terlihat untung di
+                                         atas kertas. --}}
+                                    <div class="rb-impas {{ $impasTercapai ? 'is-aman' : 'is-waspada' }}">
+                                        <span class="dsb-ikon is-kecil" style="--c: {{ $impasTercapai ? '#047857' : '#b45309' }}">
+                                            <i class="bi {{ $impasTercapai ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}"></i>
+                                        </span>
+                                        <div class="rb-impas-teks">
+                                            <span class="dsb-label mb-0">Balik modal mulai</span>
+                                            @if ($adaImpas)
+                                                <strong>{{ $impasPeserta }} peserta</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    Biaya tetap {{ $r['modal_tetap_teks'] ?? 'Rp 0' }} ·
+                                                    tiap kepala menyumbang {{ $r['sumbangan_per_orang_teks'] ?? 'Rp 0' }}
+                                                </span>
+                                            @else
+                                                <strong>Belum bisa dihitung</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    Harga jualnya belum menutup biaya yang menempel per orang —
+                                                    menambah peserta tidak menolong.
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
+
+                                    {{-- Tabel yang menjawab pertanyaan sebenarnya sebelum
+                                         memberangkatkan open trip: "dapat sekian orang, kita
+                                         untung atau rugi?"
+
+                                         Dihitung ulang di tiap jumlah, bukan dibagi rata —
+                                         biaya tetapnya ikut berubah saat kamar atau armada
+                                         bertambah, dan tangga itulah yang membuat satu
+                                         peserta tambahan kadang justru menambah rugi. --}}
+                                    @if ($openTrip && $simulasi !== [])
+                                        <div class="border-top mt-3 pt-3">
+                                            <div class="orcha-label-kecil mb-2">Kalau yang datang sekian</div>
+                                            {{-- Enam belas baris tanpa judul kolom menuntut
+                                                 pembacanya menebak angka mana yang mana.
+                                                 Digulung di dalam kotaknya sendiri supaya
+                                                 panelnya tidak memanjang keluar layar. --}}
+                                            <div class="rb-sim-bungkus">
+                                                <table class="rb-sim">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Datang</th>
+                                                            <th class="text-end">Modal</th>
+                                                            <th class="text-end">Untung</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($simulasi as $s)
+                                                            <tr class="{{ $amanLaba($s) ? 'is-aman' : '' }} {{ $s['peserta'] === $impasPeserta ? 'is-impas' : '' }}">
+                                                                <td class="rb-sim-pax">
+                                                                    {{ $s['peserta'] }} org
+                                                                    @if ($s['peserta'] === $impasPeserta)<span class="rb-sim-tanda">impas</span>@endif
+                                                                </td>
+                                                                <td class="rb-sim-modal" title="{{ $s['modal_teks'] }}">{{ $pendek($s['modal']) }}</td>
+                                                                <td class="rb-sim-laba {{ $amanLaba($s) ? 'is-untung' : 'is-rugi' }}" title="{{ $s['laba_teks'] }}">{{ $pendek($s['laba']) }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endif
 
                                 <div class="border-top mt-3 pt-3">
