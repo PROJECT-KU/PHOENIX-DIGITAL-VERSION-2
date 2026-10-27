@@ -1738,3 +1738,59 @@ test('penolakan harga kembar dari Orcha sampai apa adanya ke admin', function ()
         ->call('simpan')
         ->assertDispatched('toast-error', message: 'Sudah ada harga untuk destinasi "Candi Prambanan" di wilayah yang sama.');
 });
+
+test('tiap sel master harga berdiri di bawah judul kolomnya', function () {
+    /*
+     | Satu <th> yang lupa ditulis tidak membuat tabelnya rusak — peramban
+     | tetap menggambarnya rapi, hanya saja seluruh sel mulai dari kolom
+     | yang hilang bergeser satu ke kanan. Yang terbaca admin: wilayah di
+     | bawah judul "Dibeli dari", vendor di bawah "Harga". Semuanya masuk
+     | akal dibaca satu-satu, dan semuanya salah.
+     |
+     | Di layar sempit cacat ini tidak terlihat sama sekali: thead
+     | disembunyikan dan tiap sel memakai label data-judul-nya sendiri.
+     */
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->html();
+
+    /*
+     | Dipatok ke tabelnya dulu. Blok <style> halaman ini berisi aturan
+     | untuk ".dsb-tabel tbody tr" beserta komentarnya, dan komentar CSS
+     | ikut terkirim ke peramban — mencari "<tbody" di seluruh halaman
+     | menangkap kalimat di komentar, bukan markahnya.
+     */
+    preg_match('#<table class="dsb-tabel mh-tabel">(.*?)</table>#s', $isi, $tabel);
+
+    expect($tabel)->not->toBeEmpty();
+
+    preg_match('#<thead>(.*?)</thead>#s', $tabel[1], $kepala);
+    preg_match('#<tbody>(.*?)</tr>#s', $tabel[1], $barisPertama);
+
+    expect($kepala)->not->toBeEmpty()
+        ->and($barisPertama)->not->toBeEmpty();
+
+    $jumlahTh = substr_count($kepala[1], '</th>');
+    $jumlahTd = substr_count($barisPertama[1], '</td>');
+
+    expect($jumlahTh)->toBe($jumlahTd);
+
+    /*
+     | Dan tiap judul kolom memakai perataan yang sama dengan selnya —
+     | angka rata kanan, "Dipakai" di tengah. Judul rata kiri di atas
+     | angka rata kanan membuat keduanya tampak milik kolom berbeda.
+     */
+    preg_match_all('#<t([hd])([^>]*)>#', $kepala[1].$barisPertama[1], $sel, PREG_SET_ORDER);
+
+    $rataKepala = [];
+    $rataSel = [];
+    foreach ($sel as $s) {
+        $rata = str_contains($s[2], 'text-end') ? 'kanan'
+            : (str_contains($s[2], 'text-center') ? 'tengah' : 'kiri');
+        $s[1] === 'h' ? $rataKepala[] = $rata : $rataSel[] = $rata;
+    }
+
+    expect($rataKepala)->toBe($rataSel);
+});

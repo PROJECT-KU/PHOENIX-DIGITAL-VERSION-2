@@ -687,6 +687,7 @@ Master Harga || lemon
                                         <th class="mh-centang"></th>
                                         <th>Nama</th>
                                         <th>Kategori</th>
+                                        <th>Wilayah</th>
                                         {{-- Vendor dapat kolomnya sendiri: sebagai baris
                                              kecil di bawah nama, "mana yang belum ada
                                              vendornya" harus dipindai satu per satu. --}}
@@ -744,7 +745,7 @@ Master Harga || lemon
                                             </td>
                                             <td data-judul="Wilayah">
                                                 <span class="mh-utama">
-                                                    <span>{{ $baris['provinsi'] ?: 'Semua provinsi' }}</span>
+                                                    <span class="mh-wilayah">{{ $baris['provinsi'] ?: 'Semua provinsi' }}</span>
                                                     @if ($baris['daerah'])
                                                         <span class="dsb-tabel-meta">{{ $baris['daerah'] }}</span>
                                                     @endif
@@ -771,9 +772,10 @@ Master Harga || lemon
                                             <td data-judul="Harga" class="text-end">
                                                 <span class="mh-utama is-kanan">
                                                     <span class="dsb-tabel-judul dsb-tabel-angka">{{ $baris['harga_teks'] }}</span>
-                                                    <span class="dsb-tabel-meta">
-                                                        {{ $baris['satuan_label'] }}@if ($baris['kapasitas']) · kapasitas {{ $baris['kapasitas'] }}@endif
-                                                    </span>
+                                                    <span class="dsb-tabel-meta mh-satuan">{{ $baris['satuan_label'] }}</span>
+                                                    @if ($baris['kapasitas'])
+                                                        <span class="dsb-tabel-meta mh-satuan">kapasitas {{ $baris['kapasitas'] }}</span>
+                                                    @endif
                                                 </span>
                                             </td>
                                             <td data-judul="Dipakai" class="text-center">
@@ -788,7 +790,7 @@ Master Harga || lemon
                                                         <span class="mh-belum">belum</span>
                                                     @endif
                                                     @if (! empty($baris['diubah_teks']))
-                                                        <span class="dsb-tabel-meta">{{ $baris['diubah_teks'] }}</span>
+                                                        <span class="dsb-tabel-meta mh-diubah">{{ $baris['diubah_teks'] }}</span>
                                                     @endif
                                                 </span>
                                             </td>
@@ -995,6 +997,12 @@ Master Harga || lemon
         .mh-centang { width: 34px; }
         .mh-centang .form-check-input { margin: 0; }
         .mh-utama.is-tengah { align-items: center; }
+
+        /* Delapan kolom di layar laptop membuat beberapa sel pendek pecah di
+           tempat yang salah — "DI / Yogyakarta", "2 bulan / yang lalu". Yang
+           dipagari hanya potongan yang panjangnya memang terbatas; nama
+           harga, daerah, dan nama vendor tetap boleh turun baris. */
+        .mh-wilayah, .mh-diubah, .mh-satuan { white-space: nowrap; }
         .mh-vendor-sel { text-decoration: none; color: var(--dsb-tinta, #1c1f26); }
         .mh-vendor-sel:hover { color: #0369a1; text-decoration: underline; }
         .mh-tanpa-vendor {
