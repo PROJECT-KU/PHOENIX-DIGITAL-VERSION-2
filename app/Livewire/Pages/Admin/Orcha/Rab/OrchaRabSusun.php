@@ -63,6 +63,16 @@ class OrchaRabSusun extends Component
 
     public array $kepala = [];
 
+    /*
+     | Salinan kepala seperti saat dimuat.
+     |
+     | Panel ini hanya tersimpan saat tombol Simpan ditekan — menutupnya
+     | atau berpindah halaman membuang perubahannya tanpa sepatah kata.
+     | Pembandingnya dipegang di sini supaya layar bisa mengatakan "belum
+     | disimpan" alih-alih membiarkannya hilang diam-diam.
+     */
+    public array $kepalaAwal = [];
+
     /** Destinasi di itinerary yang belum punya harga tiket di master. */
     public array $tanpaTiket = [];
 
@@ -145,6 +155,22 @@ class OrchaRabSusun extends Component
             'catatan_penawaran' => (string) ($data['catatan_penawaran'] ?? ''),
             'catatan' => (string) ($data['catatan'] ?? ''),
         ];
+
+        $this->kepalaAwal = $this->kepala;
+    }
+
+    /** Ada perubahan di panel data perjalanan yang belum dikirim. */
+    public function kepalaBerubah(): bool
+    {
+        return $this->kepalaAwal !== [] && $this->kepala !== $this->kepalaAwal;
+    }
+
+    /** Menutup panel kepala, membuang perubahan yang belum disimpan. */
+    public function batalKepala(): void
+    {
+        $this->kepala = $this->kepalaAwal;
+        $this->bukaKepala = false;
+        $this->resetValidation();
     }
 
     /**
@@ -680,6 +706,7 @@ class OrchaRabSusun extends Component
 
         if ($this->kirimKe('ubah', "/rab/{$this->rabId}", $data, 'Data perjalanan disimpan.')) {
             $this->bukaKepala = false;
+            $this->kepalaAwal = $this->kepala;
         }
     }
 

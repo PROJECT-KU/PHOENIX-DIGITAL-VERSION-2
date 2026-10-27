@@ -34,6 +34,20 @@ function palsukanRab(): void
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="rab.pdf"',
             ]),
+            str_ends_with($jalur, '/rab/3/salin') => Http::response([
+                'pesan' => 'Disalin jadi RAB-2610-QW9Z. Statusnya draf, dengan masa berlaku baru terhitung hari ini.',
+                'data' => ['id' => 9, 'kode' => 'RAB-2610-QW9Z'],
+            ], 201),
+            str_ends_with($jalur, '/rab/3/versi') => Http::response([
+                'data' => [[
+                    'id' => 4, 'urutan' => 2, 'harga_total_teks' => 'Rp 9.000.000',
+                    'harga_per_orang_teks' => 'Rp 900.000', 'untung_teks' => 'Rp 1.200.000',
+                    'persen_untung' => 15.4, 'jumlah_peserta' => 10, 'jumlah_baris' => 6,
+                    'oleh' => 'Berto', 'pada' => '20 Okt 2026, 10:00', 'pada_teks' => 'seminggu yang lalu',
+                    'beda_kini' => 'lebih murah Rp 500.000 dari sekarang',
+                ]],
+                'meta' => ['kode' => 'RAB-2609-A7K3', 'harga_kini_teks' => 'Rp 9.500.000'],
+            ]),
             str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
             str_ends_with($jalur, '/rab') && $r->method() === 'POST' => Http::response(rekamanRab('show'), 201),
             str_ends_with($jalur, '/rab') => Http::response(rekamanRab('daftar')),
@@ -2378,4 +2392,137 @@ test('panel perubahan terakhir mengatakan berapa yang tidak ditampilkan', functi
     $layar->set('riwayatHari', 7);
     Http::assertSent(fn (Request $r) => str_contains($r->url(), '/master-harga/riwayat')
         && str_contains($r->url(), 'hari=7'));
+});
+
+/*
+|--------------------------------------------------------------------------
+| Daftar RAB: ringkasan, saringan, salin, versi, dan tautan WhatsApp
+|--------------------------------------------------------------------------
+*/
+
+test('saringan dan pengurut daftar RAB diteruskan ke Orcha', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->set('filterProvinsi', 'Bali')
+        ->set('filterJenis', 'open')
+        ->set('urut', 'berangkat')
+        ->set('filterKedaluwarsa', true);
+
+    Http::assertSent(function (Request $r) {
+        parse_str(parse_url($r->url(), PHP_URL_QUERY) ?? '', $p);
+
+        return str_contains($r->url(), '/rab')
+            && ($p['provinsi'] ?? null) === 'Bali'
+            && ($p['jenis'] ?? null) === 'open'
+            && ($p['urut'] ?? null) === 'berangkat'
+            && ($p['kedaluwarsa'] ?? null) === '1';
+    });
+});
+
+test('warna untung mengikuti tipisnya margin, bukan selalu hijau', function () {
+    /*
+     | Ini satu-satunya angka di layar yang bisa mencegah penawaran merugi
+     | terkirim. Selalu hijau membuat yang merugi pun tergambar meyakinkan.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabList::class)->instance();
+
+    expect($layar->rupaUntung(-3.5))->toBe('rugi')
+        ->and($layar->rupaUntung(0.0))->toBe('tipis')
+        ->and($layar->rupaUntung(9.9))->toBe('tipis')
+        ->and($layar->rupaUntung(18.0))->toBe('sehat')
+        ->and($layar->rupaUntung(null))->toBe('netral');
+});
+
+test('tautan WhatsApp dinormalkan ke format internasional', function () {
+    /*
+     | wa.me menolak "0812…". Nomor yang tidak masuk akal tidak diberi
+     | tombolnya sama sekali — tombol yang membuka WhatsApp kosong lebih
+     | buruk daripada tidak ada tombol.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabList::class)->instance();
+
+    $baris = [
+        'whatsapp' => '0812-3400-0111', 'nama_pelanggan' => 'Bu Sari', 'judul' => 'Private Trip Jogja',
+        'kode' => 'RAB-2609-A7K3', 'harga_per_orang_teks' => 'Rp 900.000', 'jumlah_peserta' => 10,
+    ];
+
+    $tautan = $layar->tautanWa($baris);
+
+    expect($tautan)->toStartWith('https://wa.me/6281234000111?text=')
+        ->and(urldecode($tautan))->toContain('Bu Sari')
+        ->and(urldecode($tautan))->toContain('RAB-2609-A7K3')
+        ->and($layar->tautanWa(['whatsapp' => '08'] + $baris))->toBeNull();
+});
+
+test('menyalin penawaran mengirim hanya kotak yang diisi', function () {
+    /*
+     | Menyalin biasanya berarti "sama, kecuali satu-dua hal" — yang
+     | dikosongkan harus ikut nilai aslinya, bukan terkirim sebagai kosong
+     | dan menghapus data.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaSalin', 3, ['id' => 3])
+        ->set('salinIsian.nama_pelanggan', 'Pelanggan Lain')
+        ->call('salin')
+        ->assertSet('salinDari', null);
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/rab/3/salin')
+        && $r['nama_pelanggan'] === 'Pelanggan Lain'
+        && ! array_key_exists('whatsapp', $r->data())
+        && ! array_key_exists('tanggal_mulai', $r->data()));
+});
+
+test('versi penawaran dibaca dari Orcha berikut selisihnya', function () {
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaRabList::class)
+        ->call('bukaVersi', 3);
+
+    expect($layar->html())->toContain('Versi 2')
+        ->and($layar->html())->toContain('lebih murah Rp 500.000 dari sekarang');
+
+    $layar->call('tutupVersi')->assertSet('versi', []);
+});
+
+test('jumlah baris daftar RAB dibatasi ke pilihan yang dikenal', function () {
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabList::class);
+
+    $layar->set('barisHalaman', 25);
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), 'per_halaman=25'));
+
+    $layar->set('barisHalaman', 9999);
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), 'per_halaman=10'));
+});
+
+test('perubahan data perjalanan yang belum disimpan ditandai, dan batal mengembalikannya', function () {
+    /*
+     | Panel itu hanya tersimpan saat Simpan ditekan. Tanpa tanda,
+     | menutupnya membuang perubahannya tanpa sepatah kata.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    expect($layar->instance()->kepalaBerubah())->toBeFalse();
+
+    $layar->set('kepala.judul', 'Judul yang diketik tapi belum disimpan');
+
+    expect($layar->instance()->kepalaBerubah())->toBeTrue()
+        ->and($layar->html())->toContain('belum disimpan');
+
+    $layar->call('batalKepala');
+
+    expect($layar->instance()->kepalaBerubah())->toBeFalse();
 });

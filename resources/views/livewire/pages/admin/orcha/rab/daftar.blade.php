@@ -53,6 +53,51 @@ RAB & Itinerary || lemon
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
+        {{-- ================== RINGKASAN ==================
+
+             Angkanya sudah ada di tiap baris; yang belum ada cara
+             menjumlahkannya. "Berapa yang sudah dikirim tapi belum dijawab"
+             adalah pertanyaan harian. Semuanya bisa diklik — angka yang
+             menunjuk pekerjaan tetapi tidak membawa ke sana cuma menambah
+             beban. --}}
+        @if ($ringkas !== [])
+            @php
+                $ubin = [
+                    ['kunci' => 'jumlah', 'label' => 'Penawaran', 'ket' => 'di seluruh daftar', 'warna' => 'var(--dsb-utama)'],
+                    ['kunci' => 'draf', 'label' => 'Masih draf', 'ket' => 'belum dikirim', 'warna' => 'var(--dsb-netral)'],
+                    ['kunci' => 'dikirim', 'label' => 'Sudah dikirim', 'ket' => 'menunggu jawaban', 'warna' => 'var(--dsb-telaah)'],
+                    ['kunci' => 'disetujui', 'label' => 'Disetujui', 'ket' => 'jadi berangkat', 'warna' => 'var(--dsb-aman)'],
+                    ['kunci' => 'kedaluwarsa', 'label' => 'Lewat masa berlaku', 'ket' => 'masih menunggu jawaban', 'warna' => 'var(--dsb-awas)'],
+                ];
+            @endphp
+
+            <section class="dsb-bagian">
+                <div class="rb-ubin-rak">
+                    @foreach ($ubin as $u)
+                        @php
+                            $nilai = (int) ($ringkas[$u['kunci']] ?? 0);
+                            $bisaDiklik = $u['kunci'] !== 'jumlah';
+                            $terpasang = $bisaDiklik && $this->ubinNyala($u['kunci']);
+                        @endphp
+                        {{-- Keputusan saringannya dirakit di komponen, bukan di
+                             dalam atribut wire: — isi atribut bukan kode PHP. --}}
+                        <button type="button" class="rb-ubin {{ $terpasang ? 'is-nyala' : '' }} {{ $bisaDiklik ? '' : 'is-diam' }}"
+                            style="--c: {{ $u['warna'] }}"
+                            @if ($bisaDiklik)
+                                wire:click="pasangUbin('{{ $u['kunci'] }}')"
+                                title="{{ $terpasang ? 'Lepas saringannya' : 'Lihat yang '.strtolower($u['label']) }}"
+                            @else
+                                disabled
+                            @endif>
+                            <span class="rb-ubin-label">{{ $u['label'] }}</span>
+                            <span class="rb-ubin-nilai">{{ number_format($nilai, 0, ',', '.') }}</span>
+                            <span class="rb-ubin-ket">{{ $u['ket'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         {{-- ================== SARINGAN ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
@@ -72,7 +117,27 @@ RAB & Itinerary || lemon
                                 @endforeach
                             </select>
 
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                            <select class="dsb-isian rb-pilih" wire:model.live="filterProvinsi" aria-label="Saring menurut provinsi">
+                                <option value="" @selected((string) $this->filterProvinsi === '')>Semua provinsi</option>
+                                @foreach ($provinsi as $p)
+                                    <option value="{{ $p }}" @selected((string) $this->filterProvinsi === (string) $p)>{{ $p }}</option>
+                                @endforeach
+                            </select>
+
+                            <select class="dsb-isian rb-pilih" wire:model.live="filterJenis" aria-label="Saring menurut jenis trip">
+                                <option value="" @selected((string) $this->filterJenis === '')>Private &amp; open</option>
+                                <option value="private" @selected((string) $this->filterJenis === 'private')>Private trip</option>
+                                <option value="open" @selected((string) $this->filterJenis === 'open')>Open trip</option>
+                            </select>
+
+                            <select class="dsb-isian rb-pilih" wire:model.live="urut" aria-label="Urutkan daftar">
+                                <option value="" @selected((string) $this->urut === '')>Urut: terbaru</option>
+                                <option value="berangkat" @selected((string) $this->urut === 'berangkat')>Berangkat terdekat</option>
+                                <option value="pelanggan" @selected((string) $this->urut === 'pelanggan')>Nama pelanggan</option>
+                                <option value="lama" @selected((string) $this->urut === 'lama')>Paling lama</option>
+                            </select>
+
+                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama rb-baru">
                                 <i class="bi bi-plus-lg"></i><span>RAB Baru</span>
                             </button>
 
@@ -264,6 +329,154 @@ RAB & Itinerary || lemon
             </section>
         @endif
 
+        {{-- ================== SALIN PENAWARAN ==================
+
+             Penawaran serupa untuk pelanggan lain adalah pekerjaan yang
+             paling sering diulang di layar ini. Yang dikosongkan ikut
+             nilai aslinya — menyalin biasanya berarti "sama, kecuali
+             satu-dua hal". --}}
+        @if ($salinDari !== null)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-awas)"><i class="bi bi-files"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Salin penawaran</h3>
+                                    <span class="dsb-kartu-sub">
+                                        Itinerary dan seluruh baris biayanya ikut tersalin. Salinannya berstatus
+                                        <strong>draf</strong> dengan kode dan masa berlaku baru. Kotak yang dibiarkan
+                                        kosong memakai isi penawaran aslinya.
+                                    </span>
+                                </div>
+                            </div>
+                            <button type="button" wire:click="tutupSalin" class="dsb-tombol is-lembut">
+                                <i class="bi bi-x-lg"></i><span>Tutup</span>
+                            </button>
+                        </div>
+
+                        <div class="dsb-kartu-isi">
+                            <div class="rb-salin">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-salin-nama">
+                                        Nama pelanggan <span class="dsb-label-ket">boleh dikosongkan</span>
+                                    </label>
+                                    <input id="rb-salin-nama" type="text" maxlength="120"
+                                        wire:model="salinIsian.nama_pelanggan"
+                                        class="dsb-isian @error('salinIsian.nama_pelanggan') is-galat @enderror"
+                                        placeholder="Ikut penawaran aslinya">
+                                </div>
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-salin-wa">WhatsApp</label>
+                                    <input id="rb-salin-wa" type="text" maxlength="32" wire:model="salinIsian.whatsapp"
+                                        class="dsb-isian" placeholder="Ikut penawaran aslinya">
+                                </div>
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="rb-salin-tgl">Tanggal berangkat</label>
+                                    <input id="rb-salin-tgl" type="date" wire:model="salinIsian.tanggal_mulai"
+                                        class="dsb-isian">
+                                </div>
+
+                                <span class="rb-salin-tombol">
+                                    <button type="button" wire:click="salin"
+                                        wire:loading.attr="disabled" wire:target="salin"
+                                        class="dsb-tombol is-utama">
+                                        <i class="bi bi-files" wire:loading.remove wire:target="salin"></i>
+                                        <span class="dsb-putar" wire:loading wire:target="salin"></span>
+                                        <span>Salin</span>
+                                    </button>
+                                </span>
+                            </div>
+
+                            @error('salinIsian.nama_pelanggan')<span class="dsb-galat">{{ $message }}</span>@enderror
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== VERSI PENAWARAN ================== --}}
+        @if ($versiUntuk !== null)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-clock-history"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Versi yang pernah dikirim — {{ $versiMeta['kode'] ?? '' }}</h3>
+                                    <span class="dsb-kartu-sub">
+                                        Direkam tiap kali status berpindah ke <strong>dikirim</strong>.
+                                        Sekarang {{ $versiMeta['harga_kini_teks'] ?? '-' }}.
+                                    </span>
+                                </div>
+                            </div>
+                            <button type="button" wire:click="tutupVersi" class="dsb-tombol is-lembut">
+                                <i class="bi bi-x-lg"></i><span>Tutup</span>
+                            </button>
+                        </div>
+
+                        @if ($versi === [])
+                            <div class="dsb-kartu-isi">
+                                <p class="rb-nihil">
+                                    <i class="bi bi-clock-history"></i>
+                                    Penawaran ini belum pernah dikirim, jadi belum ada versi yang direkam.
+                                </p>
+                            </div>
+                        @else
+                            <div class="dsb-tabel-bungkus">
+                                <table class="dsb-tabel">
+                                    <thead>
+                                        <tr>
+                                            <th>Versi</th>
+                                            <th class="text-end">Harga saat itu</th>
+                                            <th class="text-end">Untung</th>
+                                            <th>Oleh</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($versi as $v)
+                                            <tr wire:key="versi-{{ $v['id'] }}">
+                                                <td data-judul="Versi">
+                                                    <span class="rb-utama">
+                                                        <span class="dsb-tabel-judul">Versi {{ $v['urutan'] }}</span>
+                                                        <span class="dsb-tabel-meta">{{ $v['pada'] }} · {{ $v['pada_teks'] }}</span>
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Harga saat itu" class="text-end">
+                                                    <span class="rb-utama is-kanan">
+                                                        <span class="dsb-tabel-judul dsb-tabel-angka">{{ $v['harga_total_teks'] }}</span>
+                                                        <span class="dsb-tabel-meta dsb-tabel-angka">{{ $v['harga_per_orang_teks'] }}/org · {{ $v['jumlah_peserta'] }} peserta</span>
+                                                        @if ($v['beda_kini'])
+                                                            {{-- Yang dicari saat pelanggan menyebut angka
+                                                                 yang tidak lagi ada di layar. --}}
+                                                            <span class="rb-beda">{{ $v['beda_kini'] }}</span>
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Untung" class="text-end">
+                                                    <span class="rb-utama is-kanan">
+                                                        <span class="dsb-tabel-angka rb-untung is-{{ $this->rupaUntung($v['persen_untung'] ?? null) }}">{{ $v['untung_teks'] }}</span>
+                                                        @isset($v['persen_untung'])
+                                                            <span class="dsb-tabel-meta dsb-tabel-angka">{{ str_replace('.', ',', (string) $v['persen_untung']) }}%</span>
+                                                        @endisset
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Oleh">{{ $v['oleh'] ?: 'tidak tercatat' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
+
         {{-- ================== DAFTAR ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
@@ -339,7 +552,13 @@ RAB & Itinerary || lemon
                                             </td>
                                             <td data-judul="Untung" class="text-end">
                                                 <span class="rb-utama is-kanan">
-                                                    <span class="dsb-tabel-angka rb-untung">{{ $baris['untung_teks'] }}</span>
+                                                    {{-- Warnanya ikut tipisnya margin. Selalu hijau
+                                                         membuat penawaran yang merugi pun tergambar
+                                                         meyakinkan — padahal ini satu-satunya angka
+                                                         yang bisa mencegahnya terkirim. --}}
+                                                    <span class="dsb-tabel-angka rb-untung is-{{ $this->rupaUntung($baris['persen_untung'] ?? null) }}">
+                                                        {{ $baris['untung_teks'] }}
+                                                    </span>
                                                     @isset($baris['persen_untung'])
                                                         <span class="dsb-tabel-meta dsb-tabel-angka">{{ str_replace('.', ',', $baris['persen_untung']) }}%</span>
                                                     @endisset
@@ -372,6 +591,32 @@ RAB & Itinerary || lemon
                                                         class="dsb-tabel-btn" style="--c: #0369a1" title="Unduh PDF penawaran">
                                                         <i class="bi bi-file-earmark-pdf"></i>
                                                     </a>
+                                                    {{-- Nomornya sudah tersimpan dan PDF-nya sudah ada,
+                                                         tetapi mengirimnya masih manual di SETIAP
+                                                         penawaran: unduh, buka WA, cari nomor, ketik. --}}
+                                                    @php($wa = $this->tautanWa($baris))
+                                                    @if ($wa)
+                                                        <a href="{{ $wa }}" target="_blank" rel="noopener"
+                                                            class="dsb-tabel-btn" style="--c: var(--dsb-aman)"
+                                                            title="Kirim penawarannya lewat WhatsApp">
+                                                            <i class="bi bi-whatsapp"></i>
+                                                        </a>
+                                                    @endif
+                                                    {{-- Hanya bila pernah dikirim: tombol yang selalu
+                                                         membuka panel kosong mengajari orang untuk
+                                                         tidak menekannya lagi. --}}
+                                                    @if (($baris['status'] ?? '') !== 'draf')
+                                                        <button type="button" wire:click="bukaVersi({{ $baris['id'] }})"
+                                                            class="dsb-tabel-btn" style="--c: var(--dsb-telaah)"
+                                                            title="Versi penawaran yang pernah dikirim">
+                                                            <i class="bi bi-clock-history"></i>
+                                                        </button>
+                                                    @endif
+                                                    <button type="button" wire:click="bukaSalin({{ $baris['id'] }}, {{ json_encode($baris) }})"
+                                                        class="dsb-tabel-btn" style="--c: var(--dsb-awas)"
+                                                        title="Buat penawaran baru dari salinan ini">
+                                                        <i class="bi bi-files"></i>
+                                                    </button>
                                                     @if ($bisaDihapus)
                                                         <button type="button" class="dsb-tabel-btn pcek-konfirmasi" style="--c: #be123c"
                                                             data-action="hapus" data-arg="{{ $baris['id'] }}"
@@ -391,6 +636,14 @@ RAB & Itinerary || lemon
                     @endif
 
                     <div class="rb-halaman">
+                        <label class="rb-baris-pilih">
+                            <span>Tampilkan</span>
+                            <select class="dsb-isian" wire:model.live="barisHalaman" aria-label="Jumlah baris per halaman">
+                                @foreach ([10, 25, 50, 100] as $n)
+                                    <option value="{{ $n }}" @selected((int) $this->barisHalaman === $n)>{{ $n }} baris</option>
+                                @endforeach
+                            </select>
+                        </label>
                         @include('livewire.pages.admin.orcha.partials.paginasi')
                     </div>
                 </div>
@@ -461,10 +714,54 @@ RAB & Itinerary || lemon
         .rb-utama.is-kanan { align-items: flex-end; }
         .rb-tautan { text-decoration: none; }
         .rb-tautan:hover { color: #4338ca; }
-        .rb-untung { font-weight: 700; color: #047857; }
+        /* Warna untung mengikuti tipisnya margin — lihat rupaUntung() di
+           komponennya. Yang merugi tidak boleh tergambar seperti yang
+           sehat. */
+        .rb-untung { font-weight: 700; }
+        .rb-untung.is-sehat { color: var(--dsb-aman, #047857); }
+        .rb-untung.is-tipis { color: var(--dsb-awas, #b45309); }
+        .rb-untung.is-rugi { color: var(--dsb-bahaya, #be123c); }
+        .rb-untung.is-netral { color: var(--dsb-redup, #6b7280); }
+
+        /* ===== Ringkasan ===== */
+        .rb-ubin-rak { display: flex; flex-wrap: wrap; gap: 12px; }
+        .rb-ubin {
+            flex: 1 1 170px; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+            padding: 13px 15px; text-align: left; cursor: pointer;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 15px;
+            border-top: 3px solid var(--c);
+            box-shadow: 0 10px 24px -20px rgba(15, 23, 42, .5);
+            transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+        }
+        .rb-ubin:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 30px -22px rgba(15, 23, 42, .55); }
+        .rb-ubin.is-diam { cursor: default; background: #fbfcfe; box-shadow: none; }
+        .rb-ubin.is-diam:hover { transform: none; box-shadow: none; }
+        .rb-ubin.is-nyala { background: color-mix(in srgb, var(--c) 9%, #fff); border-color: color-mix(in srgb, var(--c) 32%, #fff); }
+        .rb-ubin-label { font-size: .74rem; font-weight: 700; color: var(--dsb-redup, #6b7280); letter-spacing: .02em; }
+        .rb-ubin-nilai { font-size: 1.5rem; font-weight: 800; color: var(--c); line-height: 1.1; }
+        .rb-ubin-ket { font-size: .72rem; color: var(--dsb-redup, #6b7280); }
+
+        /* ===== Salin & versi ===== */
+        .rb-salin { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; }
+        .rb-salin > .dsb-medan { flex: 1 1 200px; min-width: 0; }
+        .rb-salin-tombol { flex: 0 0 auto; }
+        .rb-beda { font-size: .74rem; color: var(--dsb-awas, #b45309); }
+        .rb-nihil {
+            display: flex; align-items: center; gap: 8px; margin: 0;
+            font-size: .84rem; color: var(--dsb-redup, #6b7280);
+        }
+        .rb-baris-pilih {
+            display: inline-flex; align-items: center; gap: 7px; margin-right: auto;
+            font-size: .8rem; color: var(--dsb-redup, #6b7280);
+        }
+        .rb-baris-pilih .dsb-isian { width: auto; height: 36px; padding: 0 30px 0 11px; font-size: .8rem; }
+        .rb-baru { margin-left: auto; }
         .rb-status-rak { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 
-        .rb-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
+        .rb-halaman {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9;
+        }
         .rb-halaman > * { margin-bottom: 0 !important; }
 
         @media (max-width: 991.98px) {

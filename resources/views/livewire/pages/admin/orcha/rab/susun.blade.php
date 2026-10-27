@@ -326,6 +326,22 @@ Susun RAB || lemon
         .rab-destinasi button.dipakai { background: #eafaf1; border-color: #9fd6b4; color: #14683f; font-weight: 600; }
         .rab-destinasi .tiket { color: #b7791f; }
         .rab-lengket { position: sticky; top: 90px; }
+
+        .rab-muat {
+            display: none; align-items: center; gap: 9px;
+            margin-bottom: 14px; padding: 10px 15px; border-radius: 13px;
+            background: #eef2ff; border: 1px solid #c7d2fe;
+            font-size: .83rem; font-weight: 600; color: #3730a3;
+        }
+        .rab-tertahan { border-color: #fde68a !important; background: #fffbeb !important; }
+        .rab-titik {
+            display: inline-block; width: 7px; height: 7px; margin-left: 5px;
+            border-radius: 999px; background: #b45309;
+        }
+        .rab-tertahan-ket {
+            display: inline-flex; align-items: center; gap: 6px; margin-right: auto;
+            font-size: .79rem; font-weight: 600; color: #92400e;
+        }
         .rab-harga-besar { font-size: 1.9rem; font-weight: 800; color: var(--orc-primer); line-height: 1.1; }
         .rab-baris-angka { display: flex; justify-content: space-between; font-size: .88rem; padding: .3rem 0; color: var(--orc-tinta); }
         .rab-baris-angka.garis { border-top: 1px dashed #e2e8f0; margin-top: .3rem; padding-top: .55rem; }
@@ -512,6 +528,17 @@ Susun RAB || lemon
     </style>
 
     <div class="dsb">
+        {{-- Menarik biaya dari master dan menyimpan kepala adalah panggilan
+             ke Orcha yang bisa makan waktu. Tanpa tanda, layarnya terbaca
+             seperti membeku dan orang menekan tombolnya lagi.
+             display:none ditulis sendiri — lihat catatan "wire:loading kalah
+             bobot CSS". --}}
+        <div class="rab-muat" wire:loading.flex
+            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
+            <span class="dsb-putar"></span>
+            <span>Sedang menyimpan ke Orcha…</span>
+        </div>
+
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
@@ -565,8 +592,14 @@ Susun RAB || lemon
                                     <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
                                 @endforeach
                             </select>
-                            <button type="button" wire:click="$toggle('bukaKepala')" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                            {{-- Panel ini hanya tersimpan saat Simpan ditekan.
+                                 Tanpa tanda, menutupnya atau berpindah halaman
+                                 membuang perubahannya tanpa sepatah kata. --}}
+                            <button type="button" wire:click="$toggle('bukaKepala')"
+                                class="dsb-tombol is-lembut {{ $this->kepalaBerubah() ? 'rab-tertahan' : '' }}"
+                                style="--ikon: {{ $this->kepalaBerubah() ? '#b45309' : '#64748b' }}">
                                 <i class="bi bi-sliders"></i> Data perjalanan
+                                @if ($this->kepalaBerubah())<span class="rab-titik" title="Ada perubahan yang belum disimpan"></span>@endif
                             </button>
                             <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'penawaran']) }}" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                 <i class="bi bi-file-earmark-pdf"></i> PDF Penawaran
@@ -639,7 +672,19 @@ Susun RAB || lemon
                                 </div>
                             </div>
                             <div class="d-flex gap-2 justify-content-end pt-3">
-                                <button type="button" wire:click="$set('bukaKepala', false)" class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
+                                @if ($this->kepalaBerubah())
+                                    <span class="rab-tertahan-ket">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        Ada perubahan yang belum disimpan.
+                                    </span>
+                                    <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
+                                        data-action="batalKepala"
+                                        data-title="Buang perubahannya?"
+                                        data-text="Yang sudah diketik di panel ini akan kembali seperti semula."
+                                        data-confirm="Ya, buang" data-icon="warning">Batal</button>
+                                @else
+                                    <button type="button" wire:click="batalKepala" class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
+                                @endif
                                 <button type="button" wire:click="simpanKepala" wire:loading.attr="disabled" wire:target="simpanKepala" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                     <i class="bi bi-check2-circle"></i> Simpan
                                 </button>
