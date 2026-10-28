@@ -70,7 +70,9 @@ Susun RAB || lemon
     $adaTanpaTiket = $tanpaTiket !== [];
     $hargaBasi = (bool) ($r['ada_harga_basi'] ?? false);
     $manualBerkapasitas = in_array($manual['satuan'] ?? '', ['unit_hari', 'kamar_malam'], true);
-    $marginPersen = $marginJenis === 'persen';
+    // Kedua jenis persen memakai kotak isian bersatuan "%", bukan rupiah.
+    $marginPersen = in_array($marginJenis, ['persen', 'persen_harga'], true);
+    $marginDariHarga = $marginJenis === 'persen_harga';
     $marginBelumTersimpan = $marginJenis !== ($rab['margin_jenis'] ?? $marginJenis);
 
     $tanggalTeks = ! empty($rab['tanggal_mulai'])
@@ -96,7 +98,24 @@ Susun RAB || lemon
     $nego = $r['nego'] ?? null;
     $tambahanBulat = (int) ($r['tambahan_pembulatan'] ?? 0);
     $pembulatanTeks = 'Rp '.number_format((int) $pembulatan, 0, ',', '.');
+    /*
+     | Cadangannya seminimal mungkin — hanya "tanpa pembulatan" dan nilai
+     | yang sedang dipakai RAB ini. Menyalin ulang daftar panjang di sini
+     | akan jadi daftar kedua yang diam-diam melenceng dari Orcha, persis
+     | masalah yang baru saja dibereskan.
+     */
+    $pilihanPembulatan = $kosakata['pembulatan'] ?? [1 => 'Rp 1 · tanpa pembulatan', (int) $pembulatan => $pembulatanTeks];
     $bulatMelampauiMargin = $tambahanBulat > (int) ($r['margin_diminta'] ?? 0);
+    $untungSehat = (float) ($r['persen_untung'] ?? 0) >= 10;
+    $untungRugi = (float) ($r['persen_untung'] ?? 0) < 0;
+    // Persen ditulis dengan %, nominal dengan Rp — jenisnya yang menentukan,
+    // bukan tebakan dari besar angkanya.
+    $marginDimintaKet = match ($rab['margin_jenis'] ?? 'persen') {
+        'persen' => ($rab['margin_nilai'] ?? 0).'% dari modal',
+        'persen_harga' => ($rab['margin_nilai'] ?? 0).'% dari harga jual',
+        'per_orang' => 'Rp '.number_format((int) ($rab['margin_nilai'] ?? 0), 0, ',', '.').' per orang',
+        default => 'ditetapkan untuk rombongan',
+    };
     $negoSelisih = (int) ($nego['selisih']['harga_per_orang'] ?? 0);
     $negoTurun = $negoSelisih < 0;
     $negoSelisihTeks = 'Rp '.number_format(abs($negoSelisih), 0, ',', '.');
@@ -399,6 +418,12 @@ Susun RAB || lemon
         .rab-destinasi button:hover { border-color: var(--orc-primer); color: var(--orc-primer); }
         .rab-destinasi button.dipakai { background: #eafaf1; border-color: #9fd6b4; color: #14683f; font-weight: 600; }
         .rab-destinasi .tiket { color: #b7791f; }
+        /* Lengket tanpa gulirnya sendiri.
+           Diukur 28 Okt 2026: panel ini SELALU mengisi layar saat halaman
+           digulir (398-900px terlihat di tiap posisi), jadi tidak pernah ada
+           ruang mati di sebelahnya. Memberinya max-height + overflow justru
+           memperbesar ruang kosong di bawahnya dan menambah satu bidang
+           gulir yang tidak diminta siapa pun. */
         .rab-lengket { position: sticky; top: 90px; }
 
         .rab-muat {
@@ -654,6 +679,66 @@ Susun RAB || lemon
            Dibedakan supaya terbaca sebagai penjelas, bukan biaya baru. */
         .rb-tambahan { color: var(--dsb-redup, #6b7280); }
         .rb-tambahan small { display: block; font-size: .7rem; opacity: .85; }
+
+        /* Pemisah BERNAMA. Garis polos memisahkan tanpa menjelaskan apa yang
+           dipisahkan; nama bagiannya yang membuat kolom ini bisa dibaca dari
+           atas ke bawah tanpa dituntun. */
+        /* Aturan .orcha-rupiah di lembar gaya bersama menyasar .form-control;
+           isian di layar ini memakai .dsb-isian, jadi paddingnya disamakan di
+           sini — tanpa ini angkanya bertumpuk dengan awalan "Rp". */
+        .rb-uang-sel .dsb-isian { padding-left: 1.95rem; font-weight: 600; }
+
+        /* Hitungan per peserta: dua kolom, angkanya rata kanan dan sejajar
+           angkanya satu sama lain (tabular-nums) supaya bisa dibandingkan
+           sekilas tanpa menghitung digit. */
+        .rb-beda-persen {
+            display: flex; align-items: flex-start; gap: 7px; margin-bottom: 10px;
+            padding: 9px 11px; border-radius: 11px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+            font-size: .75rem; line-height: 1.5; color: var(--dsb-redup, #6b7280);
+        }
+        .rb-beda-persen i { margin-top: 2px; color: #b45309; }
+        .rb-beda-persen strong { color: var(--dsb-tinta, #1c1f26); }
+
+        .rb-pax { width: 100%; border-collapse: collapse; font-size: .82rem; }
+        .rb-pax td { padding: 6px 0; vertical-align: top; }
+        .rb-pax td:last-child {
+            text-align: right; font-weight: 600; white-space: nowrap;
+            font-variant-numeric: tabular-nums; color: var(--dsb-tinta, #1c1f26);
+        }
+        .rb-pax tr + tr td { border-top: 1px solid #eef1f6; }
+        .rb-pax small {
+            display: block; font-size: .7rem; font-weight: 400;
+            color: var(--dsb-redup, #94a3b8); line-height: 1.35;
+        }
+        /* Baris yang diubah admin & baris hasilnya ditandai, seperti sel
+           kuning & hijau di lembar kerja yang sudah dipakai tim. */
+        .rb-pax-atur td { background: #fffbeb; }
+        .rb-pax-atur td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
+        .rb-pax-atur td:last-child { border-radius: 0 8px 8px 0; padding-right: 8px; color: #92400e; }
+        .rb-pax-jual td { background: #f0fdf4; font-weight: 700; }
+        .rb-pax-jual td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
+        .rb-pax-jual td:last-child { border-radius: 0 8px 8px 0; padding-right: 8px; color: #166534; }
+        .rb-pax-total td:last-child { color: var(--dsb-aman, #047857); }
+
+        .rb-pisah {
+            display: flex; align-items: center; gap: 8px;
+            margin: 16px 0 9px; font-size: .66rem; font-weight: 700;
+            letter-spacing: .06em; text-transform: uppercase;
+            color: var(--dsb-redup, #94a3b8); white-space: nowrap;
+        }
+        .rb-pisah::after {
+            content: ''; flex: 1 1 auto; height: 1px; background: #eef1f6;
+        }
+        /* Baris hitungan: keterangannya di bawah namanya, bukan di sebelah
+           angkanya — kolom ini cuma 300px, dan keterangan yang bersaing
+           dengan angka membuat keduanya terpotong. */
+        .rb-hitung-baris small {
+            display: block; font-size: .7rem; font-weight: 400;
+            color: var(--dsb-redup, #94a3b8); line-height: 1.35;
+        }
+        .rb-hitung-baris > span:first-child { line-height: 1.3; }
+        .rb-tambah { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
         .rb-bulat-dominan {
             display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 2px;
@@ -1493,7 +1578,15 @@ Susun RAB || lemon
                                                                 placeholder="Kenapa berbeda? mis. hasil nego, low season, kamar triple">
                                                         @endisset
                                                     </td>
-                                                    <td data-judul="Harga satuan"><input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian"></td>
+                                                    {{-- "Rp" di DALAM kotaknya, sama seperti seluruh isian
+                                                         uang lain di lemon. Angka telanjang di kolom yang
+                                                         bersebelahan dengan kolom "Jumlah" terbaca sebagai
+                                                         banyaknya, bukan harganya. --}}
+                                                    <td data-judul="Harga satuan">
+                                                        <div class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
+                                                            <input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                        </div>
+                                                    </td>
                                                     <td data-judul="Jumlah"><input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian"></td>
                                                     <td data-judul="Subtotal" class="text-end fw-bold text-nowrap">{{ $b['subtotal_teks'] }}</td>
                                                     <td class="text-end rab-sel-aksi">
@@ -1638,9 +1731,30 @@ Susun RAB || lemon
                                         </div>
                                     @endif
 
-                                    <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
-                                    <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
-                                    <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
+                                    {{-- Dari mana harganya.
+
+                                         Sebelumnya empat baris sejajar tanpa hubungan yang
+                                         terlihat, lalu kartu untung di bawahnya. Pembacanya
+                                         harus menjumlahkan sendiri untuk tahu apakah
+                                         angkanya nyambung. Kini ia ditulis sebagai
+                                         penjumlahan: tanda + di tiap baris, dan hasilnya
+                                         kartu untung tepat di bawahnya. --}}
+                                    <div class="rb-pisah">Dari mana harganya</div>
+
+                                    <div class="rab-baris-angka rb-hitung-baris">
+                                        <span>
+                                            Modal total
+                                            <small>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }} per kepala</small>
+                                        </span>
+                                        <strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong>
+                                    </div>
+                                    <div class="rab-baris-angka rb-hitung-baris">
+                                        <span>
+                                            Margin diminta
+                                            <small>{{ $marginDimintaKet }}</small>
+                                        </span>
+                                        <span class="rb-tambah">+{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span>
+                                    </div>
 
                                     {{-- Baris yang hilang selama ini.
 
@@ -1650,12 +1764,12 @@ Susun RAB || lemon
                                          keduanya — pembacanya menyimpulkan salah hitung.
                                          Justru pada harga kecil selisihnya paling besar. --}}
                                     @if ($tambahanBulat > 0 && ! $negoAktif)
-                                        <div class="rab-baris-angka rb-tambahan">
+                                        <div class="rab-baris-angka rb-hitung-baris rb-tambahan">
                                             <span>
                                                 Tambahan dari pembulatan
-                                                <small>naik ke kelipatan {{ $pembulatanTeks }}</small>
+                                                <small>harga naik ke kelipatan {{ $pembulatanTeks }}</small>
                                             </span>
-                                            <span>+{{ $r['tambahan_pembulatan_teks'] }}</span>
+                                            <span class="rb-tambah">+{{ $r['tambahan_pembulatan_teks'] }}</span>
                                         </div>
                                         {{-- Pembulatan yang menambah lebih banyak daripada
                                              margin yang diminta berarti kelipatannya terlalu
@@ -1676,6 +1790,141 @@ Susun RAB || lemon
                                             </div>
                                         @endif
                                     @endif
+
+                                    {{-- Untung diangkat jadi kartunya sendiri: ia jawaban
+                                         dari seluruh layar ini, bukan baris keempat dalam
+                                         deretan yang semuanya berbobot sama. --}}
+                                    <div class="rb-untung-kartu {{ $untungRugi ? 'is-rugi' : ($untungSehat ? 'is-sehat' : 'is-tipis') }}">
+                                        <div class="rb-untung-kepala">
+                                            <span>Untung</span>
+                                            @isset($r['persen_untung'])
+                                                <span class="rb-untung-persen">{{ str_replace('.', ',', $r['persen_untung']) }}%</span>
+                                            @endisset
+                                        </div>
+                                        <strong class="rb-untung-nilai">{{ $r['untung_teks'] ?? 'Rp 0' }}</strong>
+                                        {{-- Persennya diukur dari MODAL. Tanpa disebut, ia
+                                             bertabrakan dengan "target margin 5% dari harga
+                                             jual" di bawahnya: dua angka berbeda untuk
+                                             perjalanan yang sama, tanpa ada yang menjelaskan
+                                             keduanya mengukur hal yang berlainan. --}}
+                                        <span class="rb-untung-kaki">
+                                            {{ $r['untung_per_orang_teks'] ?? 'Rp 0' }} per orang ·
+                                            persennya diukur dari modal
+                                        </span>
+
+                                        {{-- Untung sesudah kesepakatan tidak berarti apa-apa
+                                             sendirian. Angka ini adalah jawaban dari seluruh
+                                             layar, dan begitu harganya ditawar, pertanyaannya
+                                             berubah jadi "dibanding berapa?" — jadi
+                                             pembandingnya ikut di sini, bukan cuma di tabel
+                                             yang harus dicari. --}}
+                                        @if ($negoAktif && $nego)
+                                            <div class="rb-untung-banding">
+                                                <div class="rb-untung-baris">
+                                                    <span>Sebelum ditawar</span>
+                                                    <span class="rb-untung-dulu">
+                                                        {{ $nego['sebelum']['untung_teks'] }}
+                                                        @isset($nego['sebelum']['persen_untung'])
+                                                            · {{ $this->persenTeks($nego['sebelum']['persen_untung']) }}
+                                                        @endisset
+                                                    </span>
+                                                </div>
+                                                <div class="rb-untung-baris">
+                                                    <span>Dilepas</span>
+                                                    <span class="rb-untung-lepas">
+                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung'])) }}
+                                                        @isset($nego['selisih']['bagian_untung_dilepas'])
+                                                            ({{ $this->persenTeks($nego['selisih']['bagian_untung_dilepas']) }})
+                                                        @endisset
+                                                    </span>
+                                                </div>
+                                                <div class="rb-untung-baris">
+                                                    {{-- "Per orang" saja ambigu di kartu untung:
+                                                         ia bisa terbaca sebagai untung per orang,
+                                                         yang nilainya sudah tertulis di atas. --}}
+                                                    <span>Dilepas/orang</span>
+                                                    <span class="rb-untung-lepas">
+                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung_per_orang'])) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    {{-- Titik impas.
+
+                                         Sewa bus, honor koordinator, dan dokumentasi dibayar
+                                         sama saja entah yang berangkat sepuluh atau lima belas
+                                         orang — dan itulah yang membuat rombongan kecil
+                                         diam-diam merugi walau harganya terlihat untung di
+                                         atas kertas. --}}
+                                    <div class="rb-impas {{ $impasTercapai ? 'is-aman' : 'is-waspada' }}">
+                                        <span class="dsb-ikon is-kecil" style="--c: {{ $impasTercapai ? '#047857' : '#b45309' }}">
+                                            <i class="bi {{ $impasTercapai ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}"></i>
+                                        </span>
+                                        <div class="rb-impas-teks">
+                                            <span class="dsb-label mb-0">Balik modal mulai</span>
+                                            @if ($adaImpas)
+                                                <strong>{{ $impasPeserta }} peserta</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    Biaya tetap {{ $r['modal_tetap_teks'] ?? 'Rp 0' }} ·
+                                                    tiap kepala menyumbang {{ $r['sumbangan_per_orang_teks'] ?? 'Rp 0' }}
+                                                </span>
+                                            @else
+                                                <strong>Belum bisa dihitung</strong>
+                                                <span class="dsb-kartu-sub">
+                                                    Harga jualnya belum menutup biaya yang menempel per orang —
+                                                    menambah peserta tidak menolong.
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    {{-- HITUNGAN PER PESERTA.
+
+                                         Bentuk yang sudah dipakai tim di lembar kerjanya:
+                                         modal per orang → target margin → harga jual per
+                                         orang → untung per orang → untung rombongan. Lima
+                                         baris, satu alur, semuanya per kepala.
+
+                                         Blok "Dari mana harganya" di atas berbicara dalam
+                                         TOTAL rombongan; yang dipakai menawar dan dibawa ke
+                                         rapat justru angka per orang. Keduanya dari sumber
+                                         yang sama, jadi tidak bisa berselisih. --}}
+                                    <div class="rb-pisah">Hitungan per peserta</div>
+
+                                    <table class="rb-pax">
+                                        <tbody>
+                                            <tr>
+                                                <td>Modal per peserta</td>
+                                                <td>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</td>
+                                            </tr>
+                                            <tr class="rb-pax-atur">
+                                                <td>
+                                                    Target margin
+                                                    <small>{{ $marginDariHarga ? 'dari harga jual' : 'dari modal' }}</small>
+                                                </td>
+                                                <td>{{ $marginPersen ? $marginNilai.'%' : $marginDimintaKet }}</td>
+                                            </tr>
+                                            <tr class="rb-pax-jual">
+                                                <td>Harga jual per peserta</td>
+                                                <td>{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Untung per peserta</td>
+                                                <td>{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }}</td>
+                                            </tr>
+                                            <tr class="rb-pax-total">
+                                                <td>
+                                                    Untung rombongan
+                                                    <small>{{ $rab['jumlah_peserta'] }} peserta</small>
+                                                </td>
+                                                <td>{{ $r['untung_teks'] ?? 'Rp 0' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div class="rb-pisah">Kalau pelanggan menawar</div>
 
                                     {{-- PELANGGAN MENAWAR.
 
@@ -1830,89 +2079,6 @@ Susun RAB || lemon
                                         @endif
                                     </div>
 
-                                    {{-- Untung diangkat jadi kartunya sendiri: ia jawaban
-                                         dari seluruh layar ini, bukan baris keempat dalam
-                                         deretan yang semuanya berbobot sama. --}}
-                                    @php($untungSehat = (float) ($r['persen_untung'] ?? 0) >= 10)
-                                    @php($untungRugi = (float) ($r['persen_untung'] ?? 0) < 0)
-                                    <div class="rb-untung-kartu {{ $untungRugi ? 'is-rugi' : ($untungSehat ? 'is-sehat' : 'is-tipis') }}">
-                                        <div class="rb-untung-kepala">
-                                            <span>Untung</span>
-                                            @isset($r['persen_untung'])
-                                                <span class="rb-untung-persen">{{ str_replace('.', ',', $r['persen_untung']) }}%</span>
-                                            @endisset
-                                        </div>
-                                        <strong class="rb-untung-nilai">{{ $r['untung_teks'] ?? 'Rp 0' }}</strong>
-                                        <span class="rb-untung-kaki">{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }} per orang</span>
-
-                                        {{-- Untung sesudah kesepakatan tidak berarti apa-apa
-                                             sendirian. Angka ini adalah jawaban dari seluruh
-                                             layar, dan begitu harganya ditawar, pertanyaannya
-                                             berubah jadi "dibanding berapa?" — jadi
-                                             pembandingnya ikut di sini, bukan cuma di tabel
-                                             yang harus dicari. --}}
-                                        @if ($negoAktif && $nego)
-                                            <div class="rb-untung-banding">
-                                                <div class="rb-untung-baris">
-                                                    <span>Sebelum ditawar</span>
-                                                    <span class="rb-untung-dulu">
-                                                        {{ $nego['sebelum']['untung_teks'] }}
-                                                        @isset($nego['sebelum']['persen_untung'])
-                                                            · {{ $this->persenTeks($nego['sebelum']['persen_untung']) }}
-                                                        @endisset
-                                                    </span>
-                                                </div>
-                                                <div class="rb-untung-baris">
-                                                    <span>Dilepas</span>
-                                                    <span class="rb-untung-lepas">
-                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung'])) }}
-                                                        @isset($nego['selisih']['bagian_untung_dilepas'])
-                                                            ({{ $this->persenTeks($nego['selisih']['bagian_untung_dilepas']) }})
-                                                        @endisset
-                                                    </span>
-                                                </div>
-                                                <div class="rb-untung-baris">
-                                                    {{-- "Per orang" saja ambigu di kartu untung:
-                                                         ia bisa terbaca sebagai untung per orang,
-                                                         yang nilainya sudah tertulis di atas. --}}
-                                                    <span>Dilepas/orang</span>
-                                                    <span class="rb-untung-lepas">
-                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung_per_orang'])) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    {{-- Titik impas.
-
-                                         Sewa bus, honor koordinator, dan dokumentasi dibayar
-                                         sama saja entah yang berangkat sepuluh atau lima belas
-                                         orang — dan itulah yang membuat rombongan kecil
-                                         diam-diam merugi walau harganya terlihat untung di
-                                         atas kertas. --}}
-                                    <div class="rb-impas {{ $impasTercapai ? 'is-aman' : 'is-waspada' }}">
-                                        <span class="dsb-ikon is-kecil" style="--c: {{ $impasTercapai ? '#047857' : '#b45309' }}">
-                                            <i class="bi {{ $impasTercapai ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}"></i>
-                                        </span>
-                                        <div class="rb-impas-teks">
-                                            <span class="dsb-label mb-0">Balik modal mulai</span>
-                                            @if ($adaImpas)
-                                                <strong>{{ $impasPeserta }} peserta</strong>
-                                                <span class="dsb-kartu-sub">
-                                                    Biaya tetap {{ $r['modal_tetap_teks'] ?? 'Rp 0' }} ·
-                                                    tiap kepala menyumbang {{ $r['sumbangan_per_orang_teks'] ?? 'Rp 0' }}
-                                                </span>
-                                            @else
-                                                <strong>Belum bisa dihitung</strong>
-                                                <span class="dsb-kartu-sub">
-                                                    Harga jualnya belum menutup biaya yang menempel per orang —
-                                                    menambah peserta tidak menolong.
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-
                                     {{-- Tabel yang menjawab pertanyaan sebenarnya sebelum
                                          memberangkatkan open trip: "dapat sekian orang, kita
                                          untung atau rugi?"
@@ -1922,8 +2088,8 @@ Susun RAB || lemon
                                          bertambah, dan tangga itulah yang membuat satu
                                          peserta tambahan kadang justru menambah rugi. --}}
                                     @if ($openTrip && $simulasi !== [])
-                                        <div class="border-top mt-3 pt-3">
-                                            <div class="orcha-label-kecil mb-2">Kalau yang datang sekian</div>
+                                        <div class="mt-1">
+                                            <div class="rb-pisah">Kalau yang datang sekian</div>
                                             {{-- Enam belas baris tanpa judul kolom menuntut
                                                  pembacanya menebak angka mana yang mana.
                                                  Digulung di dalam kotaknya sendiri supaya
@@ -1955,8 +2121,8 @@ Susun RAB || lemon
                                     @endif
                                 @endif
 
-                                <div class="border-top mt-3 pt-3">
-                                    <div class="orcha-label-kecil mb-2">Margin</div>
+                                <div class="mt-1">
+                                    <div class="rb-pisah">Atur margin &amp; pembulatan</div>
 
                                     {{-- Kotak ini BERHENTI menentukan harga begitu ada
                                          kesepakatan, dan itu tidak terlihat dari mana pun.
@@ -1992,6 +2158,24 @@ Susun RAB || lemon
                                             </label>
                                         @endforeach
                                     </div>
+                                    {{-- Dua kata yang sama untuk dua hitungan berbeda.
+                                         Yang mengetik "20" sambil memikirkan margin dagang
+                                         akan mendapat harga lebih rendah daripada yang
+                                         dimaksudnya, dan tidak ada satu pun tanda bahwa
+                                         yang dihitung bukan yang dimaksud. --}}
+                                    @if ($marginPersen)
+                                        <div class="rb-beda-persen">
+                                            <i class="bi bi-lightbulb"></i>
+                                            <span>
+                                                <strong>Dari modal</strong> menambah di atas modal —
+                                                modal Rp 100.000 + 20% = Rp 120.000.
+                                                <strong>Dari harga jual</strong> menyisakan persennya di dalam harga —
+                                                Rp 100.000 ÷ 0,8 = Rp 125.000.
+                                                Pakai yang kedua bila angka Anda datang dari target margin dagang.
+                                            </span>
+                                        </div>
+                                    @endif
+
                                     @if ($marginPersen)
                                         <div class="rb-gandeng mb-2">
                                             <input type="text" inputmode="numeric" wire:model.blur="marginNilai" class="dsb-isian" placeholder="20">
@@ -2007,8 +2191,12 @@ Susun RAB || lemon
                                     @endif
                                     <div class="d-flex align-items-center gap-2 small">
                                         <span class="text-muted">Bulatkan ke atas per</span>
+                                        {{-- Daftarnya dari kosakata Orcha, BUKAN ditulis ulang
+                                             di sini. Dulu empat nilai di layar melawan enam
+                                             di validasi, jadi Rp 100 dan Rp 500 diterima API
+                                             tetapi tidak pernah bisa dipilih siapa pun. --}}
                                         <select wire:model.live="pembulatan" class="dsb-isian rb-isian-ringkas">
-                                            @foreach ([1 => 'Rp 1', 1000 => 'Rp 1.000', 5000 => 'Rp 5.000', 10000 => 'Rp 10.000'] as $nilai => $teks)
+                                            @foreach ($pilihanPembulatan as $nilai => $teks)
                                                 <option value="{{ $nilai }}" @selected((string) $this->pembulatan === (string) $nilai)>{{ $teks }}</option>
                                             @endforeach
                                         </select>
@@ -2030,8 +2218,8 @@ Susun RAB || lemon
                                 </div>
 
                                 @unless ($tanpaBiaya)
-                                    <div class="border-top mt-3 pt-3">
-                                        <div class="orcha-label-kecil mb-2">Per kategori</div>
+                                    <div class="mt-1">
+                                        <div class="rb-pisah">Modal per kategori</div>
                                         @foreach ($r['per_kategori'] ?? [] as $kat)
                                             <div class="rab-baris-angka"><span>{{ $kat['label'] }}</span><span>{{ $kat['total_teks'] }}</span></div>
                                         @endforeach

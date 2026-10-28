@@ -221,6 +221,7 @@
             ],
             "margin_jenis": {
                 "persen": "Persen dari modal",
+                "persen_harga": "Persen dari harga jual",
                 "per_orang": "Nominal per orang",
                 "total": "Nominal per rombongan"
             },
@@ -229,6 +230,17 @@
                 "dikirim": "Dikirim ke pelanggan",
                 "disetujui": "Disetujui",
                 "batal": "Batal"
+            },
+            "pembulatan": {
+                "1": "Rp 1 · tanpa pembulatan",
+                "100": "Rp 100",
+                "500": "Rp 500",
+                "1000": "Rp 1.000",
+                "5000": "Rp 5.000",
+                "10000": "Rp 10.000",
+                "25000": "Rp 25.000",
+                "50000": "Rp 50.000",
+                "100000": "Rp 100.000"
             }
         },
         "vendor": [

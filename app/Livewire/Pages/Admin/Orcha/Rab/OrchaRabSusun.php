@@ -1069,7 +1069,9 @@ class OrchaRabSusun extends Component
 
     private function simpanMargin(): void
     {
-        $nilai = $this->marginJenis === 'persen'
+        // Dua jenis persen, satu cara membaca angkanya: bilangan bulat,
+        // bukan rupiah bertitik.
+        $nilai = in_array($this->marginJenis, ['persen', 'persen_harga'], true)
             ? (int) round((float) str_replace(',', '.', $this->marginNilai))
             : $this->angkaDari($this->marginNilai);
 

@@ -3157,3 +3157,96 @@ test('pembulatan yang wajar tidak ditegur', function () {
         ->assertSee('Tambahan dari pembulatan')
         ->assertDontSee('terlalu kasar untuk harga sebesar ini');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Hitungan per peserta
+|--------------------------------------------------------------------------
+*/
+
+test('hitungan per peserta tampil lengkap dari modal sampai untung rombongan', function () {
+    palsukanRab();
+    $r = rekamanRab('show')['data']['ringkasan'];
+
+    // Bentuk yang sudah dipakai tim di lembar kerjanya. Lima baris, satu
+    // alur, semuanya per kepala — bukan total rombongan.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Hitungan per peserta')
+        ->assertSee('Modal per peserta')
+        ->assertSee($r['modal_per_kepala_teks'])
+        ->assertSee('Target margin')
+        ->assertSee('Harga jual per peserta')
+        ->assertSee($r['harga_per_orang_teks'])
+        ->assertSee('Untung per peserta')
+        ->assertSee($r['untung_per_orang_teks'])
+        ->assertSee('Untung rombongan')
+        ->assertSee($r['untung_teks']);
+});
+
+test('persen dari harga jual bisa dipilih dan dikirim sebagai bilangan bulat', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('marginJenis', 'persen_harga')
+        ->set('marginNilai', '5');
+
+    Http::assertSent(function (Request $r) {
+        return $r->method() === 'PATCH'
+            && ($r['margin_jenis'] ?? null) === 'persen_harga'
+            // Bilangan bulat, bukan rupiah bertitik seperti jenis nominal.
+            && $r['margin_nilai'] === 5;
+    });
+});
+
+test('beda kedua jenis persen dijelaskan dengan contoh angka', function () {
+    palsukanRab();
+
+    // "Margin 20%" punya dua arti yang dipakai orang dengan kata yang sama,
+    // dan keduanya memberi harga berbeda untuk modal yang sama.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('menambah di atas modal')
+        ->assertSee('menyisakan persennya di dalam harga')
+        ->assertSee('Rp 120.000')
+        ->assertSee('Rp 125.000');
+});
+
+test('persen di kartu untung menyebut tolok ukurnya', function () {
+    palsukanRab();
+
+    // Tanpa ini ia bertabrakan dengan "target margin dari harga jual" di
+    // bawahnya: dua angka berbeda untuk perjalanan yang sama.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('persennya diukur dari modal');
+});
+
+test('pilihan pembulatan dirakit dari kosakata Orcha, bukan daftar sendiri', function () {
+    palsukanRab();
+
+    // Daftar yang ditulis dua kali akan melenceng: Rp 100 dan Rp 500 pernah
+    // diterima API tetapi tidak pernah ditawarkan layar.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Rp 100')
+        ->assertSee('Rp 500')
+        ->assertSee('Rp 25.000')
+        ->assertSee('Rp 100.000')
+        ->assertSee('tanpa pembulatan');
+});
+
+test('layar tetap bisa digambar saat Orcha belum mengirim daftar pembulatan', function () {
+    Http::fake(function (Illuminate\Http\Client\Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalog = rekamanRab('katalog');
+            // Orcha yang belum dideploy tidak mengirim kunci ini sama sekali.
+            unset($katalog['meta']['kosakata']['pembulatan'], $katalog['kosakata']['pembulatan']);
+
+            return Http::response($katalog);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Bulatkan ke atas per');
+});
