@@ -3089,25 +3089,24 @@ test('tanpa kesepakatan, bagian margin tidak memberi peringatan apa pun', functi
         ->assertDontSee('tidak sedang dipakai');
 });
 
-test('selisih antara margin diminta dan untung disebut namanya', function () {
+test('selisih antara untung diminta dan untung didapat disebut namanya', function () {
     Http::fake(function () {
         $show = rekamanRab('show');
         $r = &$show['data']['ringkasan'];
         $show['data']['pembulatan'] = 5000;
-        $r['margin_diminta_teks'] = 'Rp 20.000';
-        $r['untung_teks'] = 'Rp 50.000';
         $r['tambahan_pembulatan'] = 30_000;
         $r['tambahan_pembulatan_teks'] = 'Rp 30.000';
+        $r['per_orang']['pembulatan_teks'] = 'Rp 3.000';
 
         return Http::response($show);
     });
 
-    // "Margin diminta Rp 20.000" tepat di atas "untung Rp 50.000" tanpa
-    // penjelasan terbaca sebagai salah hitung, bukan sebagai pembulatan.
+    // Tanpa barisnya, "untung yang diminta" tepat di atas untung yang
+    // didapat terbaca sebagai salah hitung, bukan sebagai pembulatan.
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
         ->assertSee('Tambahan dari pembulatan')
-        ->assertSee('+Rp 30.000')
-        ->assertSee('naik ke kelipatan Rp 5.000');
+        ->assertSee('+Rp 3.000')
+        ->assertSee('harga naik ke kelipatan Rp 5.000');
 });
 
 test('pembulatan yang tidak menambah apa-apa tidak menambah baris', function () {
@@ -3123,7 +3122,7 @@ test('pembulatan yang tidak menambah apa-apa tidak menambah baris', function () 
         ->assertDontSee('Tambahan dari pembulatan');
 });
 
-test('pembulatan yang menambah lebih banyak daripada margin ditegur', function () {
+test('pembulatan yang menambah lebih banyak daripada untung diminta ditegur', function () {
     Http::fake(function () {
         $show = rekamanRab('show');
         $r = &$show['data']['ringkasan'];
@@ -3139,7 +3138,8 @@ test('pembulatan yang menambah lebih banyak daripada margin ditegur', function (
     // Kelipatan 5.000 pada harga mentah 12.000 melompat 25%. Bukan galat,
     // tetapi hampir tidak pernah yang dimaksud.
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('terlalu kasar untuk harga sebesar ini');
+        ->assertSee('terlalu kasar')
+        ->assertSee('pilih kelipatan lebih kecil');
 });
 
 test('pembulatan yang wajar tidak ditegur', function () {
@@ -3155,7 +3155,7 @@ test('pembulatan yang wajar tidak ditegur', function () {
 
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
         ->assertSee('Tambahan dari pembulatan')
-        ->assertDontSee('terlalu kasar untuk harga sebesar ini');
+        ->assertDontSee('terlalu kasar');
 });
 
 /*
@@ -3164,23 +3164,23 @@ test('pembulatan yang wajar tidak ditegur', function () {
 |--------------------------------------------------------------------------
 */
 
-test('hitungan per peserta tampil lengkap dari modal sampai untung rombongan', function () {
+test('rantai harga per orang dibaca sebagai penjumlahan yang menutup', function () {
     palsukanRab();
     $r = rekamanRab('show')['data']['ringkasan'];
 
-    // Bentuk yang sudah dipakai tim di lembar kerjanya. Lima baris, satu
-    // alur, semuanya per kepala — bukan total rombongan.
+    // SATU rantai, bukan dua. Dulu totalnya dan per-pesertanya berdiri
+    // sendiri-sendiri, dan pembacanya harus memastikan keduanya cocok.
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('Hitungan per peserta')
-        ->assertSee('Modal per peserta')
-        ->assertSee($r['modal_per_kepala_teks'])
-        ->assertSee('Target margin')
-        ->assertSee('Harga jual per peserta')
-        ->assertSee($r['harga_per_orang_teks'])
-        ->assertSee('Untung per peserta')
-        ->assertSee($r['untung_per_orang_teks'])
-        ->assertSee('Untung rombongan')
-        ->assertSee($r['untung_teks']);
+        ->assertSee('Dari mana harganya')
+        ->assertSee('Modal per orang')
+        ->assertSee($r['per_orang']['modal_teks'])
+        ->assertSee('Untung yang diminta')
+        ->assertSee('Harga jual per orang')
+        ->assertSee($r['per_orang']['harga_teks'])
+        // Totalnya tetap terbaca, di kartu untung.
+        ->assertSee($r['untung_teks'])
+        // Rantai kedua dalam satuan total sudah tidak ada di panel ini.
+        ->assertDontSee('Modal per kepala');
 });
 
 test('persen dari harga jual bisa dipilih dan dikirim sebagai bilangan bulat', function () {
@@ -3248,7 +3248,7 @@ test('layar tetap bisa digambar saat Orcha belum mengirim daftar pembulatan', fu
     });
 
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('Bulatkan ke atas per');
+        ->assertSee('Bulatkan harga ke atas');
 });
 
 test('harga jual menyebut asalnya saat pembulatan menggesernya', function () {
@@ -3273,7 +3273,7 @@ test('harga yang tidak tergeser pembulatan tidak menambah keterangan', function 
     });
 
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('Harga jual per peserta')
+        ->assertSee('Harga jual per orang')
         ->assertDontSee('dibulatkan dari');
 });
 
@@ -3349,4 +3349,51 @@ test('kelipatan yang ada di daftar tidak membuka kotak ketik', function () {
     Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
         ->assertSet('pilihanBulat', (string) rekamanRab('show')['data']['pembulatan'])
         ->assertSet('pembulatanLain', '');
+});
+
+test('tiap bagian panel ringkasan berdiri sebagai kartunya sendiri', function () {
+    palsukanRab();
+
+    // Garis pemisah ternyata belum cukup: bagian yang hanya dipisah garis
+    // masih terbaca sebagai satu daftar panjang.
+    $html = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    foreach (['Dari mana harganya', 'Hasilnya', 'Kalau pelanggan menawar',
+        'Atur margin &amp; pembulatan', 'Modal per kategori', 'Pelanggan setuju?'] as $judul) {
+        expect($html)->toContain($judul);
+    }
+
+    // Judulnya memakai kelas yang sama dengan kartu lain di kolom itu —
+    // kelas baru hanya menambah satu gaya lagi yang harus dijaga sama.
+    // Yang diperiksa MARKAH-nya, bukan teks mana pun: komentar di blok
+    // gaya menyebut kelas yang dihapus, dan itu bukan pelanggaran.
+    expect($html)->not->toContain('class="rb-kartu-judul"')
+        ->and($html)->not->toContain('class="rb-pisah"');
+});
+
+test('kartu simulasi open trip berdiri sendiri, tidak bersarang di kartu lain', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'open';
+        $show['data']['harga_dasar'] = 'minimum';
+        $show['data']['peserta_minimum'] = 8;
+
+        return Http::response($show);
+    });
+
+    /*
+     | Kartu yang bersarang tidak menggagalkan apa pun: peramban
+     | membetulkannya sendiri, dan tidak ada uji yang melihat markah mentah.
+     | Satu-satunya jejaknya adalah pembungkus lama yang tertinggal.
+     */
+    $html = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    expect($html)->toContain('Kalau yang datang sekian')
+        ->and($html)->not->toContain('<div class="mt-1">');
 });

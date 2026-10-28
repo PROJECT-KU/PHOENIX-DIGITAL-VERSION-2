@@ -405,7 +405,17 @@
             "tambahan_pembulatan": 2000,
             "tambahan_pembulatan_teks": "Rp 2.000",
             "harga_sebelum_bulat": 525000,
-            "harga_sebelum_bulat_teks": "Rp 525.000"
+            "harga_sebelum_bulat_teks": "Rp 525.000",
+            "per_orang": {
+                "modal": 438235,
+                "margin": 87647,
+                "pembulatan": 118,
+                "harga": 526000,
+                "modal_teks": "Rp 438.235",
+                "margin_teks": "Rp 87.647",
+                "pembulatan_teks": "Rp 118",
+                "harga_teks": "Rp 526.000"
+            }
         },
         "jenis": "open",
         "jenis_label": "Open Trip",
