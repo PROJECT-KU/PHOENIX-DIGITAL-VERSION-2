@@ -104,6 +104,11 @@ Susun RAB || lemon
      | akan jadi daftar kedua yang diam-diam melenceng dari Orcha, persis
      | masalah yang baru saja dibereskan.
      */
+    // Hanya saat pembulatan benar-benar menggeser harganya, dan saat harga
+    // itu memang hasil hitungan — harga kesepakatan tidak pernah dibulatkan.
+    $naikKarenaBulat = ! $negoAktif
+        && isset($r['harga_sebelum_bulat'])
+        && (int) $r['harga_sebelum_bulat'] !== (int) ($r['harga_per_orang'] ?? 0);
     $pilihanPembulatan = $kosakata['pembulatan'] ?? [1 => 'Rp 1 · tanpa pembulatan', (int) $pembulatan => $pembulatanTeks];
     $bulatMelampauiMargin = $tambahanBulat > (int) ($r['margin_diminta'] ?? 0);
     $untungSehat = (float) ($r['persen_untung'] ?? 0) >= 10;
@@ -717,6 +722,7 @@ Susun RAB || lemon
         .rb-pax-atur td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
         .rb-pax-atur td:last-child { border-radius: 0 8px 8px 0; padding-right: 8px; color: #92400e; }
         .rb-pax-jual td { background: #f0fdf4; font-weight: 700; }
+        .rb-pax-jual small { color: #15803d; font-weight: 500; opacity: .85; }
         .rb-pax-jual td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
         .rb-pax-jual td:last-child { border-radius: 0 8px 8px 0; padding-right: 8px; color: #166534; }
         .rb-pax-total td:last-child { color: var(--dsb-aman, #047857); }
@@ -1907,7 +1913,19 @@ Susun RAB || lemon
                                                 <td>{{ $marginPersen ? $marginNilai.'%' : $marginDimintaKet }}</td>
                                             </tr>
                                             <tr class="rb-pax-jual">
-                                                <td>Harga jual per peserta</td>
+                                                <td>
+                                                    Harga jual per peserta
+                                                    {{-- Tanpa baris ini, kelipatan yang terlalu kasar
+                                                         membuat kotak margin terlihat MATI: pada modal
+                                                         Rp 5.500 dengan kelipatan Rp 5.000, margin 0%
+                                                         sampai 80% memulangkan Rp 10.000 yang sama
+                                                         persis. Yang mengubah angkanya tidak melihat
+                                                         apa pun bergerak, dan menyimpulkan isiannya
+                                                         rusak. --}}
+                                                    @if ($naikKarenaBulat)
+                                                        <small>dibulatkan dari {{ $r['harga_sebelum_bulat_teks'] }}</small>
+                                                    @endif
+                                                </td>
                                                 <td>{{ $r['harga_per_orang_teks'] ?? 'Rp 0' }}</td>
                                             </tr>
                                             <tr>

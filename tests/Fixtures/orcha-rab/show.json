@@ -403,7 +403,9 @@
                 }
             },
             "tambahan_pembulatan": 2000,
-            "tambahan_pembulatan_teks": "Rp 2.000"
+            "tambahan_pembulatan_teks": "Rp 2.000",
+            "harga_sebelum_bulat": 525000,
+            "harga_sebelum_bulat_teks": "Rp 525.000"
         },
         "jenis": "open",
         "jenis_label": "Open Trip",

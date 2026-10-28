@@ -3250,3 +3250,29 @@ test('layar tetap bisa digambar saat Orcha belum mengirim daftar pembulatan', fu
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
         ->assertSee('Bulatkan ke atas per');
 });
+
+test('harga jual menyebut asalnya saat pembulatan menggesernya', function () {
+    palsukanRab();
+
+    // Kelipatan kasar membuat kotak margin terlihat mati: modal Rp 5.500
+    // dengan kelipatan Rp 5.000 memulangkan Rp 10.000 untuk margin 0%
+    // sampai 80%. Tanpa baris ini, yang mengubahnya mengira isiannya rusak.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('dibulatkan dari Rp 525.000');
+});
+
+test('harga yang tidak tergeser pembulatan tidak menambah keterangan', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        // Tidak ada yang digeser: angkanya sudah bulat sejak awal.
+        $r['harga_sebelum_bulat'] = $r['harga_per_orang'];
+        $r['harga_sebelum_bulat_teks'] = $r['harga_per_orang_teks'];
+
+        return Http::response($show);
+    });
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Harga jual per peserta')
+        ->assertDontSee('dibulatkan dari');
+});
