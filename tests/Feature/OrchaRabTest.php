@@ -3088,3 +3088,72 @@ test('tanpa kesepakatan, bagian margin tidak memberi peringatan apa pun', functi
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
         ->assertDontSee('tidak sedang dipakai');
 });
+
+test('selisih antara margin diminta dan untung disebut namanya', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $show['data']['pembulatan'] = 5000;
+        $r['margin_diminta_teks'] = 'Rp 20.000';
+        $r['untung_teks'] = 'Rp 50.000';
+        $r['tambahan_pembulatan'] = 30_000;
+        $r['tambahan_pembulatan_teks'] = 'Rp 30.000';
+
+        return Http::response($show);
+    });
+
+    // "Margin diminta Rp 20.000" tepat di atas "untung Rp 50.000" tanpa
+    // penjelasan terbaca sebagai salah hitung, bukan sebagai pembulatan.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Tambahan dari pembulatan')
+        ->assertSee('+Rp 30.000')
+        ->assertSee('naik ke kelipatan Rp 5.000');
+});
+
+test('pembulatan yang tidak menambah apa-apa tidak menambah baris', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['tambahan_pembulatan'] = 0;
+
+        return Http::response($show);
+    });
+
+    // Baris bernilai nol hanya menambah yang harus dibaca.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertDontSee('Tambahan dari pembulatan');
+});
+
+test('pembulatan yang menambah lebih banyak daripada margin ditegur', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $show['data']['pembulatan'] = 5000;
+        $r['margin_diminta'] = 20_000;
+        $r['margin_diminta_teks'] = 'Rp 20.000';
+        $r['tambahan_pembulatan'] = 30_000;
+        $r['tambahan_pembulatan_teks'] = 'Rp 30.000';
+
+        return Http::response($show);
+    });
+
+    // Kelipatan 5.000 pada harga mentah 12.000 melompat 25%. Bukan galat,
+    // tetapi hampir tidak pernah yang dimaksud.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('terlalu kasar untuk harga sebesar ini');
+});
+
+test('pembulatan yang wajar tidak ditegur', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $r['margin_diminta'] = 1_500_000;
+        $r['tambahan_pembulatan'] = 2_000;
+        $r['tambahan_pembulatan_teks'] = 'Rp 2.000';
+
+        return Http::response($show);
+    });
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Tambahan dari pembulatan')
+        ->assertDontSee('terlalu kasar untuk harga sebesar ini');
+});

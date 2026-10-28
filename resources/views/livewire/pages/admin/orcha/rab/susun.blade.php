@@ -94,6 +94,9 @@ Susun RAB || lemon
     // kembarannya sebagai kunci datar, dan kembaran itu langsung menuliskan
     // "turun Rp 0" di atas tabel yang menunjukkan turun Rp 26.000.
     $nego = $r['nego'] ?? null;
+    $tambahanBulat = (int) ($r['tambahan_pembulatan'] ?? 0);
+    $pembulatanTeks = 'Rp '.number_format((int) $pembulatan, 0, ',', '.');
+    $bulatMelampauiMargin = $tambahanBulat > (int) ($r['margin_diminta'] ?? 0);
     $negoSelisih = (int) ($nego['selisih']['harga_per_orang'] ?? 0);
     $negoTurun = $negoSelisih < 0;
     $negoSelisihTeks = 'Rp '.number_format(abs($negoSelisih), 0, ',', '.');
@@ -647,6 +650,19 @@ Susun RAB || lemon
 
         /* Peringatan, bukan galat: tidak ada yang rusak — kotaknya cuma
            sedang tidak menentukan apa-apa. */
+        /* Bukan baris modal, bukan baris untung — jalan di antaranya.
+           Dibedakan supaya terbaca sebagai penjelas, bukan biaya baru. */
+        .rb-tambahan { color: var(--dsb-redup, #6b7280); }
+        .rb-tambahan small { display: block; font-size: .7rem; opacity: .85; }
+
+        .rb-bulat-dominan {
+            display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 2px;
+            padding: 8px 10px; border-radius: 10px;
+            background: #fffbeb; border: 1px solid #fde68a;
+            font-size: .74rem; line-height: 1.45; color: #92400e;
+        }
+        .rb-bulat-dominan i { margin-top: 2px; }
+
         .rb-margin-nonaktif {
             display: flex; align-items: flex-start; gap: 7px; margin-bottom: 10px;
             padding: 9px 11px; border-radius: 11px;
@@ -1625,6 +1641,41 @@ Susun RAB || lemon
                                     <div class="rab-baris-angka"><span>Modal total</span><strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong></div>
                                     <div class="rab-baris-angka text-muted"><span>Modal per kepala</span><span>{{ $r['modal_per_kepala_teks'] ?? 'Rp 0' }}</span></div>
                                     <div class="rab-baris-angka"><span>Margin diminta</span><span>{{ $r['margin_diminta_teks'] ?? 'Rp 0' }}</span></div>
+
+                                    {{-- Baris yang hilang selama ini.
+
+                                         Tanpa ia, layar menulis "margin diminta Rp 20.000"
+                                         tepat di atas "untung Rp 50.000" dan tidak ada apa
+                                         pun yang menjelaskan selisih Rp 30.000 di antara
+                                         keduanya — pembacanya menyimpulkan salah hitung.
+                                         Justru pada harga kecil selisihnya paling besar. --}}
+                                    @if ($tambahanBulat > 0 && ! $negoAktif)
+                                        <div class="rab-baris-angka rb-tambahan">
+                                            <span>
+                                                Tambahan dari pembulatan
+                                                <small>naik ke kelipatan {{ $pembulatanTeks }}</small>
+                                            </span>
+                                            <span>+{{ $r['tambahan_pembulatan_teks'] }}</span>
+                                        </div>
+                                        {{-- Pembulatan yang menambah lebih banyak daripada
+                                             margin yang diminta berarti kelipatannya terlalu
+                                             kasar untuk harga sebesar ini: pada harga mentah
+                                             Rp 12.000, kelipatan Rp 5.000 melompat 25%. Itu
+                                             bukan galat, tetapi hampir tidak pernah yang
+                                             dimaksud. --}}
+                                        @if ($bulatMelampauiMargin)
+                                            <div class="rb-bulat-dominan">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>
+                                                    Pembulatan menambah lebih banyak daripada margin
+                                                    yang diminta. Kelipatan {{ $pembulatanTeks }}
+                                                    terlalu kasar untuk harga sebesar ini — pilih
+                                                    kelipatan lebih kecil di bawah kalau mau untungnya
+                                                    mengikuti margin.
+                                                </span>
+                                            </div>
+                                        @endif
+                                    @endif
 
                                     {{-- PELANGGAN MENAWAR.
 
