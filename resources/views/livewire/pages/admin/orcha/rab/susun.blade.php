@@ -692,6 +692,11 @@ Susun RAB || lemon
            isian di layar ini memakai .dsb-isian, jadi paddingnya disamakan di
            sini — tanpa ini angkanya bertumpuk dengan awalan "Rp". */
         .rb-uang-sel .dsb-isian { padding-left: 1.95rem; font-weight: 600; }
+        .rb-bulat-ketik { margin-top: 9px; }
+        .rb-bulat-ketik .dsb-label { margin-bottom: 4px; }
+        /* Kotak ini berukuran penuh, jadi "Rp"-nya duduk di .85rem — padding
+           sempit milik isian tabel membuat angkanya menempel ke awalannya. */
+        .rb-bulat-ketik .dsb-isian { padding-left: 2.45rem; }
 
         /* Hitungan per peserta: dua kolom, angkanya rata kanan dan sejajar
            angkanya satu sama lain (tabular-nums) supaya bisa dibandingkan
@@ -2213,12 +2218,32 @@ Susun RAB || lemon
                                              di sini. Dulu empat nilai di layar melawan enam
                                              di validasi, jadi Rp 100 dan Rp 500 diterima API
                                              tetapi tidak pernah bisa dipilih siapa pun. --}}
-                                        <select wire:model.live="pembulatan" class="dsb-isian rb-isian-ringkas">
+                                        <select wire:model.live="pilihanBulat" class="dsb-isian rb-isian-ringkas">
                                             @foreach ($pilihanPembulatan as $nilai => $teks)
-                                                <option value="{{ $nilai }}" @selected((string) $this->pembulatan === (string) $nilai)>{{ $teks }}</option>
+                                                <option value="{{ $nilai }}" @selected($this->pilihanBulat === (string) $nilai)>{{ $teks }}</option>
                                             @endforeach
+                                            {{-- Daftarnya SARAN, bukan pagar. Kelipatan yang
+                                                 belum terdaftar — Rp 2.500, Rp 250.000 —
+                                                 tidak perlu menunggu config Orcha diubah dan
+                                                 dideploy lebih dulu. --}}
+                                            <option value="lainnya" @selected($this->pilihanBulat === 'lainnya')>Lainnya…</option>
                                         </select>
                                     </div>
+                                    @if ($this->pilihanBulat === 'lainnya')
+                                        <div class="rb-bulat-ketik">
+                                            <label class="dsb-label" for="rb-bulat-lain">Kelipatan sendiri</label>
+                                            <div class="orcha-rupiah rb-uang-sel">
+                                                <input id="rb-bulat-lain" type="text" inputmode="numeric" class="dsb-isian"
+                                                    wire:model.blur="pembulatanLain" x-on:keydown.enter="$el.blur()"
+                                                    placeholder="2.500">
+                                            </div>
+                                            <span class="dsb-kartu-sub">
+                                                Paling kecil Rp 1, paling besar Rp 1.000.000.
+                                                Tekan <strong>Enter</strong> atau klik di luar kotak supaya berlaku.
+                                            </span>
+                                        </div>
+                                    @endif
+
                                     {{-- Kendali ini sebelumnya berdiri tanpa sepatah
                                          keterangan pun, dan ditanyakan dua kali: yang
                                          dibulatkan HANYA harga per orang, modalnya tidak

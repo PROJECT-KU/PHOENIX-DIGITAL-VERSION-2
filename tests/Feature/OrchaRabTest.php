@@ -3276,3 +3276,77 @@ test('harga yang tidak tergeser pembulatan tidak menambah keterangan', function 
         ->assertSee('Harga jual per peserta')
         ->assertDontSee('dibulatkan dari');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Kelipatan pembulatan sendiri
+|--------------------------------------------------------------------------
+*/
+
+test('memilih Lainnya membuka kotak ketik tanpa menyimpan apa pun', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('pilihanBulat', 'lainnya');
+
+    // Menyimpan nilai lama sebagai "pilihan baru" membuat harga sesaat
+    // bergeser padahal admin belum memutuskan apa-apa.
+    $komponen->assertSet('pilihanBulat', 'lainnya');
+    Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH' && isset($r['pembulatan']));
+});
+
+test('kelipatan yang diketik sendiri dikirim sebagai angka', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('pilihanBulat', 'lainnya')
+        ->set('pembulatanLain', '2.500');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['pembulatan'] === 2500);
+});
+
+test('kelipatan yang diketik dijepit ke batas yang sama dengan Orcha', function () {
+    palsukanRab();
+
+    // Dijepit SEBELUM dikirim, bukan dilempar balik sebagai toast merah
+    // dari Orcha. Yang diperiksa muatannya: nilai di layar sesudahnya
+    // datang dari balasan Orcha, bukan dari jepitan ini.
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('pembulatanLain', '0');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['pembulatan'] === 1);
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('pembulatanLain', '99.999.999');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r['pembulatan'] === 1_000_000);
+});
+
+test('kelipatan di luar daftar saran membuka kotak ketiknya sendiri', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['pembulatan'] = 2_500;
+
+        return Http::response($show);
+    });
+
+    // RAB yang kelipatannya tidak ada di daftar harus tetap memperlihatkan
+    // angkanya — bukan diam-diam jatuh ke pilihan terdekat.
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->assertSet('pilihanBulat', 'lainnya')
+        ->assertSet('pembulatanLain', '2.500');
+});
+
+test('kelipatan yang ada di daftar tidak membuka kotak ketik', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->assertSet('pilihanBulat', (string) rekamanRab('show')['data']['pembulatan'])
+        ->assertSet('pembulatanLain', '');
+});

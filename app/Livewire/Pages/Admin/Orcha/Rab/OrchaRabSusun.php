@@ -136,6 +136,9 @@ class OrchaRabSusun extends Component
         try {
             $this->terapkan($this->orcha()->ambil("/rab/{$rab}")['data'] ?? []);
             $this->katalog = $this->orcha()->ambil('/rab/katalog', ['provinsi' => $this->dataRab['provinsi'] ?? ''])['data'] ?? [];
+            // Daftar sarannya baru ada SESUDAH katalog ditarik; penyelarasan
+            // di terapkan() tadi berjalan tanpanya dan harus diulang.
+            $this->selaraskanPembulatan();
         } catch (OrchaTidakTerjangkau $e) {
             $this->galat = $e->getMessage();
         }
@@ -172,6 +175,7 @@ class OrchaRabSusun extends Component
             ? (string) $data['margin_nilai']
             : $this->keRupiah($data['margin_nilai']);
         $this->pembulatan = (int) $data['pembulatan'];
+        $this->selaraskanPembulatan();
         $this->hariAktif = min(max(1, $this->hariAktif), max(1, (int) $data['jumlah_hari']));
 
         $this->hargaBaris = [];
@@ -1059,6 +1063,66 @@ class OrchaRabSusun extends Component
 
     public function updatedMarginNilai(): void
     {
+        $this->simpanMargin();
+    }
+
+    /*
+    |---------------------------------------------------------------------
+    | Kelipatan pembulatan
+    |---------------------------------------------------------------------
+    |
+    | Kotak pilihnya menyimpan PILIHAN, bukan nilainya: ia bisa berisi
+    | angka, atau sandi 'lainnya' yang membuka kotak ketik. Nilai yang
+    | sebenarnya tetap $pembulatan, dan itulah yang dikirim ke Orcha.
+    */
+    public const BULAT_LAIN = 'lainnya';
+
+    public string $pilihanBulat = '';
+
+    public string $pembulatanLain = '';
+
+    /** Kelipatan saran dari Orcha; kosong bila Orcha belum mengirimnya. */
+    private function saranPembulatan(): array
+    {
+        return array_map('intval', array_keys($this->katalog['kosakata']['pembulatan'] ?? []));
+    }
+
+    /** Menyelaraskan kotak pilih & kotak ketik dengan nilai yang berlaku. */
+    private function selaraskanPembulatan(): void
+    {
+        $saran = $this->saranPembulatan();
+        $diDaftar = $saran === [] || in_array($this->pembulatan, $saran, true);
+
+        $this->pilihanBulat = $diDaftar ? (string) $this->pembulatan : self::BULAT_LAIN;
+        $this->pembulatanLain = $diDaftar ? '' : $this->keRupiah($this->pembulatan);
+    }
+
+    public function updatedPilihanBulat($nilai): void
+    {
+        /*
+         | "Lainnya" belum menyimpan apa pun — ia hanya membuka kotaknya.
+         | Menyimpan nilai lama sebagai "pilihan baru" membuat harga sesaat
+         | bergeser padahal admin belum memutuskan apa-apa.
+         */
+        if ((string) $nilai === self::BULAT_LAIN) {
+            $this->pembulatanLain = $this->keRupiah($this->pembulatan);
+
+            return;
+        }
+
+        $this->pembulatan = max(1, (int) $nilai);
+        $this->pembulatanLain = '';
+        $this->simpanMargin();
+    }
+
+    public function updatedPembulatanLain($nilai): void
+    {
+        $angka = $this->angkaDari((string) $nilai);
+
+        // Batas yang sama dengan Orcha, dijaga di sini juga supaya galatnya
+        // muncul sebagai angka yang dibetulkan, bukan sebagai toast merah.
+        $this->pembulatan = max(1, min(1_000_000, $angka));
+        $this->pembulatanLain = $this->keRupiah($this->pembulatan);
         $this->simpanMargin();
     }
 
