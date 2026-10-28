@@ -424,6 +424,14 @@ Susun RAB || lemon
         .rab-destinasi button:hover { border-color: var(--orc-primer); color: var(--orc-primer); }
         .rab-destinasi button.dipakai { background: #eafaf1; border-color: #9fd6b4; color: #14683f; font-weight: 600; }
         .rab-destinasi .tiket { color: #b7791f; }
+        /* Jaraknya diberikan KOLOMNYA, bukan margin tiap kartu.
+
+           .rb-kartu sengaja bermargin nol supaya tidak menggandakan jarak
+           saat berada di dalam .dsb-rak yang sudah punya gap sendiri. Di
+           kolom kanan tidak ada rak, jadi keenam kartunya menempel tanpa
+           celah sedikit pun — diukur 0px di kelima sambungannya. */
+        .rab-lengket { display: flex; flex-direction: column; gap: 14px; }
+
         /* Lengket tanpa gulirnya sendiri.
            Diukur 28 Okt 2026: panel ini SELALU mengisi layar saat halaman
            digulir (398-900px terlihat di tiap posisi), jadi tidak pernah ada
