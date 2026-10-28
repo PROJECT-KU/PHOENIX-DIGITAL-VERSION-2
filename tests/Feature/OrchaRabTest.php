@@ -54,6 +54,15 @@ function palsukanRab(): void
                 ]],
                 'meta' => ['kode' => 'RAB-2609-A7K3', 'harga_kini_teks' => 'Rp 9.500.000'],
             ]),
+            str_ends_with($jalur, '/rab/sumber-itinerary') => Http::response(['data' => [[
+                'id' => 7, 'nama' => 'Paket Jogja Heritage', 'jumlah_hari' => 2, 'jumlah_kegiatan' => 5,
+                'itinerary' => [
+                    ['hari_ke' => 1, 'jam' => '08:00', 'jam_selesai' => '10:00', 'nama' => 'Penjemputan peserta', 'jenis' => 'perjalanan', 'destinasi' => '', 'keterangan' => ''],
+                    ['hari_ke' => 2, 'jam' => '09:00', 'jam_selesai' => '11:00', 'nama' => 'Candi Prambanan', 'jenis' => 'destinasi', 'destinasi' => 'Candi Prambanan', 'keterangan' => ''],
+                    ['hari_ke' => 9, 'jam' => '09:00', 'jam_selesai' => '11:00', 'nama' => 'Hari kesembilan', 'jenis' => 'lain', 'destinasi' => '', 'keterangan' => ''],
+                ],
+            ]]]),
+            str_ends_with($jalur, '/biaya/urutkan') => Http::response(rekamanRab('show')),
             str_ends_with($jalur, '/ke-master') => Http::response(
                 rekamanRab('show') + ['pesan' => 'Master harga "Tiket Candi Prambanan" turun jadi Rp 40.000. RAB berikutnya memakai angka ini.']
             ),
@@ -180,8 +189,9 @@ test('penyusun menggambar itinerary, destinasi, dan ringkasan dari Orcha', funct
         ->assertSee($show['ringkasan']['harga_per_orang_teks'])
         // Beda harga ditawarkan DUA arah: angkanya sendiri tidak bisa
         // membedakan "master naik" dari "tim menemukan lebih murah".
-        ->assertSee('pakai harga master')
-        ->assertSee('simpan ke master')
+        // Kini tombol, bukan tautan di tengah kalimat.
+        ->assertSee('Pakai harga master')
+        ->assertSee('Simpan ke master')
         // Tombolnya kini jaring pengaman, bukan langkah wajib: biayanya
         // ditarik sendiri saat destinasinya diklik. Labelnya dipendekkan
         // supaya bilah atas muat satu baris; maksud lengkapnya ada di title.
@@ -990,24 +1000,27 @@ test('rincian biaya: kolom perhitungan dibubarkan, pita kategori membawa angkany
         ->and($isi)->toContain('Modal total');
 });
 
-test('tabel biaya menumpuk jadi kartu di ponsel', function () {
+test('rincian biaya berupa kartu, bukan tabel yang menumpuk di ponsel', function () {
     /*
-     | Tanpa ini ia menggulir mendatar di dalam pembungkusnya — dan subtotal
-     | berikut tombol hapusnya tidak pernah terlihat tanpa digeser lebih
-     | dulu, padahal subtotal itulah yang dicari mata.
+     | Dulu ini tabel yang dipaksa menumpuk di layar sempit. Satu baris
+     | membawa sepuluh hal — nama, vendor, nomornya, satuan, kapasitas,
+     | perhitungan, harga, jumlah, subtotal, empat tombol — dan lima kolom
+     | tidak muat memuatnya: tiga perempatnya menumpuk di kolom pertama
+     | sementara kolom lain berdiri hampir kosong.
+     |
+     | Kini satu kartu per baris, idiom yang sama dengan itinerary di atas.
      */
-    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
-
-    expect($gaya)->toContain('.rab-tabel-biaya thead { display: none; }');
-
     palsukanRab();
     $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
 
-    // Label kolomnya menempel di tiap sel, supaya kartu ponselnya punya
-    // keterangan sendiri.
-    foreach (['Harga satuan', 'Jumlah', 'Subtotal'] as $judul) {
-        expect($isi)->toContain('data-judul="'.$judul.'"');
-    }
+    expect($isi)->toContain('rb-biaya-kartu')
+        // Tiap isian membawa labelnya sendiri: judul kolom di puncak layar
+        // tidak menolong pada baris kesepuluh.
+        ->and($isi)->toContain('Harga satuan')
+        ->and($isi)->toContain('Subtotal')
+        ->and($isi)->toContain('Modal total')
+        // Penumpukan tabel tidak dibutuhkan lagi — dan markahnya pun hilang.
+        ->and($isi)->not->toContain('data-judul="Harga satuan"');
 });
 
 test('pencarian tanpa hasil tidak dilaporkan sebagai katalog kosong', function () {
@@ -3396,4 +3409,138 @@ test('kartu simulasi open trip berdiri sendiri, tidak bersarang di kartu lain', 
 
     expect($html)->toContain('Kalau yang datang sekian')
         ->and($html)->not->toContain('<div class="mt-1">');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Rincian biaya: urutan, salinan, urungkan
+|--------------------------------------------------------------------------
+*/
+
+test('baris biaya bisa digeser, tetapi hanya di dalam kategorinya', function () {
+    palsukanRab();
+    $baris = rekamanRab('show')['data']['ringkasan']['baris'];
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    // Pengelompokan per kategori akan menyusunnya kembali, jadi langkah
+    // lintas-kategori tidak akan terlihat terjadi sama sekali.
+    expect($komponen->instance()->bisaGeserBiaya((int) $baris[0]['id'], -1))->toBeFalse();
+
+    $sekategori = collect($baris)->groupBy('kategori')->first(fn ($g) => count($g) > 1);
+
+    if ($sekategori) {
+        $komponen->call('geserBiaya', (int) $sekategori[0]['id'], 1);
+        Http::assertSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/biaya/urutkan'));
+    }
+});
+
+test('menyalin baris biaya membawa seluruh isinya, dengan nama ditandai', function () {
+    palsukanRab();
+    $b = rekamanRab('show')['data']['ringkasan']['baris'][0];
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('duplikatBiaya', (int) $b['id']);
+
+    Http::assertSent(function (Request $r) use ($b) {
+        return str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+            && $r->method() === 'POST'
+            && $r['nama'] === $b['nama'].' (salinan)'
+            && $r['harga_satuan'] === (int) $b['harga_satuan']
+            && $r['satuan'] === $b['satuan'];
+    });
+});
+
+test('hapus biaya menyimpan barisnya supaya bisa dikembalikan', function () {
+    palsukanRab();
+    $b = rekamanRab('show')['data']['ringkasan']['baris'][0];
+
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('hapusBiaya', (int) $b['id']);
+
+    // Disalin SEBELUM permintaan hapus dikirim: sesudah digambar ulang,
+    // barisnya sudah tidak ada di mana pun.
+    expect($komponen->get('biayaTerhapus')['nama'])->toBe($b['nama']);
+
+    $komponen->call('urungkanHapusBiaya');
+
+    Http::assertSent(function (Request $r) use ($b) {
+        return str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+            && $r->method() === 'POST'
+            && $r['nama'] === $b['nama']
+            // Harganya dibawa apa adanya — menariknya ulang dari master
+            // akan memulangkan harga hari ini, bukan harga yang dihapus.
+            && $r['harga_satuan'] === (int) $b['harga_satuan'];
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Mulai dari paket & riwayat penawaran
+|--------------------------------------------------------------------------
+*/
+
+test('agenda paket disalin, dan hari yang melebihi perjalanan dibuang', function () {
+    palsukanRab();
+    $hari = rekamanRab('show')['data']['jumlah_hari'];
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('bukaDariPaket')
+        ->set('paketTerpilih', '7')
+        ->call('pakaiPaket');
+
+    // Yang diperiksa MUATAN yang dikirim: nilai di layar sesudahnya datang
+    // dari balasan Orcha, bukan dari penyalinan ini.
+    Http::assertSent(function (Request $r) use ($hari) {
+        if (! str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')) {
+            return false;
+        }
+
+        $nama = collect($r['itinerary'] ?? [])->pluck('nama');
+
+        // RAB tiga hari tidak bisa memuat agenda hari kesembilan.
+        return $nama->contains('Penjemputan peserta')
+            && ! $nama->contains('Hari kesembilan')
+            && collect($r['itinerary'])->max('hari_ke') <= $hari;
+    });
+});
+
+test('tawaran mulai dari paket muncul saat itinerary masih kosong', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['itinerary'] = [];
+
+        return Http::response($show);
+    });
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Mulai dari paket yang sudah ada?');
+});
+
+test('tawaran mulai dari paket hilang begitu itinerary terisi', function () {
+    // Uji TERSENDIRI: Http::fake kedua di satu uji ditambahkan ke rantai
+    // stub, bukan menggantikannya — yang pertama tetap menang.
+    palsukanRab();
+
+    // Menyambung agenda paket ke agenda yang sudah disusun menghasilkan
+    // hari dengan dua sarapan dan dua check-in.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertDontSee('Mulai dari paket yang sudah ada?');
+});
+
+test('riwayat penawaran bisa dibuka dari layar penyusun', function () {
+    palsukanRab();
+
+    // Ada di daftar RAB, tetapi ditanyakan justru di layar ini — sambil
+    // menatap angka yang sekarang.
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->assertSee('Riwayat penawaran')
+        ->call('bukaRiwayatVersi')
+        ->assertSet('bukaVersi', true)
+        ->assertSee('Rp 900.000');
 });

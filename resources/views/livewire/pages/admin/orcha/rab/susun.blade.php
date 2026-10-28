@@ -66,6 +66,18 @@ Susun RAB || lemon
     $masterPerKategori = collect($katalog['master'] ?? [])->groupBy('kategori_label')->all();
     // Urutan kategorinya sudah dari Orcha (tiket, transportasi, akomodasi, …).
     $barisPerKategori = collect($r['baris'] ?? [])->groupBy('kategori_label')->all();
+    /*
+     | Warna pita kartu biaya, per kategori. Sama perannya dengan warna
+     | jenis kegiatan di itinerary: yang perlu dibedakan sekilas cuma
+     | GOLONGANnya — tiket, armada, kamar — bukan tiap barisnya.
+     */
+    $warnaKategori = [
+        'tiket' => '#b45309',
+        'transportasi' => '#1d4ed8',
+        'akomodasi' => '#047857',
+        'konsumsi' => '#be123c',
+        'pemandu' => '#7c3aed',
+    ];
     $tanpaBiaya = $barisPerKategori === [];
     $adaTanpaTiket = $tanpaTiket !== [];
     $hargaBasi = (bool) ($r['ada_harga_basi'] ?? false);
@@ -308,7 +320,14 @@ Susun RAB || lemon
             .rb-aksi-baris { justify-content: flex-end; }
         }
 
-        .rab-fakta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .9rem; }
+        .rab-fakta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .85rem; }
+        /* Nama pelanggan memimpin barisnya: ia keterangan paling penting
+           di antara keping-keping itu, dan tanpa penegasan ia tenggelam
+           jadi salah satu dari enam keping yang terlihat sama. */
+        .rb-fakta-pelanggan { font-weight: 700; color: var(--dsb-tinta, #1c1f26) !important; }
+        .rab-fakta span.is-lewat {
+            background: #fffbeb; border-color: #fde68a; color: #92400e;
+        }
         .rab-fakta span {
             background: var(--orc-panel-latar); border: var(--orc-panel-garis); border-radius: 999px;
             padding: .28rem .7rem; font-size: .8rem; color: var(--orc-tinta); white-space: nowrap;
@@ -322,6 +341,51 @@ Susun RAB || lemon
            LAYAR, sementara yang menjepit baris ini lebar WADAHnya. Di layar
            lebar dengan wadah sempit, aturan ponselnya tidak pernah menyala
            dan barisnya meluber tanpa satu pun tanda. */
+        /* Kartu biaya: idiom yang sama dengan .rab-kegiatan — pita warna di
+           tepi kiri, bukan latar penuh, supaya kotak isian di dalamnya tetap
+           terbaca. */
+        .rb-biaya-kartu {
+            padding: .75rem .85rem; border: var(--orc-panel-garis);
+            border-radius: 14px; background: #fff; margin-bottom: .55rem;
+            box-shadow: inset 4px 0 0 var(--c, #64748b);
+        }
+        .rb-biaya-utama { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem .9rem; }
+        .rb-biaya-judul { flex: 1 1 200px; min-width: 0; }
+        .rb-biaya-isian { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; }
+        .rb-biaya-medan { display: flex; flex-direction: column; gap: 3px; }
+        .rb-biaya-medan > span:first-child {
+            font-size: .66rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: var(--dsb-redup, #94a3b8);
+        }
+        .rb-biaya-medan .dsb-isian { width: 118px; text-align: right; }
+        .rb-biaya-medan.is-sempit .dsb-isian { width: 64px; }
+        .rb-biaya-sub { display: flex; flex-direction: column; gap: 3px; min-width: 96px; text-align: right; }
+        .rb-biaya-sub > span {
+            font-size: .66rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: var(--dsb-redup, #94a3b8);
+        }
+        .rb-biaya-sub strong { font-size: .95rem; color: var(--dsb-tinta, #1c1f26); font-variant-numeric: tabular-nums; }
+        /* margin-left:auto supaya ia tetap menempel tepi kanan kartu, juga
+           pada lebar yang memaksanya turun ke baris sendiri. */
+        .rb-biaya-aksi { display: flex; gap: .25rem; align-items: center; flex: 0 0 auto; margin-left: auto; }
+
+        /* Pita kategori membawa angkanya sendiri: sebagai nama yang
+           melintang sendirian ia cuma garis pemisah yang kebetulan
+           bertulisan. */
+        .rb-biaya-kat {
+            display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+            margin: 14px 0 7px; font-size: .68rem; font-weight: 700;
+            letter-spacing: .05em; text-transform: uppercase; color: var(--orc-primer, #4f46e5);
+        }
+        .rb-biaya-kat strong { font-size: .82rem; letter-spacing: 0; }
+        .rb-biaya-total {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            margin-top: 12px; padding: 11px 14px; border-radius: 13px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+            font-weight: 700; color: var(--dsb-tinta, #1c1f26);
+        }
+        .rb-biaya-total strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+
         .rab-kegiatan {
             display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem;
             padding: .75rem .75rem .75rem .9rem; border: var(--orc-panel-garis);
@@ -476,6 +540,30 @@ Susun RAB || lemon
 
         /* Urungkan: biru, bukan merah. Ia jalan keluar dari kesalahan,
            bukan kesalahan itu sendiri. */
+        .rb-versi { margin-top: 12px; padding-top: 11px; border-top: 1px solid #eef1f6; }
+        .rb-versi-tabel { width: 100%; border-collapse: collapse; font-size: .78rem; margin-bottom: 9px; }
+        .rb-versi-tabel td { padding: 5px 0; vertical-align: top; }
+        .rb-versi-tabel td:last-child { text-align: right; font-weight: 700; white-space: nowrap; }
+        .rb-versi-tabel tr + tr td { border-top: 1px solid #f1f5f9; }
+        .rb-versi-tabel small {
+            display: block; font-size: .7rem; font-weight: 400;
+            color: var(--dsb-redup, #94a3b8); line-height: 1.35;
+        }
+
+        .rb-paket {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            margin-bottom: 12px; padding: 11px 14px; border-radius: 13px;
+            background: #f8f9ff; border: 1px solid #c7d2fe;
+        }
+        .rb-paket-teks { display: flex; flex-direction: column; flex: 1 1 200px; min-width: 0; }
+        .rb-paket-teks strong { font-size: .86rem; color: var(--dsb-tinta, #1c1f26); }
+        .rb-paket-panel {
+            display: flex; flex-direction: column; gap: 9px;
+            margin-bottom: 12px; padding: 12px 14px; border-radius: 13px;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        .rb-paket-aksi { display: flex; flex-wrap: wrap; gap: 8px; }
+
         .rb-urung {
             display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
             padding: 10px 13px; border-radius: 12px;
@@ -576,10 +664,65 @@ Susun RAB || lemon
 
         .rab-biaya-nama { font-weight: 700; color: var(--dsb-tinta, #1c1f26); font-size: .88rem; }
         .rab-biaya-hitung { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
+        /* Vendor adalah KETERANGAN baris, bukan judulnya.
+           Dulu ia biru tebal 600 di bawah nama biaya yang lebih kecil, jadi
+           mata membaca nama vendor lebih dulu — padahal yang dicari orang
+           saat memindai tabel adalah barisnya. */
         .rab-biaya-vendor {
             display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 3px;
-            font-size: .76rem; font-weight: 600; color: #0369a1;
+            font-size: .74rem; font-weight: 500; color: var(--dsb-redup, #6b7280);
         }
+        .rab-biaya-vendor .bi { color: #94a3b8; }
+
+        /* Beda harga dari master: kalimatnya satu blok, aksinya tombol
+           tersendiri — bukan tautan yang tenggelam di tengah kalimat. */
+        .rb-beda {
+            margin-top: 6px; padding: 7px 9px; border-radius: 10px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        .rb-beda-teks { font-size: .75rem; color: var(--dsb-redup, #6b7280); line-height: 1.45; }
+        .rb-beda-teks strong { color: var(--dsb-tinta, #1c1f26); }
+        .rb-beda-teks span { display: block; font-size: .7rem; opacity: .9; }
+        .rb-beda-aksi { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+        .rb-beda-aksi button {
+            padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600;
+            border: 1px solid #c7d2fe; background: #fff; color: #4338ca;
+        }
+        .rb-beda-aksi button:hover { background: #eef2ff; }
+        .rb-beda .rb-catatan-baris { margin-top: 7px; }
+
+        .rb-beda-banner {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin-bottom: 12px; padding: 10px 13px; border-radius: 12px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+            font-size: .8rem; line-height: 1.5; color: var(--dsb-redup, #6b7280);
+        }
+        .rb-beda-banner i { margin-top: 2px; color: #4f46e5; }
+        .rb-beda-banner strong { color: var(--dsb-tinta, #1c1f26); }
+
+        /* Panah naik/turun: kotaknya 40px sementara isinya 50px, dan
+           overflow:hidden memotong sisanya. Paddingnya yang dipersempit,
+           bukan ikonnya yang dikecilkan. */
+        .rab-geser-btn { padding: .3rem .4rem; min-width: 0; }
+        /* Empat tombol di sel selebar 140px melipat jadi tumpukan tegak,
+           dan baris biaya jadi setinggi empat tombol. Dipaksa satu baris
+           dengan jarak rapat; kolomnya yang dilebarkan. */
+        /* !important-nya TERPAKSA dan sempit: lembar gaya global memberi
+           .btn padding 20px ber-!important, dan empat tombol selebar 62px
+           memakan 260px dari ~680px kartunya — cukup untuk melempar
+           tombolnya ke barisnya sendiri. */
+        .rb-biaya-aksi .btn { padding: 6px 9px !important; }
+
+        /* Blok beda-master memakai lebar kolomnya, tidak menyempit sendiri
+           mengikuti teks terpanjang di atasnya. */
+        .rb-beda { width: 100%; }
+        /* Baris tersendiri: di dalam sel nama ia cuma kebagian 127px, dan
+           kalimatnya patah tiap dua kata. */
+        .rb-beda-baris td { padding-top: 0 !important; border-top: 0 !important; }
+        .rb-beda-aksi { margin-top: 0; }
+        .rb-beda { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .rb-beda-teks { flex: 1 1 240px; }
+        .rb-beda .rb-catatan-baris { flex: 1 1 100%; margin-top: 0; }
         .rab-vendor-tautan { color: inherit; text-decoration: none; }
         .rab-vendor-tautan:hover { text-decoration: underline; }
         .rab-vendor-nomor {
@@ -945,10 +1088,6 @@ Susun RAB || lemon
                                 @endif
                             </div>
                             <h5 class="fw-bold mb-1">{{ $rab['judul'] }}</h5>
-                            <div class="text-muted small mb-2">
-                                {{ $rab['nama_pelanggan'] }}
-                                @if ($rab['whatsapp']) · {{ $rab['whatsapp'] }} @endif
-                            </div>
                         </div>
 
                         {{-- DUA baris yang disengaja, bukan satu baris yang kebetulan
@@ -1005,11 +1144,33 @@ Susun RAB || lemon
                         </div>
                     </div>
 
+                    {{-- Nama pelanggan dan keping fakta DISATUKAN jadi satu baris.
+
+                         Terpisah, barisnya cuma memakai 563px dari 1024px yang
+                         tersedia — 461px kosong melintang di tengah kartu, tepat
+                         di tempat mata turun dari judul ke faktanya. --}}
                     <div class="rab-fakta">
+                        <span class="rb-fakta-pelanggan">
+                            <i class="bi bi-person"></i>
+                            {{ $rab['nama_pelanggan'] }}@if ($rab['whatsapp']) · {{ $rab['whatsapp'] }}@endif
+                        </span>
                         <span><i class="bi bi-geo-alt"></i> {{ $rab['daerah'] ? $rab['daerah'].', ' : '' }}{{ $rab['provinsi'] }}</span>
                         <span><i class="bi bi-calendar3"></i> {{ $tanggalTeks }}</span>
                         <span><i class="bi bi-moon-stars"></i> {{ $rab['jumlah_hari'] }} hari {{ $rab['jumlah_malam'] }} malam</span>
                         <span><i class="bi bi-people"></i> {{ $rab['jumlah_peserta'] }} peserta</span>
+                        {{-- Masa berlaku sudah lama jadi alasan lencana peringatan
+                             di atas, tetapi tanggalnya sendiri tidak pernah
+                             ditampilkan di mana pun di layar ini. --}}
+                        @if (! empty($rab['berlaku_sampai']))
+                            <span class="{{ $rab['kedaluwarsa'] ? 'is-lewat' : '' }}">
+                                <i class="bi bi-hourglass-split"></i>
+                                Berlaku sampai {{ \Illuminate\Support\Carbon::parse($rab['berlaku_sampai'])->locale('id')->translatedFormat('j M Y') }}
+                            </span>
+                        @endif
+                        {{-- "Dibuat oleh" sempat ikut di sini dan membuat barisnya
+                             butuh 1113px dari 1024px yang ada — melipat jadi dua, dan
+                             menambah tinggi kartu alih-alih merapikannya. Namanya
+                             sudah terbaca di Jejak Audit. --}}
                     </div>
 
                     @if ($bukaKepala)
@@ -1130,6 +1291,59 @@ Susun RAB || lemon
                                  mendatar yang tadinya menganggur. --}}
                             <div class="rb-itin">
                             <div class="rb-itin-jadwal">
+                            {{-- Hanya saat itinerary masih kosong.
+
+                                 Menyambungkan agenda paket ke agenda yang sudah
+                                 disusun menghasilkan hari dengan dua sarapan dan dua
+                                 check-in, dan membereskannya lebih lama daripada
+                                 menyusun dari nol. --}}
+                            @if ($itinerary === [])
+                                <div class="rb-paket">
+                                    <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-box-seam"></i></span>
+                                    <span class="rb-paket-teks">
+                                        <strong>Mulai dari paket yang sudah ada?</strong>
+                                        <span class="dsb-kartu-sub">Agendanya disalin ke sini, lalu boleh disunting.</span>
+                                    </span>
+                                    <button type="button" wire:click="bukaDariPaket" wire:loading.attr="disabled" wire:target="bukaDariPaket"
+                                        class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                                        <i class="bi bi-box-seam" wire:loading.remove wire:target="bukaDariPaket"></i>
+                                        <span class="dsb-putar" wire:loading wire:target="bukaDariPaket"></span>
+                                        <span>Pilih paket</span>
+                                    </button>
+                                </div>
+
+                                @if ($bukaPaket)
+                                    <div class="rb-paket-panel">
+                                        @if ($paketSumber === [])
+                                            <span class="dsb-kartu-sub">Belum ada paket wisata beragenda untuk provinsi ini.</span>
+                                        @else
+                                            <div class="dsb-medan">
+                                                <label class="dsb-label" for="rb-paket">Paket</label>
+                                                <select id="rb-paket" wire:model="paketTerpilih" class="dsb-isian">
+                                                    {{-- Yang kosong pun menandai dirinya: tanpa @selected,
+                                                         pilihan yang dipulihkan dari server tidak tergambar
+                                                         sebagai terpilih. Dijaga SelectCariOrchaTest. --}}
+                                                    <option value="" @selected($this->paketTerpilih === '')>Pilih paket…</option>
+                                                    @foreach ($paketSumber as $pk)
+                                                        <option value="{{ $pk['id'] }}" @selected((string) $this->paketTerpilih === (string) $pk['id'])>{{ $pk['nama'] }} — {{ $pk['jumlah_hari'] }} hari, {{ $pk['jumlah_kegiatan'] }} kegiatan</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="rb-paket-aksi">
+                                                <button type="button" wire:click="pakaiPaket" @disabled($paketTerpilih === '')
+                                                    class="dsb-tombol is-lembut" style="--ikon: #047857">
+                                                    <i class="bi bi-check2"></i><span>Pakai agendanya</span>
+                                                </button>
+                                                <button type="button" wire:click="tutupPaket" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                                    <i class="bi bi-x-lg"></i><span>Batal</span>
+                                                </button>
+                                            </div>
+                                            <span class="dsb-kartu-sub">Hari yang melebihi {{ $rab['jumlah_hari'] }} hari perjalanan ini tidak ikut disalin.</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endif
+
                             <div class="rab-hari-tab mb-3">
                                 @for ($h = 1; $h <= $jumlahHari; $h++)
                                     <button type="button" wire:click="pilihHari({{ $h }})"
@@ -1260,9 +1474,9 @@ Susun RAB || lemon
                                                 <i class="bi bi-grip-vertical"></i>
                                             </span>
                                         @endunless
-                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat" wire:click="geser({{ $i }}, -1)"
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn" wire:click="geser({{ $i }}, -1)"
                                             title="Naikkan" @disabled($i === $idxPertama)><i class="bi bi-arrow-up"></i></button>
-                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat" wire:click="geser({{ $i }}, 1)"
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn" wire:click="geser({{ $i }}, 1)"
                                             title="Turunkan" @disabled($i === $idxTerakhir)><i class="bi bi-arrow-down"></i></button>
                                         <select class="dsb-isian" title="Pindah ke hari lain"
                                             wire:change="pindahHari({{ $i }}, $event.target.value)">
@@ -1457,6 +1671,26 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Urungkan, sama seperti itinerary. Di sinilah salah
+                                 klik paling mahal: yang hilang bukan satu baris agenda,
+                                 melainkan satu komponen harga — dan hilangnya langsung
+                                 menggeser harga jual tanpa ada yang menyadari baris mana
+                                 yang pergi. --}}
+                            @if ($biayaTerhapus !== [])
+                                <div class="rb-urung mb-3">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    <span class="rb-urung-teks">
+                                        <strong>{{ $biayaTerhapus['nama'] }}</strong> dihapus dari rincian biaya.
+                                    </span>
+                                    <button type="button" wire:click="urungkanHapusBiaya" class="dsb-tombol is-lembut" style="--ikon: #1d4ed8">
+                                        <i class="bi bi-arrow-counterclockwise"></i><span>Kembalikan</span>
+                                    </button>
+                                    <button type="button" wire:click="lupakanHapusBiaya" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                        <i class="bi bi-x-lg"></i><span>Tutup</span>
+                                    </button>
+                                </div>
+                            @endif
+
                             <div class="d-flex flex-wrap gap-2 align-items-center mb-3 rb-biaya-bilah">
                                 <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"
                                     class="dsb-tombol is-lembut" style="--ikon: #64748b"
@@ -1501,145 +1735,151 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Merah dicabut: harga master yang bergerak BUKAN galat.
+                                 Sejak baris bisa "disimpan ke master", bedanya bahkan
+                                 sering berarti tim menemukan yang lebih murah — dan
+                                 mengecatnya merah membuat kabar baik terbaca seperti
+                                 kesalahan yang harus dibereskan. --}}
                             @if ($hargaBasi)
-                                <div class="alert alert-danger border-0 rounded-3 small py-2">
-                                    <i class="bi bi-arrow-repeat"></i>
-                                    Sebagian harga master sudah berubah sejak masuk ke RAB ini. Baris yang bertanda merah masih memakai harga lama.
+                                <div class="rb-beda-banner">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span>
+                                        Ada baris yang harganya <strong>berbeda dari master</strong> —
+                                        bisa karena harga master bergerak, bisa karena tim menemukan
+                                        harga lain. Bedanya disebut di baris masing-masing, berikut
+                                        dua pilihan: pakai harga master, atau simpan harga baris ini
+                                        ke master.
+                                    </span>
                                 </div>
                             @endif
 
-                            <div class="orcha-gulung">
-                                {{-- Kolom "Perhitungan" dibubarkan: isinya kalimat pendek
-                                     ("Rp 10.000 × 10 orang") di kolom selebar sepertiga
-                                     tabel, jadi tiap baris menyisakan lubang di
-                                     tengahnya. Kini ia menempel di bawah nama biayanya,
-                                     tempat ia memang menjelaskan. --}}
-                                <table class="table align-middle orcha-tabel rab-tabel-biaya mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Biaya</th>
-                                            <th style="width: 130px" class="text-end">Harga satuan</th>
-                                            <th style="width: 84px" class="text-end">Jumlah</th>
-                                            <th style="width: 130px" class="text-end">Subtotal</th>
-                                            <th style="width: 48px"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($barisPerKategori as $label => $isi)
-                                            {{-- Pita kategori membawa angkanya sendiri. Sebagai
-                                                 nama yang melintang sendirian, ia cuma garis
-                                                 pemisah yang kebetulan bertulisan. --}}
-                                            <tr class="rab-kat">
-                                                <td colspan="3">{{ $label }}</td>
-                                                <td class="text-end">{{ $totalKategori[$label]['total_teks'] ?? '' }}</td>
-                                                <td></td>
-                                            </tr>
-                                            @foreach ($isi as $b)
-                                                <tr wire:key="by-{{ $b['id'] }}">
-                                                    <td>
-                                                        <div class="rab-biaya-nama">{{ $b['nama'] }}</div>
-                                                        {{-- Dari siapa biaya ini dibeli, berikut
-                                                             nomornya. Dibaca hidup dari daftar
-                                                             vendor, jadi yang tertulis selalu
-                                                             nomor yang berlaku hari ini — bukan
-                                                             nomor saat penawaran dibuat.
+                            {{-- KARTU, bukan tabel.
 
-                                                             Ada di sini supaya menelepon vendor
-                                                             tidak menuntut pindah menu: yang
-                                                             harus dicari di layar lain adalah
-                                                             yang tidak sempat dicari. --}}
-                                                        @if (! empty($b['vendor']))
-                                                            <div class="rab-biaya-vendor">
-                                                                <i class="bi bi-shop"></i>
-                                                                {{-- Buntu sebelumnya: vendornya terbaca,
-                                                                     tetapi rinciannya hanya bisa dibuka
-                                                                     lewat menu lain. --}}
-                                                                <a href="{{ route('admin.orcha.vendor.detail', $b['vendor_id']) }}" wire:navigate
-                                                                    class="rab-vendor-tautan">{{ $b['vendor'] }}</a>
-                                                                @if (! empty($b['vendor_kontak']))
-                                                                    <span class="rab-vendor-nomor">{{ $b['vendor_kontak'] }}</span>
-                                                                @endif
-                                                            </div>
+                                 Satu baris biaya membawa delapan hal: nama, vendor,
+                                 nomornya, satuan, kapasitas, perhitungan, harga,
+                                 jumlah, subtotal, dan empat tombol. Dipaksa masuk
+                                 lima kolom, tiga perempatnya menumpuk di kolom
+                                 pertama dan kolom lain berdiri hampir kosong —
+                                 yang terbaca bukan tabel, melainkan paragraf
+                                 bergaris.
+
+                                 Idiomnya disamakan dengan itinerary di atas: satu
+                                 kartu per baris, pita warna di tepi kiri menurut
+                                 kategorinya. --}}
+                            @foreach ($barisPerKategori as $label => $isi)
+                                <div class="rb-biaya-kat">
+                                    <span>{{ $label }}</span>
+                                    <strong>{{ $totalKategori[$label]['total_teks'] ?? '' }}</strong>
+                                </div>
+
+                                @foreach ($isi as $b)
+                                    <div class="rb-biaya-kartu" wire:key="by-{{ $b['id'] }}"
+                                        style="--c: {{ $warnaKategori[$b['kategori']] ?? '#64748b' }}">
+                                        <div class="rb-biaya-utama">
+                                            <div class="rb-biaya-judul">
+                                                <div class="rab-biaya-nama">{{ $b['nama'] }}</div>
+                                                {{-- Dari siapa biaya ini dibeli, berikut nomornya.
+                                                     Dibaca hidup dari daftar vendor, jadi yang
+                                                     tertulis selalu nomor yang berlaku hari ini. --}}
+                                                @if (! empty($b['vendor']))
+                                                    <div class="rab-biaya-vendor">
+                                                        <i class="bi bi-shop"></i>
+                                                        <a href="{{ route('admin.orcha.vendor.detail', $b['vendor_id']) }}" wire:navigate
+                                                            class="rab-vendor-tautan">{{ $b['vendor'] }}</a>
+                                                        @if (! empty($b['vendor_kontak']))
+                                                            <span class="rab-vendor-nomor">{{ $b['vendor_kontak'] }}</span>
                                                         @endif
-                                                        <div class="rab-biaya-hitung">
-                                                            <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
-                                                            @if ($b['kapasitas'])
-                                                                <span class="rab-pil-satuan">kapasitas {{ $b['kapasitas'] }}</span>
-                                                            @endif
-                                                            <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
-                                                        </div>
-                                                        @isset($b['harga_master_kini'])
-                                                            {{-- KEDUA arah ditawarkan, dan sengaja tidak ditebak
-                                                                 mana yang dimaksud.
+                                                    </div>
+                                                @endif
+                                                <div class="rab-biaya-hitung">
+                                                    <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
+                                                    @if ($b['kapasitas'])
+                                                        <span class="rab-pil-satuan">kapasitas {{ $b['kapasitas'] }}</span>
+                                                    @endif
+                                                    <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
+                                                </div>
+                                            </div>
 
-                                                                 Angkanya sendiri tidak bisa membedakan "tim
-                                                                 menemukan hotel lebih murah" dari "harga master
-                                                                 naik": keduanya sama-sama membuat baris ini lebih
-                                                                 murah daripada master. Yang tahu bedanya cuma orang
-                                                                 yang menyuntingnya, jadi dialah yang memilih. --}}
-                                                            <div class="rab-basi is-beda">
-                                                                <i class="bi bi-arrow-left-right"></i>
-                                                                Master Rp {{ number_format($b['harga_master_kini'], 0, ',', '.') }} ·
-                                                                baris ini Rp {{ $this->selisihMasterTeks($b) }} lebih
-                                                                {{ $this->temuanLebihMurah($b) ? 'murah' : 'mahal' }} ·
-                                                                <a href="#" wire:click.prevent="pakaiHargaMaster({{ $b['id'] }})"
-                                                                    title="Harga master yang dipakai di baris ini">pakai harga master</a> ·
-                                                                <a href="#" wire:click.prevent="simpanKeMaster({{ $b['id'] }})"
-                                                                    title="Master harga ikut berubah, dan RAB berikutnya memakai angka ini">simpan ke master</a>
-                                                            </div>
-                                                            {{-- Harga yang berbeda tanpa sebabnya tidak bisa dipakai
-                                                                 lagi: beberapa bulan kemudian tidak ada yang bisa
-                                                                 membedakannya dari salah ketik. --}}
-                                                            <input type="text" maxlength="200" class="dsb-isian rb-catatan-baris"
-                                                                wire:model.blur="catatanBaris.{{ $b['id'] }}"
-                                                                placeholder="Kenapa berbeda? mis. hasil nego, low season, kamar triple">
-                                                        @endisset
-                                                    </td>
-                                                    {{-- "Rp" di DALAM kotaknya, sama seperti seluruh isian
-                                                         uang lain di lemon. Angka telanjang di kolom yang
-                                                         bersebelahan dengan kolom "Jumlah" terbaca sebagai
-                                                         banyaknya, bukan harganya. --}}
-                                                    <td data-judul="Harga satuan">
-                                                        <div class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
-                                                            <input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
-                                                        </div>
-                                                    </td>
-                                                    <td data-judul="Jumlah"><input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian"></td>
-                                                    <td data-judul="Subtotal" class="text-end fw-bold text-nowrap">{{ $b['subtotal_teks'] }}</td>
-                                                    <td class="text-end rab-sel-aksi">
-                                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
-                                                            data-action="hapusBiaya" data-arg="{{ $b['id'] }}"
-                                                            data-title="Hapus {{ $b['nama'] }}?" data-confirm="Ya, hapus" data-icon="warning"
-                                                            title="Hapus biaya">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        @endforeach
-                                        @if ($tanpaBiaya)
-                                            <tr>
-                                                <td colspan="5" class="text-center py-4 text-muted">
-                                                    Belum ada biaya. Klik satu destinasi di atas — tiketnya ikut terhitung sendiri.
-                                                </td>
-                                            </tr>
-                                        @endif
-                                    </tbody>
-                                    {{-- Kaki tabel menutup kartunya dengan angka yang
-                                         memang dicari mata sesudah membaca rinciannya —
-                                         sebelumnya kartunya berakhir pada satu tautan
-                                         yang menggantung sendirian di kiri bawah. --}}
-                                    @if (! $tanpaBiaya)
-                                        <tfoot>
-                                            <tr class="rab-kaki">
-                                                <td colspan="3">Modal total</td>
-                                                <td class="text-end">{{ $r['modal_total_teks'] ?? 'Rp 0' }}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    @endif
-                                </table>
-                            </div>
+                                            {{-- Kedua isian diberi label sendiri. Di tabel,
+                                                 judul kolomnya ada di puncak layar — pada baris
+                                                 kesepuluh, yang terlihat cuma dua kotak angka
+                                                 tanpa nama. --}}
+                                            <div class="rb-biaya-isian">
+                                                <label class="rb-biaya-medan">
+                                                    <span>Harga satuan</span>
+                                                    <span class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
+                                                        <input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                    </span>
+                                                </label>
+                                                <label class="rb-biaya-medan is-sempit">
+                                                    <span>Jumlah</span>
+                                                    <input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                </label>
+                                                <div class="rb-biaya-sub">
+                                                    <span>Subtotal</span>
+                                                    <strong>{{ $b['subtotal_teks'] }}</strong>
+                                                </div>
+                                            </div>
+
+                                            <div class="rb-biaya-aksi">
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn"
+                                                    wire:click="geserBiaya({{ $b['id'] }}, -1)" title="Naikkan"
+                                                    @disabled(! $this->bisaGeserBiaya($b['id'], -1))><i class="bi bi-arrow-up"></i></button>
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn"
+                                                    wire:click="geserBiaya({{ $b['id'] }}, 1)" title="Turunkan"
+                                                    @disabled(! $this->bisaGeserBiaya($b['id'], 1))><i class="bi bi-arrow-down"></i></button>
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn"
+                                                    wire:click="duplikatBiaya({{ $b['id'] }})" title="Salin baris ini">
+                                                    <i class="bi bi-copy"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi rab-geser-btn"
+                                                    data-action="hapusBiaya" data-arg="{{ $b['id'] }}"
+                                                    data-title="Hapus {{ $b['nama'] }}?" data-confirm="Ya, hapus" data-icon="warning"
+                                                    title="Hapus biaya">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        @isset($b['harga_master_kini'])
+                                            <div class="rb-beda">
+                                                <div class="rb-beda-teks">
+                                                    Beda dari master: <strong>Rp {{ $this->selisihMasterTeks($b) }}
+                                                    lebih {{ $this->temuanLebihMurah($b) ? 'murah' : 'mahal' }}</strong>
+                                                    <span>master Rp {{ number_format($b['harga_master_kini'], 0, ',', '.') }}</span>
+                                                </div>
+                                                <div class="rb-beda-aksi">
+                                                    <button type="button" wire:click="pakaiHargaMaster({{ $b['id'] }})"
+                                                        title="Baris ini ikut harga master">Pakai harga master</button>
+                                                    <button type="button" wire:click="simpanKeMaster({{ $b['id'] }})"
+                                                        title="Master ikut harga baris ini, dan RAB berikutnya memakainya">Simpan ke master</button>
+                                                    @if (! $this->catatanTerbuka($b['id']))
+                                                        <button type="button" wire:click="bukaCatatan({{ $b['id'] }})"
+                                                            title="Catat kenapa harganya berbeda">+ Catatan</button>
+                                                    @endif
+                                                </div>
+                                                @if ($this->catatanTerbuka($b['id']))
+                                                    <input type="text" maxlength="200" class="dsb-isian rb-catatan-baris"
+                                                        wire:model.blur="catatanBaris.{{ $b['id'] }}"
+                                                        placeholder="mis. hasil nego vendor, low season">
+                                                @endif
+                                            </div>
+                                        @endisset
+                                    </div>
+                                @endforeach
+                            @endforeach
+
+                            @if ($tanpaBiaya)
+                                <div class="dsb-kosong">
+                                    Belum ada biaya. Klik satu destinasi di atas — tiketnya ikut terhitung sendiri.
+                                </div>
+                            @else
+                                {{-- Angka yang dicari mata sesudah membaca rinciannya. --}}
+                                <div class="rb-biaya-total">
+                                    <span>Modal total</span>
+                                    <strong>{{ $r['modal_total_teks'] ?? 'Rp 0' }}</strong>
+                                </div>
+                            @endif
 
                             <div class="{{ $bukaManual ? 'mt-3' : '' }}">
                                 @if ($bukaManual)
@@ -2085,6 +2325,47 @@ Susun RAB || lemon
                                          biaya tetapnya ikut berubah saat kamar atau armada
                                          bertambah, dan tangga itulah yang membuat satu
                                          peserta tambahan kadang justru menambah rugi. --}}
+                                    {{-- Riwayat penawaran DI SINI, bukan cuma di daftar
+                                         RAB: "versi mana yang dia setujui" ditanyakan
+                                         justru sambil menatap angka yang sekarang. --}}
+                                    <div class="rb-versi">
+                                        @if (! $bukaVersi)
+                                            <button type="button" wire:click="bukaRiwayatVersi" wire:loading.attr="disabled" wire:target="bukaRiwayatVersi"
+                                                class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                                <i class="bi bi-clock-history" wire:loading.remove wire:target="bukaRiwayatVersi"></i>
+                                                <span class="dsb-putar" wire:loading wire:target="bukaRiwayatVersi"></span>
+                                                <span>Riwayat penawaran</span>
+                                            </button>
+                                        @else
+                                            @if ($versi === [])
+                                                <span class="dsb-kartu-sub">
+                                                    Belum pernah dikirim. Angkanya terekam saat statusnya
+                                                    diubah jadi &ldquo;Dikirim ke pelanggan&rdquo;.
+                                                </span>
+                                            @else
+                                                <table class="rb-versi-tabel">
+                                                    <tbody>
+                                                        @foreach ($versi as $v)
+                                                            <tr>
+                                                                <td>
+                                                                    <strong>#{{ $v['urutan'] }}</strong>
+                                                                    <small>{{ $v['pada_teks'] ?? $v['pada'] ?? '' }}@if (! empty($v['oleh'])) · {{ $v['oleh'] }}@endif</small>
+                                                                </td>
+                                                                <td>
+                                                                    {{ $v['harga_per_orang_teks'] ?? '' }}/org
+                                                                    <small>{{ $v['beda_kini'] ?? '' }}</small>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            @endif
+                                            <button type="button" wire:click="tutupVersi" class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                                <i class="bi bi-x-lg"></i><span>Tutup</span>
+                                            </button>
+                                        @endif
+                                    </div>
+
                                     @if ($openTrip && $simulasi !== [])
                                 </div>
                             </div>

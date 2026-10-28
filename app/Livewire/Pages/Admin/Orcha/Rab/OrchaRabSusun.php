@@ -937,11 +937,142 @@ class OrchaRabSusun extends Component
         return $this->keRupiah(abs((int) ($baris['selisih_master'] ?? 0)));
     }
 
+    /** Baris yang kotak catatannya sedang dibuka admin. */
+    public array $catatanDibuka = [];
+
+    /**
+     * Kotak catatan terbuka bila SUDAH berisi, atau baru saja diminta.
+     *
+     * Dipaksa tampil di tiap baris yang harganya beda, kolom biaya terbaca
+     * penuh pekerjaan yang belum dikerjakan — padahal catatannya memang
+     * hanya sesekali dipakai.
+     */
+    public function catatanTerbuka(int $id): bool
+    {
+        return in_array($id, $this->catatanDibuka, true)
+            || trim((string) ($this->catatanBaris[$id] ?? '')) !== '';
+    }
+
+    public function bukaCatatan(int $id): void
+    {
+        $this->catatanDibuka[] = $id;
+    }
+
     public function updatedCatatanBaris($nilai, $id): void
     {
         $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
             'catatan' => trim((string) $nilai) ?: null,
         ]);
+    }
+
+    /* --------------------------- MULAI DARI PAKET --------------------------- */
+
+    public bool $bukaPaket = false;
+
+    public array $paketSumber = [];
+
+    public string $paketTerpilih = '';
+
+    /**
+     * Agenda paket yang bisa dipakai sebagai titik mulai itinerary.
+     *
+     * Menyusun ulang dari nol padahal agenda yang mirip sudah tersimpan di
+     * katalog paket adalah pekerjaan yang diulang tiap penawaran dibuat —
+     * dan tiap pengulangan adalah kesempatan satu kegiatan terlewat.
+     */
+    public function bukaDariPaket(): void
+    {
+        $this->bukaPaket = true;
+
+        if ($this->paketSumber !== []) {
+            return;
+        }
+
+        try {
+            $this->paketSumber = $this->orcha()->ambil('/rab/sumber-itinerary', [
+                'provinsi' => $this->dataRab['provinsi'] ?? '',
+            ])['data'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function tutupPaket(): void
+    {
+        $this->bukaPaket = false;
+        $this->paketTerpilih = '';
+    }
+
+    /**
+     * Menyalin agenda paket ke itinerary RAB ini.
+     *
+     * MENGGANTI, tidak menyambung: menyambungkan agenda paket ke agenda
+     * yang sudah disusun menghasilkan hari dengan dua sarapan dan dua
+     * check-in, dan membereskannya lebih lama daripada menyusun dari nol.
+     * Karena itu tombolnya hanya ditawarkan saat itinerary masih kosong.
+     */
+    public function pakaiPaket(): void
+    {
+        $paket = collect($this->paketSumber)->firstWhere('id', (int) $this->paketTerpilih);
+
+        if (! $paket) {
+            return;
+        }
+
+        $hari = max(1, (int) ($this->dataRab['jumlah_hari'] ?? 1));
+
+        // Hari yang melebihi lamanya perjalanan dibuang, bukan dipaksa
+        // masuk: RAB tiga hari tidak bisa memuat agenda hari keempat.
+        $this->itinerary = collect($paket['itinerary'] ?? [])
+            ->filter(fn ($k) => (int) ($k['hari_ke'] ?? 1) <= $hari)
+            ->map(fn ($k) => [
+                'hari_ke' => (int) ($k['hari_ke'] ?? 1),
+                'jam' => (string) ($k['jam'] ?? ''),
+                'jam_selesai' => (string) ($k['jam_selesai'] ?? ''),
+                'durasi_teks' => '',
+                'jenis' => (string) ($k['jenis'] ?? 'lain'),
+                'nama' => (string) ($k['nama'] ?? ''),
+                'keterangan' => (string) ($k['keterangan'] ?? ''),
+                'destinasi' => (string) ($k['destinasi'] ?? ''),
+            ])->values()->all();
+
+        $this->bukaPaket = false;
+        $this->paketTerpilih = '';
+        $this->simpanItinerary('Agenda paket disalin. Periksa jamnya, lalu tarik biayanya.');
+    }
+
+    /* ------------------------------- VERSI --------------------------------- */
+
+    public bool $bukaVersi = false;
+
+    public array $versi = [];
+
+    public array $versiMeta = [];
+
+    /**
+     * Angka penawaran pada tiap kali ia dikirim.
+     *
+     * Ada di daftar RAB, tetapi tidak di layar tempat penawaran benar-benar
+     * dikirim — padahal "versi mana yang dia setujui" ditanyakan justru
+     * sambil menatap angka yang sekarang.
+     */
+    public function bukaRiwayatVersi(): void
+    {
+        $this->bukaVersi = true;
+
+        try {
+            $balasan = $this->orcha()->ambil("/rab/{$this->rabId}/versi");
+            $this->versi = $balasan['data'] ?? [];
+            $this->versiMeta = $balasan['meta'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+            $this->bukaVersi = false;
+        }
+    }
+
+    public function tutupVersi(): void
+    {
+        $this->bukaVersi = false;
     }
 
     /* ------------------------------ NEGOSIASI ------------------------------ */
@@ -1014,8 +1145,132 @@ class OrchaRabSusun extends Component
         $this->simpanNego();
     }
 
+    /** Baris biaya yang baru dihapus, untuk diurungkan. */
+    public array $biayaTerhapus = [];
+
+    /**
+     * Mengembalikan baris biaya yang baru saja dihapus.
+     *
+     * Itinerary sudah punya urungkan; biaya hanya punya konfirmasi. Padahal
+     * di sinilah salah klik paling mahal — yang hilang bukan satu baris
+     * agenda, melainkan satu komponen harga, dan hilangnya langsung
+     * menggeser harga jual tanpa ada yang menyadari baris mana yang pergi.
+     */
+    public function urungkanHapusBiaya(): void
+    {
+        if ($this->biayaTerhapus === []) {
+            return;
+        }
+
+        $b = $this->biayaTerhapus;
+        $this->biayaTerhapus = [];
+
+        /*
+         | Dikirim sebagai biaya BARU, bukan dihidupkan kembali: Orcha
+         | menghapusnya betulan, dan id lamanya tidak bisa dipakai lagi.
+         | Harganya dibawa apa adanya supaya angkanya kembali persis —
+         | menariknya ulang dari master akan memulangkan harga hari ini.
+         */
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", [
+            'master_harga_id' => $b['master_harga_id'] ?? null,
+            'vendor_id' => $b['vendor_id'] ?? null,
+            'kategori' => $b['kategori'],
+            'nama' => $b['nama'],
+            'satuan' => $b['satuan'],
+            'harga_satuan' => (int) $b['harga_satuan'],
+            'kapasitas' => $b['kapasitas'] ?? null,
+            'jumlah' => (int) $b['jumlah'],
+            'catatan' => $b['catatan'] ?? null,
+        ], 'Baris biaya dikembalikan.');
+    }
+
+    public function lupakanHapusBiaya(): void
+    {
+        $this->biayaTerhapus = [];
+    }
+
+    /**
+     * Menyalin satu baris biaya.
+     *
+     * Dua kamar beda tipe, dua armada, dua hari sewa — seluruh isinya sama
+     * kecuali satu angka, dan tanpa ini semuanya diketik ulang dari awal.
+     */
+    public function duplikatBiaya(int $id): void
+    {
+        $b = collect($this->dataRab['ringkasan']['baris'] ?? [])->firstWhere('id', $id);
+
+        if (! $b) {
+            return;
+        }
+
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", [
+            'master_harga_id' => $b['master_harga_id'] ?? null,
+            'vendor_id' => $b['vendor_id'] ?? null,
+            'kategori' => $b['kategori'],
+            'nama' => $b['nama'].' (salinan)',
+            'satuan' => $b['satuan'],
+            'harga_satuan' => (int) $b['harga_satuan'],
+            'kapasitas' => $b['kapasitas'] ?? null,
+            'jumlah' => (int) $b['jumlah'],
+        ], 'Baris disalin — ganti namanya & angkanya.');
+    }
+
+    /**
+     * Memindahkan satu baris biaya ke atas atau ke bawah.
+     *
+     * Urutan di layar adalah urutan di PDF penawaran, dan itu keputusan
+     * admin — bukan urutan baris kebetulan ditambahkan.
+     *
+     * Hanya DI DALAM kategorinya. Barisnya dikelompokkan per kategori
+     * (tiket, transportasi, akomodasi, …) menurut urutan di config Orcha;
+     * memindahkan tiket ke tengah akomodasi tidak akan terlihat terjadi,
+     * karena pengelompokannya menyusunnya kembali.
+     */
+    public function geserBiaya(int $id, int $arah): void
+    {
+        $baris = collect($this->dataRab['ringkasan']['baris'] ?? [])->values();
+        $dari = $baris->search(fn ($b) => (int) $b['id'] === $id);
+
+        if ($dari === false) {
+            return;
+        }
+
+        $ke = $dari + $arah;
+
+        // Tetangganya harus ada DAN sekategori.
+        if (! $baris->has($ke) || $baris[$ke]['kategori'] !== $baris[$dari]['kategori']) {
+            return;
+        }
+
+        $urut = $baris->pluck('id')->all();
+        [$urut[$dari], $urut[$ke]] = [$urut[$ke], $urut[$dari]];
+
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya/urutkan", ['urutan' => $urut]);
+    }
+
+    /** Baris pertama/terakhir dalam kategorinya tidak bisa digeser lagi. */
+    public function bisaGeserBiaya(int $id, int $arah): bool
+    {
+        $baris = collect($this->dataRab['ringkasan']['baris'] ?? [])->values();
+        $dari = $baris->search(fn ($b) => (int) $b['id'] === $id);
+
+        if ($dari === false) {
+            return false;
+        }
+
+        $ke = $dari + $arah;
+
+        return $baris->has($ke) && $baris[$ke]['kategori'] === $baris[$dari]['kategori'];
+    }
+
     public function hapusBiaya(int $id): void
     {
+        // Isinya disalin SEBELUM permintaan hapus dikirim: sesudah layar
+        // digambar ulang dari jawaban Orcha, barisnya sudah tidak ada di
+        // mana pun dan tidak ada lagi yang bisa dikembalikan.
+        $this->biayaTerhapus = collect($this->dataRab['ringkasan']['baris'] ?? [])
+            ->firstWhere('id', $id) ?? [];
+
         $balasan = $this->kirimKe('hapus', "/rab/{$this->rabId}/biaya/{$id}", [], 'Biaya dihapus.');
 
         // Itinerary TIDAK diubah diam-diam: ia rencana yang dibaca
