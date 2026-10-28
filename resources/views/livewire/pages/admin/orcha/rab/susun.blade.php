@@ -90,7 +90,11 @@ Susun RAB || lemon
     // sebaris di antara direktif — lihat catatan di bawah.
     $negoAktif = (bool) ($r['nego_aktif'] ?? false);
     $negoRugi = (bool) ($r['nego_rugi'] ?? false);
-    $negoSelisih = (int) ($r['nego_selisih'] ?? 0);
+    // Seluruh angka perbandingan dibaca dari SATU blok. Sempat ada
+    // kembarannya sebagai kunci datar, dan kembaran itu langsung menuliskan
+    // "turun Rp 0" di atas tabel yang menunjukkan turun Rp 26.000.
+    $nego = $r['nego'] ?? null;
+    $negoSelisih = (int) ($nego['selisih']['harga_per_orang'] ?? 0);
     $negoTurun = $negoSelisih < 0;
     $negoSelisihTeks = 'Rp '.number_format(abs($negoSelisih), 0, ',', '.');
 
@@ -627,6 +631,50 @@ Susun RAB || lemon
             font-size: .78rem; color: #92400e; line-height: 1.45;
         }
         .rb-nego-lepas { align-self: flex-start; }
+        /* Pembanding di dalam kartu untung: sengaja lebih kecil & redup —
+           yang dibaca pertama tetap angka besarnya, bukan riwayatnya. */
+        .rb-untung-banding {
+            margin-top: 9px; padding-top: 8px;
+            border-top: 1px solid color-mix(in srgb, var(--c) 22%, transparent);
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .rb-untung-baris {
+            display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+            font-size: .74rem; color: var(--dsb-redup, #6b7280);
+        }
+        .rb-untung-dulu { font-weight: 600; color: var(--dsb-tinta, #1c1f26); white-space: nowrap; }
+        .rb-untung-lepas { font-weight: 600; color: var(--dsb-bahaya, #be123c); white-space: nowrap; }
+
+        /* Peringatan, bukan galat: tidak ada yang rusak — kotaknya cuma
+           sedang tidak menentukan apa-apa. */
+        .rb-margin-nonaktif {
+            display: flex; align-items: flex-start; gap: 7px; margin-bottom: 10px;
+            padding: 9px 11px; border-radius: 11px;
+            background: #fffbeb; border: 1px solid #fde68a;
+            font-size: .78rem; line-height: 1.5; color: #92400e;
+        }
+        .rb-margin-nonaktif i { margin-top: 2px; }
+        .rb-margin-lepas {
+            display: inline; padding: 0; border: 0; background: none;
+            color: #92400e; font-weight: 700; text-decoration: underline;
+        }
+
+        .rb-banding-bungkus { padding: 11px 12px 12px; border-top: 1px solid #eef1f6; }
+        /* Tiga kolom di lebar 300px: label sempit, dua angka rata kanan. */
+        .rb-banding { width: 100%; border-collapse: collapse; font-size: .74rem; }
+        .rb-banding th {
+            padding: 0 0 4px; font-size: .64rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: var(--dsb-redup, #94a3b8); text-align: right;
+        }
+        .rb-banding th:first-child { text-align: left; }
+        .rb-banding td { padding: 3px 0; text-align: right; color: var(--dsb-redup, #6b7280); white-space: nowrap; }
+        .rb-banding td:first-child { text-align: left; color: var(--dsb-tinta, #1c1f26); }
+        .rb-banding tbody tr + tr td { border-top: 1px solid #eef1f6; }
+        .rb-banding td.is-kini { font-weight: 700; color: var(--dsb-tinta, #1c1f26); }
+        .rb-banding-kaki {
+            margin-top: 8px; font-size: .74rem; line-height: 1.5;
+            color: var(--dsb-redup, #6b7280);
+        }
         .rb-nego-rugi {
             display: flex; align-items: flex-start; gap: 7px;
             padding: 9px 12px; background: #fef2f2; border-top: 1px solid #fecaca;
@@ -1556,7 +1604,7 @@ Susun RAB || lemon
                                     @if ($negoAktif)
                                         <div class="rb-nego-tanda">
                                             <i class="bi bi-hand-thumbs-up"></i>
-                                            <span>Harga <strong>disepakati</strong>, bukan dihitung — hitungannya {{ $r['harga_asli_teks'] ?? 'Rp 0' }}.</span>
+                                            <span>Harga <strong>disepakati</strong>, bukan dihitung — hitungannya {{ $nego['sebelum']['harga_per_orang_teks'] ?? 'Rp 0' }}.</span>
                                         </div>
                                     @endif
 
@@ -1617,7 +1665,7 @@ Susun RAB || lemon
                                                          mengklik ke mana supaya angkanya berlaku. --}}
                                                     <input id="rb-nego-harga" type="text" inputmode="numeric" class="dsb-isian"
                                                         wire:model.blur="hargaNego" x-on:keydown.enter="$el.blur()"
-                                                        placeholder="{{ $r['harga_asli_teks'] ?? 'Rp 0' }}">
+                                                        placeholder="{{ $nego['sebelum']['harga_per_orang_teks'] ?? 'Rp 0' }}">
                                                     <span class="dsb-kartu-sub">
                                                         Tekan <strong>Enter</strong> atau klik di luar kotak supaya berlaku.
                                                         Kosongkan untuk kembali ke harga hitungan.
@@ -1638,7 +1686,7 @@ Susun RAB || lemon
                                                      berupa harga di bawah modal. --}}
                                                 <div class="rb-nego-batas">
                                                     <span>
-                                                        Di bawah <strong>{{ $r['harga_batas_teks'] ?? 'Rp 0' }}</strong> per orang, trip ini rugi.
+                                                        Di bawah <strong>{{ $nego['batas']['harga_teks'] ?? 'Rp 0' }}</strong> per orang, trip ini rugi.
                                                     </span>
                                                     <button type="button" wire:click="pakaiBatasAman" class="dsb-tombol is-lembut" style="--ikon: #b45309">
                                                         <i class="bi bi-shield-check"></i><span>Pakai batas aman</span>
@@ -1650,6 +1698,73 @@ Susun RAB || lemon
                                                         <i class="bi bi-arrow-counterclockwise"></i><span>Lepas kesepakatan</span>
                                                     </button>
                                                 @endif
+                                            </div>
+                                        @endif
+
+                                        {{-- PERBANDINGAN, bukan satu kalimat ringkasan.
+
+                                             "Turun Rp 500 per orang" tidak menjawab yang
+                                             sebenarnya ditanyakan saat tawaran disetujui:
+                                             untungnya tinggal berapa, marginnya masih sehat
+                                             atau tidak, dan berapa kepala yang kini
+                                             dibutuhkan untuk balik modal. --}}
+                                        @if ($negoAktif && $nego)
+                                            <div class="rb-banding-bungkus">
+                                            <table class="rb-banding">
+                                                <thead>
+                                                    <tr>
+                                                        <th></th>
+                                                        <th>Hitungan</th>
+                                                        <th>Disepakati</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Harga/org</td>
+                                                        <td>{{ $nego['sebelum']['harga_per_orang_teks'] }}</td>
+                                                        <td class="is-kini">{{ $nego['sesudah']['harga_per_orang_teks'] }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Total</td>
+                                                        <td>{{ $nego['sebelum']['harga_total_teks'] }}</td>
+                                                        <td class="is-kini">{{ $nego['sesudah']['harga_total_teks'] }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Untung</td>
+                                                        <td>{{ $nego['sebelum']['untung_teks'] }}</td>
+                                                        <td class="is-kini">{{ $nego['sesudah']['untung_teks'] }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Untung/org</td>
+                                                        <td>{{ $nego['sebelum']['untung_per_orang_teks'] }}</td>
+                                                        <td class="is-kini">{{ $nego['sesudah']['untung_per_orang_teks'] }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Margin</td>
+                                                        <td>{{ $this->persenTeks($nego['sebelum']['persen_untung']) }}</td>
+                                                        <td class="is-kini">{{ $this->persenTeks($nego['sesudah']['persen_untung']) }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Balik modal</td>
+                                                        <td>{{ $this->impasTeks($nego['sebelum']['bep_peserta']) }}</td>
+                                                        <td class="is-kini">{{ $this->impasTeks($nego['sesudah']['bep_peserta']) }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                            {{-- Angka yang paling sering mengejutkan: yang
+                                                 dipotong adalah selisihnya, bukan harganya,
+                                                 jadi potongan kecil bisa melepas separuh
+                                                 untung. --}}
+                                            @isset($nego['selisih']['bagian_untung_dilepas'])
+                                                <div class="rb-banding-kaki">
+                                                    Potongan {{ $negoSelisihTeks }}/orang melepas
+                                                    <strong>{{ $this->persenTeks($nego['selisih']['bagian_untung_dilepas']) }} dari untung</strong>.
+                                                    @if (! $negoRugi)
+                                                        Masih {{ $nego['batas']['jarak_teks'] }}/orang di atas batas aman.
+                                                    @endif
+                                                </div>
+                                            @endisset
                                             </div>
                                         @endif
 
@@ -1678,6 +1793,44 @@ Susun RAB || lemon
                                         </div>
                                         <strong class="rb-untung-nilai">{{ $r['untung_teks'] ?? 'Rp 0' }}</strong>
                                         <span class="rb-untung-kaki">{{ $r['untung_per_orang_teks'] ?? 'Rp 0' }} per orang</span>
+
+                                        {{-- Untung sesudah kesepakatan tidak berarti apa-apa
+                                             sendirian. Angka ini adalah jawaban dari seluruh
+                                             layar, dan begitu harganya ditawar, pertanyaannya
+                                             berubah jadi "dibanding berapa?" — jadi
+                                             pembandingnya ikut di sini, bukan cuma di tabel
+                                             yang harus dicari. --}}
+                                        @if ($negoAktif && $nego)
+                                            <div class="rb-untung-banding">
+                                                <div class="rb-untung-baris">
+                                                    <span>Sebelum ditawar</span>
+                                                    <span class="rb-untung-dulu">
+                                                        {{ $nego['sebelum']['untung_teks'] }}
+                                                        @isset($nego['sebelum']['persen_untung'])
+                                                            · {{ $this->persenTeks($nego['sebelum']['persen_untung']) }}
+                                                        @endisset
+                                                    </span>
+                                                </div>
+                                                <div class="rb-untung-baris">
+                                                    <span>Dilepas</span>
+                                                    <span class="rb-untung-lepas">
+                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung'])) }}
+                                                        @isset($nego['selisih']['bagian_untung_dilepas'])
+                                                            ({{ $this->persenTeks($nego['selisih']['bagian_untung_dilepas']) }})
+                                                        @endisset
+                                                    </span>
+                                                </div>
+                                                <div class="rb-untung-baris">
+                                                    {{-- "Per orang" saja ambigu di kartu untung:
+                                                         ia bisa terbaca sebagai untung per orang,
+                                                         yang nilainya sudah tertulis di atas. --}}
+                                                    <span>Dilepas/orang</span>
+                                                    <span class="rb-untung-lepas">
+                                                        {{ $this->rupiahTeks(abs((int) $nego['selisih']['untung_per_orang'])) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     {{-- Titik impas.
@@ -1753,6 +1906,34 @@ Susun RAB || lemon
 
                                 <div class="border-top mt-3 pt-3">
                                     <div class="orcha-label-kecil mb-2">Margin</div>
+
+                                    {{-- Kotak ini BERHENTI menentukan harga begitu ada
+                                         kesepakatan, dan itu tidak terlihat dari mana pun.
+
+                                         Yang terjadi tanpa peringatan ini: tim mengisi 20%,
+                                         kartu untung menulis 10%, dan dua angka itu
+                                         bertentangan di layar yang sama tanpa ada yang
+                                         menjelaskan mana yang benar. Pembacanya bukan orang
+                                         yang tahu bahwa harga nego menimpa margin. --}}
+                                    @if ($negoAktif && $nego)
+                                        <div class="rb-margin-nonaktif">
+                                            <i class="bi bi-info-circle"></i>
+                                            <span>
+                                                Angka di bawah <strong>tidak sedang dipakai</strong>.
+                                                Harganya memakai kesepakatan
+                                                <strong>{{ $nego['sesudah']['harga_per_orang_teks'] }}</strong>/orang,
+                                                jadi margin yang benar-benar didapat
+                                                <strong>{{ $this->persenTeks($nego['sesudah']['persen_untung']) }}</strong>,
+                                                bukan {{ $marginPersen ? $marginNilai.'%' : 'angka di bawah' }}.
+                                                Margin ini tinggal jadi pembanding — kolom
+                                                &ldquo;Hitungan&rdquo; di tabel perbandingan.
+                                                <button type="button" wire:click="hapusNego" class="rb-margin-lepas">
+                                                    Lepas kesepakatan
+                                                </button>
+                                            </span>
+                                        </div>
+                                    @endif
+
                                     <div class="rab-pilih-margin mb-2">
                                         @foreach ($kosakata['margin_jenis'] ?? [] as $kunci => $label)
                                             <label class="{{ $marginJenis === $kunci ? 'aktif' : '' }}">
@@ -1780,6 +1961,20 @@ Susun RAB || lemon
                                                 <option value="{{ $nilai }}" @selected((string) $this->pembulatan === (string) $nilai)>{{ $teks }}</option>
                                             @endforeach
                                         </select>
+                                    </div>
+                                    {{-- Kendali ini sebelumnya berdiri tanpa sepatah
+                                         keterangan pun, dan ditanyakan dua kali: yang
+                                         dibulatkan HANYA harga per orang, modalnya tidak
+                                         ikut, jadi untungnya justru bertambah sedikit. --}}
+                                    <div class="dsb-kartu-sub mt-1">
+                                        Yang dibulatkan hanya <strong>harga per orang</strong> —
+                                        naik ke kelipatan terdekat, supaya tidak jadi angka
+                                        seperti Rp 164.400. Modal tidak ikut dibulatkan, jadi
+                                        untungnya bertambah sedikit.
+                                        @if ($negoAktif)
+                                            <strong>Tidak berlaku untuk harga kesepakatan</strong> —
+                                            angka yang disepakati dipakai apa adanya.
+                                        @endif
                                     </div>
                                 </div>
 

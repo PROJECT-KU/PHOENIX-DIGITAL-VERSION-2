@@ -2900,7 +2900,7 @@ test('mengosongkan harga nego melepas kesepakatan, bukan mengirim nol', function
 test('batas aman diisikan dari angka Orcha, bukan diketik ulang', function () {
     palsukanRab();
 
-    $batas = rekamanRab('show')['data']['ringkasan']['harga_batas'];
+    $batas = rekamanRab('show')['data']['ringkasan']['nego']['batas']['harga'];
 
     Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
         ->call('pakaiBatasAman');
@@ -2970,4 +2970,121 @@ test('panel nego terbuka sendiri bila kesepakatannya sudah ada', function () {
         ->assertSet('bukaNego', true)
         ->assertSet('hargaNego', '1.150.000')
         ->assertSee('disepakati');
+});
+
+test('kesepakatan ditampilkan berdampingan dengan harga hitungan', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $show['data']['harga_nego'] = 500_000;
+        $r['nego_aktif'] = true;
+        $r['nego']['aktif'] = true;
+        $r['nego']['sesudah'] = array_merge($r['nego']['sesudah'], [
+            'harga_per_orang' => 500_000, 'harga_per_orang_teks' => 'Rp 500.000',
+            'untung' => 1_000_000, 'untung_teks' => 'Rp 1.000.000',
+            'persen_untung' => 12.5, 'bep_peserta' => 9,
+        ]);
+        $r['nego']['selisih'] = array_merge($r['nego']['selisih'], [
+            'bagian_untung_dilepas' => 45.5, 'poin_persen' => -7.5,
+        ]);
+
+        return Http::response($show);
+    });
+
+    $halaman = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk();
+
+    // Kedua sisi hadir: potongannya tidak punya arti tanpa pembandingnya.
+    $halaman->assertSee('Hitungan')
+        ->assertSee('Disepakati')
+        ->assertSee('Rp 500.000')
+        ->assertSee($rekaman = rekamanRab('show')['data']['ringkasan']['nego']['sebelum']['harga_per_orang_teks'])
+        // Angka yang paling sering mengejutkan saat tawaran disetujui.
+        ->assertSee('45,5% dari untung', escape: false);
+});
+
+test('margin dan titik impas yang tak terhitung disebut apa adanya', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->instance();
+
+    // 0% dan "0 peserta" dua-duanya terbaca sebagai kabar baik, padahal
+    // artinya angkanya memang tidak bisa dihitung.
+    expect($komponen->persenTeks(null))->toBe('—')
+        ->and($komponen->persenTeks(12.5))->toBe('12,5%')
+        ->and($komponen->impasTeks(null))->toBe('tak tercapai')
+        ->and($komponen->impasTeks(9))->toBe('9 org');
+});
+
+test('kartu untung ikut menyebut untung sebelum ditawar dan yang dilepas', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $show['data']['harga_nego'] = 500_000;
+        $r['nego_aktif'] = true;
+        $r['untung_teks'] = 'Rp 1.000.000';
+        $r['nego']['aktif'] = true;
+        $r['nego']['sebelum'] = array_merge($r['nego']['sebelum'], [
+            'untung_teks' => 'Rp 1.492.000', 'persen_untung' => 20.0,
+        ]);
+        $r['nego']['selisih'] = array_merge($r['nego']['selisih'], [
+            'untung' => -492_000, 'untung_per_orang' => -28_941, 'bagian_untung_dilepas' => 33.0,
+        ]);
+
+        return Http::response($show);
+    });
+
+    // Untung sesudah kesepakatan tidak berarti apa-apa sendirian: angka ini
+    // jawaban seluruh layar, dan pertanyaannya jadi "dibanding berapa?".
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Sebelum ditawar')
+        ->assertSee('Rp 1.492.000')
+        ->assertSee('Dilepas')
+        ->assertSee('Rp 492.000')
+        ->assertSee('33%')
+        ->assertSee('Rp 28.941');
+});
+
+test('rupiah untuk kalimat selalu punya angkanya, juga saat nol', function () {
+    palsukanRab();
+
+    $komponen = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->instance();
+
+    // keRupiah() memulangkan kosong untuk nol — benar di kotak isian, salah
+    // di kalimat: "Dilepas" tanpa nilai terbaca seperti data yang gagal muat.
+    expect($komponen->rupiahTeks(0))->toBe('Rp 0')
+        ->and($komponen->rupiahTeks(492_000))->toBe('Rp 492.000');
+});
+
+test('margin yang tidak lagi menentukan harga mengatakannya sendiri', function () {
+    Http::fake(function () {
+        $show = rekamanRab('show');
+        $r = &$show['data']['ringkasan'];
+        $show['data']['harga_nego'] = 11_000;
+        $show['data']['margin_jenis'] = 'persen';
+        $show['data']['margin_nilai'] = 20;
+        $r['nego_aktif'] = true;
+        $r['nego']['aktif'] = true;
+        $r['nego']['sesudah'] = array_merge($r['nego']['sesudah'], [
+            'harga_per_orang_teks' => 'Rp 11.000', 'persen_untung' => 10.0,
+        ]);
+
+        return Http::response($show);
+    });
+
+    // Tim mengisi 20%, kartu untung menulis 10%, dan tanpa kalimat ini dua
+    // angka itu bertentangan di layar yang sama tanpa ada yang menjelaskan.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('tidak sedang dipakai')
+        ->assertSee('Rp 11.000')
+        ->assertSee('10%')
+        ->assertSee('Lepas kesepakatan');
+});
+
+test('tanpa kesepakatan, bagian margin tidak memberi peringatan apa pun', function () {
+    palsukanRab();
+
+    // Peringatan yang muncul saat tidak ada yang salah akan diabaikan juga
+    // saat memang ada yang salah.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertDontSee('tidak sedang dipakai');
 });

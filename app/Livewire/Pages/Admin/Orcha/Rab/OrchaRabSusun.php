@@ -893,6 +893,41 @@ class OrchaRabSusun extends Component
         return (int) ($baris['selisih_master'] ?? 0) < 0;
     }
 
+    /**
+     * Persen dengan koma, dan tanda hubung bila memang tidak ada angkanya.
+     *
+     * null di sini berarti "tidak punya arti" — margin atas modal nol, atau
+     * untung semula yang tidak positif. Menuliskannya sebagai 0% adalah
+     * jawaban yang salah untuk pertanyaan yang tidak bisa dijawab.
+     */
+    /**
+     * Rupiah lengkap dengan awalannya.
+     *
+     * keRupiah() memulangkan angkanya saja, dan memulangkan string kosong
+     * untuk nol — benar untuk kotak isian, salah untuk kalimat: "Dilepas"
+     * yang nilainya hilang terbaca seperti data yang belum dimuat.
+     */
+    public function rupiahTeks($angka): string
+    {
+        return 'Rp '.number_format((int) $angka, 0, ',', '.');
+    }
+
+    public function persenTeks($persen): string
+    {
+        return $persen === null ? '—' : str_replace('.', ',', (string) $persen).'%';
+    }
+
+    /**
+     * Titik impas yang berada di luar rentang simulasi disebut apa adanya.
+     *
+     * "0 peserta" akan terbaca sebagai kabar paling baik yang mungkin,
+     * padahal artinya justru tidak pernah balik modal.
+     */
+    public function impasTeks($peserta): string
+    {
+        return $peserta ? $peserta.' org' : 'tak tercapai';
+    }
+
     public function selisihMasterTeks(array $baris): string
     {
         return $this->keRupiah(abs((int) ($baris['selisih_master'] ?? 0)));
@@ -965,7 +1000,7 @@ class OrchaRabSusun extends Component
      */
     public function pakaiBatasAman(): void
     {
-        $batas = (int) ($this->dataRab['ringkasan']['harga_batas'] ?? 0);
+        $batas = (int) ($this->dataRab['ringkasan']['nego']['batas']['harga'] ?? 0);
 
         if ($batas <= 0) {
             return;

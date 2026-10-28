@@ -353,14 +353,55 @@
                     "laba_teks": "Rp 2.444.000"
                 }
             ],
-            "harga_asli": 526000,
-            "harga_asli_teks": "Rp 526.000",
-            "nego_selisih": 0,
-            "nego_selisih_teks": "Rp 0",
             "nego_aktif": false,
             "nego_rugi": false,
-            "harga_batas": 439000,
-            "harga_batas_teks": "Rp 439.000"
+            "nego": {
+                "aktif": false,
+                "alasan": null,
+                "sebelum": {
+                    "harga_per_orang": 526000,
+                    "harga_total": 8942000,
+                    "untung": 1492000,
+                    "untung_per_orang": 87764,
+                    "persen_untung": 20,
+                    "sumbangan_per_orang": 476000,
+                    "bep_peserta": 14,
+                    "harga_per_orang_teks": "Rp 526.000",
+                    "harga_total_teks": "Rp 8.942.000",
+                    "untung_teks": "Rp 1.492.000",
+                    "untung_per_orang_teks": "Rp 87.764",
+                    "sumbangan_per_orang_teks": "Rp 476.000"
+                },
+                "sesudah": {
+                    "harga_per_orang": 526000,
+                    "harga_total": 8942000,
+                    "untung": 1492000,
+                    "untung_per_orang": 87764,
+                    "persen_untung": 20,
+                    "sumbangan_per_orang": 476000,
+                    "bep_peserta": 14,
+                    "harga_per_orang_teks": "Rp 526.000",
+                    "harga_total_teks": "Rp 8.942.000",
+                    "untung_teks": "Rp 1.492.000",
+                    "untung_per_orang_teks": "Rp 87.764",
+                    "sumbangan_per_orang_teks": "Rp 476.000"
+                },
+                "selisih": {
+                    "harga_per_orang": 0,
+                    "harga_total": 0,
+                    "untung": 0,
+                    "untung_per_orang": 0,
+                    "poin_persen": 0.0,
+                    "bagian_untung_dilepas": 0.0,
+                    "bep_bergeser": 0
+                },
+                "batas": {
+                    "harga": 439000,
+                    "jarak": 87000,
+                    "jarak_teks": "Rp 87.000",
+                    "harga_teks": "Rp 439.000"
+                }
+            }
         },
         "jenis": "open",
         "jenis_label": "Open Trip",
