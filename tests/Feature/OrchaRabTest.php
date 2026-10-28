@@ -3264,14 +3264,19 @@ test('layar tetap bisa digambar saat Orcha belum mengirim daftar pembulatan', fu
         ->assertSee('Bulatkan harga ke atas');
 });
 
-test('harga jual menyebut asalnya saat pembulatan menggesernya', function () {
+test('pembulatan dijelaskan SEKALI, lewat baris tambahannya', function () {
     palsukanRab();
 
-    // Kelipatan kasar membuat kotak margin terlihat mati: modal Rp 5.500
-    // dengan kelipatan Rp 5.000 memulangkan Rp 10.000 untuk margin 0%
-    // sampai 80%. Tanpa baris ini, yang mengubahnya mengira isiannya rusak.
-    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('dibulatkan dari Rp 525.000');
+    /*
+     | Sempat ada dua kalimat untuk satu kejadian: baris "Tambahan dari
+     | pembulatan +Rp 21" dan sub-baris "dibulatkan dari Rp 15.979" tepat di
+     | bawahnya. Keduanya aritmetika yang sama, dibaca dari dua arah.
+     */
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    expect($isi)->toContain('Tambahan dari pembulatan')
+        ->and($isi)->toContain('harga naik ke kelipatan')
+        ->and($isi)->not->toContain('dibulatkan dari');
 });
 
 test('harga yang tidak tergeser pembulatan tidak menambah keterangan', function () {
@@ -3543,4 +3548,104 @@ test('riwayat penawaran bisa dibuka dari layar penyusun', function () {
         ->call('bukaRiwayatVersi')
         ->assertSet('bukaVersi', true)
         ->assertSee('Rp 900.000');
+});
+
+test('kepala RAB menyebut jenis perjalanan dan dasar hitungan harganya', function () {
+    palsukanRab();
+
+    // Rekamannya open trip. Jenisnya tidak pernah tertulis di layar ini,
+    // padahal ia yang menentukan atas dasar jumlah berapa harga dihitung.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Open Trip')
+        ->assertSee('jumlah paling rendah yang masih mau diberangkatkan');
+});
+
+test('private trip menyebut rombongannya sudah pasti', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'private';
+        $show['data']['jenis_label'] = 'Private Trip';
+
+        return Http::response($show);
+    });
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Private Trip')
+        ->assertSee('Rombongannya sudah pasti');
+});
+
+test('isian uang di penyusun ditandai supaya dipisah ribuan saat diketik', function () {
+    palsukanRab();
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    /*
+     | Penangan ribuannya ditempelkan di document, bukan di tiap isian:
+     | morph Livewire membuang dan memasang ulang node-nya tiap kali layar
+     | digambar, dan pendengar yang menempel di node ikut hilang tanpa
+     | sepatah galat.
+     */
+    expect($isi)->toContain('input[data-uang]')
+        // Isian harga baris biaya sudah ditandai.
+        ->and($isi)->toContain('data-uang');
+});
+
+test('untung per orang ditulis sebagai penjumlahan yang menutup', function () {
+    palsukanRab();
+    $po = rekamanRab('show')['data']['ringkasan']['per_orang'];
+
+    // "479 + 21 = 500": tanpa baris ini, untung per orang di kartu bawah
+    // berdiri tanpa hubungan yang terlihat dengan dua baris + di atasnya.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Untung per orang')
+        ->assertSee($po['margin_teks'])
+        ->assertSee($po['untung_teks']);
+
+    expect($po['margin'] + $po['pembulatan'])->toBe($po['untung']);
+});
+
+test('tiap isian uang membawa awalan Rp, dan angkanya tidak menimpanya', function () {
+    palsukanRab();
+    $isi = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    /*
+     | Aturan .orcha-rupiah di lembar gaya bersama menyasar .form-control,
+     | sementara seluruh isian di layar ini memakai .dsb-isian — tanpa
+     | aturan sendiri, angkanya duduk DI ATAS awalan "Rp", bukan di
+     | sebelahnya. Cacatnya tidak menggagalkan apa pun; ia hanya terlihat.
+     */
+    expect($isi)->toContain('.orcha-rupiah .dsb-isian { padding-left: 2.45rem;');
+
+    // Tiap isian uang dibungkus awalan itu; yang telanjang akan terbaca
+    // sebagai jumlah, bukan harga.
+    preg_match_all('/<input[^>]*data-uang[^>]*>/', $isi, $cocok);
+    expect($cocok[0])->not->toBeEmpty();
+});
+
+test('panel data perjalanan tersusun bagian demi bagian, barisnya genap', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('bukaKepala', true)
+        ->html();
+
+    /*
+     | Grid Bootstrap MENGALIR: baris yang tidak dijumlahkan dua belas kolom
+     | akan menarik medan berikutnya ke sisanya. Sebelum ini baris
+     | hari/malam/peserta hanya memakai enam kolom, jadi "Catatan di
+     | penawaran" menyusup ke sana dan "Catatan internal" tertinggal
+     | sendirian dengan separuh baris kosong di sebelahnya.
+     */
+    foreach (['Pelanggan', 'Perjalanan', 'Catatan'] as $bagian) {
+        expect($html)->toContain($bagian);
+    }
+
+    // Tiga medan angka berbagi satu baris penuh, bukan menempel di sisa
+    // baris tanggal.
+    expect(substr_count($html, 'class="col-4"'))->toBe(3);
 });

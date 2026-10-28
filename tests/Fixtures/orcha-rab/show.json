@@ -414,7 +414,9 @@
                 "modal_teks": "Rp 438.235",
                 "margin_teks": "Rp 87.647",
                 "pembulatan_teks": "Rp 118",
-                "harga_teks": "Rp 526.000"
+                "harga_teks": "Rp 526.000",
+                "untung": 87765,
+                "untung_teks": "Rp 87.765"
             }
         },
         "jenis": "open",

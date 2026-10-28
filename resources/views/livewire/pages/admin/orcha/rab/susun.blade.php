@@ -117,11 +117,6 @@ Susun RAB || lemon
      | akan jadi daftar kedua yang diam-diam melenceng dari Orcha, persis
      | masalah yang baru saja dibereskan.
      */
-    // Hanya saat pembulatan benar-benar menggeser harganya, dan saat harga
-    // itu memang hasil hitungan — harga kesepakatan tidak pernah dibulatkan.
-    $naikKarenaBulat = ! $negoAktif
-        && isset($r['harga_sebelum_bulat'])
-        && (int) $r['harga_sebelum_bulat'] !== (int) ($r['harga_per_orang'] ?? 0);
     $pilihanPembulatan = $kosakata['pembulatan'] ?? [1 => 'Rp 1 · tanpa pembulatan', (int) $pembulatan => $pembulatanTeks];
     $bulatMelampauiMargin = $tambahanBulat > (int) ($r['margin_diminta'] ?? 0);
     $untungSehat = (float) ($r['persen_untung'] ?? 0) >= 10;
@@ -319,6 +314,16 @@ Susun RAB || lemon
             .rb-kepala-aksi { align-items: flex-end; }
             .rb-aksi-baris { justify-content: flex-end; }
         }
+
+        .rb-kepala-jenis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px; margin-top: 2px; }
+        .rb-jenis-cap {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 2px 10px; border-radius: 999px;
+            background: #eef2ff; color: #4338ca;
+            font-size: .74rem; font-weight: 700; white-space: nowrap;
+        }
+        .rb-jenis-cap.is-open { background: #fff7ed; color: #b45309; }
+        .rb-kepala-jenis-ket { font-size: .78rem; color: var(--dsb-redup, #6b7280); line-height: 1.45; }
 
         .rab-fakta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .85rem; }
         /* Nama pelanggan memimpin barisnya: ia keterangan paling penting
@@ -841,9 +846,19 @@ Susun RAB || lemon
            dipisahkan; nama bagiannya yang membuat kolom ini bisa dibaca dari
            atas ke bawah tanpa dituntun. */
         /* Aturan .orcha-rupiah di lembar gaya bersama menyasar .form-control;
-           isian di layar ini memakai .dsb-isian, jadi paddingnya disamakan di
-           sini — tanpa ini angkanya bertumpuk dengan awalan "Rp". */
-        .rb-uang-sel .dsb-isian { padding-left: 1.95rem; font-weight: 600; }
+           seluruh isian di layar ini memakai .dsb-isian, jadi tanpa aturan
+           ini angkanya duduk di atas awalan "Rp" — bukan di sebelahnya.
+
+           Yang umum ditulis lebih dulu; varian kecilnya menimpa sesudahnya,
+           dan keduanya berbobot sama sehingga urutannya yang menentukan. */
+        .orcha-rupiah .dsb-isian { padding-left: 2.45rem; font-weight: 600; }
+        .rb-uang-sel .dsb-isian { padding-left: 1.95rem; }
+        /* Pembungkus "Rp" harus jadi kotak supaya ::before-nya punya acuan
+           tinggi; <span> polos tingginya mengikuti huruf, dan "Rp"-nya
+           melayang di tengah baris, bukan di tengah kotaknya. */
+        .orcha-rupiah { display: block; }
+        .rb-nego-uang { display: block; }
+
         .rb-bulat-medan { margin-top: 2px; }
         .rb-bulat-medan .dsb-label { margin-bottom: 4px; }
         .rb-bulat-ketik { margin-top: 9px; }
@@ -880,6 +895,12 @@ Susun RAB || lemon
         .rb-pax-atur td { background: #fffbeb; }
         .rb-pax-atur td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
         .rb-pax-atur td:last-child { border-radius: 0 8px 8px 0; padding-right: 8px; color: #92400e; }
+        /* Sub-jumlah, bukan hasil akhir: lebih tenang daripada baris harga
+           jual di bawahnya, tetapi tetap bertanda "=" supaya terbaca sebagai
+           penutup dua baris + di atasnya. */
+        .rb-pax-untung td { color: var(--dsb-aman, #047857); font-weight: 600; }
+        .rb-pax-untung small { color: var(--dsb-redup, #94a3b8); font-weight: 400; }
+
         .rb-pax-jual td { background: #f0fdf4; font-weight: 700; }
         .rb-pax-jual small { color: #15803d; font-weight: 500; opacity: .85; }
         .rb-pax-jual td:first-child { border-radius: 8px 0 0 8px; padding-left: 8px; }
@@ -1039,6 +1060,43 @@ Susun RAB || lemon
         }
     </style>
 
+{{-- Pemisah ribuan SAAT DIKETIK.
+
+     Ditempelkan di document, bukan di tiap isian: morph Livewire membuang
+     dan memasang ulang node-nya tiap kali layar digambar, dan pendengar
+     yang menempel di node akan ikut hilang tanpa sepatah galat.
+
+     Posisi kursor dihitung dari BANYAKNYA ANGKA sebelum kursor, bukan dari
+     jumlah huruf: menambah satu titik menggeser seluruh huruf sesudahnya,
+     dan memulihkan kursor ke posisi huruf yang sama membuat kursor melompat
+     mundur satu tiap kali ribuan bertambah. --}}
+@once
+    <script>
+        document.addEventListener('input', function (e) {
+            const el = e.target;
+
+            if (! el || ! el.matches || ! el.matches('input[data-uang]')) {
+                return;
+            }
+
+            const angkaSebelumKursor = el.value.slice(0, el.selectionStart).replace(/\D/g, '').length;
+            const bersih = el.value.replace(/\D/g, '');
+            el.value = bersih === '' ? '' : Number(bersih).toLocaleString('id-ID');
+
+            let taruh = 0;
+            let terhitung = 0;
+            while (taruh < el.value.length && terhitung < angkaSebelumKursor) {
+                if (el.value.charCodeAt(taruh) >= 48 && el.value.charCodeAt(taruh) <= 57) {
+                    terhitung++;
+                }
+                taruh++;
+            }
+
+            el.setSelectionRange(taruh, taruh);
+        });
+    </script>
+@endonce
+
     <div class="dsb">
         {{-- Menarik biaya dari master dan menyimpan kepala adalah panggilan
              ke Orcha yang bisa makan waktu. Tanpa tanda, layarnya terbaca
@@ -1088,6 +1146,26 @@ Susun RAB || lemon
                                 @endif
                             </div>
                             <h5 class="fw-bold mb-1">{{ $rab['judul'] }}</h5>
+                            {{-- Jenis perjalanan tidak pernah tertulis di layar ini,
+                                 padahal ia yang menentukan atas dasar jumlah berapa
+                                 harganya dihitung. Sekaligus mengisi ruang di bawah
+                                 judul yang sebelumnya kosong karena kolom aksi di
+                                 sebelahnya dua kali lebih tinggi. --}}
+                            <div class="rb-kepala-jenis">
+                                <span class="rb-jenis-cap {{ $openTrip ? 'is-open' : '' }}">
+                                    <i class="bi {{ $openTrip ? 'bi-megaphone-fill' : 'bi-people-fill' }}"></i>
+                                    {{ $rab['jenis_label'] ?? ($openTrip ? 'Open Trip' : 'Private Trip') }}
+                                </span>
+                                <span class="rb-kepala-jenis-ket">
+                                    @if ($openTrip)
+                                        Harga dihitung atas dasar {{ $pesertaDasar }} peserta —
+                                        jumlah paling rendah yang masih mau diberangkatkan.
+                                    @else
+                                        Rombongannya sudah pasti, jadi harga dihitung atas
+                                        {{ $rab['jumlah_peserta'] }} peserta.
+                                    @endif
+                                </span>
+                            </div>
                         </div>
 
                         {{-- DUA baris yang disengaja, bukan satu baris yang kebetulan
@@ -1175,6 +1253,15 @@ Susun RAB || lemon
 
                     @if ($bukaKepala)
                         <div class="border-top mt-3 pt-3">
+                            {{-- Barisnya dibuat GENAP dua belas kolom.
+
+                                 Sebelumnya tidak: baris hari/malam/peserta hanya
+                                 memakai enam kolom, jadi "Catatan di penawaran" naik
+                                 menyusup ke sisanya dan "Catatan internal" tertinggal
+                                 sendirian dengan separuh baris kosong di sebelahnya.
+                                 Grid mengalir — yang tidak dijumlahkan akan menata
+                                 dirinya sendiri, dan hasilnya terbaca acak. --}}
+                            <div class="orcha-label-kecil mb-2">Pelanggan</div>
                             <div class="row g-3">
                                 <div class="col-12 col-md-6">
                                     <label class="dsb-label">Judul <span class="text-danger">*</span></label>
@@ -1199,45 +1286,57 @@ Susun RAB || lemon
                                 <div class="col-12 col-md-4">
                                     <label class="dsb-label">Kota / daerah</label>
                                     <input type="text" wire:model="kepala.daerah" maxlength="80" class="dsb-isian">
+                                    <div class="dsb-kartu-sub">Ikut terbaca di judul rakitan.</div>
                                 </div>
-                                <div class="col-6 col-md-3">
+                            </div>
+
+                            <div class="orcha-label-kecil mb-2 mt-3">Perjalanan</div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
                                     <label class="dsb-label">Tanggal berangkat</label>
                                     <input type="date" wire:model.live="kepala.tanggal_mulai" class="dsb-isian">
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-12 col-md-4">
                                     {{-- Yang disepakati dengan pelanggan tanggalnya, bukan
                                          jumlah harinya — dan yang meleset satu hari
                                          menggeser seluruh modal akomodasi. --}}
                                     <label class="dsb-label">Tanggal pulang</label>
                                     <input type="date" wire:model.live="kepala.tanggal_pulang" class="dsb-isian"
                                         min="{{ $kepala['tanggal_mulai'] ?? '' }}">
+                                    <div class="dsb-kartu-sub">Hari &amp; malam terisi sendiri dari rentangnya.</div>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-12 col-md-4">
                                     <label class="dsb-label">Penawaran berlaku sampai</label>
                                     <input type="date" wire:model="kepala.berlaku_sampai" class="dsb-isian">
+                                    <div class="dsb-kartu-sub">Lewat tanggal ini, RAB ditandai kedaluwarsa.</div>
                                 </div>
-                                <div class="col-4 col-md-2">
+                                <div class="col-4">
                                     <label class="dsb-label">Hari</label>
                                     <input type="number" min="1" max="30" wire:model="kepala.jumlah_hari" class="dsb-isian @error('kepala.jumlah_hari') is-galat @enderror">
+                                    @error('kepala.jumlah_hari')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 </div>
-                                <div class="col-4 col-md-2">
+                                <div class="col-4">
                                     <label class="dsb-label">Malam</label>
                                     <input type="number" min="0" max="30" wire:model="kepala.jumlah_malam" class="dsb-isian @error('kepala.jumlah_malam') is-galat @enderror">
+                                    @error('kepala.jumlah_malam')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 </div>
-                                <div class="col-4 col-md-2">
+                                <div class="col-4">
                                     <label class="dsb-label">Peserta</label>
                                     <input type="number" min="1" max="500" wire:model="kepala.jumlah_peserta" class="dsb-isian @error('kepala.jumlah_peserta') is-galat @enderror">
+                                    @error('kepala.jumlah_peserta')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 </div>
-                                @error('kepala.jumlah_hari')<div class="col-12 text-danger small mt-1">{{ $message }}</div>@enderror
-                                @error('kepala.jumlah_malam')<div class="col-12 text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="orcha-label-kecil mb-2 mt-3">Catatan</div>
+                            <div class="row g-3">
                                 <div class="col-12 col-md-6">
                                     <label class="dsb-label">Catatan di penawaran <span class="text-muted fw-normal">(dibaca pelanggan)</span></label>
-                                    <textarea wire:model="kepala.catatan_penawaran" rows="3" maxlength="3000" class="dsb-isian"
+                                    <textarea wire:model="kepala.catatan_penawaran" rows="4" maxlength="3000" class="dsb-isian"
                                         placeholder="Harga belum termasuk tiket pesawat PP."></textarea>
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <label class="dsb-label">Catatan internal <span class="text-muted fw-normal">(hanya di PDF internal)</span></label>
-                                    <textarea wire:model="kepala.catatan" rows="3" maxlength="3000" class="dsb-isian"
+                                    <textarea wire:model="kepala.catatan" rows="4" maxlength="3000" class="dsb-isian"
                                         placeholder="Vendor, hasil negosiasi, hal yang perlu dicek."></textarea>
                                 </div>
                             </div>
@@ -1808,7 +1907,7 @@ Susun RAB || lemon
                                                 <label class="rb-biaya-medan">
                                                     <span>Harga satuan</span>
                                                     <span class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
-                                                        <input type="text" inputmode="numeric" wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                        <input type="text" inputmode="numeric" data-uang wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
                                                     </span>
                                                 </label>
                                                 <label class="rb-biaya-medan is-sempit">
@@ -1905,7 +2004,11 @@ Susun RAB || lemon
                                                 </select>
                                             </div>
                                             <div class="col-6 col-md-2">
-                                                <input type="text" inputmode="numeric" wire:model.blur="manual.harga_satuan" class="dsb-isian @error('manual.harga_satuan') is-galat @enderror" placeholder="Harga">
+                                                <span class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
+                                                    <input type="text" inputmode="numeric" data-uang
+                                                        wire:model.blur="manual.harga_satuan"
+                                                        class="dsb-isian @error('manual.harga_satuan') is-galat @enderror" placeholder="Harga">
+                                                </span>
                                             </div>
                                             <div class="col-6 col-md-2">
                                                 <input type="number" min="1" wire:model="manual.kapasitas" class="dsb-isian @error('manual.kapasitas') is-galat @enderror"
@@ -2022,12 +2125,32 @@ Susun RAB || lemon
                                                     <td>+{{ $perOrang['pembulatan_teks'] ?? 'Rp 0' }}</td>
                                                 </tr>
                                             @endif
+                                            {{-- Penjumlahan untungnya ditulis terang-terangan:
+                                                 479 + 21 = 500. Tanpa baris ini, "untung Rp 500
+                                                 per orang" di kartu bawah berdiri tanpa hubungan
+                                                 yang terlihat dengan dua baris + di atasnya —
+                                                 dan yang membacanya harus menjumlahkan sendiri
+                                                 untuk tahu angkanya nyambung. --}}
+                                            <tr class="rb-pax-untung">
+                                                <td>
+                                                    Untung per orang
+                                                    <small>
+                                                        {{ $perOrang['margin_teks'] ?? 'Rp 0' }}
+                                                        @if (($perOrang['pembulatan'] ?? 0) != 0)
+                                                            + {{ $perOrang['pembulatan_teks'] ?? 'Rp 0' }} pembulatan
+                                                        @endif
+                                                    </small>
+                                                </td>
+                                                <td>= {{ $perOrang['untung_teks'] ?? 'Rp 0' }}</td>
+                                            </tr>
                                             <tr class="rb-pax-jual">
                                                 <td>
+                                                    {{-- "dibulatkan dari Rp 15.979" DIBUANG: baris
+                                                         "Tambahan dari pembulatan +Rp 21" tepat di atasnya
+                                                         sudah menyatakan hal yang sama, dan mengulang
+                                                         aritmetika yang sama terbalik membuat kolom ini
+                                                         terbaca lebih sibuk daripada isinya. --}}
                                                     {{ $negoAktif ? 'Harga hitungan per orang' : 'Harga jual per orang' }}
-                                                    @if ($naikKarenaBulat)
-                                                        <small>dibulatkan dari {{ $r['harga_sebelum_bulat_teks'] }}</small>
-                                                    @endif
                                                 </td>
                                                 <td>{{ $perOrang['harga_teks'] ?? 'Rp 0' }}</td>
                                             </tr>
@@ -2201,9 +2324,11 @@ Susun RAB || lemon
                                                          boleh tercatat sebagai harga yang disepakati. Enter
                                                          ditambahkan karena tanpa itu orang harus menebak harus
                                                          mengklik ke mana supaya angkanya berlaku. --}}
-                                                    <input id="rb-nego-harga" type="text" inputmode="numeric" class="dsb-isian"
-                                                        wire:model.blur="hargaNego" x-on:keydown.enter="$el.blur()"
-                                                        placeholder="{{ $nego['sebelum']['harga_per_orang_teks'] ?? 'Rp 0' }}">
+                                                    <span class="orcha-rupiah rb-nego-uang">
+                                                        <input id="rb-nego-harga" type="text" inputmode="numeric" data-uang class="dsb-isian"
+                                                            wire:model.blur="hargaNego" x-on:keydown.enter="$el.blur()"
+                                                            placeholder="{{ (int) str_replace(['Rp', '.', ' '], '', $nego['sebelum']['harga_per_orang_teks'] ?? '0') ? number_format((int) str_replace(['Rp', '.', ' '], '', $nego['sebelum']['harga_per_orang_teks']), 0, ',', '.') : '0' }}">
+                                                    </span>
                                                     <span class="dsb-kartu-sub">
                                                         Tekan <strong>Enter</strong> atau klik di luar kotak supaya berlaku.
                                                         Kosongkan untuk kembali ke harga hitungan.
@@ -2471,7 +2596,7 @@ Susun RAB || lemon
                                         </div>
                                     @else
                                         <div class="orcha-rupiah mb-2">
-                                            <input type="text" inputmode="numeric" wire:model.blur="marginNilai" class="orcha-uang dsb-isian" placeholder="150.000">
+                                            <input type="text" inputmode="numeric" data-uang wire:model.blur="marginNilai" class="orcha-uang dsb-isian" placeholder="150.000">
                                         </div>
                                     @endif
                                     @if ($marginBelumTersimpan)
@@ -2501,7 +2626,7 @@ Susun RAB || lemon
                                         <div class="rb-bulat-ketik">
                                             <label class="dsb-label" for="rb-bulat-lain">Kelipatan sendiri</label>
                                             <div class="orcha-rupiah rb-uang-sel">
-                                                <input id="rb-bulat-lain" type="text" inputmode="numeric" class="dsb-isian"
+                                                <input id="rb-bulat-lain" type="text" inputmode="numeric" data-uang class="dsb-isian"
                                                     wire:model.blur="pembulatanLain" x-on:keydown.enter="$el.blur()"
                                                     placeholder="2.500">
                                             </div>
