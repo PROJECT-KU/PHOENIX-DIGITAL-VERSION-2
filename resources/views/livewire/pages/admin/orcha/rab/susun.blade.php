@@ -1610,9 +1610,18 @@ Susun RAB || lemon
                                             <div class="rb-nego-isi">
                                                 <div class="dsb-medan">
                                                     <label class="dsb-label" for="rb-nego-harga">Harga disepakati per orang</label>
+                                                    {{-- Tersimpan saat kursor keluar, sama seperti isian
+                                                         rupiah lain di layar ini — angka setengah ketik tidak
+                                                         boleh tercatat sebagai harga yang disepakati. Enter
+                                                         ditambahkan karena tanpa itu orang harus menebak harus
+                                                         mengklik ke mana supaya angkanya berlaku. --}}
                                                     <input id="rb-nego-harga" type="text" inputmode="numeric" class="dsb-isian"
-                                                        wire:model.blur="hargaNego" placeholder="{{ $r['harga_asli_teks'] ?? 'Rp 0' }}">
-                                                    <span class="dsb-kartu-sub">Kosongkan untuk kembali ke harga hitungan.</span>
+                                                        wire:model.blur="hargaNego" x-on:keydown.enter="$el.blur()"
+                                                        placeholder="{{ $r['harga_asli_teks'] ?? 'Rp 0' }}">
+                                                    <span class="dsb-kartu-sub">
+                                                        Tekan <strong>Enter</strong> atau klik di luar kotak supaya berlaku.
+                                                        Kosongkan untuk kembali ke harga hitungan.
+                                                    </span>
                                                 </div>
 
                                                 <div class="dsb-medan">
