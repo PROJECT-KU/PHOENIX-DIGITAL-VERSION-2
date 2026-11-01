@@ -829,6 +829,31 @@ class OrchaRabSusun extends Component
         $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], 'Kendaraan ditambahkan ke biaya.');
     }
 
+    /**
+     * Tiket masuk per kendaraan di tempat yang dikunjungi.
+     *
+     * Daftarnya datang dari Orcha, tidak dirakit di sini: yang menentukan
+     * mana yang belum terpakai dan berapa tarifnya pada tanggal kunjungan
+     * adalah peladen, dan menebaknya ulang di lemon berarti dua jawaban
+     * untuk satu pertanyaan.
+     */
+    public function tawaranKendaraan(): array
+    {
+        return $this->dataRab['tawaran_kendaraan'] ?? [];
+    }
+
+    /**
+     * Memilih satu tiket kendaraan.
+     *
+     * Pesannya dibedakan dari pakaiKendaraan(): yang satu menyewa armada,
+     * yang satu membayar gerbang — dan admin yang membaca "Kendaraan
+     * ditambahkan" sesudah menekan tiket akan mengira salah tombol.
+     */
+    public function pakaiTiketKendaraan(int $id): void
+    {
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], 'Tiket kendaraan ditambahkan ke biaya.');
+    }
+
     private function kosongkanManual(): void
     {
         $this->manual = [

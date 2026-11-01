@@ -256,3 +256,90 @@ test('harga akhir pekan ditampilkan di daftar master harga', function () {
         ->assertSee('Rp 31.000')
         ->assertSee('akhir pekan');
 });
+
+/* ------------------- TAWARAN TIKET KENDARAAN ------------------- */
+
+/**
+ * Penyusun RAB dengan tawaran tiket kendaraan dari Orcha.
+ *
+ * Kasus Alas Purwo: satu destinasi memungut tiket roda 4 DAN tiket bus,
+ * keduanya atas destinasi yang sama. Ditarik otomatis, rombongan bermobil
+ * ikut membayar tiket bus yang tidak pernah datang.
+ */
+function palsukanSusunDenganTawaran(array $tawaran): void
+{
+    $show = json_decode(file_get_contents(base_path('tests/Fixtures/orcha-rab/show.json')), true);
+    $show['data']['tawaran_kendaraan'] = $tawaran;
+
+    Http::fake(function (Request $r) use ($show) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_contains($jalur, '/rab/katalog') => Http::response(
+                json_decode(file_get_contents(base_path('tests/Fixtures/orcha-rab/katalog.json')), true)
+            ),
+            str_contains($jalur, '/rab/3') => Http::response($show),
+            default => Http::response(['data' => [], 'meta' => []]),
+        };
+    });
+}
+
+function tawaranTiket(array $ubah = []): array
+{
+    return array_merge([
+        'master_harga_id' => 77,
+        'nama' => 'Tiket kendaraan roda 4',
+        'destinasi' => 'Taman Nasional Alas Purwo',
+        'kapasitas' => 4,
+        'harga' => 10_000,
+        'harga_teks' => 'Rp 10.000',
+        'harga_sebab' => null,
+        'satuan_label' => 'per unit (sekali)',
+    ], $ubah);
+}
+
+test('tiket kendaraan muncul sebagai tawaran, bukan baris biaya', function () {
+    palsukanSusunDenganTawaran([
+        tawaranTiket(),
+        tawaranTiket(['master_harga_id' => 78, 'nama' => 'Tiket kendaraan bus', 'kapasitas' => 40, 'harga' => 50_000, 'harga_teks' => 'Rp 50.000']),
+    ]);
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Tiket masuk kendaraan')
+        ->assertSee('Tiket kendaraan roda 4')
+        ->assertSee('Tiket kendaraan bus')
+        // Kalimat inilah yang menahan admin menyangka tarik biaya gagal.
+        ->assertSee('Tidak ditarik sendiri', false)
+        ->assertSee('Dibayar sekali di gerbang', false);
+});
+
+test('tarif akhir pekan ikut disebut di tawarannya', function () {
+    palsukanSusunDenganTawaran([
+        tawaranTiket(['harga' => 15_000, 'harga_teks' => 'Rp 15.000', 'harga_sebab' => 'harga akhir pekan (Sabtu, 9 Jan)']),
+    ]);
+
+    // Tanpa sebabnya, Rp 15.000 di sebelah master Rp 10.000 terbaca sebagai
+    // harga master yang salah.
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertSee('Rp 15.000')
+        ->assertSee('harga akhir pekan (Sabtu, 9 Jan)');
+});
+
+test('tanpa tawaran, panelnya tidak muncul sama sekali', function () {
+    palsukanSusunDenganTawaran([]);
+
+    $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
+        ->assertDontSee('Tiket masuk kendaraan');
+});
+
+test('memilih tiket kendaraan dikirim sebagai master_harga_id', function () {
+    palsukanSusunDenganTawaran([tawaranTiket()]);
+
+    Livewire::actingAs(adminRab())
+        ->test(\App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiTiketKendaraan', 77);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+        && $r['master_harga_id'] === 77);
+});

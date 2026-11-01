@@ -637,6 +637,13 @@ Susun RAB || lemon
             margin-bottom: 14px; padding: 12px 14px;
             background: #f5fafd; border: 1px solid #cfe6f3; border-radius: 13px;
         }
+        /* Tiket gerbang DIBEDAKAN warnanya dari sewa armada.
+
+           Keduanya panel "pilih kendaraan" yang berdampingan, dan dua panel
+           sewarna di tempat yang sama terbaca sebagai satu panel yang
+           terpotong — lalu salah satunya dilewati. */
+        .rb-tiket-kend { background: #fffbeb; border-color: #fde68a; }
+
         .rb-armada-kepala { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
         .rb-armada-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .rb-armada-teks strong { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
@@ -1137,7 +1144,7 @@ Susun RAB || lemon
              display:none ditulis sendiri — lihat catatan "wire:loading kalah
              bobot CSS". --}}
         <div class="rab-muat" wire:loading.flex
-            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
+            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,pakaiTiketKendaraan,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
             <span class="dsb-putar"></span>
             <span>Sedang menyimpan ke Orcha…</span>
         </div>
@@ -1797,6 +1804,62 @@ Susun RAB || lemon
                                                         <i class="bi bi-plus-lg"></i><span>Pakai</span>
                                                     </button>
                                                 @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- TIKET masuk per kendaraan — bukan sewa armada.
+
+                                 Satu destinasi bisa memungut beberapa sekaligus:
+                                 Alas Purwo menagih roda 4 Rp 10.000 dan bus
+                                 Rp 50.000, dan keduanya terdaftar atas destinasi
+                                 yang sama. Ditarik semua, rombongan bermobil ikut
+                                 membayar tiket bus yang tidak pernah datang.
+
+                                 Jadi ditawarkan, bukan ditarik: jenis kendaraannya
+                                 keputusan rombongan ini, bukan sifat tempatnya. --}}
+                            @php($tawaranTiket = $this->tawaranKendaraan())
+                            @if ($tawaranTiket !== [])
+                                <div class="rb-armada rb-tiket-kend">
+                                    <div class="rb-armada-kepala">
+                                        <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-ticket-perforated"></i></span>
+                                        <div class="rb-armada-teks">
+                                            <strong>Tiket masuk kendaraan</strong>
+                                            <span class="dsb-kartu-sub">
+                                                Tidak ditarik sendiri — pilih yang benar-benar dibawa rombongan ini.
+                                                Dibayar sekali di gerbang, tidak dikali hari.
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="rb-armada-deret">
+                                        @foreach ($tawaranTiket as $tk)
+                                            <div class="rb-armada-pil" wire:key="tk-{{ $tk['master_harga_id'] }}">
+                                                <div class="rb-armada-nama">
+                                                    {{ $tk['nama'] }}
+                                                    @if (! empty($tk['destinasi']))
+                                                        <span class="dsb-kartu-sub d-block">{{ $tk['destinasi'] }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="rb-armada-hitung">
+                                                    @if ($tk['kapasitas'])
+                                                        <span class="rb-armada-unit">muat {{ $tk['kapasitas'] }}</span>
+                                                    @endif
+                                                    @if (! empty($tk['harga_sebab']))
+                                                        {{-- Sebab tarifnya ikut, supaya tawaran akhir
+                                                             pekan tidak terbaca sebagai harga master
+                                                             yang salah. --}}
+                                                        <span class="dsb-kartu-sub">{{ $tk['harga_sebab'] }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="rb-armada-angka">{{ $tk['harga_teks'] }}</div>
+                                                <button type="button" wire:click="pakaiTiketKendaraan({{ $tk['master_harga_id'] }})"
+                                                    wire:loading.attr="disabled" wire:target="pakaiTiketKendaraan"
+                                                    class="dsb-tombol is-lembut" style="--ikon: #b45309">
+                                                    <i class="bi bi-plus-lg"></i><span>Pakai</span>
+                                                </button>
                                             </div>
                                         @endforeach
                                     </div>
