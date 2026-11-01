@@ -1941,6 +1941,28 @@ Master Harga || lemon
         .mh-saring > .mh-pilih { flex: 1 1 150px; width: auto; min-width: 0; max-width: none; }
         .mh-saring .dsb-tombol { flex: 0 0 auto; }
 
+        /* Baris utama: cari MELAR, tidak mengambil satu baris penuh.
+
+           flex-basis 100% di atas ditulis saat baris ini masih berisi empat
+           kotak saring — dipaksakan sebaris, label selectnya terpotong. Sejak
+           keempatnya pindah ke balik "Saringan lainnya", yang tersisa cuma
+           cari dan tiga tombol: masih mengambil baris penuh, kotak carinya
+           menyisakan separuh baris di bawahnya menganggur di kanan.
+
+           Basisnya 320px, bukan 0: di bawah itu kotak cari jadi lebih sempit
+           daripada teks petunjuknya sendiri, dan tombolnya yang harus turun. */
+        .mh-saring-utama > .mh-medan-cari { flex: 1 1 200px; }
+
+        /* Tombolnya dirapatkan di laptop kecil, bukan dibiarkan pecah baris.
+
+           Kartunya cuma 756px pada layar 1200px (bilah samping masih
+           terbuka), sementara kotak cari + tiga tombol butuh 818px — satu
+           tombol turun sendirian dan meninggalkan 560px menganggur di
+           kanannya. */
+        @media (max-width: 1299.98px) {
+            .mh-saring-utama > .dsb-tombol { padding-left: 12px; padding-right: 12px; gap: 6px; }
+        }
+
         /* Kotak cari bersama memakai .form-control Bootstrap; yang disamakan
            rupanya saja — markup & perilakunya tetap milik partial. */
         .mh-saring .form-control {
