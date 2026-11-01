@@ -420,6 +420,84 @@ test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri',
         ->and(substr($kaki, 0, strpos($kaki, 'Batal')))->toContain('Tempel banyak baris');
 });
 
+/* ------------------- RIWAYAT PERUBAHAN ------------------- */
+
+function palsukanRiwayat(array $riwayat): void
+{
+    Http::fake(function (Request $r) use ($riwayat) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_contains($jalur, '/riwayat') => Http::response([
+                'data' => $riwayat,
+                'meta' => ['nama' => 'Tiket Masuk Baluran', 'harga_kini' => 'Rp 21.000'],
+            ]),
+            default => Http::response(['data' => [], 'meta' => [
+                'halaman' => 1, 'halaman_terakhir' => 1, 'total' => 0,
+                'ringkas' => ['jumlah' => 1, 'dipakai' => 0, 'tanpa_vendor' => 1, 'mati' => 0, 'kedaluwarsa' => 0],
+                'kosakata' => ['kategori' => ['tiket' => 'Tiket'], 'satuan' => ['orang' => 'per orang'],
+                    'satuan_berkapasitas' => ['unit', 'unit_hari', 'kamar_malam']],
+                'provinsi' => [], 'vendor' => [], 'destinasi' => [],
+            ]]),
+        };
+    });
+}
+
+test('riwayat menampilkan perubahan selain harga, berikut siapa yang mengubahnya', function () {
+    palsukanRiwayat([[
+        'id' => 3, 'harga_lama' => 'Rp 21.000', 'harga_baru' => 'Rp 21.000',
+        'selisih' => '+Rp 0', 'naik' => false, 'persen' => 0.0, 'harga_berubah' => false,
+        'akhir_pekan' => null, 'oleh' => 'Berto', 'catatan' => null,
+        'perubahan' => [
+            ['medan' => 'Destinasi', 'dari' => 'Taman Nasional Baluran', 'ke' => 'TN Baluran'],
+            ['medan' => 'Vendor', 'dari' => null, 'ke' => 'Armada Jaya'],
+        ],
+        'pada' => '2 Nov 2026, 09:14', 'pada_teks' => 'baru saja',
+    ]]);
+
+    /*
+     | Yang paling sering salah justru destinasinya: salah satu huruf, dan
+     | tiketnya berhenti ikut tertarik ke RAB. Dulu perubahan itu tidak
+     | muncul di mana pun — panelnya hanya mengenal angka.
+     */
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)->call('bukaRiwayat', 1)->html();
+
+    expect($html)->toContain('Riwayat perubahan')
+        ->and($html)->toContain('Destinasi')
+        ->and($html)->toContain('Taman Nasional Baluran')
+        ->and($html)->toContain('TN Baluran')
+        ->and($html)->toContain('Armada Jaya')
+        ->and($html)->toContain('Berto')
+        // Medan yang tadinya kosong dikatakan kosong, bukan dibiarkan hampa.
+        ->and($html)->toContain('kosong');
+});
+
+test('tabel riwayat tinggal tiga kolom, tanpa Dari/Jadi/Selisih yang kosong', function () {
+    palsukanRiwayat([[
+        'id' => 1, 'harga_lama' => 'Rp 18.000', 'harga_baru' => 'Rp 21.000',
+        'selisih' => '+Rp 3.000', 'naik' => true, 'persen' => 16.7, 'harga_berubah' => true,
+        'akhir_pekan' => null, 'oleh' => 'Berto', 'catatan' => null, 'perubahan' => [],
+        'pada' => '12 Sep 2026, 08:30', 'pada_teks' => '2 bulan yang lalu',
+    ]]);
+
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)->call('bukaRiwayat', 1)->html();
+
+    /*
+     | Dari / Jadi / Selisih semuanya berporos harga, dan sejak perubahan
+     | lain ikut dicatat ketiganya berdiri kosong justru pada baris yang
+     | paling perlu dibaca.
+     */
+    $kepala = substr($html, strpos($html, 'mh-riwayat'), 600);
+
+    expect($kepala)->toContain('Yang berubah')
+        ->and($kepala)->not->toContain('>Selisih<')
+        // Harga tetap membawa selisih & persennya, cuma pindah tempat.
+        ->and($html)->toContain('+Rp 3.000')
+        ->and($html)->toContain('16.7%');
+});
+
 /* ------------------- TEMPEL DARI EXCEL ------------------- */
 
 test('tempelan terbaca walau dipisah koma atau spasi, bukan cuma TAB', function () {

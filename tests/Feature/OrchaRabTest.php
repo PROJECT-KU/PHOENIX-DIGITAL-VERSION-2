@@ -2135,14 +2135,20 @@ test('menyalin membuka baris BARU, bukan menyunting yang disalin', function () {
         ->assertSet('isian.destinasi', $baris['destinasi']);
 });
 
-test('riwayat harga dibaca dari Orcha dan ditutup tanpa meninggalkan sisa', function () {
+test('riwayat perubahan dibaca dari Orcha dan ditutup tanpa meninggalkan sisa', function () {
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
         ->test(OrchaMasterHargaList::class)
         ->call('bukaRiwayat', 1);
 
-    expect($layar->html())->toContain('Riwayat harga')
+    /*
+     | "Riwayat harga" sudah tidak benar: yang dicatat kini seluruh
+     | perubahan barisnya — nama, vendor, destinasi — bukan angkanya saja.
+     | Judul yang menjanjikan lebih sempit daripada isinya membuat orang
+     | berhenti mencari di sini.
+     */
+    expect($layar->html())->toContain('Riwayat perubahan')
         ->and($layar->html())->toContain('+Rp 10.000');
 
     $layar->call('tutupRiwayat')

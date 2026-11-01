@@ -1312,9 +1312,15 @@ Master Harga || lemon
                             <div class="dsb-kartu-kepala-kiri">
                                 <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-clock-history"></i></span>
                                 <div>
-                                    <h3 class="dsb-kartu-judul">Riwayat harga — {{ $riwayatMeta['nama'] ?? '' }}</h3>
+                                    {{-- "Riwayat harga" sudah tidak benar: yang dicatat
+                                         kini seluruh perubahan barisnya, bukan angkanya
+                                         saja. Judul yang menjanjikan lebih sempit
+                                         daripada isinya membuat orang berhenti mencari
+                                         di sini. --}}
+                                    <h3 class="dsb-kartu-judul">Riwayat perubahan — {{ $riwayatMeta['nama'] ?? '' }}</h3>
                                     <span class="dsb-kartu-sub">
-                                        Sekarang <strong>{{ $riwayatMeta['harga_kini'] ?? '-' }}</strong>.
+                                        Setiap kali baris ini disunting, beserta siapa yang menyuntingnya.
+                                        Harganya sekarang <strong>{{ $riwayatMeta['harga_kini'] ?? '-' }}</strong> —
                                         RAB yang sudah jadi tetap memakai angka saat ia dibuat.
                                     </span>
                                 </div>
@@ -1338,11 +1344,17 @@ Master Harga || lemon
                             <div class="dsb-tabel-bungkus">
                                 <table class="dsb-tabel mh-riwayat">
                                     <thead>
+                                        {{-- TIGA kolom, bukan lima.
+
+                                             Dari / Jadi / Selisih semuanya berporos harga,
+                                             dan sejak perubahan lain ikut dicatat ketiganya
+                                             berdiri kosong di sebagian besar baris —
+                                             tepatnya pada baris yang paling perlu dibaca,
+                                             karena destinasi yang salah satu huruf tidak
+                                             menyentuh angka mana pun. --}}
                                         <tr>
                                             <th>Kapan</th>
-                                            <th>Dari</th>
-                                            <th>Jadi</th>
-                                            <th class="text-end">Selisih</th>
+                                            <th>Yang berubah</th>
                                             <th>Oleh</th>
                                         </tr>
                                     </thead>
@@ -1355,42 +1367,49 @@ Master Harga || lemon
                                                         <span class="dsb-tabel-meta mh-diubah">{{ $r['pada_teks'] }}</span>
                                                     </span>
                                                 </td>
-                                                <td data-judul="Dari">
-                                                    <span class="mh-utama">
-                                                        <span class="mh-riwayat-lama">{{ $r['harga_lama'] }}</span>
-                                                        @if (! empty($r['akhir_pekan']))
-                                                            <span class="dsb-tabel-meta mh-satuan">
-                                                                akhir pekan {{ $r['akhir_pekan']['lama'] ?: '—' }}
-                                                            </span>
-                                                        @endif
-                                                    </span>
-                                                </td>
-                                                <td data-judul="Jadi">
-                                                    <span class="mh-utama">
-                                                        <span class="dsb-tabel-judul">{{ $r['harga_baru'] }}</span>
-                                                        @if (! empty($r['akhir_pekan']))
-                                                            <span class="dsb-tabel-meta mh-satuan">
-                                                                akhir pekan {{ $r['akhir_pekan']['baru'] ?: 'dihapus' }}
-                                                            </span>
-                                                        @endif
-                                                    </span>
-                                                </td>
-                                                <td data-judul="Selisih" class="text-end">
-                                                    <span class="mh-utama is-kanan">
-                                                        {{-- Lihat alasannya di jejak ringkas di atas:
-                                                             "−Rp 0" untuk perubahan yang nyata hanya
-                                                             membuat riwayatnya tidak dipercaya. --}}
+                                                <td data-judul="Yang berubah">
+                                                    <div class="mh-ubah">
+                                                        {{-- Harga tetap di atas: ia yang paling
+                                                             sering dicari, dan satu-satunya yang
+                                                             punya selisih & persen. --}}
                                                         @if ($r['harga_berubah'] ?? true)
-                                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
-                                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
-                                                            </span>
-                                                            @if ($r['persen'] !== null)
-                                                                <span class="dsb-tabel-meta mh-satuan">{{ $r['naik'] ? '+' : '' }}{{ $r['persen'] }}%</span>
-                                                            @endif
-                                                        @else
-                                                            <span class="dsb-tabel-meta mh-satuan">hanya akhir pekan</span>
+                                                            <div class="mh-ubah-baris">
+                                                                <span class="mh-ubah-medan">Harga</span>
+                                                                <span class="mh-ubah-nilai">
+                                                                    <span class="mh-riwayat-lama">{{ $r['harga_lama'] }}</span>
+                                                                    <i class="bi bi-arrow-right"></i>
+                                                                    <strong>{{ $r['harga_baru'] }}</strong>
+                                                                </span>
+                                                                <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
+                                                                    <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}@if ($r['persen'] !== null) · {{ $r['naik'] ? '+' : '' }}{{ $r['persen'] }}%@endif
+                                                                </span>
+                                                            </div>
                                                         @endif
-                                                    </span>
+
+                                                        @if (! empty($r['akhir_pekan']))
+                                                            <div class="mh-ubah-baris">
+                                                                <span class="mh-ubah-medan">Harga akhir pekan</span>
+                                                                <span class="mh-ubah-nilai">
+                                                                    <span class="mh-riwayat-lama">{{ $r['akhir_pekan']['lama'] ?: 'belum ada' }}</span>
+                                                                    <i class="bi bi-arrow-right"></i>
+                                                                    <strong>{{ $r['akhir_pekan']['baru'] ?: 'dihapus' }}</strong>
+                                                                </span>
+                                                            </div>
+                                                        @endif
+
+                                                        {{-- Perubahan selain harga: nama, vendor,
+                                                             destinasi, dan seterusnya. --}}
+                                                        @foreach ($r['perubahan'] ?? [] as $u)
+                                                            <div class="mh-ubah-baris">
+                                                                <span class="mh-ubah-medan">{{ $u['medan'] }}</span>
+                                                                <span class="mh-ubah-nilai">
+                                                                    <span class="mh-riwayat-lama">{{ $u['dari'] ?: 'kosong' }}</span>
+                                                                    <i class="bi bi-arrow-right"></i>
+                                                                    <strong>{{ $u['ke'] ?: 'dikosongkan' }}</strong>
+                                                                </span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
                                                 </td>
                                                 <td data-judul="Oleh">
                                                     <span class="mh-utama">
@@ -2324,6 +2343,30 @@ Master Harga || lemon
         }
 
         /* ===== Riwayat ===== */
+        /* Daftar perubahan dalam satu sel: medan di kiri dengan lebar tetap,
+           nilainya di kanan. Lebar tetap itu yang membuat tiga baris
+           perubahan terbaca sebagai daftar, bukan sebagai tiga kalimat yang
+           kebetulan bertumpuk. */
+        .mh-ubah { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+        .mh-ubah-baris {
+            display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+            font-size: .8rem; line-height: 1.4; min-width: 0;
+        }
+        .mh-ubah-medan {
+            flex: 0 0 118px; min-width: 0;
+            font-size: .72rem; font-weight: 800; letter-spacing: .02em;
+            text-transform: uppercase; color: var(--dsb-redup, #6b7280);
+        }
+        .mh-ubah-nilai {
+            display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 6px;
+            min-width: 0; color: var(--dsb-tinta, #1c1f26);
+        }
+        .mh-ubah-nilai .bi { font-size: .72rem; color: #94a3b8; }
+
+        @media (max-width: 575.98px) {
+            .mh-ubah-medan { flex: 1 1 100%; }
+        }
+
         .mh-riwayat-lama { color: var(--dsb-redup, #6b7280); text-decoration: line-through; }
         .mh-selisih { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: .86rem; }
         .mh-selisih i { font-size: .78rem; }
