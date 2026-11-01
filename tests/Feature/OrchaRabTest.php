@@ -2032,7 +2032,13 @@ test('ringkasan dibaca dari Orcha dan setiap angkanya bisa diklik', function () 
 
     $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
 
-    expect($layar->html())->toContain('Belum punya vendor')
+    /*
+     | Kata-katanya SAMA dengan dropdown saringannya. Dulu kartunya menulis
+     | "Belum punya vendor" sementara dropdownnya "Belum ada vendor" — dua
+     | sebutan untuk satu hal, di layar yang sama, dan yang membacanya harus
+     | menebak apakah keduanya memang hal yang berbeda.
+     */
+    expect($layar->html())->toContain('Belum ada vendor')
         ->and($layar->html())->toContain('Masa berlakunya lewat');
 
     $layar->set('filterStatus', 'kedaluwarsa')->assertSet('filterStatus', 'kedaluwarsa');

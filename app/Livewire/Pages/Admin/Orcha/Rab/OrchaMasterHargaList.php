@@ -353,9 +353,26 @@ class OrchaMasterHargaList extends Component
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterKategori !== ''
-            || $this->filterProvinsi !== '' || $this->filterVendor !== ''
-            || $this->filterDipakai !== '' || $this->filterStatus !== '';
+        return $this->cari !== '' || $this->jumlahSaringLanjut() > 0;
+    }
+
+    /**
+     * Berapa saringan di balik tombol "Saringan lainnya" yang sedang aktif.
+     *
+     * Kotak cari TIDAK dihitung: ia tetap terlihat, jadi tidak ada yang
+     * perlu diberitahukan tentangnya. Yang dihitung hanya yang tersembunyi
+     * — saringan yang bekerja tanpa terlihat membuat daftar yang "kurang"
+     * terbaca sebagai data hilang, dan angkanya di tombol itulah yang
+     * menjelaskan ke mana sisanya pergi.
+     *
+     * Urutan TIDAK dihitung: ia menata, bukan membuang baris.
+     */
+    public function jumlahSaringLanjut(): int
+    {
+        return count(array_filter([
+            $this->filterKategori, $this->filterProvinsi, $this->filterVendor,
+            $this->filterDipakai, $this->filterStatus,
+        ], fn ($n) => (string) $n !== ''));
     }
 
     public function bukaTambah(): void

@@ -5,20 +5,44 @@
     Tombol silangnya hanya muncul saat ada isinya — tombol yang selalu ada
     tetapi tidak selalu berguna hanya menambah benda yang harus diabaikan mata.
 
-    Variabel: $cari (dari komponen), $petunjuk (teks placeholder).
+    Variabel:
+      $cari     — dari komponen
+      $petunjuk — teks placeholder
+      $rupa     — 'lama' (bawaan) atau 'dsb'
+
+    DUA RUPA, dan itu bukan kembaran yang terlupakan melainkan jalan pindah
+    yang belum selesai: 13 dari 16 layar Orcha belum memuat partials/dasbor-gaya,
+    jadi .dsb-cari di sana tidak punya gaya sama sekali — kotak carinya akan
+    telanjang tanpa satu pun galat. Layar yang SUDAH memuat bahasa rupa dasbor
+    meminta rupa 'dsb' supaya sebangun dengan Pesanan Toko; sisanya tetap
+    memakai yang lama sampai ikut dipindahkan.
 --}}
-<div class="form-group position-relative mb-0">
-    <div class="form-control-icon"><i class="bi bi-search"></i></div>
+@if (($rupa ?? 'lama') === 'dsb')
+    <div class="dsb-cari">
+        <i class="bi bi-search"></i>
+        <input type="search" class="dsb-isian" wire:model.live.debounce.400ms="cari"
+            placeholder="{{ $petunjuk ?? 'Cari...' }}" aria-label="{{ $petunjuk ?? 'Cari' }}">
+        @if ($cari !== '')
+            <button type="button" class="dsb-cari-hapus" wire:click="bersihkanCari"
+                title="Kosongkan pencarian" aria-label="Kosongkan pencarian">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        @endif
+    </div>
+@else
+    <div class="form-group position-relative mb-0">
+        <div class="form-control-icon"><i class="bi bi-search"></i></div>
 
-    <input wire:model.live.debounce.400ms="cari" type="text"
-        class="form-control ps-5 {{ $cari !== '' ? 'pe-5' : '' }}"
-        value="{{ $cari }}"
-        placeholder="{{ $petunjuk ?? 'Cari...' }}">
+        <input wire:model.live.debounce.400ms="cari" type="text"
+            class="form-control ps-5 {{ $cari !== '' ? 'pe-5' : '' }}"
+            value="{{ $cari }}"
+            placeholder="{{ $petunjuk ?? 'Cari...' }}">
 
-    @if ($cari !== '')
-        <button type="button" class="orcha-cari-bersih" wire:click="bersihkanCari"
-            title="Kosongkan pencarian" aria-label="Kosongkan pencarian">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    @endif
-</div>
+        @if ($cari !== '')
+            <button type="button" class="orcha-cari-bersih" wire:click="bersihkanCari"
+                title="Kosongkan pencarian" aria-label="Kosongkan pencarian">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        @endif
+    </div>
+@endif

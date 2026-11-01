@@ -99,3 +99,51 @@ test('satu nama kelas tidak dipakai untuk dua hal yang display-nya bentrok', fun
 
     expect($nakal)->toBe([]);
 });
+
+test('kartu status Master Harga dan Pesanan Toko memakai satu definisi', function () {
+    /*
+     | Master Harga dibuat berupa SAMA PERSIS dengan Pesanan Toko. Disalin
+     | ke dua berkas, yang satu pasti tertinggal begitu yang lain disentuh,
+     | dan dua layar yang seharusnya kembar mulai berbeda tanpa ada yang
+     | memutuskannya — perbedaan yang tidak pernah terbaca sebagai bug,
+     | cuma sebagai "yang sana memang begitu".
+     */
+    $bersama = resource_path('views/livewire/pages/admin/partials/kartu-tab-gaya.blade.php');
+
+    expect(file_exists($bersama))->toBeTrue()
+        ->and(file_get_contents($bersama))->toContain('.pt-kartu-tab');
+
+    // Tidak ada berkas LAIN yang mendefinisikan ulang rupanya.
+    $pendefinisi = [];
+
+    foreach (\Illuminate\Support\Facades\File::allFiles(resource_path('views')) as $berkas) {
+        if ($berkas->getPathname() === $bersama || preg_match('/ \d+\.php$/', $berkas->getFilename())) {
+            continue;
+        }
+
+        /*
+         | Yang dicari DEFINISI tandingannya, bukan dua hal lain yang sah:
+         |
+         | - pemakaian kelasnya di markup — markup memang harus menyebutnya;
+         | - penyesuaian ber-scope (".mh-kartu-status .pt-kartu-label") —
+         |   itu menimpa satu hal di satu layar, bukan menulis ulang rupanya.
+         |
+         | Jadi yang ditangkap hanya aturan yang BERDIRI SENDIRI di awal
+         | barisnya.
+         */
+        if (preg_match('/(^|\n)\s*\.pt-kartu-(tab|ikon|angka|label)\s*[,{]/', (string) file_get_contents($berkas->getPathname()))) {
+            $pendefinisi[] = $berkas->getFilename();
+        }
+    }
+
+    expect($pendefinisi)->toBe([]);
+
+    // Dan keduanya memang memakainya.
+    foreach ([
+        'livewire/pages/admin/orcha/rab/master-harga.blade.php',
+        'livewire/pages/admin/order/partials/toko-gaya.blade.php',
+    ] as $pemakai) {
+        expect(file_get_contents(resource_path('views/'.$pemakai)))
+            ->toContain('partials.kartu-tab-gaya');
+    }
+});

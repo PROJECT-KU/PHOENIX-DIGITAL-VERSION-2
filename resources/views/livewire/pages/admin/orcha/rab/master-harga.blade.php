@@ -13,6 +13,9 @@ Master Harga || lemon
     @php
         $jumlahData = (int) ($meta['total'] ?? count($daftar));
         $adaSaringan = $this->adaSaringan();
+        // Yang tersembunyi di balik "Saringan lainnya" — kotak cari tidak
+        // ikut dihitung karena ia tetap terlihat.
+        $jumlahSaringLanjut = $this->jumlahSaringLanjut();
         $formTerbuka = $tambah || $sunting;
 
         $perluKapasitas = $this->perluKapasitas();
@@ -78,14 +81,23 @@ Master Harga || lemon
     @endphp
 
     <div class="dsb">
-        {{-- ================== KEPALA ================== --}}
+        {{-- ================== KEPALA ==================
+             Bentuknya mengikuti Pesanan Toko: sapaan besar, lalu tanggal
+             hari ini, lalu satu kalimat yang menjelaskan layarnya.
+
+             Penanda "Mode Orcha Journey" TETAP ada — Pesanan Toko tidak
+             punya karena datanya memang milik lemon sendiri. Di sini
+             datanya milik situs lain, dan itu harus terbaca sekilas. --}}
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
-                <h1 class="dsb-judul">Master Harga</h1>
+                <h1 class="dsb-salam">Master Harga</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">Daftar harga beli: tiket, sewa kendaraan, hotel, dan pemandu. Ditulis sekali di sini.</span>
-                    <span class="d-block">Saat menghitung biaya trip (RAB), harganya tinggal dipilih — tidak perlu diketik ulang.</span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">
+                        Daftar harga beli — tiket, sewa kendaraan, hotel, pemandu. Ditulis sekali di sini,
+                        lalu tinggal dipilih saat menghitung biaya trip.
+                    </span>
                 </p>
             </div>
 
@@ -101,51 +113,82 @@ Master Harga || lemon
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        {{-- ================== RINGKASAN ==================
+        {{-- ================== KARTU STATUS ==================
 
-             Angka yang sama sudah lama dicetak di PDF-nya, tetapi tidak
-             pernah ada di layar — jadi "berapa yang belum punya vendor"
-             hanya bisa dijawab dengan mengunduh berkas.
+             Bentuknya SAMA dengan tab di Pesanan Toko: ikon berwarna, angka
+             besar, label di bawahnya, dikelompokkan dengan judul kecil.
+             Definisi rupanya satu, di partials/kartu-tab-gaya.
 
-             Semuanya bisa DIKLIK. Angka yang menunjuk pekerjaan tetapi
-             tidak membawa ke sana cuma menambah beban; yang diklik memasang
-             saringannya, dan menekan ubin yang sama lagi melepasnya. --}}
+             Bedanya satu hal, dan disengaja: di Pesanan Toko kartunya tab —
+             satu menyala, yang lain padam. Di sini kartunya SARINGAN, dan
+             menekan kartu yang sedang menyala melepaskannya kembali. Angka
+             yang menunjuk pekerjaan tetapi tidak membawa ke sana cuma
+             menambah beban. --}}
+        @include('livewire.pages.admin.partials.kartu-tab-gaya')
+
         @php
-            $ubin = [
-                ['kunci' => 'jumlah', 'label' => 'Harga tersimpan', 'ket' => 'di seluruh daftar',
-                    'warna' => 'var(--dsb-utama)', 'saring' => null],
-                ['kunci' => 'dipakai', 'label' => 'Sudah pernah dipakai', 'ket' => 'pernah masuk RAB',
-                    'warna' => 'var(--dsb-aman)', 'saring' => ['filterDipakai', 'ya']],
-                ['kunci' => 'tanpa_vendor', 'label' => 'Belum punya vendor', 'ket' => 'tak ada nomor dihubungi',
-                    'warna' => 'var(--dsb-bahaya)', 'saring' => ['filterVendor', '-']],
-                ['kunci' => 'mati', 'label' => 'Sudah dimatikan', 'ket' => 'tak muncul saat buat RAB',
-                    'warna' => 'var(--dsb-netral)', 'saring' => ['filterStatus', 'mati']],
-                ['kunci' => 'kedaluwarsa', 'label' => 'Masa berlakunya lewat', 'ket' => 'tanyakan ulang vendor',
-                    'warna' => 'var(--dsb-awas)', 'saring' => ['filterStatus', 'kedaluwarsa']],
+            $angka = fn ($k) => (int) ($ringkas[$k] ?? 0);
+            /* "Belum dipakai" diturunkan, bukan diminta terpisah: selisih
+               dua angka yang datang dari pembacaan yang sama tidak bisa
+               berselisih dengan dirinya sendiri. */
+            $belumDipakai = max(0, $angka('jumlah') - $angka('dipakai'));
+
+            $kartu = [
+                'jumlah' => ['Semua harga', 'bi-tags-fill', '#7c3aed', $angka('jumlah'), null],
+                'dipakai' => ['Sudah dipakai', 'bi-check2-circle', '#16a34a', $angka('dipakai'), ['filterDipakai', 'ya']],
+                'belum' => ['Belum dipakai', 'bi-hourglass-split', '#64748b', $belumDipakai, ['filterDipakai', 'belum']],
+                'tanpa_vendor' => ['Belum ada vendor', 'bi-shop', '#e11d48', $angka('tanpa_vendor'), ['filterVendor', '-']],
+                'kedaluwarsa' => ['Masa berlakunya lewat', 'bi-alarm-fill', '#ea580c', $angka('kedaluwarsa'), ['filterStatus', 'kedaluwarsa']],
+                'mati' => ['Sudah dimatikan', 'bi-power', '#94a3b8', $angka('mati'), ['filterStatus', 'mati']],
+            ];
+
+            $grupKartu = [
+                ['Isi daftar', 'Berapa yang sudah pernah terpakai', ['jumlah', 'dipakai', 'belum']],
+                ['Perlu dibereskan', 'Harga yang menunggu ditindaklanjuti', ['tanpa_vendor', 'kedaluwarsa', 'mati']],
             ];
         @endphp
 
         @if ($ringkas !== [])
             <section class="dsb-bagian">
-                <div class="mh-ubin-rak">
-                    @foreach ($ubin as $u)
-                        @php
-                            $nilai = (int) ($ringkas[$u['kunci']] ?? 0);
-                            $terpasang = $u['saring'] && $this->{$u['saring'][0]} === $u['saring'][1];
-                        @endphp
-                        <button type="button" class="mh-ubin {{ $terpasang ? 'is-nyala' : '' }} {{ $u['saring'] ? '' : 'is-diam' }}"
-                            style="--c: {{ $u['warna'] }}"
-                            @if ($u['saring'])
-                                wire:click="$set('{{ $u['saring'][0] }}', '{{ $terpasang ? '' : $u['saring'][1] }}')"
-                                title="{{ $terpasang ? 'Lepas saringannya' : 'Lihat yang '.strtolower($u['label']) }}"
-                            @else
-                                disabled
-                            @endif>
-                            <span class="mh-ubin-label">{{ $u['label'] }}</span>
-                            <span class="mh-ubin-nilai">{{ number_format($nilai, 0, ',', '.') }}</span>
-                            <span class="mh-ubin-ket">{{ $u['ket'] }}</span>
-                        </button>
-                    @endforeach
+                <div class="dsb-rak">
+                    <div class="k-12">
+                        {{-- Kedua kelompok sama besar (3 kartu lawan 3), jadi
+                             --grup-kolom ditimpa; bawaannya 7fr/3fr untuk
+                             Pesanan Toko yang 7 tab lawan 3. --}}
+                        <div class="pt-grup-deret mh-kartu-status" style="--grup-kolom: minmax(0, 1fr) minmax(0, 1fr)">
+                            @foreach ($grupKartu as [$judulGrup, $ketGrup, $kunciGrup])
+                                <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                    <div class="pt-grup-kepala">
+                                        <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                        <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                    </div>
+                                    <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}">
+                                        @foreach ($kunciGrup as $kunci)
+                                            @php
+                                                [$label, $ikon, $warna, $nilai, $saring] = $kartu[$kunci];
+                                                $nyala = $saring && (string) $this->{$saring[0]} === $saring[1];
+                                            @endphp
+                                            <button type="button" style="--c: {{ $warna }}"
+                                                class="pt-kartu-tab {{ $nyala ? 'is-aktif' : '' }} {{ $nilai ? '' : 'is-nol' }} {{ $saring ? '' : 'mh-kartu-diam' }}"
+                                                aria-pressed="{{ $nyala ? 'true' : 'false' }}"
+                                                @if ($saring)
+                                                    wire:click="$set('{{ $saring[0] }}', '{{ $nyala ? '' : $saring[1] }}')"
+                                                    title="{{ $nyala ? 'Lepas saringannya' : 'Lihat yang '.mb_strtolower($label) }}"
+                                                @else
+                                                    disabled title="Seluruh harga yang tersimpan"
+                                                @endif>
+                                                <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                                <span class="pt-kartu-teks">
+                                                    <span class="pt-kartu-angka">{{ number_format($nilai, 0, ',', '.') }}</span>
+                                                    <span class="pt-kartu-label">{{ $label }}</span>
+                                                </span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </nav>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             </section>
         @endif
@@ -158,13 +201,56 @@ Master Harga || lemon
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi">
-                        <div class="mh-saring">
+                        {{-- Cari dulu, sisanya dilipat — pola yang sama dengan
+                             Pesanan Toko. Enam kotak saringan berjajar membuat
+                             baris pertamanya penuh benda yang jarang disentuh,
+                             dan daftarnya terdorong jauh ke bawah layar. --}}
+                        <div x-data="{ buka: {{ $jumlahSaringLanjut ? 'true' : 'false' }} }">
+                        <div class="mh-saring mh-saring-utama">
                             <div class="mh-medan-cari">
+                                {{-- Partial bersama, rupa 'dsb' — layar ini memuat
+                                     bahasa rupa dasbor, jadi kotak carinya bisa
+                                     sebangun dengan Pesanan Toko. Memasangnya
+                                     sendiri di sini akan membuatnya berbeda dari
+                                     lima belas layar Orcha lainnya begitu salah
+                                     satunya disentuh. --}}
                                 @include('livewire.pages.admin.orcha.partials.cari', [
                                     'petunjuk' => 'Cari nama, destinasi, atau daerah…',
+                                    'rupa' => 'dsb',
                                 ])
                             </div>
 
+                            <button type="button" wire:click="bukaSalin" class="dsb-tombol is-telaah"
+                                title="Salin seluruh harga satu provinsi ke provinsi lain">
+                                <i class="bi bi-files"></i><span>Salin antar provinsi</span>
+                            </button>
+                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
+                                <i class="bi bi-plus-lg"></i><span>Tambah Harga</span>
+                            </button>
+
+                            {{-- Sebaris dengan tombol lain, bukan berdiri sendiri
+                                 di baris berikutnya: tombol tunggal yang
+                                 menggantung terbaca seperti sisa, bukan seperti
+                                 pilihan yang setara. --}}
+                            <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka" :aria-expanded="buka">
+                                <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
+                                @if ($jumlahSaringLanjut)
+                                    <span class="pt-tab-jumlah is-isi">{{ $jumlahSaringLanjut }}</span>
+                                @endif
+                                <i class="bi bi-chevron-down mh-lanjutan-panah" :class="buka && 'is-buka'"></i>
+                            </button>
+
+                            @if ($adaSaringan)
+                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas" title="Kembali menampilkan seluruh harga">
+                                    <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        {{-- Terbuka sendiri bila ada saringan yang sedang aktif:
+                             saringan yang bekerja tetapi tersembunyi membuat
+                             daftar yang "kurang" terlihat seperti data hilang. --}}
+                        <div class="mh-saring mh-saring-lanjut" x-show="buka" x-cloak>
                             <select class="dsb-isian mh-pilih" wire:model.live="filterKategori" aria-label="Saring menurut kategori">
                                 <option value="" @selected((string) $this->filterKategori === '')>Semua kategori</option>
                                 @foreach ($kategori as $kunci => $label)
@@ -238,27 +324,8 @@ Master Harga || lemon
                                 @endforeach
                             </select>
 
-                            {{-- Didorong ke ujung kanan barisnya. Dengan enam kotak
-                                 saringan, tombolnya kini melipat ke baris kedua —
-                                 dan tombol tunggal yang menggantung di kiri terbaca
-                                 seperti sisa, bukan seperti aksi utama. --}}
-                            {{-- Membuka kota baru: daftar yang sama dengan angka yang
-                                 mirip. Mengetiknya ulang bukan cuma lama — ia tempat
-                                 selisih kecil masuk tanpa ada yang menyadarinya. --}}
-                            <button type="button" wire:click="bukaSalin" class="dsb-tombol is-telaah mh-tambah-harga"
-                                title="Salin seluruh harga satu provinsi ke provinsi lain">
-                                <i class="bi bi-files"></i><span>Salin antar provinsi</span>
-                            </button>
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
-                                <i class="bi bi-plus-lg"></i><span>Tambah Harga</span>
-                            </button>
-
-                            @if ($adaSaringan)
-                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas" title="Kembali menampilkan seluruh harga">
-                                    <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
-                                </button>
-                            @endif
-                        </div>
+                        </div>{{-- /.mh-saring-lanjut --}}
+                        </div>{{-- /x-data --}}
                     </div>
                 </div>
             </div>
@@ -2048,30 +2115,30 @@ Master Harga || lemon
         .mh-tambah-harga { margin-left: auto; }
 
         /* ===== Ringkasan ===== */
-        .mh-ubin-rak { display: flex; flex-wrap: wrap; gap: 12px; }
-        .mh-ubin {
-            flex: 1 1 170px; min-width: 0; display: flex; flex-direction: column; gap: 2px;
-            padding: 13px 15px; text-align: left; cursor: pointer;
-            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 15px;
-            /* Warna perannya hanya segaris di atas, bukan seluruh kartunya:
-               lima kartu berwarna penuh bersebelahan membuat tak satu pun
-               terbaca lebih penting. */
-            border-top: 3px solid var(--c);
-            box-shadow: 0 10px 24px -20px rgba(15, 23, 42, .5);
-            transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+        /* Kartu status "Semua harga" tidak bisa diklik — ia bukan saringan,
+           cuma jumlah seluruhnya. Dibuat tidak terlihat bisa ditekan, supaya
+           tidak ada yang menunggu sesuatu terjadi. */
+        /* Label BOLEH melipat di layar ini.
+
+           Bawaannya nowrap, dan itu ukuran kata bahasa Inggris: "Completed"
+           muat, "Masa berlakunya lewat" tidak — ia terpotong di tengah kata
+           tanpa ada yang terlihat salah. Hanya di sini, supaya Pesanan Toko
+           yang labelnya memang pendek tidak ikut berubah. */
+        .mh-kartu-status .pt-kartu-label { white-space: normal; }
+        .mh-kartu-status .pt-kartu-tab { min-height: 118px; }
+
+        .mh-kartu-diam { cursor: default; opacity: 1; }
+        .mh-kartu-diam .pt-kartu-ikon { background: #f1f5f9; color: #94a3b8; }
+
+        /* Saringan yang dilipat. Pola yang sama dengan Pesanan Toko: yang
+           sering dipakai tetap terlihat, sisanya di balik satu tombol. */
+        .mh-lanjutan { margin-top: 12px; }
+        .mh-lanjutan-panah { transition: transform .15s ease; }
+        .mh-lanjutan-panah.is-buka { transform: rotate(180deg); }
+        .mh-saring-lanjut {
+            margin-top: 12px; padding-top: 12px;
+            border-top: 1px dashed var(--dsb-tepi, #e9edf3);
         }
-        .mh-ubin:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 30px -22px rgba(15, 23, 42, .55); }
-        /* Yang tidak bisa diklik dibedakan rupanya: ubin yang terlihat sama
-           persis dengan empat tetangganya mengundang klik yang tidak pernah
-           terjadi. */
-        .mh-ubin.is-diam { cursor: default; background: #fbfcfe; box-shadow: none; }
-        .mh-ubin.is-diam:hover { transform: none; box-shadow: none; }
-        /* Yang sedang memasang saringan diberi latar warnanya — supaya
-           "kenapa daftarnya cuma segini" terjawab tanpa mencari-cari. */
-        .mh-ubin.is-nyala { background: color-mix(in srgb, var(--c) 9%, #fff); border-color: color-mix(in srgb, var(--c) 32%, #fff); }
-        .mh-ubin-label { font-size: .74rem; font-weight: 700; color: var(--dsb-redup, #6b7280); letter-spacing: .02em; }
-        .mh-ubin-nilai { font-size: 1.5rem; font-weight: 800; color: var(--c); line-height: 1.1; }
-        .mh-ubin-ket { font-size: .72rem; color: var(--dsb-redup, #6b7280); }
 
         /* ===== Pita kategori ===== */
         .mh-tabel tbody tr.mh-pita td {
@@ -2285,15 +2352,7 @@ Master Harga || lemon
             .mh-sakelar { grid-template-columns: 1fr; }
         }
 
-        /* Lima ubin yang menumpuk satu-satu memakan satu layar penuh sebelum
-           kotak carinya terlihat. Di laptop ia ringkasan; di ponsel ia
-           penghalang. Dua kolom membuatnya tetap terbaca dalam tiga baris. */
         @media (max-width: 767.98px) {
-            .mh-ubin-rak { gap: 9px; }
-            .mh-ubin { flex: 1 1 calc(50% - 5px); padding: 10px 12px; }
-            .mh-ubin-nilai { font-size: 1.25rem; }
-            .mh-ubin-ket { font-size: .68rem; }
-
             /* Tombol tambah berhenti didorong ke kanan: di layar sempit ia
                berdiri sendiri di barisnya, dan "didorong ke ujung" hanya
                menyisakan lubang di kirinya.
