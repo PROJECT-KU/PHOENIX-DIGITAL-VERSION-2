@@ -680,6 +680,14 @@ Susun RAB || lemon
         }
         .rb-armada-hitung { display: flex; flex-direction: column; gap: 1px; text-align: right; }
         .rb-armada-unit { font-weight: 700; font-size: .82rem; color: #0369a1; }
+        /* Cara menghargainya: pil kecil, bukan kalimat. Yang dijawabnya satu
+           pertanyaan sempit — "kenapa yang ini jauh lebih mahal?" */
+        .rb-armada-cara {
+            display: inline-flex; align-self: flex-start; margin-top: 2px;
+            padding: 1px 7px 2px; border-radius: 999px;
+            background: #eef2ff; color: #4338ca;
+            font-size: .67rem; font-weight: 700; white-space: nowrap;
+        }
         .rb-armada-angka { font-weight: 700; font-size: .88rem; white-space: nowrap; }
         .rb-armada-sudah {
             display: inline-flex; align-items: center; gap: 4px;
@@ -1853,8 +1861,9 @@ Susun RAB || lemon
                                         <div class="rb-armada-teks">
                                             <strong>Kendaraan untuk {{ $rab['jumlah_peserta'] }} peserta</strong>
                                             <span class="dsb-kartu-sub">
-                                                Termurah lebih dulu. Angkanya sudah termasuk {{ $rab['jumlah_hari'] }} hari —
-                                                dihitung dengan rumus yang sama dengan rincian di bawah.
+                                                Termurah lebih dulu, dihitung dengan rumus yang sama dengan rincian di bawah.
+                                                Sewa harian sudah dikali {{ $rab['jumlah_hari'] }} hari; carter per rute
+                                                dibayar sekali untuk seluruh perjalanan.
                                             </span>
                                         </div>
                                     </div>
@@ -1875,6 +1884,13 @@ Susun RAB || lemon
                                                         @else
                                                             {{ $k['sisa'] }} kursi kosong
                                                         @endif
+                                                    </span>
+                                                    {{-- Cara menghargainya DISEBUT. Rp 8.500.000 di sebelah
+                                                         Rp 4.800.000 terbaca seperti salah hitung sampai
+                                                         terlihat bahwa yang satu carter seluruh perjalanan
+                                                         dan yang lain tarif harian dikali empat. --}}
+                                                    <span class="rb-armada-cara">
+                                                        {{ $k['sekali'] ? 'carter per rute, sekali bayar' : 'sewa harian × '.$rab['jumlah_hari'].' hari' }}
                                                     </span>
                                                 </div>
                                                 <div class="rb-armada-angka">{{ 'Rp '.number_format($k['total'], 0, ',', '.') }}</div>

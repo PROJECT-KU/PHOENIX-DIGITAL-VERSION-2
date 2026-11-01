@@ -2,6 +2,7 @@
 
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaHariLiburList;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList;
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -417,6 +418,118 @@ test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri',
 
     expect($kaki)->toContain('Tempel banyak baris dari Excel')
         ->and(substr($kaki, 0, strpos($kaki, 'Batal')))->toContain('Tempel banyak baris');
+});
+
+/* ------------------- CARTER PER RUTE ------------------- */
+
+/**
+ * Rekaman fixture, dibaca SENDIRI.
+ *
+ * Tidak meminjam pembaca dari OrchaRabTest: fungsi Pest berlaku global hanya
+ * saat kedua berkas sama-sama dijalankan, jadi berkas yang meminjamnya hijau
+ * dalam rangkaian penuh dan merah begitu dijalankan sendirian.
+ */
+function rekamanLibur(string $nama): array
+{
+    return json_decode(file_get_contents(base_path("tests/Fixtures/orcha-rab/{$nama}.json")), true);
+}
+
+/** Katalog RAB berisi master harga yang ditentukan. */
+function palsukanKatalogMaster(array $master): void
+{
+    $show = rekamanLibur('show');
+    $katalog = rekamanLibur('katalog');
+    $katalog['data']['master'] = $master;
+
+    Http::fake(function (Request $r) use ($show, $katalog) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_contains($jalur, '/rab/katalog') => Http::response($katalog),
+            str_contains($jalur, '/rab/3') => Http::response($show),
+            default => Http::response(['data' => [], 'meta' => []]),
+        };
+    });
+}
+
+function barisArmada(int $id, string $nama, string $satuan, int $harga, int $kapasitas, ?string $destinasi = null): array
+{
+    return [
+        'id' => $id, 'kategori' => 'transportasi', 'kategori_label' => 'Transportasi',
+        'nama' => $nama, 'destinasi' => $destinasi, 'daerah' => null,
+        'satuan' => $satuan, 'satuan_label' => $satuan, 'harga' => $harga,
+        'harga_teks' => 'Rp '.number_format($harga, 0, ',', '.'),
+        'kapasitas' => $kapasitas, 'otomatis' => false, 'umum' => true,
+        'vendor_id' => null, 'vendor' => null, 'vendor_kontak' => null,
+    ];
+}
+
+test('carter per rute muncul di panel kendaraan, dan TIDAK dikali hari', function () {
+    /*
+     | Kasus yang ditanyakan: Hiace Jogja-Banyuwangi Rp 8.500.000 dan
+     | Jogja-Bromo Rp 5.000.000. Keduanya carter satu rute — dibayar sekali
+     | untuk seluruh perjalanan, bukan tarif harian.
+     |
+     | Tanpa ini keduanya tidak muncul di panel mana pun: "Tarik biaya"
+     | melewati satuan unit, dan panel tiket kendaraan menuntut destinasi
+     | yang tidak dipunyai sebuah rute. Satu-satunya jalan masuk tinggal
+     | kotak pilih biasa, tanpa hitungan berapa unit untuk sekian peserta.
+     */
+    palsukanKatalogMaster([
+        barisArmada(21, 'Sewa Hiace Jogja-Banyuwangi 4D3N', 'unit', 8_500_000, 14),
+        barisArmada(22, 'Sewa Hiace Jogja-Bromo 3D2N', 'unit', 5_000_000, 14),
+    ]);
+
+    $saran = collect(Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan());
+
+    $banyuwangi = $saran->firstWhere('id', 21);
+    $peserta = rekamanLibur('show')['data']['jumlah_peserta'];
+    $unit = (int) ceil($peserta / 14);
+
+    expect($saran)->toHaveCount(2)
+        ->and($banyuwangi['sekali'])->toBeTrue()
+        // Sekali bayar: harga x unit, TITIK. Dikali hari, RAB empat hari
+        // memulangkan Rp 34 juta untuk satu Hiace.
+        ->and($banyuwangi['total'])->toBe(8_500_000 * $unit)
+        // Termurah lebih dulu — urutannya memang urutan rekomendasinya.
+        ->and($saran->first()['id'])->toBe(22);
+});
+
+test('sewa harian tetap dikali hari', function () {
+    palsukanKatalogMaster([
+        barisArmada(23, 'Hiace harian', 'unit_hari', 1_200_000, 14),
+    ]);
+
+    $rab = rekamanLibur('show')['data'];
+    $unit = (int) ceil($rab['jumlah_peserta'] / 14);
+
+    $saran = collect(Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan());
+
+    expect($saran->first()['sekali'])->toBeFalse()
+        ->and($saran->first()['total'])->toBe(1_200_000 * $unit * $rab['jumlah_hari']);
+});
+
+test('tiket gerbang tidak ikut ditawarkan sebagai kendaraan sewaan', function () {
+    /*
+     | Bersatuan unit juga, tetapi PUNYA destinasi — itu tiket gerbang di
+     | sebuah tempat, bukan kendaraan yang disewa. Ia sudah punya panelnya
+     | sendiri; masuk ke sini juga, satu baris yang sama ditawarkan dua kali
+     | di layar yang sama.
+     */
+    palsukanKatalogMaster([
+        barisArmada(24, 'Tiket kendaraan roda 4', 'unit', 10_000, 4, 'Taman Nasional Baluran'),
+        barisArmada(25, 'Sewa Hiace Jogja-Bromo 3D2N', 'unit', 5_000_000, 14),
+    ]);
+
+    $saran = collect(Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->instance()->saranKendaraan());
+
+    expect($saran->pluck('id')->all())->toBe([25]);
 });
 
 /* ------------------- TAWARAN TIKET KENDARAAN ------------------- */

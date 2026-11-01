@@ -872,12 +872,33 @@ class OrchaRabSusun extends Component
         $dipakai = collect($this->dataRab['ringkasan']['baris'] ?? [])
             ->pluck('master_harga_id')->filter()->flip();
 
+        /*
+         | Dua cara kendaraan dihargai, dan keduanya milik panel ini.
+         |
+         | 'unit_hari' — sewa harian: harga x unit x hari.
+         | 'unit'      — carter per rute: "Hiace Jogja-Banyuwangi 4D3N
+         |               Rp 8.500.000", dibayar SEKALI untuk seluruh
+         |               perjalanan, jadi TIDAK dikali hari.
+         |
+         | Yang bersatuan 'unit' tetapi PUNYA destinasi bukan kendaraan yang
+         | disewa melainkan tiket gerbang di sebuah tempat — ia sudah punya
+         | panelnya sendiri (tawaran tiket kendaraan). Dimasukkan ke sini
+         | juga, satu baris yang sama ditawarkan dua kali di layar yang sama,
+         | dan yang membacanya mengira keduanya hal yang berbeda.
+         */
         return collect($this->katalog['master'] ?? [])
-            ->filter(fn ($m) => ($m['satuan'] ?? '') === 'unit_hari' && (int) ($m['kapasitas'] ?? 0) > 0)
+            ->filter(function ($m) {
+                $satuan = $m['satuan'] ?? '';
+                $punyaDestinasi = trim((string) ($m['destinasi'] ?? '')) !== '';
+
+                return (int) ($m['kapasitas'] ?? 0) > 0
+                    && ($satuan === 'unit_hari' || ($satuan === 'unit' && ! $punyaDestinasi));
+            })
             ->map(function (array $m) use ($peserta, $hari, $dipakai) {
                 $muat = (int) $m['kapasitas'];
                 $unit = (int) ceil($peserta / $muat);
                 $kursi = $unit * $muat;
+                $sekali = ($m['satuan'] ?? '') === 'unit';
 
                 return [
                     'id' => (int) $m['id'],
@@ -885,7 +906,10 @@ class OrchaRabSusun extends Component
                     'muat' => $muat,
                     'unit' => $unit,
                     'sisa' => $kursi - $peserta,
-                    'total' => (int) $m['harga'] * $unit * $hari,
+                    // Carter per rute tidak dikali hari; harganya sudah
+                    // untuk seluruh perjalanan.
+                    'total' => (int) $m['harga'] * $unit * ($sekali ? 1 : $hari),
+                    'sekali' => $sekali,
                     'sudah' => $dipakai->has((int) $m['id']),
                 ];
             })
