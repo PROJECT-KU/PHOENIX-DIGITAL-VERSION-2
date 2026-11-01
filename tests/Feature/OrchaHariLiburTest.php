@@ -257,6 +257,77 @@ test('harga akhir pekan ditampilkan di daftar master harga', function () {
         ->assertSee('akhir pekan');
 });
 
+/* ------------------- KOTAK KAPASITAS ------------------- */
+
+test('kotak kapasitas tergambar dan tidak disembunyikan CSS', function () {
+    palsukanMaster();
+
+    /*
+     | ".mh-muat" sempat berarti DUA hal di berkas yang sama — "muat"
+     | (kapasitas, display:flex) dan "memuat" (pita loading, display:none).
+     | Aturan yang belakangan menang, jadi kotaknya ada di DOM tetapi tidak
+     | terlihat, sementara validasinya tetap menuntut diisi: harga bersatuan
+     | per unit tidak bisa disimpan sama sekali, tanpa satu pun pesan yang
+     | menyebut sebabnya.
+     */
+    $k = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi')
+        ->set('isian.satuan', 'unit');
+
+    expect($k->instance()->perluKapasitas())->toBeTrue();
+
+    $html = $k->html();
+
+    expect($html)->toContain('id="mh-kapasitas"')
+        ->and($html)->toContain('class="mh-muat"')
+        // Pitanya memakai nama sendiri, jadi display:none-nya tidak lagi
+        // menyentuh kotak kapasitas.
+        ->and($html)->toContain('mh-pita-muat');
+});
+
+test('tempelan massal menolak satuan berkapasitas sebelum menyentuh Orcha', function () {
+    palsukanMaster();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi')
+        ->set('isian.satuan', 'unit')
+        ->set('isian.kapasitas', '')
+        ->call('bukaTempel')
+        ->set('tempelIsi', 'Sewa Hiace Jogja-Banyuwangi 4D3N	8500000')
+        ->call('simpanTempel')
+        // Galatnya menempel di kotak kapasitas, bukan di kotak tempelan —
+        // di sanalah yang harus diisi.
+        ->assertHasErrors('isian.kapasitas');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/master-harga/banyak'));
+});
+
+test('tempelan massal rute carter mengirim kapasitas bersama barisnya', function () {
+    palsukanMaster();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi')
+        ->set('isian.satuan', 'unit')
+        ->set('isian.kapasitas', '14')
+        ->set('isian.provinsi', 'DI Yogyakarta')
+        ->call('bukaTempel')
+        ->set('tempelIsi', 'Sewa Hiace Jogja-Banyuwangi 4D3N	8500000
+Sewa Hiace Jogja-Bromo 3D2N	6500000')
+        ->call('simpanTempel')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/master-harga/banyak')
+        && $r['kapasitas'] === 14
+        && $r['satuan'] === 'unit'
+        && count($r['baris']) === 2);
+});
+
 /* ------------------- TAWARAN TIKET KENDARAAN ------------------- */
 
 /**

@@ -1209,13 +1209,27 @@ class OrchaMasterHargaList extends Component
 
     public function simpanTempel(): void
     {
-        $this->resetValidation('tempelIsi');
+        $this->resetValidation(['tempelIsi', 'isian.kapasitas']);
         $this->tempelGagal = [];
 
         $baris = $this->barisTempel();
 
         if ($baris === []) {
             $this->addError('tempelIsi', 'Belum ada baris yang terbaca. Tiap baris: nama, lalu TAB, lalu harganya.');
+
+            return;
+        }
+
+        /*
+         | Kapasitas diperiksa DI SINI, bukan dibiarkan ditolak Orcha.
+         |
+         | Orcha memang menolaknya, tetapi penolakan itu pulang sebagai galat
+         | pada kotak tempelan — jauh dari kotak kapasitas yang harus diisi.
+         | Menempel dua puluh rute carter tanpa kapasitas membuat KEDUA
+         | PULUHNYA menghitung satu kendaraan untuk rombongan sebesar apa pun.
+         */
+        if ($this->perluKapasitas() && (int) ($this->isian['kapasitas'] ?? 0) < 1) {
+            $this->addError('isian.kapasitas', 'Isi kapasitasnya dulu — satuan ini menghitung jumlah unit, dan seluruh baris yang ditempel ikut memakainya.');
 
             return;
         }

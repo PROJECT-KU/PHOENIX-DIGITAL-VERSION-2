@@ -1264,7 +1264,7 @@ Master Harga || lemon
                     {{-- Redup saja tidak cukup: pada sambungan lambat layarnya
                          terbaca seperti membeku, dan orang menekan tombolnya
                          lagi. Pita ini mengatakan apa yang sedang terjadi. --}}
-                    <div class="mh-muat" wire:loading.flex
+                    <div class="mh-pita-muat" wire:loading.flex
                         wire:target="cari,filterKategori,filterProvinsi,filterVendor,filterDipakai,filterStatus,urut,barisHalaman,bersihkanSaringan,bersihkanCari,keHalaman,pilihSemuaCocok">
                         <span class="dsb-putar"></span>
                         <span>Memuat daftarnya…</span>
@@ -2213,7 +2213,18 @@ Master Harga || lemon
            persis jebakan "wire:loading kalah bobot CSS" yang sudah pernah
            menggigit di repo ini. wire:loading.flex menyetel display lewat
            style elemen, jadi ia tetap menang saat memang memuat. */
-        .mh-muat {
+        /*
+         | .mh-pita-muat, BUKAN .mh-muat.
+         |
+         | "muat" (kapasitas satu kendaraan) dan "memuat" (sedang mengambil
+         | data) sempat memakai nama kelas yang sama di berkas ini. Aturan
+         | yang ditulis belakangan menang, jadi display:none milik pita ini
+         | ikut menyembunyikan KOTAK KAPASITAS di formulir — kotaknya ada di
+         | DOM, tidak terlihat, dan validasinya tetap menuntut diisi. Harga
+         | bersatuan per unit jadi tidak bisa disimpan sama sekali, tanpa
+         | satu pun pesan yang menyebut sebabnya.
+         */
+        .mh-pita-muat {
             display: none; align-items: center; gap: 9px;
             padding: 9px clamp(14px, 2vw, 20px);
             background: #f8fafc; border-bottom: 1px solid #eef2f7;

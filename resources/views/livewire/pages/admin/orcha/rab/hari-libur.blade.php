@@ -328,42 +328,47 @@ Hari Libur || lemon
         </section>
     </div>
 
-    @push('gaya')
-        <style>
-            /* Satu blok penjelas, bukan paragraf lepas: ikon di kiri,
-               kalimatnya melar mengisi sisa baris. */
-            .hl-guna, .hl-tempel-ajak {
-                display: flex; align-items: flex-start; gap: 11px; flex-wrap: wrap;
-            }
-            .hl-guna-teks { flex: 1 1 280px; min-width: 0; font-size: .85rem; line-height: 1.55; }
-            .hl-tegas {
-                display: block; margin-top: 5px; font-weight: 600;
-                color: var(--dsb-awas, #b45309);
-            }
-            .hl-tempel-ajak { align-items: center; }
-            .hl-tempel-kotak {
-                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                font-size: .82rem; line-height: 1.6; resize: vertical;
-            }
-            .hl-tempel-ket { margin-top: 7px; }
+    {{-- <style> telanjang, bukan didorong ke sebuah stack.
 
-            .hl-chip-rak { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-            .hl-chip {
-                padding: 6px 11px; border-radius: 999px; cursor: pointer;
-                background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
-                color: var(--dsb-tinta, #1c1f26); font-size: .78rem; font-weight: 600;
-                white-space: nowrap;
-            }
-            .hl-chip:hover { border-color: #c7d2fe; }
-            .hl-chip.is-aktif { border-color: #4f46e5; background: #f6f5ff; }
+         Layout templateindex tidak punya satu pun stack, jadi gaya yang
+         didorong ke sana tidak pernah ikut tergambar — halamannya tetap
+         200, cuma tampil tanpa gayanya sendiri, dan tidak ada galat yang
+         menyebutkannya. Konvensi itu terbawa dari proyek sebelah; layar
+         lain di sini (master-harga, susun) memakai <style> biasa. --}}
+    <style>
+        /* Satu blok penjelas, bukan paragraf lepas: ikon di kiri,
+           kalimatnya melar mengisi sisa baris. */
+        .hl-guna, .hl-tempel-ajak {
+            display: flex; align-items: flex-start; gap: 11px; flex-wrap: wrap;
+        }
+        .hl-guna-teks { flex: 1 1 280px; min-width: 0; font-size: .85rem; line-height: 1.55; }
+        .hl-tegas {
+            display: block; margin-top: 5px; font-weight: 600;
+            color: var(--dsb-awas, #b45309);
+        }
+        .hl-tempel-ajak { align-items: center; }
+        .hl-tempel-kotak {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: .82rem; line-height: 1.6; resize: vertical;
+        }
+        .hl-tempel-ket { margin-top: 7px; }
 
-            .hl-kaki { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-            .hl-utama { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-            .hl-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; }
-            .hl-tahun { max-width: 160px; }
-            /* Yang sudah lewat diredupkan, bukan disembunyikan: tahun lalu
-               tetap perlu bisa dibaca saat memeriksa penawaran lama. */
-            .hl-tabel tr.is-mati { opacity: .62; }
-        </style>
-    @endpush
+        .hl-chip-rak { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+        .hl-chip {
+            padding: 6px 11px; border-radius: 999px; cursor: pointer;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+            color: var(--dsb-tinta, #1c1f26); font-size: .78rem; font-weight: 600;
+            white-space: nowrap;
+        }
+        .hl-chip:hover { border-color: #c7d2fe; }
+        .hl-chip.is-aktif { border-color: #4f46e5; background: #f6f5ff; }
+
+        .hl-kaki { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+        .hl-utama { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .hl-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; }
+        .hl-tahun { max-width: 160px; }
+        /* Yang sudah lewat diredupkan, bukan disembunyikan: tahun lalu
+           tetap perlu bisa dibaca saat memeriksa penawaran lama. */
+        .hl-tabel tr.is-mati { opacity: .62; }
+    </style>
 </div>
