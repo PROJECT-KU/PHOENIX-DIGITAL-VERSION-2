@@ -360,6 +360,49 @@ test('formulir harga terbagi bagian berjudul, bukan satu dinding kotak', functio
         ->and(substr_count($html, 'class="mh-bagian-ikon"'))->toBe(4);
 });
 
+test('ketiga sakelar nyala/mati memakai satu bentuk yang sama', function () {
+    /*
+     | "Akhir pekan lebih mahal" sempat berupa ceklis polos sementara "Aktif"
+     | dan "Dipilih manual" berupa kartu sakelar — satu formulir, dua idiom
+     | untuk hal yang sama persis: menyalakan atau mematikan sesuatu. Yang
+     | membacanya harus belajar dua kali, dan yang bentuknya lebih kecil
+     | terbaca seperti setelan yang kurang penting — padahal ia yang
+     | menentukan harga tiket di hari Sabtu.
+     |
+     | Angkanya ditulis apa adanya: sakelar keempat yang memang sengaja
+     | ditambahkan ikut menyunting angka ini, dan suntingan itu yang membuat
+     | perubahannya terlihat saat ditinjau.
+     */
+    $isi = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/rab/master-harga.blade.php')
+    );
+
+    expect(substr_count($isi, 'class="orcha-sakelar-kartu'))->toBe(3)
+        // Ceklis polosnya benar-benar pergi, bukan sekadar ditimpa.
+        ->and($isi)->not->toContain('mh-dua-saklar');
+});
+
+test('kartu sakelar menyebut KEADAANNYA, bukan nama setelannya', function () {
+    palsukanMaster();
+
+    /*
+     | Judul yang tetap "Akhir pekan lebih mahal" saat sakelarnya mati
+     | menyuruh pembacanya menebak: apakah ini keadaan sekarang, atau nama
+     | tombolnya? Dua kartu lain sudah lama berubah kata; yang ini mengikut.
+     */
+    $mati = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)->call('bukaTambah')->html();
+
+    expect($mati)->toContain('Harga sama setiap hari')
+        ->and($mati)->not->toContain('Akhir pekan &amp; hari libur lebih mahal');
+
+    $nyala = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)->call('bukaTambah')->set('duaHarga', true)->html();
+
+    expect($nyala)->toContain('Akhir pekan &amp; hari libur lebih mahal')
+        ->and($nyala)->not->toContain('Harga sama setiap hari');
+});
+
 test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri', function () {
     palsukanMaster();
 

@@ -410,19 +410,35 @@ Master Harga || lemon
                                      tidak diisi tetap menuntut dibaca lebih
                                      dulu di setiap formulir. --}}
                                 <div class="dsb-medan is-lebar">
-                                    <label class="mh-dua-saklar">
-                                        {{-- form-check-input, sama dengan SELURUH ceklis lain
-                                             di formulir ini. Tanpanya yang tergambar kontrol
-                                             bawaan peramban: 13px bukan 16px, bersudut tajam,
-                                             dan tidak ikut berwarna merek saat dicentang —
-                                             satu-satunya yang berbeda di antara enam ceklis,
-                                             dan bedanya terbaca sebagai cacat. --}}
-                                        <input type="checkbox" class="form-check-input" wire:model.live="duaHarga">
-                                        <span>
-                                            <strong>Akhir pekan &amp; hari libur lebih mahal</strong>
-                                            <span class="dsb-kartu-sub">
-                                                Mis. Baluran: hari kerja Rp 21.000, akhir pekan Rp 31.000.
+                                    {{-- Kartu sakelar, bentuk yang SAMA dengan "Aktif" dan
+                                         "Dipilih manual" di bagian terakhir.
+
+                                         Sebelumnya ceklis polos, jadi satu formulir memakai
+                                         dua idiom untuk hal yang sama persis: menyalakan atau
+                                         mematikan sesuatu. Yang membacanya harus belajar dua
+                                         kali, dan yang bentuknya lebih kecil terbaca seperti
+                                         setelan yang kurang penting — padahal ia yang
+                                         menentukan harga tiket di hari Sabtu.
+
+                                         Judul & keterangannya ikut berubah menurut
+                                         keadaannya, sama dengan kedua kartu itu: yang
+                                         terbaca keadaan SEKARANG, bukan nama setelannya. --}}
+                                    <label class="orcha-sakelar-kartu {{ $duaHarga ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $duaHarga ? 'bi-calendar-event-fill' : 'bi-calendar3' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $duaHarga ? 'Akhir pekan & hari libur lebih mahal' : 'Harga sama setiap hari' }}
                                             </span>
+                                            <span class="ket">
+                                                {{ $duaHarga
+                                                    ? 'Mis. Baluran: hari kerja Rp 21.000, akhir pekan Rp 31.000.'
+                                                    : 'Satu harga dipakai Senin sampai Minggu, termasuk tanggal merah.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" wire:model.live="duaHarga">
                                         </span>
                                     </label>
 
@@ -2002,24 +2018,6 @@ Master Harga || lemon
            satu kotak berlabel "Harga 2" adalah angka yang suatu hari diisi
            di kolom yang salah. Hari kerjanya hanya DITAMPILKAN di sini,
            bukan kotak kedua yang bisa berbeda dari kotak Harga di atas. */
-        .mh-dua-saklar {
-            display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
-            margin: 0;
-        }
-        /* Ukurannya dipatok 1rem supaya SAMA PERSIS dengan lima ceklis lain
-           di formulir ini. Bootstrap memberinya 1em, dan em di sini mengikuti
-           ukuran huruf induknya — hasilnya 19px, tiga piksel lebih besar
-           daripada tetangganya. Selisih sekecil itu tidak terbaca sebagai
-           ukuran, cuma sebagai "yang satu ini agak lain".
-
-           margin-top 2px, bukan 3px: angka lama disetel saat ceklisnya masih
-           kontrol bawaan peramban yang 13px. */
-        .mh-dua-saklar input {
-            flex: 0 0 auto; margin-top: 2px;
-            width: 1rem; height: 1rem; border-radius: .25rem;
-        }
-        .mh-dua-saklar > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-        .mh-dua-saklar strong { font-size: .83rem; font-weight: 700; }
         .mh-dua-isi {
             display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
         }
