@@ -328,6 +328,54 @@ Sewa Hiace Jogja-Bromo 3D2N	6500000')
         && count($r['baris']) === 2);
 });
 
+test('formulir harga terbagi bagian berjudul, bukan satu dinding kotak', function () {
+    palsukanMaster();
+
+    /*
+     | Dua belas kotak tanpa judul terbaca sebagai satu dinding: matanya
+     | tidak punya tempat berhenti, dan yang membacanya tidak tahu kotak
+     | mana yang boleh dilewati. Bentuknya mengikuti borang Tambah Pesanan.
+     */
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->html();
+
+    foreach ([
+        'Apa yang dibeli, dan berapa',
+        'Berlaku di mana, dibeli dari siapa',
+        'Namanya di daftar',
+        'Kapan harga ini ikut ke RAB',
+    ] as $judul) {
+        expect($html)->toContain($judul);
+    }
+
+    /*
+     | Dihitung dari MARKUP-nya (class="..."), bukan dari nama kelasnya:
+     | blok <style> di berkas yang sama ikut terbawa ke html(), jadi
+     | menghitung namanya memulangkan satu lebih banyak — dan angkanya
+     | akan ditambah satu oleh siapa pun yang mengejar hijau.
+     */
+    expect(substr_count($html, 'class="mh-bagian-ket"'))->toBe(4)
+        ->and(substr_count($html, 'class="mh-bagian-ikon"'))->toBe(4);
+});
+
+test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri', function () {
+    palsukanMaster();
+
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->html();
+
+    // Berdiri sendiri, ia menyisakan hampir selebar kartu menganggur di
+    // kanannya — dan tombol tunggal yang menggantung terbaca seperti sisa.
+    $kaki = substr($html, strpos($html, 'mh-kaki-kiri'));
+
+    expect($kaki)->toContain('Tempel banyak baris dari Excel')
+        ->and(substr($kaki, 0, strpos($kaki, 'Batal')))->toContain('Tempel banyak baris');
+});
+
 /* ------------------- TAWARAN TIKET KENDARAAN ------------------- */
 
 /**

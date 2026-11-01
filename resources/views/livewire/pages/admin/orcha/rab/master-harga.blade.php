@@ -134,12 +134,12 @@ Master Harga || lemon
             $belumDipakai = max(0, $angka('jumlah') - $angka('dipakai'));
 
             $kartu = [
-                'jumlah' => ['Semua harga', 'bi-tags-fill', '#7c3aed', $angka('jumlah'), null],
-                'dipakai' => ['Sudah dipakai', 'bi-check2-circle', '#16a34a', $angka('dipakai'), ['filterDipakai', 'ya']],
-                'belum' => ['Belum dipakai', 'bi-hourglass-split', '#64748b', $belumDipakai, ['filterDipakai', 'belum']],
-                'tanpa_vendor' => ['Belum ada vendor', 'bi-shop', '#e11d48', $angka('tanpa_vendor'), ['filterVendor', '-']],
-                'kedaluwarsa' => ['Masa berlakunya lewat', 'bi-alarm-fill', '#ea580c', $angka('kedaluwarsa'), ['filterStatus', 'kedaluwarsa']],
-                'mati' => ['Sudah dimatikan', 'bi-power', '#94a3b8', $angka('mati'), ['filterStatus', 'mati']],
+                'jumlah' => ['Semua harga', 'bi-tags-fill', 'var(--dsb-utama)', $angka('jumlah'), null],
+                'dipakai' => ['Sudah dipakai', 'bi-check2-circle', 'var(--dsb-aman)', $angka('dipakai'), ['filterDipakai', 'ya']],
+                'belum' => ['Belum dipakai', 'bi-hourglass-split', 'var(--dsb-netral)', $belumDipakai, ['filterDipakai', 'belum']],
+                'tanpa_vendor' => ['Belum ada vendor', 'bi-shop', 'var(--dsb-bahaya)', $angka('tanpa_vendor'), ['filterVendor', '-']],
+                'kedaluwarsa' => ['Masa berlakunya lewat', 'bi-alarm-fill', 'var(--dsb-awas)', $angka('kedaluwarsa'), ['filterStatus', 'kedaluwarsa']],
+                'mati' => ['Sudah dimatikan', 'bi-power', 'var(--dsb-netral)', $angka('mati'), ['filterStatus', 'mati']],
             ];
 
             $grupKartu = [
@@ -360,6 +360,14 @@ Master Harga || lemon
                                  Urutannya bukan selera — destinasi harus sudah
                                  terpilih sebelum kotak nama, karena namanya
                                  dirakit dari destinasi itu. --}}
+                            <section class="mh-bagian">
+                                <div class="mh-bagian-kepala">
+                                    <span class="mh-bagian-ikon" style="--c: var(--dsb-utama)"><i class="bi bi-tags-fill"></i></span>
+                                    <div>
+                                        <h4 class="mh-bagian-judul">Apa yang dibeli, dan berapa</h4>
+                                        <span class="mh-bagian-ket">Jenis biayanya, cara menghitungnya, lalu harganya.</span>
+                                    </div>
+                                </div>
                             <div class="mh-medan-rak">
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="mh-kategori">Kategori <span class="dsb-wajib">*</span></label>
@@ -506,7 +514,16 @@ Master Harga || lemon
                                     </div>
                                 @endif
                             </div>
+                            </section>
 
+                            <section class="mh-bagian">
+                                <div class="mh-bagian-kepala">
+                                    <span class="mh-bagian-ikon" style="--c: var(--dsb-aman)"><i class="bi bi-geo-alt-fill"></i></span>
+                                    <div>
+                                        <h4 class="mh-bagian-judul">Berlaku di mana, dibeli dari siapa</h4>
+                                        <span class="mh-bagian-ket">Wilayah tempat harga ini dipakai, dan vendor yang menjualnya.</span>
+                                    </div>
+                                </div>
                             <div class="mh-medan-rak">
 
                                 {{-- Destinasi hanya ditawarkan untuk tiket — di sembilan
@@ -708,6 +725,36 @@ Master Harga || lemon
 
                             </div>
 
+                            @if ($destinasiAsing)
+                                <div class="mh-peringatan">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>
+                                        <strong>{{ $destinasiKini }}</strong> tidak ada di daftar destinasi.
+                                        Karena namanya tidak cocok, harga tiket ini tidak akan ikut terbawa saat
+                                        tempat itu dimasukkan ke jadwal perjalanan. Pilih namanya dari daftar,
+                                        atau tambahkan destinasinya lebih dulu.
+                                    </span>
+                                </div>
+                            @elseif ($this->tiketTanpaDestinasi())
+                                <div class="mh-peringatan">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>
+                                        Tiket yang tidak diisi destinasinya tidak akan pernah ikut terbawa ke RAB,
+                                        karena sistem mencarinya lewat nama tempat di jadwal perjalanan. Pilih
+                                        destinasinya, atau tandai <strong>wajib</strong> supaya tetap masuk sendiri.
+                                    </span>
+                                </div>
+                            @endif
+                            </section>
+
+                            <section class="mh-bagian">
+                                <div class="mh-bagian-kepala">
+                                    <span class="mh-bagian-ikon" style="--c: var(--dsb-telaah)"><i class="bi bi-card-text"></i></span>
+                                    <div>
+                                        <h4 class="mh-bagian-judul">Namanya di daftar</h4>
+                                        <span class="mh-bagian-ket">Nama inilah yang muncul di Master Harga dan di rincian biaya RAB.</span>
+                                    </div>
+                                </div>
                             <div class="mh-medan-rak">
                                 <div class="dsb-medan is-lebar">
                                     <label class="dsb-label" for="mh-nama">
@@ -781,28 +828,16 @@ Master Harga || lemon
                                     </div>
                                 </div>
                             @endif
+                            </section>
 
-                            @if ($destinasiAsing)
-                                <div class="mh-peringatan">
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                    <span>
-                                        <strong>{{ $destinasiKini }}</strong> tidak ada di daftar destinasi.
-                                        Karena namanya tidak cocok, harga tiket ini tidak akan ikut terbawa saat
-                                        tempat itu dimasukkan ke jadwal perjalanan. Pilih namanya dari daftar,
-                                        atau tambahkan destinasinya lebih dulu.
-                                    </span>
+                            <section class="mh-bagian">
+                                <div class="mh-bagian-kepala">
+                                    <span class="mh-bagian-ikon" style="--c: var(--dsb-awas)"><i class="bi bi-toggles"></i></span>
+                                    <div>
+                                        <h4 class="mh-bagian-judul">Kapan harga ini ikut ke RAB</h4>
+                                        <span class="mh-bagian-ket">Muncul sebagai pilihan saja, atau ikut masuk sendiri tanpa dipilih.</span>
+                                    </div>
                                 </div>
-                            @elseif ($this->tiketTanpaDestinasi())
-                                <div class="mh-peringatan">
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                    <span>
-                                        Tiket yang tidak diisi destinasinya tidak akan pernah ikut terbawa ke RAB,
-                                        karena sistem mencarinya lewat nama tempat di jadwal perjalanan. Pilih
-                                        destinasinya, atau tandai <strong>wajib</strong> supaya tetap masuk sendiri.
-                                    </span>
-                                </div>
-                            @endif
-
                             <div class="mh-sakelar">
                                 <label class="orcha-sakelar-kartu {{ $otomatis ? 'nyala' : '' }}">
                                     <span class="rupa"><i class="bi {{ $otomatis ? 'bi-magic' : 'bi-hand-index' }}"></i></span>
@@ -834,6 +869,7 @@ Master Harga || lemon
                                     </span>
                                 </label>
                             </div>
+                            </section>
 
                             {{-- Penolakan yang menuntut KEPUTUSAN tinggal di
                                  formulirnya, bukan lewat sebagai toast. Keputusan
@@ -864,10 +900,23 @@ Master Harga || lemon
                                 {{-- Hanya saat menambah: "lalu tambah lagi" pada
                                      formulir sunting tidak berarti apa-apa. --}}
                                 @unless ($sunting)
-                                    <label class="mh-lanjut" title="Formulirnya tetap terbuka, kategori & provinsinya dipertahankan">
-                                        <input type="checkbox" class="form-check-input mt-0" wire:model="lanjutTambah">
-                                        <span>Tambah lagi setelah simpan</span>
-                                    </label>
+                                    <div class="mh-kaki-kiri">
+                                        <label class="mh-lanjut" title="Formulirnya tetap terbuka, kategori & provinsinya dipertahankan">
+                                            <input type="checkbox" class="form-check-input mt-0" wire:model="lanjutTambah">
+                                            <span>Tambah lagi setelah simpan</span>
+                                        </label>
+
+                                        {{-- Sebaris dengan tombol lain. Berdiri sendiri di
+                                             barisnya, ia menyisakan hampir selebar kartu
+                                             menganggur di kanannya — dan tombol tunggal yang
+                                             menggantung terbaca seperti sisa, bukan seperti
+                                             jalan pintas yang setara. --}}
+                                        @if (! $tempelBuka)
+                                            <button type="button" wire:click="bukaTempel" class="dsb-tombol is-telaah">
+                                                <i class="bi bi-clipboard-plus"></i><span>Tempel banyak baris dari Excel</span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 @endunless
                                 <button type="button" wire:click="tutup" class="dsb-tombol is-lembut">
                                     <i class="bi bi-x-lg"></i><span>Batal</span>
@@ -889,12 +938,8 @@ Master Harga || lemon
                                  provinsi, dan vendornya — yang ditempel hanya yang
                                  berbeda tiap baris. --}}
                             @unless ($sunting)
-                                <div class="mh-tempel-bungkus">
-                                    @if (! $tempelBuka)
-                                        <button type="button" wire:click="bukaTempel" class="dsb-tombol is-telaah">
-                                            <i class="bi bi-clipboard-plus"></i><span>Tempel banyak baris dari Excel</span>
-                                        </button>
-                                    @else
+                                @if ($tempelBuka)
+                                    <div class="mh-tempel-bungkus">
                                         @php($terbaca = $this->barisTempel())
                                         <div class="mh-tempel">
                                             <div class="mh-tempel-kepala">
@@ -944,8 +989,8 @@ Master Harga || lemon
                                                 </button>
                                             </div>
                                         </div>
-                                    @endif
-                                </div>
+                                    </div>
+                                @endif
                             @endunless
                         </div>
                     </div>
@@ -1847,6 +1892,28 @@ Master Harga || lemon
            grid berkolom tetap, tiap kotak yang disembunyikan meninggalkan
            lubang; dengan flex-basis, kotak di baris terakhir melebar
            membagi habis lebarnya. */
+        /* Formulir dibagi BAGIAN BERJUDUL, pola yang sama dengan borang
+           Tambah Pesanan: ikon berwarna, judul, lalu satu kalimat biasa yang
+           menjelaskan isinya. Dua belas kotak tanpa judul terbaca sebagai
+           satu dinding — matanya tidak punya tempat berhenti, dan yang
+           membacanya tidak tahu kotak mana yang boleh dilewati. */
+        .mh-bagian {
+            display: block; padding: 16px clamp(14px, 2vw, 18px) 18px;
+            border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 16px;
+            background: #fdfdff;
+        }
+        .mh-bagian + .mh-bagian { margin-top: 14px; }
+        .mh-bagian-kepala { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 14px; }
+        .mh-bagian-ikon {
+            --c: var(--dsb-utama);
+            flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: #fff; background: var(--c);
+            box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--c) 70%, transparent);
+        }
+        .mh-bagian-judul { margin: 0; font-size: .92rem; font-weight: 800; color: var(--dsb-tinta, #1c1f26); }
+        .mh-bagian-ket { display: block; font-size: .78rem; line-height: 1.45; color: var(--dsb-redup, #6b7280); }
+
         .mh-medan-rak { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; }
         .mh-medan-rak > .dsb-medan { flex: 1 1 215px; min-width: 0; }
         /* Label setinggi isinya, TANPA min-height.
@@ -2208,8 +2275,16 @@ Master Harga || lemon
         .mh-kembar-teks { flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
         /* ===== Tambah lagi & tempel ===== */
+        /* Isi kiri berkelompok, bukan tiap benda mendorong sendiri.
+
+           Dulu margin-right:auto menempel di .mh-lanjut, jadi apa pun yang
+           ditambahkan sesudahnya ikut terlempar ke kanan bersama Batal &
+           Simpan — "Tempel dari Excel" berakhir menempel di tombol simpan,
+           seolah bagian dari aksi yang sama. */
+        .mh-kaki-kiri { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-right: auto; }
+
         .mh-lanjut {
-            display: inline-flex; align-items: center; gap: 7px; margin-right: auto;
+            display: inline-flex; align-items: center; gap: 7px;
             font-size: .82rem; font-weight: 600; color: var(--dsb-redup, #6b7280); cursor: pointer;
         }
         .mh-tempel-bungkus { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e5e9f0; }
