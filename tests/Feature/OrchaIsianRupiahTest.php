@@ -170,4 +170,49 @@ class OrchaIsianRupiahTest extends TestCase
             ['', 'Pakai wire:model.blur.'],
         )));
     }
+
+    public function test_cermin_harga_hari_kerja_ikut_saat_diketik(): void
+    {
+        /*
+         | Pasangan dari aturan blur di atas.
+         |
+         | Kotak Harga sengaja wire:model.blur, jadi angkanya baru sampai ke
+         | server saat kotaknya ditinggalkan. Akibatnya kotak "Hari kerja
+         | (Senin–Jumat)" diam di "—" sementara angkanya sudah diketik — dan
+         | yang membacanya menyangka harga hari kerjanya belum terbaca, lalu
+         | mengetiknya ulang di kotak yang salah.
+         |
+         | Jadi cerminnya dikerjakan peramban. Yang diperiksa di sini
+         | kontraknya: penandanya menunjuk id kotak Harga, dan penangannya
+         | memang ada di halaman yang sama.
+         */
+        $isi = file_get_contents(
+            resource_path('views/livewire/pages/admin/orcha/rab/master-harga.blade.php')
+        );
+
+        $this->assertStringContainsString('id="mh-harga"', $isi,
+            'Kotak Harga kehilangan id-nya — cerminnya tidak punya yang ditunjuk.');
+
+        $this->assertStringContainsString('data-cermin="mh-harga"', $isi,
+            'Kotak "Hari kerja" tidak lagi mencerminkan kotak Harga.');
+
+        $this->assertStringContainsString('[data-cermin="\' + sumber.id + \'"]', $isi,
+            'Penangan cerminnya hilang; penandanya jadi atribut yang tidak dibaca siapa pun.');
+    }
+
+    public function test_pemformat_rupiah_hanya_satu_dan_diekspor(): void
+    {
+        /*
+         | Cerminnya memakai pemformat yang SAMA dengan isian uangnya.
+         | Menyalin regexnya berarti dua pemformat untuk satu aturan, dan yang
+         | satu pasti tertinggal saat yang lain disentuh — lalu dua angka yang
+         | seharusnya kembar tampil berbeda di satu layar yang sama.
+         */
+        $skrip = file_get_contents(
+            resource_path('views/livewire/pages/admin/orcha/partials/skrip.blade.php')
+        );
+
+        $this->assertStringContainsString('window.orchaBertitik = bertitik;', $skrip,
+            'Pemformat rupiah tidak lagi diekspor; pemakainya akan menyalin regexnya sendiri.');
+    }
 }

@@ -430,7 +430,18 @@ Master Harga || lemon
                                         <div class="mh-dua-isi">
                                             <div class="mh-dua-kotak">
                                                 <span class="orcha-label-kecil">Hari kerja (Senin–Jumat)</span>
-                                                <div class="mh-dua-angka">{{ $isian['harga'] !== '' ? 'Rp '.$isian['harga'] : '—' }}</div>
+                                                {{-- Ikut berubah SAMBIL diketik, bukan menunggu
+                                                     kotak Harga ditinggalkan.
+
+                                                     Kotak Harga terikat wire:model.blur — dan itu
+                                                     disengaja: .live di isian rupiah membuat kursor
+                                                     melompat ke ujung tiap ketukan. Tapi akibatnya
+                                                     kotak ini diam di "—" sementara angkanya sudah
+                                                     diketik, dan yang membacanya menyangka harga
+                                                     hari kerjanya belum terbaca. Jadi cerminnya
+                                                     dikerjakan peramban; angkanya tetap milik
+                                                     server. --}}
+                                                <div class="mh-dua-angka" data-cermin="mh-harga">{{ $isian['harga'] !== '' ? 'Rp '.$isian['harga'] : '—' }}</div>
                                                 <span class="dsb-kartu-sub">dari kotak Harga di atas</span>
                                             </div>
 
@@ -2515,6 +2526,33 @@ Master Harga || lemon
             }
         }
     </style>
+
+    {{-- Cermin angka yang sedang diketik.
+
+         Dipasang sekali untuk seluruh halaman dan didelegasikan ke document,
+         jadi ia tetap hidup sesudah Livewire menggambar ulang blok ini —
+         listener yang dipasang ke elemennya langsung akan ikut hilang tiap
+         kali sakelarnya ditekan. --}}
+    @once
+        <script>
+            document.addEventListener('input', (e) => {
+                const sumber = e.target;
+                if (!sumber.id) return;
+
+                const cermin = document.querySelectorAll('[data-cermin="' + sumber.id + '"]');
+                if (!cermin.length) return;
+
+                const angka = (sumber.value || '').replace(/\D/g, '');
+                /* Pemformat yang sama dengan isian uangnya sendiri — lihat
+                   orcha/partials/skrip. Cadangan apa adanya kalau skripnya
+                   belum termuat: lebih baik angka tanpa titik daripada
+                   kotak yang diam. */
+                const rapi = window.orchaBertitik ? window.orchaBertitik(angka) : angka;
+
+                cermin.forEach((el) => { el.textContent = angka === '' ? '—' : 'Rp ' + rapi; });
+            });
+        </script>
+    @endonce
 
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

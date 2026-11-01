@@ -412,7 +412,15 @@
     if (!window.__orchaUangBound) {
         window.__orchaUangBound = true;
 
+        /* Diekspor supaya layar lain memakai pemformat yang SAMA.
+
+           Master Harga mencerminkan angka yang sedang diketik ke kotak
+           "Hari kerja"; menyalin regexnya ke sana berarti dua pemformat untuk
+           satu aturan, dan yang satu pasti tertinggal saat yang lain disentuh
+           — lalu dua angka yang seharusnya kembar tampil berbeda di satu
+           layar yang sama. */
         const bertitik = (angka) => angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        window.orchaBertitik = bertitik;
 
         document.addEventListener('input', (e) => {
             const el = e.target;
