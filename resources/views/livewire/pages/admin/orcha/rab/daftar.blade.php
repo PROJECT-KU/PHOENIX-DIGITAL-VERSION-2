@@ -34,10 +34,15 @@ RAB & Itinerary || lemon
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
-                <h1 class="dsb-judul">RAB &amp; Itinerary</h1>
+                {{-- Bentuknya mengikuti Pesanan Toko: sapaan besar, tanggal
+                     hari ini, lalu satu kalimat yang menjelaskan layarnya. --}}
+                <h1 class="dsb-salam">RAB &amp; Itinerary</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">Susun itinerary private trip, hitung anggarannya, kirim penawarannya.</span>
-                    <span class="d-block">Harga dirakit dari master harga — bukan diketik ulang tiap penawaran.</span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">
+                        Susun jadwal perjalanan, hitung anggarannya, lalu kirim penawarannya.
+                        Harganya dirakit dari Master Harga — tidak diketik ulang tiap penawaran.
+                    </span>
                 </p>
             </div>
 
@@ -53,47 +58,72 @@ RAB & Itinerary || lemon
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        {{-- ================== RINGKASAN ==================
+        {{-- ================== KARTU STATUS ==================
 
-             Angkanya sudah ada di tiap baris; yang belum ada cara
-             menjumlahkannya. "Berapa yang sudah dikirim tapi belum dijawab"
-             adalah pertanyaan harian. Semuanya bisa diklik — angka yang
-             menunjuk pekerjaan tetapi tidak membawa ke sana cuma menambah
-             beban. --}}
+             Bentuknya SAMA dengan tab di Pesanan Toko: ikon berwarna, angka
+             besar, label di bawahnya, dikelompokkan dengan judul kecil.
+             Definisi rupanya satu, di partials/kartu-tab-gaya.
+
+             Kartunya SARINGAN, bukan tab: menekan yang sedang menyala
+             melepaskannya kembali. Angka yang menunjuk pekerjaan tetapi
+             tidak membawa ke sana cuma menambah beban. --}}
+        @include('livewire.pages.admin.partials.kartu-tab-gaya')
+
         @if ($ringkas !== [])
             @php
-                $ubin = [
-                    ['kunci' => 'jumlah', 'label' => 'Penawaran', 'ket' => 'di seluruh daftar', 'warna' => 'var(--dsb-utama)'],
-                    ['kunci' => 'draf', 'label' => 'Masih draf', 'ket' => 'belum dikirim', 'warna' => 'var(--dsb-netral)'],
-                    ['kunci' => 'dikirim', 'label' => 'Sudah dikirim', 'ket' => 'menunggu jawaban', 'warna' => 'var(--dsb-telaah)'],
-                    ['kunci' => 'disetujui', 'label' => 'Disetujui', 'ket' => 'jadi berangkat', 'warna' => 'var(--dsb-aman)'],
-                    ['kunci' => 'kedaluwarsa', 'label' => 'Lewat masa berlaku', 'ket' => 'masih menunggu jawaban', 'warna' => 'var(--dsb-awas)'],
+                $angka = fn ($k) => (int) ($ringkas[$k] ?? 0);
+
+                $kartu = [
+                    'jumlah' => ['Semua penawaran', 'bi-journals', 'var(--dsb-utama)', $angka('jumlah'), false],
+                    'draf' => ['Masih draf', 'bi-pencil-square', 'var(--dsb-netral)', $angka('draf'), true],
+                    'dikirim' => ['Sudah dikirim', 'bi-send', 'var(--dsb-telaah)', $angka('dikirim'), true],
+                    'disetujui' => ['Disetujui', 'bi-check2-circle', 'var(--dsb-aman)', $angka('disetujui'), true],
+                    'kedaluwarsa' => ['Lewat masa berlaku', 'bi-alarm-fill', 'var(--dsb-awas)', $angka('kedaluwarsa'), true],
+                ];
+
+                $grupKartu = [
+                    ['Sedang berjalan', 'Penawaran yang masih dikerjakan', ['jumlah', 'draf', 'dikirim']],
+                    ['Perlu ditindaklanjuti', 'Yang menunggu jawaban atau keputusan', ['disetujui', 'kedaluwarsa']],
                 ];
             @endphp
 
             <section class="dsb-bagian">
-                <div class="rb-ubin-rak">
-                    @foreach ($ubin as $u)
-                        @php
-                            $nilai = (int) ($ringkas[$u['kunci']] ?? 0);
-                            $bisaDiklik = $u['kunci'] !== 'jumlah';
-                            $terpasang = $bisaDiklik && $this->ubinNyala($u['kunci']);
-                        @endphp
-                        {{-- Keputusan saringannya dirakit di komponen, bukan di
-                             dalam atribut wire: — isi atribut bukan kode PHP. --}}
-                        <button type="button" class="rb-ubin {{ $terpasang ? 'is-nyala' : '' }} {{ $bisaDiklik ? '' : 'is-diam' }}"
-                            style="--c: {{ $u['warna'] }}"
-                            @if ($bisaDiklik)
-                                wire:click="pasangUbin('{{ $u['kunci'] }}')"
-                                title="{{ $terpasang ? 'Lepas saringannya' : 'Lihat yang '.strtolower($u['label']) }}"
-                            @else
-                                disabled
-                            @endif>
-                            <span class="rb-ubin-label">{{ $u['label'] }}</span>
-                            <span class="rb-ubin-nilai">{{ number_format($nilai, 0, ',', '.') }}</span>
-                            <span class="rb-ubin-ket">{{ $u['ket'] }}</span>
-                        </button>
-                    @endforeach
+                <div class="dsb-rak">
+                    <div class="k-12">
+                        <div class="pt-grup-deret rb-kartu-status" style="--grup-kolom: minmax(0, 3fr) minmax(0, 2fr)">
+                            @foreach ($grupKartu as [$judulGrup, $ketGrup, $kunciGrup])
+                                <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                    <div class="pt-grup-kepala">
+                                        <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                        <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                    </div>
+                                    <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}">
+                                        @foreach ($kunciGrup as $kunci)
+                                            @php
+                                                [$label, $ikon, $warna, $nilai, $bisaDiklik] = $kartu[$kunci];
+                                                $nyala = $bisaDiklik && $this->ubinNyala($kunci);
+                                            @endphp
+                                            <button type="button" style="--c: {{ $warna }}"
+                                                class="pt-kartu-tab {{ $nyala ? 'is-aktif' : '' }} {{ $nilai ? '' : 'is-nol' }} {{ $bisaDiklik ? '' : 'rb-kartu-diam' }}"
+                                                aria-pressed="{{ $nyala ? 'true' : 'false' }}"
+                                                @if ($bisaDiklik)
+                                                    wire:click="pasangUbin('{{ $kunci }}')"
+                                                    title="{{ $nyala ? 'Lepas saringannya' : 'Lihat yang '.mb_strtolower($label) }}"
+                                                @else
+                                                    disabled title="Seluruh penawaran yang tersimpan"
+                                                @endif>
+                                                <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                                <span class="pt-kartu-teks">
+                                                    <span class="pt-kartu-angka">{{ number_format($nilai, 0, ',', '.') }}</span>
+                                                    <span class="pt-kartu-label">{{ $label }}</span>
+                                                </span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </nav>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             </section>
         @endif
@@ -103,13 +133,43 @@ RAB & Itinerary || lemon
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi">
-                        <div class="rb-saring">
+                        {{-- Cari dulu, sisanya dilipat — pola yang sama dengan
+                             Pesanan Toko. Empat kotak saringan berjajar membuat
+                             baris pertamanya penuh benda yang jarang disentuh,
+                             dan daftarnya terdorong jauh ke bawah layar. --}}
+                        <div x-data="{ buka: {{ $this->jumlahSaringLanjut() ? 'true' : 'false' }} }">
+                        <div class="rb-saring rb-saring-utama">
                             <div class="rb-medan-cari">
                                 @include('livewire.pages.admin.orcha.partials.cari', [
                                     'petunjuk' => 'Cari kode, pelanggan, judul, atau WhatsApp…',
+                                    'rupa' => 'dsb',
                                 ])
                             </div>
 
+                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
+                                <i class="bi bi-plus-lg"></i><span>RAB Baru</span>
+                            </button>
+
+                            <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka" :aria-expanded="buka">
+                                <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
+                                @if ($this->jumlahSaringLanjut())
+                                    <span class="pt-tab-jumlah is-isi">{{ $this->jumlahSaringLanjut() }}</span>
+                                @endif
+                                <i class="bi bi-chevron-down rb-lanjutan-panah" :class="buka && 'is-buka'"></i>
+                            </button>
+
+                            @if ($adaSaringan)
+                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas"
+                                    title="Kembali menampilkan seluruh RAB">
+                                    <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        {{-- Terbuka sendiri bila ada saringan yang aktif: saringan
+                             yang bekerja tetapi tersembunyi membuat daftar yang
+                             "kurang" terlihat seperti data hilang. --}}
+                        <div class="rb-saring rb-saring-lanjut" x-show="buka" x-cloak>
                             <select class="dsb-isian rb-pilih" wire:model.live="filterStatus" aria-label="Saring menurut status">
                                 <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
                                 @foreach ($status as $kunci => $label)
@@ -137,17 +197,8 @@ RAB & Itinerary || lemon
                                 <option value="lama" @selected((string) $this->urut === 'lama')>Paling lama</option>
                             </select>
 
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama rb-baru">
-                                <i class="bi bi-plus-lg"></i><span>RAB Baru</span>
-                            </button>
-
-                            @if ($adaSaringan)
-                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut"
-                                    style="--ikon: #b45309" title="Kembali menampilkan seluruh RAB">
-                                    <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
-                                </button>
-                            @endif
-                        </div>
+                        </div>{{-- /.rb-saring-lanjut --}}
+                        </div>{{-- /x-data --}}
                     </div>
                 </div>
             </div>
@@ -519,10 +570,15 @@ RAB & Itinerary || lemon
                             <table class="dsb-tabel rb-tabel">
                                 <thead>
                                     <tr>
+                                        {{-- Ikon status memimpin sel pertama (pola Pesanan
+                                             Toko), jadi kolom Status tidak lagi menanggung
+                                             sendirian. Yang paling bisa dilepas di layar
+                                             sempit: Berangkat ke dan Untung — keduanya
+                                             punya salinan di baris lencana. --}}
                                         <th>Perjalanan</th>
-                                        <th>Tujuan</th>
+                                        <th class="k-lebar">Berangkat ke</th>
                                         <th class="text-end">Harga</th>
-                                        <th class="text-end">Untung</th>
+                                        <th class="k-sedang text-end">Untung</th>
                                         <th>Status</th>
                                         <th class="text-end">Aksi</th>
                                     </tr>
@@ -538,16 +594,33 @@ RAB & Itinerary || lemon
                                         @endphp
                                         <tr wire:key="rab-{{ $baris['id'] }}">
                                             <td data-judul="Perjalanan">
-                                                <span class="rb-utama">
-                                                    <a href="{{ route('admin.orcha.rab.susun', $baris['id']) }}" wire:navigate
-                                                        class="dsb-tabel-judul rb-tautan">{{ $baris['judul'] }}</a>
-                                                    <span class="dsb-tabel-meta">
-                                                        <span class="orcha-kode">{{ $baris['kode'] }}</span>
-                                                        {{ $baris['nama_pelanggan'] }} · {{ $baris['jumlah_peserta'] }} orang
+                                                <span class="dsb-tabel-utama">
+                                                    <span class="dsb-ikon is-kecil" style="--c: {{ $warna }}">
+                                                        <i class="bi {{ $ikon }}"></i>
+                                                    </span>
+                                                    <span class="dsb-tabel-teks">
+                                                        <a href="{{ route('admin.orcha.rab.susun', $baris['id']) }}" wire:navigate
+                                                            class="dsb-tabel-judul rb-tautan">{{ $baris['judul'] }}</a>
+
+                                                        <span class="dsb-tabel-meta">
+                                                            <span class="orcha-kode">{{ $baris['kode'] }}</span>
+                                                            <span>{{ $baris['nama_pelanggan'] }}</span>
+                                                            <span>{{ $baris['jumlah_peserta'] }} orang</span>
+
+                                                            {{-- Salinan kolom yang disembunyikan di layar
+                                                                 sempit — tanpa ini tujuan & untungnya
+                                                                 hilang sama sekali, bukan cuma pindah. --}}
+                                                            <span class="dsb-tabel-samar">
+                                                                <i class="bi bi-geo-alt"></i>{{ $baris['daerah'] ?: $baris['provinsi'] }}
+                                                            </span>
+                                                            <span class="dsb-tabel-samar">
+                                                                <i class="bi bi-graph-up-arrow"></i>{{ $baris['untung_teks'] }}
+                                                            </span>
+                                                        </span>
                                                     </span>
                                                 </span>
                                             </td>
-                                            <td data-judul="Tujuan">
+                                            <td class="k-lebar" data-judul="Berangkat ke">
                                                 <span class="rb-utama">
                                                     <span>{{ $baris['daerah'] ?: $baris['provinsi'] }}</span>
                                                     <span class="dsb-tabel-meta">{{ $tanggal }} · {{ $baris['jumlah_hari'] }}H{{ $baris['jumlah_malam'] }}M</span>
@@ -567,7 +640,7 @@ RAB & Itinerary || lemon
                                                     </span>
                                                 </span>
                                             </td>
-                                            <td data-judul="Untung" class="text-end">
+                                            <td data-judul="Untung" class="k-sedang text-end">
                                                 <span class="rb-utama is-kanan">
                                                     {{-- Warnanya ikut tipisnya margin. Selalu hijau
                                                          membuat penawaran yang merugi pun tergambar
@@ -672,6 +745,11 @@ RAB & Itinerary || lemon
         /* Saringan: satu baris di layar lebar, melipat sendiri saat sempit. */
         .rb-saring { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .rb-saring > .rb-medan-cari { flex: 1 1 260px; min-width: 0; }
+        /* Baris utama: lebar dasarnya dikecilkan supaya cari + tiga tombol
+           muat sebaris, bukan menyisakan separuh baris menganggur di kanan.
+           Angkanya sama dengan Master Harga, yang kartunya menyempit sampai
+           756px pada layar 1200px. */
+        .rb-saring-utama > .rb-medan-cari { flex: 1 1 200px; }
         .rb-saring > .rb-pilih { flex: 0 1 auto; width: auto; min-width: 160px; max-width: 220px; }
         .rb-saring .dsb-tombol { flex: 0 0 auto; }
 
@@ -749,22 +827,94 @@ RAB & Itinerary || lemon
         .rb-untung.is-netral { color: var(--dsb-redup, #6b7280); }
 
         /* ===== Ringkasan ===== */
-        .rb-ubin-rak { display: flex; flex-wrap: wrap; gap: 12px; }
-        .rb-ubin {
-            flex: 1 1 170px; min-width: 0; display: flex; flex-direction: column; gap: 2px;
-            padding: 13px 15px; text-align: left; cursor: pointer;
-            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 15px;
-            border-top: 3px solid var(--c);
-            box-shadow: 0 10px 24px -20px rgba(15, 23, 42, .5);
-            transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+        /* Label BOLEH melipat di layar ini: bawaannya nowrap, dan itu ukuran
+           kata bahasa Inggris. "Lewat masa berlaku" tidak muat, dan ia
+           terpotong di tengah kata tanpa ada yang terlihat salah. */
+        .rb-kartu-status .pt-kartu-label { white-space: normal; }
+        .rb-kartu-status .pt-kartu-tab { min-height: 118px; }
+
+        /* Kartu "Semua penawaran" bukan saringan, cuma jumlah seluruhnya —
+           dibuat tidak terlihat bisa ditekan supaya tidak ada yang menunggu
+           sesuatu terjadi. */
+        .rb-kartu-diam { cursor: default; }
+        .rb-kartu-diam .pt-kartu-ikon { background: #f1f5f9; color: #94a3b8; }
+
+        /* Lebar kolom DIPATOK, dan table-layout: fixed supaya dipatuhi.
+
+           Dengan layout auto, width cuma saran: peramban membaginya menurut
+           isi terpanjang, dan yang menang kolom yang isinya tidak bisa
+           melipat — empat tombol aksi dan lencana status. Diukur: kolom
+           Perjalanan cuma 20,8% sementara Aksi 21,4%, padahal di sanalah
+           nama, kode, pelanggan, dan jumlah pesertanya harus muat.
+
+           Angkanya berjumlah 100% dan diturunkan dari isi sebenarnya: aksi
+           butuh 154px pada tabel 1038px. */
+        .rb-tabel { table-layout: fixed; }
+        .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 27%; }
+        .rb-tabel th:nth-child(2), .rb-tabel td:nth-child(2) { width: 14%; }
+        .rb-tabel th:nth-child(3), .rb-tabel td:nth-child(3) { width: 13%; }
+        .rb-tabel th:nth-child(4), .rb-tabel td:nth-child(4) { width: 11%; }
+        .rb-tabel th:nth-child(5), .rb-tabel td:nth-child(5) { width: 16%; }
+        .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 19%; }
+
+        /* Tombol aksi dirapatkan DI SEMUA LEBAR, bukan cuma di layar kecil.
+
+           Diukur: jumlah kebutuhan minimum keenam kolom 1075px pada tabel
+           1038px — tiga puluh tujuh piksel lebih panjang daripada tempatnya.
+           Baris yang statusnya "dikirim" punya LIMA tombol, dan lima tombol
+           34px butuh 222px; dirapatkan jadi 30px, cukup 194px. Selisihnya
+           persis yang kurang. */
+        .rb-tabel .dsb-tabel-aksi { gap: 4px; }
+        .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 30px; height: 30px; }
+
+        /* Yang BOLEH melipat di dalam selnya.
+
+           Dengan lebar yang dipatok, isi ber-nowrap meluber keluar sel dan
+           menindih tetangganya tanpa satu pun tanda bahwa ada yang salah:
+           dua lencana status berdampingan butuh 159px di kolom 138px, dan
+           "Rp 558.000/org · NEGO" butuh 168px di kolom 156px. */
+        .rb-tabel .rb-utama .dsb-tabel-meta,
+        /* Lencana statusnya juga. "Dikirim ke pelanggan" adalah KALIMAT,
+           bukan kata: 159px sendirian, lebih lebar daripada kolom mana pun
+           yang masuk akal diberikan kepadanya. Hanya di tabel ini — lencana
+           di tempat lain memang pendek dan nowrap-nya menolong. */
+        .rb-tabel .rb-status-rak .dsb-lencana { white-space: normal; }
+
+        /* Lebar yang ditinggalkan kolom tersembunyi diberikan ke sel jati
+           diri, bukan dibagi rata: di sanalah isinya paling banyak. */
+        /* Di laptop kecil tombolnya dikecilkan lagi, dan kolom Aksi justru
+           DILEBARKAN. Lima tombol tetap lima tombol betapa pun sempit
+           layarnya; yang bisa mengalah kolom lain, bukan tombol yang hilang
+           di balik tepi kartu. */
+        @media (max-width: 1399.98px) {
+            .rb-tabel .dsb-tabel-aksi { gap: 3px; }
+            .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 28px; height: 28px; }
+            .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 24%; }
+            /* Nama daerah sering SATU KATA yang panjang — "Banyuwangi" 87px —
+               dan satu kata tidak bisa dipatahkan tanpa memotongnya di tengah.
+               Jadi kolomnya yang diberi ruang, bukan katanya yang dipotong. */
+            .rb-tabel th:nth-child(2), .rb-tabel td:nth-child(2) { width: 15%; }
+            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 21%; }
         }
-        .rb-ubin:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 30px -22px rgba(15, 23, 42, .55); }
-        .rb-ubin.is-diam { cursor: default; background: #fbfcfe; box-shadow: none; }
-        .rb-ubin.is-diam:hover { transform: none; box-shadow: none; }
-        .rb-ubin.is-nyala { background: color-mix(in srgb, var(--c) 9%, #fff); border-color: color-mix(in srgb, var(--c) 32%, #fff); }
-        .rb-ubin-label { font-size: .74rem; font-weight: 700; color: var(--dsb-redup, #6b7280); letter-spacing: .02em; }
-        .rb-ubin-nilai { font-size: 1.5rem; font-weight: 800; color: var(--c); line-height: 1.1; }
-        .rb-ubin-ket { font-size: .72rem; color: var(--dsb-redup, #6b7280); }
+
+        /* Berangkat ke tersembunyi: lebarnya dibagi antara sel jati diri dan
+           kolom aksi, bukan diberikan semuanya ke salah satunya. */
+        @media (max-width: 1199.98px) {
+            .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 35%; }
+            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 24%; }
+        }
+        @media (max-width: 991.98px) {
+            .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 44%; }
+            .rb-tabel th:nth-child(5), .rb-tabel td:nth-child(5) { width: 18%; }
+        }
+
+        /* Saringan yang dilipat, pola yang sama dengan Master Harga. */
+        .rb-lanjutan-panah { transition: transform .15s ease; }
+        .rb-lanjutan-panah.is-buka { transform: rotate(180deg); }
+        .rb-saring-lanjut {
+            margin-top: 12px; padding-top: 12px;
+            border-top: 1px dashed var(--dsb-tepi, #e9edf3);
+        }
 
         /* ===== Salin & versi ===== */
         .rb-salin { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; }

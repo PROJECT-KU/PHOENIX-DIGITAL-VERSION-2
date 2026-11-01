@@ -313,9 +313,26 @@ class OrchaRabList extends Component
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterStatus !== ''
-            || $this->filterProvinsi !== '' || $this->filterJenis !== ''
-            || $this->filterKedaluwarsa;
+        return $this->cari !== '' || $this->jumlahSaringLanjut() > 0;
+    }
+
+    /**
+     * Berapa saringan di balik tombol "Saringan lainnya" yang sedang aktif.
+     *
+     * Kotak cari TIDAK dihitung: ia tetap terlihat, jadi tidak ada yang
+     * perlu diberitahukan tentangnya. Yang dihitung hanya yang tersembunyi —
+     * saringan yang bekerja tanpa terlihat membuat daftar yang "kurang"
+     * terbaca sebagai data hilang, dan angka di tombol itulah yang
+     * menjelaskan ke mana sisanya pergi.
+     *
+     * Urutan tidak dihitung: ia menata, bukan membuang baris.
+     */
+    public function jumlahSaringLanjut(): int
+    {
+        return count(array_filter([
+            $this->filterStatus, $this->filterProvinsi, $this->filterJenis,
+            $this->filterKedaluwarsa ? '1' : '',
+        ], fn ($n) => (string) $n !== ''));
     }
 
     /**
