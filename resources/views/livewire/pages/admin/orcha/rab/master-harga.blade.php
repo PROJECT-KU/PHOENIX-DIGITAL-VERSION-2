@@ -329,6 +329,59 @@ Master Harga || lemon
                                     @error('isian.harga')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 </div>
 
+                                {{-- Harga akhir pekan: saklar, bukan kotak yang
+                                     selalu hadir. Sebagian besar harga sama
+                                     setiap hari, dan kotak kedua yang ada untuk
+                                     tidak diisi tetap menuntut dibaca lebih
+                                     dulu di setiap formulir. --}}
+                                <div class="dsb-medan is-lebar">
+                                    <label class="mh-dua-saklar">
+                                        <input type="checkbox" wire:model.live="duaHarga">
+                                        <span>
+                                            <strong>Akhir pekan &amp; hari libur lebih mahal</strong>
+                                            <span class="dsb-kartu-sub">
+                                                Mis. Baluran: hari kerja Rp 21.000, akhir pekan Rp 31.000.
+                                            </span>
+                                        </span>
+                                    </label>
+
+                                    @if ($duaHarga)
+                                        <div class="mh-dua-isi">
+                                            <div class="mh-dua-kotak">
+                                                <span class="orcha-label-kecil">Hari kerja (Senin–Jumat)</span>
+                                                <div class="mh-dua-angka">{{ $isian['harga'] !== '' ? 'Rp '.$isian['harga'] : '—' }}</div>
+                                                <span class="dsb-kartu-sub">dari kotak Harga di atas</span>
+                                            </div>
+
+                                            <div class="mh-dua-kotak">
+                                                <label class="orcha-label-kecil" for="mh-harga-akhir-pekan">
+                                                    Akhir pekan &amp; hari libur <span class="dsb-wajib">*</span>
+                                                </label>
+                                                <div class="orcha-rupiah">
+                                                    <input id="mh-harga-akhir-pekan" type="text" inputmode="numeric"
+                                                        wire:model.blur="isian.harga_akhir_pekan"
+                                                        class="orcha-uang dsb-isian @error('isian.harga_akhir_pekan') is-galat @enderror"
+                                                        placeholder="31.000">
+                                                </div>
+                                                @error('isian.harga_akhir_pekan')
+                                                    <span class="dsb-galat">{{ $message }}</span>
+                                                @enderror
+                                            </div>
+                                        </div>
+
+                                        {{-- Yang dihitung akhir pekan disebut, supaya
+                                             tidak ada yang mengira tanggal merah ikut
+                                             terbaca sendiri. --}}
+                                        <span class="dsb-kartu-sub mh-dua-ket">
+                                            Sabtu &amp; Minggu terbaca sendiri dari tanggalnya.
+                                            Tanggal merah lain — 17 Agustus, Idul Fitri, cuti bersama —
+                                            harus didaftarkan di
+                                            <a href="{{ route('admin.orcha.hari-libur') }}">Hari Libur</a>,
+                                            kalau tidak tanggal itu dihargai tarif hari kerja.
+                                        </span>
+                                    @endif
+                                </div>
+
                                 {{-- Kapasitas hanya untuk satuan yang menghitung unit.
                                      Sebelumnya kotaknya selalu ada dengan petunjuk
                                      "Tidak perlu" — kotak yang hadir untuk tidak
@@ -1059,12 +1112,27 @@ Master Harga || lemon
                                             <span class="mh-jejak-tanggal">{{ $r['pada_teks'] }}</span>
                                             <button type="button" wire:click="bukaRiwayat({{ $r['harga_id'] }})"
                                                 class="mh-jejak-nama">{{ $r['harga_nama'] ?: 'harga yang sudah dihapus' }}</button>
-                                            <span class="mh-jejak-angka">
-                                                {{ $r['harga_lama'] }} &rarr; <strong>{{ $r['harga_baru'] }}</strong>
-                                            </span>
-                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
-                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
-                                            </span>
+                                            {{-- Perubahan yang HANYA menyentuh harga akhir pekan
+                                                 menyisakan selisih nol di kolom hari kerja. Ditulis
+                                                 apa adanya, ia terbaca "−Rp 0, turun" — perubahan
+                                                 yang seolah tidak terjadi, padahal itulah yang
+                                                 dicari orang saat membuka riwayat. --}}
+                                            @if ($r['harga_berubah'] ?? true)
+                                                <span class="mh-jejak-angka">
+                                                    {{ $r['harga_lama'] }} &rarr; <strong>{{ $r['harga_baru'] }}</strong>
+                                                </span>
+                                                <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
+                                                    <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
+                                                </span>
+                                            @endif
+
+                                            @if (! empty($r['akhir_pekan']))
+                                                <span class="mh-jejak-angka mh-jejak-pekan">
+                                                    akhir pekan
+                                                    {{ $r['akhir_pekan']['lama'] ?: '—' }} &rarr;
+                                                    <strong>{{ $r['akhir_pekan']['baru'] ?: 'dihapus' }}</strong>
+                                                </span>
+                                            @endif
                                             @if ($r['oleh'])<span class="mh-jejak-oleh">oleh {{ $r['oleh'] }}</span>@endif
                                         </li>
                                     @endforeach
@@ -1132,15 +1200,40 @@ Master Harga || lemon
                                                         <span class="dsb-tabel-meta mh-diubah">{{ $r['pada_teks'] }}</span>
                                                     </span>
                                                 </td>
-                                                <td data-judul="Dari"><span class="mh-riwayat-lama">{{ $r['harga_lama'] }}</span></td>
-                                                <td data-judul="Jadi"><span class="dsb-tabel-judul">{{ $r['harga_baru'] }}</span></td>
+                                                <td data-judul="Dari">
+                                                    <span class="mh-utama">
+                                                        <span class="mh-riwayat-lama">{{ $r['harga_lama'] }}</span>
+                                                        @if (! empty($r['akhir_pekan']))
+                                                            <span class="dsb-tabel-meta mh-satuan">
+                                                                akhir pekan {{ $r['akhir_pekan']['lama'] ?: '—' }}
+                                                            </span>
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Jadi">
+                                                    <span class="mh-utama">
+                                                        <span class="dsb-tabel-judul">{{ $r['harga_baru'] }}</span>
+                                                        @if (! empty($r['akhir_pekan']))
+                                                            <span class="dsb-tabel-meta mh-satuan">
+                                                                akhir pekan {{ $r['akhir_pekan']['baru'] ?: 'dihapus' }}
+                                                            </span>
+                                                        @endif
+                                                    </span>
+                                                </td>
                                                 <td data-judul="Selisih" class="text-end">
                                                     <span class="mh-utama is-kanan">
-                                                        <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
-                                                            <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
-                                                        </span>
-                                                        @if ($r['persen'] !== null)
-                                                            <span class="dsb-tabel-meta mh-satuan">{{ $r['naik'] ? '+' : '' }}{{ $r['persen'] }}%</span>
+                                                        {{-- Lihat alasannya di jejak ringkas di atas:
+                                                             "−Rp 0" untuk perubahan yang nyata hanya
+                                                             membuat riwayatnya tidak dipercaya. --}}
+                                                        @if ($r['harga_berubah'] ?? true)
+                                                            <span class="mh-selisih {{ $r['naik'] ? 'is-naik' : 'is-turun' }}">
+                                                                <i class="bi {{ $r['naik'] ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>{{ $r['selisih'] }}
+                                                            </span>
+                                                            @if ($r['persen'] !== null)
+                                                                <span class="dsb-tabel-meta mh-satuan">{{ $r['naik'] ? '+' : '' }}{{ $r['persen'] }}%</span>
+                                                            @endif
+                                                        @else
+                                                            <span class="dsb-tabel-meta mh-satuan">hanya akhir pekan</span>
                                                         @endif
                                                     </span>
                                                 </td>
@@ -1557,6 +1650,16 @@ Master Harga || lemon
                                             <td data-judul="Harga" class="text-end">
                                                 <span class="mh-utama is-kanan">
                                                     <span class="dsb-tabel-judul dsb-tabel-angka">{{ $baris['harga_teks'] }}</span>
+                                                    {{-- Harga akhir pekan di baris kedua sel yang
+                                                         sama, bukan kolom sendiri: kolom yang kosong
+                                                         di sembilan dari sepuluh baris memakan lebar
+                                                         yang dibutuhkan nama dan vendor. --}}
+                                                    @if (! empty($baris['dua_harga']))
+                                                        <span class="mh-akhir-pekan"
+                                                            title="Tarif ini dipakai pada Sabtu, Minggu, dan tanggal yang terdaftar di Hari Libur">
+                                                            <i class="bi bi-calendar-event"></i>{{ $baris['harga_akhir_pekan_teks'] }} akhir pekan
+                                                        </span>
+                                                    @endif
                                                     <span class="dsb-tabel-meta mh-satuan">{{ $baris['satuan_label'] }}</span>
                                                     @if ($baris['kapasitas'])
                                                         <span class="dsb-tabel-meta mh-satuan">kapasitas {{ $baris['kapasitas'] }}</span>
@@ -1740,6 +1843,54 @@ Master Harga || lemon
             background: #f1f5f9; color: var(--dsb-redup, #6b7280); font-size: .7rem; font-weight: 700;
         }
         .mh-muat-chip.is-aktif .mh-muat-kursi { background: #e0e7ff; color: #4338ca; }
+
+        /* Dua harga: saklar dulu, kotaknya menyusul.
+
+           Dua kotak berdampingan dengan label penuh ("Hari kerja" /
+           "Akhir pekan & hari libur") supaya tidak ada yang perlu diingat —
+           satu kotak berlabel "Harga 2" adalah angka yang suatu hari diisi
+           di kolom yang salah. Hari kerjanya hanya DITAMPILKAN di sini,
+           bukan kotak kedua yang bisa berbeda dari kotak Harga di atas. */
+        .mh-dua-saklar {
+            display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
+            margin: 0;
+        }
+        .mh-dua-saklar input { margin-top: 3px; flex: 0 0 auto; }
+        .mh-dua-saklar > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .mh-dua-saklar strong { font-size: .83rem; font-weight: 700; }
+        .mh-dua-isi {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+        }
+        .mh-dua-kotak {
+            flex: 1 1 190px; min-width: 0;
+            display: flex; flex-direction: column; gap: 5px;
+            padding: 11px 12px 12px; border-radius: 12px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
+        /* Yang bisa diketik dibedakan dari yang cuma ditampilkan — kalau
+           tidak, kotak hari kerja terbaca seperti kotak yang macet. */
+        .mh-dua-kotak:last-child { background: #fffbeb; border-color: #fde68a; }
+        .mh-dua-angka {
+            font-size: .95rem; font-weight: 700; font-variant-numeric: tabular-nums;
+            color: var(--dsb-tinta, #1c1f26);
+        }
+        .mh-dua-ket { display: block; margin-top: 8px; }
+
+        /* Harga akhir pekan di daftar: pil, bukan angka kedua yang telanjang.
+           Dua angka bertumpuk tanpa penanda terbaca sebagai "harga lama &
+           harga baru", dan yang dipakai orang selalu yang atas. */
+        .mh-jejak-pekan {
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+            padding: 0 7px 1px; border-radius: 999px;
+        }
+        .mh-akhir-pekan {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 1px 7px 2px; border-radius: 999px; margin-top: 2px;
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+            font-size: .7rem; font-weight: 700; white-space: nowrap;
+            font-variant-numeric: tabular-nums; cursor: help;
+        }
+        .mh-dua-ket a { font-weight: 600; }
 
         /* Destinasi baru: satu blok selebar rak, bukan kotak terjepit.
 

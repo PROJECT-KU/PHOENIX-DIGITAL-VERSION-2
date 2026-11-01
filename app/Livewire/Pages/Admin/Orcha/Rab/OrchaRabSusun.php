@@ -741,7 +741,27 @@ class OrchaRabSusun extends Component
             return;
         }
 
-        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Biaya ditarik.');
+        $pesan = $balasan['pesan'] ?? 'Biaya ditarik.';
+
+        /*
+         | Baris yang harinya CAMPURAN disebut namanya.
+         |
+         | Perjalanan Jumat–Minggu yang menyewa bus per hari membayar satu
+         | hari tarif biasa dan dua hari tarif akhir pekan — tidak ada satu
+         | angka pun yang benar untuk baris tunggal. Orcha sengaja tidak
+         | memilih salah satunya diam-diam; keputusannya milik admin, dan
+         | jalan keluarnya (gandakan barisnya) ikut disebut, karena saran
+         | tanpa jalan keluar cuma membuat orang bingung lebih lama.
+         */
+        $campuran = $balasan['harga_campuran'] ?? [];
+
+        if ($campuran !== []) {
+            $pesan .= ' Perjalanan ini melewati hari kerja dan akhir pekan sekaligus, jadi '
+                .implode(', ', $campuran).' terpasang satu tarif saja. '
+                .'Gandakan barisnya kalau tarifnya memang berbeda per hari.';
+        }
+
+        $this->dispatch('order-updated', message: $pesan);
     }
 
     /**
@@ -817,9 +837,22 @@ class OrchaRabSusun extends Component
         ];
     }
 
+    /**
+     * Satuan yang kapasitasnya WAJIB diisi.
+     *
+     * Daftarnya datang dari kosakata Orcha, bukan ditulis ulang di sini:
+     * satuan berkapasitas yang kelak ditambahkan di config Orcha tidak akan
+     * terbaca kalau aturannya ikut dikunci di lemon — dan 40 peserta akan
+     * dihitung naik SATU kendaraan tanpa satu pun tanda.
+     */
+    public function satuanBerkapasitas(): array
+    {
+        return $this->katalog['kosakata']['satuan_berkapasitas'] ?? ['unit', 'unit_hari', 'kamar_malam'];
+    }
+
     public function tambahManual(): void
     {
-        $berkapasitas = in_array($this->manual['satuan'], ['unit_hari', 'kamar_malam'], true);
+        $berkapasitas = in_array($this->manual['satuan'], $this->satuanBerkapasitas(), true);
 
         $this->validate([
             'manual.nama' => 'required|string|max:150',

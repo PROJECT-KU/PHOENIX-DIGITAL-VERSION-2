@@ -520,6 +520,13 @@ new class extends Component
                                 // karena sama-sama mengurus angka jualan.
                                 ['admin.orcha.rab', 'bi-calculator', 'RAB & Itinerary'],
                                 ['admin.orcha.master-harga', 'bi-tags', 'Master Harga'],
+                                // Tepat di bawah Master Harga karena tidak
+                                // berguna tanpanya: daftar tanggal merah ini
+                                // hanya memilih antara dua harga yang diisi
+                                // di sana. Dipasang di menu, bukan disembunyikan
+                                // di dalam formulir harga — yang diisi sekali
+                                // setahun tidak akan pernah ditemukan lagi.
+                                ['admin.orcha.hari-libur', 'bi-calendar3', 'Hari Libur'],
                                 // Vendor tepat di bawah Master Harga: nomor
                                 // yang disimpan di sana yang muncul di tiap
                                 // baris harga dan di rincian biaya RAB.

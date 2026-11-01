@@ -60,6 +60,21 @@ class OrchaMasterHargaList extends Component
      | lebih penting — ia mengatakan angka itu artinya apa.
      */
     private const PILIHAN_KAPASITAS = [
+        /*
+         | Satuan 'unit' dan 'unit_hari' memakai pilihan yang SAMA.
+         |
+         | Bedanya cuma dikali hari atau tidak — tiket masuk kendaraan
+         | dibayar sekali di gerbang, sewa armada tiap hari. Yang diisi di
+         | kotak kapasitas tetap muatan satu kendaraan, dan kendaraannya
+         | kendaraan yang sama.
+         */
+        'unit' => [
+            ['Mobil pribadi', 6],
+            ['Hiace', 14],
+            ['Elf long', 19],
+            ['Bus sedang', 31],
+            ['Bus besar', 59],
+        ],
         'unit_hari' => [
             ['Mobil pribadi', 6],
             ['Hiace', 14],
@@ -216,6 +231,36 @@ class OrchaMasterHargaList extends Component
      */
     public bool $satuanDisetel = false;
 
+    /**
+     * Kotak harga akhir pekan sedang dibuka.
+     *
+     * Saklar, bukan kotak yang selalu hadir: sebagian besar harga sama
+     * setiap hari, dan kotak kedua yang ada untuk tidak diisi tetap menuntut
+     * dibaca dan dipikirkan lebih dulu di setiap formulir.
+     */
+    public bool $duaHarga = false;
+
+    /** Harga akhir pekan ditampilkan bertitik begitu kotaknya ditinggalkan. */
+    public function updatedIsianHargaAkhirPekan(): void
+    {
+        $this->isian['harga_akhir_pekan'] = $this->keRupiah($this->angkaDari($this->isian['harga_akhir_pekan']));
+    }
+
+    /**
+     * Mematikan saklarnya MENGOSONGKAN angkanya.
+     *
+     * Kalau tidak, angka yang tidak terlihat lagi tetap tersimpan dan harga
+     * akhir pekan terus berlaku padahal admin yakin sudah mematikannya —
+     * selisih yang tidak bisa ditemukan karena kotaknya tidak ada di layar.
+     */
+    public function updatedDuaHarga(): void
+    {
+        if (! $this->duaHarga) {
+            $this->isian['harga_akhir_pekan'] = '';
+            $this->resetValidation('isian.harga_akhir_pekan');
+        }
+    }
+
     private function kosongkan(): void
     {
         $this->isian = [
@@ -227,12 +272,14 @@ class OrchaMasterHargaList extends Component
             'destinasi' => '',
             'satuan' => 'orang',
             'harga' => '',
+            'harga_akhir_pekan' => '',
             'kapasitas' => '',
             'berlaku_sampai' => '',
             'catatan' => '',
         ];
         $this->aktif = true;
         $this->otomatis = false;
+        $this->duaHarga = false;
         $this->satuanDisetel = false;
         $this->destinasiBaru = false;
         $this->namaDestinasiBaru = '';
@@ -334,12 +381,18 @@ class OrchaMasterHargaList extends Component
             'destinasi' => (string) ($baris['destinasi'] ?? ''),
             'satuan' => $baris['satuan'],
             'harga' => $this->keRupiah($baris['harga']),
+            'harga_akhir_pekan' => ($baris['harga_akhir_pekan'] ?? null) !== null
+                ? $this->keRupiah($baris['harga_akhir_pekan']) : '',
             'kapasitas' => (string) ($baris['kapasitas'] ?? ''),
             'berlaku_sampai' => (string) ($baris['berlaku_sampai'] ?? ''),
             'catatan' => (string) ($baris['catatan'] ?? ''),
         ];
         $this->aktif = (bool) $baris['aktif'];
         $this->otomatis = (bool) $baris['otomatis'];
+        // Dari isinya, bukan dari dua_harga: harga akhir pekan yang KEBETULAN
+        // sama dengan hari kerja tetap harga yang pernah diisi orang, dan
+        // kotaknya tidak boleh menghilang saat barisnya dibuka lagi.
+        $this->duaHarga = ($baris['harga_akhir_pekan'] ?? null) !== null;
 
         // Baris yang sudah tersimpan satuannya memang pilihan orang, bukan
         // terkaan — mengganti kategorinya tidak boleh menimpanya.
@@ -416,7 +469,9 @@ class OrchaMasterHargaList extends Component
      */
     public function perluKapasitas(): bool
     {
-        $daftar = $this->katalog()['kosakata']['satuan_berkapasitas'] ?? ['unit_hari', 'kamar_malam'];
+        // Cadangan ikut menyebut 'unit': Orcha yang tak terjangkau tidak boleh
+        // membuat kotak kapasitas hilang untuk satuan yang membutuhkannya.
+        $daftar = $this->katalog()['kosakata']['satuan_berkapasitas'] ?? ['unit', 'unit_hari', 'kamar_malam'];
 
         return in_array($this->isian['satuan'] ?? '', $daftar, true);
     }
@@ -610,15 +665,18 @@ class OrchaMasterHargaList extends Component
             'isian.nama' => 'required|string|min:2|max:150',
             'isian.satuan' => 'required|string',
             'isian.harga' => 'required',
+            'isian.harga_akhir_pekan' => $this->duaHarga ? 'required' : 'nullable',
             'isian.kapasitas' => $berkapasitas ? 'required|integer|min:1|max:1000' : 'nullable|integer|min:1|max:1000',
             'isian.catatan' => 'nullable|string|max:500',
             // Kosong berarti "tidak ada batas", bukan "belum diisi".
             'isian.berlaku_sampai' => 'nullable|date',
         ], [
             'isian.kapasitas.required' => 'Isi kapasitasnya — tanpanya jumlah unit untuk rombongan besar tidak bisa dihitung.',
+            'isian.harga_akhir_pekan.required' => 'Isi harga akhir pekannya, atau matikan saklarnya kalau harganya sama setiap hari.',
             'isian.nama.required' => 'Isi namanya — atau pilih destinasinya, dan namanya terisi sendiri.',
         ], [
             'isian.nama' => 'nama', 'isian.harga' => 'harga', 'isian.kapasitas' => 'kapasitas',
+            'isian.harga_akhir_pekan' => 'harga akhir pekan',
         ]);
 
         $data = [
@@ -632,6 +690,15 @@ class OrchaMasterHargaList extends Component
             'destinasi' => trim($this->isian['destinasi']) ?: null,
             'satuan' => $this->isian['satuan'],
             'harga' => $this->angkaDari($this->isian['harga']),
+            /*
+             | null, BUKAN 0, saat saklarnya mati.
+             |
+             | Nol adalah harga yang sah — ada tempat yang gratis di hari
+             | kerja — jadi mengirim 0 untuk "harganya sama setiap hari"
+             | akan menggratiskan tiketnya setiap Sabtu.
+             */
+            'harga_akhir_pekan' => $this->duaHarga
+                ? $this->angkaDari($this->isian['harga_akhir_pekan']) : null,
             // Satuan yang tidak menghitung unit tidak mengirim kapasitas:
             // kotaknya memang disembunyikan untuk satuan itu, dan nilai yang
             // tidak terlihat tidak boleh ikut tersimpan.

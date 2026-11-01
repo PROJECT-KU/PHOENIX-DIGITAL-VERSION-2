@@ -81,7 +81,12 @@ Susun RAB || lemon
     $tanpaBiaya = $barisPerKategori === [];
     $adaTanpaTiket = $tanpaTiket !== [];
     $hargaBasi = (bool) ($r['ada_harga_basi'] ?? false);
-    $manualBerkapasitas = in_array($manual['satuan'] ?? '', ['unit_hari', 'kamar_malam'], true);
+    /* Ada baris yang harga bekunya tidak cocok lagi dengan tanggal
+       kunjungannya — tanggal berangkat atau itinerary-nya digeser sesudah
+       biaya ditarik. Harganya TIDAK ikut bergeser; itu aturannya. */
+    $hargaSalahHari = (bool) ($r['ada_harga_salah_hari'] ?? false);
+    // Daftarnya dari kosakata Orcha — lihat OrchaRabSusun::satuanBerkapasitas().
+    $manualBerkapasitas = in_array($manual['satuan'] ?? '', $this->satuanBerkapasitas(), true);
     // Kedua jenis persen memakai kotak isian bersatuan "%", bukan rupiah.
     $marginPersen = in_array($marginJenis, ['persen', 'persen_harga'], true);
     $marginDariHarga = $marginJenis === 'persen_harga';
@@ -679,6 +684,26 @@ Susun RAB || lemon
         }
         .rab-biaya-vendor .bi { color: #94a3b8; }
 
+        /* Sebab harga: pil kecil, bukan paragraf.
+
+           Yang dijawabnya satu pertanyaan sempit — "kok Rp 31.000?" — dan
+           jawaban setingkat paragraf di tiap baris biaya akan membuat
+           rinciannya tidak terbaca sama sekali. */
+        .rb-sebab { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+        .rb-sebab-pil {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px 3px; border-radius: 999px;
+            background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8;
+            font-size: .71rem; font-weight: 600; line-height: 1.35;
+        }
+        .rb-sebab-pil .bi { font-size: .73rem; }
+        /* Yang perlu DIPUTUSKAN admin dibedakan warnanya dari yang cuma
+           menjelaskan — kalau tidak, keduanya terbaca sama lalu dilewati. */
+        .rb-sebab-pil.is-awas {
+            background: #fffbeb; border-color: #fde68a; color: #92400e;
+            cursor: help;
+        }
+
         /* Beda harga dari master: kalimatnya satu blok, aksinya tombol
            tersendiri — bukan tautan yang tenggelam di tengah kalimat. */
         .rb-beda {
@@ -704,6 +729,14 @@ Susun RAB || lemon
         }
         .rb-beda-banner i { margin-top: 2px; color: #4f46e5; }
         .rb-beda-banner strong { color: var(--dsb-tinta, #1c1f26); }
+        /* Spanduk yang menuntut KEPUTUSAN dibedakan dari yang menjelaskan.
+           "Beda dari master" sering kabar baik; "tanggalnya bergeser" selalu
+           sesuatu yang harus dikerjakan sebelum penawaran dikirim. */
+        .rb-beda-banner.is-awas {
+            background: #fffbeb; border-color: #fde68a; color: #92400e;
+        }
+        .rb-beda-banner.is-awas i { color: #b45309; }
+        .rb-beda-banner.is-awas strong { color: #78350f; }
 
         /* Panah naik/turun: kotaknya 40px sementara isinya 50px, dan
            overflow:hidden memotong sisanya. Paddingnya yang dipersempit,
@@ -1852,6 +1885,27 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Tanggalnya bergeser sesudah biaya ditarik.
+
+                                 Bukan galat, dan bukan sesuatu yang dibetulkan
+                                 sistem: harga penawaran dibekukan supaya tidak
+                                 bergerak sendiri. Tetapi penawaran yang terkirim
+                                 dengan tarif akhir pekan untuk kunjungan hari Senin
+                                 adalah kemahalan Rp 10.000 per orang yang tidak
+                                 akan pernah dicurigai siapa pun. --}}
+                            @if ($hargaSalahHari)
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span>
+                                        Tanggal perjalanan bergeser setelah biaya ditarik, jadi ada baris
+                                        yang masih memakai <strong>tarif hari yang lama</strong>.
+                                        Harganya sengaja tidak berubah sendiri — barisnya ditandai
+                                        satu per satu di bawah; sunting angkanya, atau hapus barisnya
+                                        lalu tarik biaya lagi.
+                                    </span>
+                                </div>
+                            @endif
+
                             {{-- KARTU, bukan tabel.
 
                                  Satu baris biaya membawa delapan hal: nama, vendor,
@@ -1897,6 +1951,41 @@ Susun RAB || lemon
                                                     @endif
                                                     <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
                                                 </div>
+
+                                                {{-- MENGAPA harganya sekian.
+
+                                                     Tiket Rp 31.000 di sebelah master yang
+                                                     tertulis Rp 21.000 terbaca sebagai salah
+                                                     ketik — lalu "dibetulkan" ke angka yang
+                                                     justru keliru. Sebabnya dibekukan bersama
+                                                     harganya, jadi ia tetap terbaca bulan depan. --}}
+                                                {{-- Kondisi luar DITULIS BERBEDA dari yang di dalam,
+                                                     bukan sekadar lebih panjang: penanda morph Livewire
+                                                     dilewati kalau potongan awal kondisi berkurung
+                                                     bersarang sama dengan direktif sebelumnya, dan
+                                                     penanda timpang merusak tiap pembaruan sesudahnya
+                                                     tanpa menggagalkan muat halaman. --}}
+                                                @if (($b['harga_sebab'] ?? null) !== null || ($b['harga_sebab_seharusnya'] ?? null) !== null)
+                                                    <div class="rb-sebab">
+                                                        @if (! empty($b['harga_sebab']))
+                                                            <span class="rb-sebab-pil">
+                                                                <i class="bi bi-calendar-event"></i>{{ $b['harga_sebab'] }}
+                                                            </span>
+                                                        @endif
+
+                                                        @if (! empty($b['harga_sebab_seharusnya']))
+                                                            {{-- Harga TETAP beku — itu aturannya. Yang
+                                                                 dikatakan hanya bahwa tanggalnya sudah
+                                                                 bergeser, supaya penawaran tidak terkirim
+                                                                 dengan tarif hari yang salah. --}}
+                                                            <span class="rb-sebab-pil is-awas"
+                                                                title="Harganya tidak berubah sendiri. Sunting angkanya kalau mau mengikuti tanggal yang baru.">
+                                                                <i class="bi bi-exclamation-triangle"></i>tanggalnya bergeser —
+                                                                sekarang {{ $b['harga_sebab_seharusnya'] }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                             </div>
 
                                             {{-- Kedua isian diberi label sendiri. Di tabel,
