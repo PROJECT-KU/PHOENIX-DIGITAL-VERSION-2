@@ -1655,13 +1655,21 @@ Master Harga || lemon
                                                 title="Centang semua yang terlihat"
                                                 aria-label="Centang semua yang terlihat">
                                         </th>
+                                        {{-- Kategori TIDAK punya kolomnya sendiri lagi.
+
+                                             Satu kolom berisi satu lencana membuat enam
+                                             kolom berebut lebar, dan yang kalah justru
+                                             nama & vendornya — keduanya melipat jadi dua
+                                             baris sementara kolom kategori duduk lapang.
+                                             Kini ikonnya memimpin sel nama (pola yang sama
+                                             dengan Pesanan Toko) dan namanya ikut sebagai
+                                             lencana kecil di bawahnya. --}}
                                         <th>Nama</th>
-                                        <th>Kategori</th>
-                                        <th>Wilayah</th>
+                                        <th class="mh-k-wilayah">Berlaku di</th>
                                         {{-- Vendor dapat kolomnya sendiri: sebagai baris
                                              kecil di bawah nama, "mana yang belum ada
                                              vendornya" harus dipindai satu per satu. --}}
-                                        <th title="Vendor tempat kita membelinya, beserta nomornya">Dibeli dari</th>
+                                        <th class="k-sedang" title="Vendor tempat kita membelinya, beserta nomornya">Dibeli dari</th>
                                         {{-- Menekan judul kolom adalah yang dicoba orang
                                              lebih dulu, sebelum kotak "Urut" ditemukan.
                                              Panahnya hanya muncul pada kolom yang sedang
@@ -1711,7 +1719,7 @@ Master Harga || lemon
                                         @if ($urut === '' && $baris['kategori'] !== $kategoriTerakhir)
                                             @php($kategoriTerakhir = $baris['kategori'])
                                             <tr class="mh-pita" wire:key="pita-{{ $baris['kategori'] }}">
-                                                <td colspan="8" style="--c: {{ $warnaKat }}">
+                                                <td colspan="7" style="--c: {{ $warnaKat }}">
                                                     <i class="bi {{ $ikonKat }}"></i>{{ $baris['kategori_label'] }}
                                                 </td>
                                             </tr>
@@ -1724,49 +1732,73 @@ Master Harga || lemon
                                                     aria-label="Pilih {{ $baris['nama'] }}">
                                             </td>
                                             <td data-judul="Nama">
-                                                <span class="mh-utama">
-                                                    <span class="dsb-tabel-judul">
-                                                        {{ $baris['nama'] }}
-                                                        @unless ($baris['aktif'])
-                                                            <span class="mh-tanda is-mati">DIMATIKAN</span>
-                                                        @endunless
-                                                        @if ($baris['otomatis'])
-                                                            <span class="mh-tanda is-wajib">WAJIB</span>
-                                                        @endif
-                                                        @if (! empty($baris['kedaluwarsa']))
-                                                            {{-- Sependek mungkin: tanda yang melipat jadi
-                                                                 tiga baris memecah kolom namanya, dan yang
-                                                                 dibaca orang pertama kali harus tetap nama
-                                                                 harganya. Kalimat panjangnya di balik sorot. --}}
-                                                            <span class="mh-tanda is-lewat"
-                                                                title="Berlaku sampai {{ $baris['berlaku_sampai_teks'] }} — harganya masih dipakai apa adanya, tanda ini cuma mengingatkan untuk menanyakan ulang ke vendornya">LEWAT</span>
+                                                {{-- Sel jati diri, pola yang sama dengan Pesanan
+                                                     Toko: ikon berwarna memimpin, nama di
+                                                     sebelahnya, lalu satu baris lencana kecil. --}}
+                                                <span class="dsb-tabel-utama">
+                                                    <span class="dsb-ikon is-kecil" style="--c: {{ $warnaKat }}">
+                                                        <i class="bi {{ $ikonKat }}"></i>
+                                                    </span>
+                                                    <span class="dsb-tabel-teks">
+                                                        <span class="dsb-tabel-judul">{{ $baris['nama'] }}</span>
+
+                                                        <span class="dsb-tabel-meta">
+                                                            <span class="dsb-lencana" style="--c: {{ $warnaKat }}">{{ $baris['kategori_label'] }}</span>
+
+                                                            {{-- Kata biasa, bukan singkatan huruf besar.
+                                                                 "WAJIB" tidak memberi tahu wajib apa;
+                                                                 yang dimaksud harga ini ikut masuk sendiri
+                                                                 ke tiap RAB baru tanpa dipilih. --}}
+                                                            @unless ($baris['aktif'])
+                                                                <span class="dsb-lencana is-abu" title="Tetap tersimpan, tetapi tidak muncul lagi saat menyusun RAB baru">
+                                                                    <i class="bi bi-pause-circle"></i>Dimatikan
+                                                                </span>
+                                                            @endunless
+                                                            @if ($baris['otomatis'])
+                                                                <span class="dsb-lencana is-ungu" title="Ikut masuk sendiri ke setiap RAB baru di provinsinya, tanpa dipilih">
+                                                                    <i class="bi bi-magic"></i>Masuk sendiri
+                                                                </span>
+                                                            @endif
+                                                            @if (! empty($baris['kedaluwarsa']))
+                                                                <span class="dsb-lencana is-kuning"
+                                                                    title="Berlaku sampai {{ $baris['berlaku_sampai_teks'] }} — harganya masih dipakai apa adanya, tanda ini cuma mengingatkan untuk menanyakan ulang ke vendornya">
+                                                                    <i class="bi bi-alarm"></i>Masa berlakunya lewat
+                                                                </span>
+                                                            @endif
+
+                                                            @if ($baris['destinasi'])
+                                                                <span class="{{ $lepas ? 'mh-lepas' : 'dsb-tabel-meta' }}"
+                                                                    @if ($lepas) title="Nama ini tidak ada di daftar destinasi, jadi tiketnya tidak akan ikut terbawa ke RAB" @endif>
+                                                                    <i class="bi {{ $lepas ? 'bi-exclamation-triangle-fill' : 'bi-geo-alt' }}"></i>
+                                                                    {{ $baris['destinasi'] }}
+                                                                    @if ($lepas)
+                                                                        {{-- Tanda yang menunjuk pekerjaan tetapi tidak
+                                                                             membawa ke sana cuma menambah beban. --}}
+                                                                        <button type="button" class="mh-lepas-ket"
+                                                                            wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
+                                                                            title="Nama ini tidak ada di daftar destinasi — buka dan pilih dari daftarnya">belum terdaftar</button>
+                                                                    @endif
+                                                                </span>
+                                                            @endif
+
+                                                            {{-- Salinan kolom yang disembunyikan di layar
+                                                                 sempit — tanpa ini wilayah & vendornya hilang
+                                                                 sama sekali, bukan cuma pindah tempat. --}}
+                                                            <span class="dsb-tabel-samar">
+                                                                <i class="bi bi-geo"></i>{{ $baris['provinsi'] ?: 'Semua provinsi' }}
+                                                            </span>
+                                                            <span class="dsb-tabel-samar">
+                                                                <i class="bi bi-shop"></i>{{ $baris['vendor'] ?: 'vendor belum ada' }}
+                                                            </span>
+                                                        </span>
+
+                                                        @if ($baris['catatan'])
+                                                            <span class="dsb-tabel-meta mh-catatan">{{ $baris['catatan'] }}</span>
                                                         @endif
                                                     </span>
-                                                    @if ($baris['destinasi'])
-                                                        <span class="{{ $lepas ? 'mh-lepas' : 'dsb-tabel-meta' }}"
-                                                            @if ($lepas) title="Nama ini tidak ada di daftar destinasi, jadi tiketnya tidak akan ikut terbawa ke RAB" @endif>
-                                                            <i class="bi {{ $lepas ? 'bi-exclamation-triangle-fill' : 'bi-geo-alt' }}"></i>
-                                                            {{ $baris['destinasi'] }}
-                                                            @if ($lepas)
-                                                                {{-- Tanda yang menunjuk pekerjaan tetapi tidak
-                                                                     membawa ke sana cuma menambah beban. --}}
-                                                                <button type="button" class="mh-lepas-ket"
-                                                                    wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
-                                                                    title="Buka dan pilih destinasinya dari daftar">nama tidak terdaftar</button>
-                                                            @endif
-                                                        </span>
-                                                    @endif
-                                                    @if ($baris['catatan'])
-                                                        <span class="dsb-tabel-meta mh-catatan">{{ $baris['catatan'] }}</span>
-                                                    @endif
                                                 </span>
                                             </td>
-                                            <td data-judul="Kategori">
-                                                <span class="dsb-lencana" style="--c: {{ $warnaKat }}">
-                                                    <i class="bi {{ $ikonKat }}"></i>{{ $baris['kategori_label'] }}
-                                                </span>
-                                            </td>
-                                            <td data-judul="Wilayah">
+                                            <td class="mh-k-wilayah" data-judul="Berlaku di">
                                                 <span class="mh-utama">
                                                     <span class="mh-wilayah">{{ $baris['provinsi'] ?: 'Semua provinsi' }}</span>
                                                     @if ($baris['daerah'])
@@ -1774,11 +1806,15 @@ Master Harga || lemon
                                                     @endif
                                                 </span>
                                             </td>
-                                            <td data-judul="Dibeli dari">
+                                            <td class="k-sedang" data-judul="Dibeli dari">
                                                 @if (! empty($baris['vendor']))
                                                     <a href="{{ route('admin.orcha.vendor.detail', $baris['vendor_id']) }}" wire:navigate
-                                                        class="mh-utama mh-vendor-sel" title="Buka rincian {{ $baris['vendor'] }}">
-                                                        <span>{{ $baris['vendor'] }}</span>
+                                                        class="mh-utama mh-vendor-sel" title="{{ $baris['vendor'] }} — buka rinciannya">
+                                                        {{-- Dipotong, nama utuhnya di balik sorot: nama
+                                                             vendor memang panjang-panjang, dan dibiarkan
+                                                             utuh satu sel memakan enam baris tinggi lalu
+                                                             mendorong seluruh tabel ikut setinggi itu. --}}
+                                                        <span>{{ \Illuminate\Support\Str::limit($baris['vendor'], 26) }}</span>
                                                         @if (! empty($baris['vendor_kontak']))
                                                             <span class="dsb-tabel-meta">{{ $baris['vendor_kontak'] }}</span>
                                                         @endif
@@ -2168,6 +2204,21 @@ Master Harga || lemon
            harga, daerah, dan nama vendor tetap boleh turun baris. */
         .mh-wilayah, .mh-diubah, .mh-satuan { white-space: nowrap; }
         .mh-vendor-sel { text-decoration: none; color: var(--dsb-tinta, #1c1f26); }
+        /* Nama vendor DIPOTONG di dalam selnya, bukan dibiarkan meluber.
+
+           Sudah dipotong 26 huruf saat dirender, tetapi di laptop kecil
+           kolomnya ikut menyusut dan 26 huruf pun tidak muat — hurufnya lalu
+           menindih kolom harga tanpa satu pun tanda bahwa ada yang terpotong.
+           Nama utuhnya tetap terbaca lewat sorotan. */
+        .mh-vendor-sel > span,
+        .mh-tabel .dsb-tabel-meta {
+            display: block; max-width: 100%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        /* Kecuali baris lencana: isinya memang beberapa benda yang melipat. */
+        .mh-tabel .dsb-tabel-teks > .dsb-tabel-meta {
+            display: flex; flex-wrap: wrap; white-space: normal; overflow: visible;
+        }
         .mh-vendor-sel:hover { color: #0369a1; text-decoration: underline; }
         .mh-tanpa-vendor {
             display: inline-flex; align-items: center; gap: 5px;
@@ -2192,15 +2243,6 @@ Master Harga || lemon
         .mh-daftar-kepala > .dsb-kartu-kepala-kiri { flex: 1 1 320px; }
 
         .mh-dipakai { font-weight: 700; font-size: .86rem; color: var(--dsb-utama, #4f46e5); }
-        .mh-tanda {
-            display: inline-block; margin-left: 5px; padding: 1px 6px 2px; border-radius: 7px;
-            font-size: .62rem; font-weight: 800; letter-spacing: .04em;
-        }
-        .mh-tanda.is-mati { background: #e2e8f0; color: #64748b; }
-        .mh-tanda.is-wajib { background: #fef3c7; color: #b45309; }
-        /* Merah, bukan abu-abu seperti MATI: yang satu keputusan yang memang
-           diambil, yang satu tanggal yang terlewat tanpa ada yang tahu. */
-        .mh-tanda.is-lewat { background: #fee2e2; color: #b42318; }
         /* NAMA SENDIRI, bukan .mh-tambah — kelas itu sudah dipakai tombol
            kecil "Destinasinya belum ada di daftar", yang justru membuang
            padding dan latarnya. Dipakai ulang di sini, tombol besarnya
@@ -2272,6 +2314,57 @@ Master Harga || lemon
            kotak setinggi 70vh meninggalkan ruang kosong di bawahnya. */
         .mh-tabel-tinggi { max-height: 70vh; overflow-y: auto; }
         .mh-tabel-tinggi thead th { position: sticky; top: 0; z-index: 3; }
+        /* Lebar kolom DIPATOK.
+
+           Dibiarkan otomatis, lebarnya dibagi menurut isi terpanjang: satu
+           nama vendor berkata tujuh membuat kolomnya melar dan kolom nama —
+           yang justru paling banyak isinya — menyusut sampai lencananya
+           melipat tiga baris. Persentase, jadi tetap luwes di lebar mana pun. */
+        /* table-layout: fixed, bukan sekadar menulis width.
+
+           Dengan layout auto, width cuma SARAN: peramban membaginya menurut
+           isi terpanjang, dan yang menang kolom yang isinya tidak bisa
+           melipat — pil "Rp 31.000 akhir pekan" dan empat tombol aksi.
+           Kolom nama, yang isinya justru paling banyak, menyerahkan lebarnya
+           karena lencananya memang bisa melipat. Diukur: 23,5% untuk nama
+           sementara aksi 17,5%, padahal width-nya sudah ditulis 40%.
+
+           Angkanya berjumlah 100% dan diukur dari isi yang sebenarnya: aksi
+           butuh 154px dan harga 160px pada lebar tabel 1039px. */
+        .mh-tabel { table-layout: fixed; }
+        .mh-tabel th:nth-child(1), .mh-tabel td:nth-child(1) { width: 4%; }
+        .mh-tabel th:nth-child(2), .mh-tabel td:nth-child(2) { width: 28%; }
+        .mh-tabel th:nth-child(3), .mh-tabel td:nth-child(3) { width: 13%; }
+        .mh-tabel th:nth-child(4), .mh-tabel td:nth-child(4) { width: 13%; }
+        .mh-tabel th:nth-child(5), .mh-tabel td:nth-child(5) { width: 16%; }
+        .mh-tabel th:nth-child(6), .mh-tabel td:nth-child(6) { width: 10%; }
+        .mh-tabel th:nth-child(7), .mh-tabel td:nth-child(7) { width: 16%; }
+
+        /* Nama provinsi BOLEH melipat di dalam tabel.
+
+           nowrap-nya disetel saat kolomnya selebar isi terpanjang; dengan
+           lebar yang dipatok, "Semua provinsi" butuh 111px di kolom 96px dan
+           meluber keluar selnya — menindih kolom sebelahnya tanpa satu pun
+           tanda bahwa ada yang salah. */
+        .mh-tabel .mh-wilayah,
+        /* "5 hari yang lalu" sama halnya: nowrap-nya butuh 87px di kolom 76px. */
+        .mh-tabel .mh-diubah,
+        /* Dan pil "Rp 31.000 akhir pekan": 160px di kolom yang menyusut jadi
+           128px begitu layarnya 1000px. */
+        .mh-tabel .mh-akhir-pekan { white-space: normal; }
+
+        /* Tombol aksi dirapatkan di laptop kecil.
+
+           Empat tombol 34px plus celahnya butuh 168px, sementara kolomnya
+           menyusut jadi 145px begitu layarnya 1000px — tombol terakhir
+           (hapus) meluber keluar sel dan menindih tepi kartu. Dirapatkan,
+           bukan disembunyikan: tombol yang hilang di balik tepi layar tidak
+           bisa ditemukan sama sekali. */
+        @media (min-width: 768px) and (max-width: 1399.98px) {
+            .mh-tabel .dsb-tabel-aksi { gap: 4px; }
+            .mh-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 30px; height: 30px; }
+        }
+
         .mh-tabel tbody tr.is-mati { background: #fbfcfd; }
         .mh-tabel tbody tr.is-mati .dsb-tabel-judul { color: var(--dsb-redup, #6b7280); }
         .mh-belum { font-size: .78rem; color: var(--dsb-redup, #6b7280); }
@@ -2475,21 +2568,32 @@ Master Harga || lemon
             .mh-perintah > .mh-perintah-tombol .mh-perintah-jalan { flex: 2 1 0; }
         }
 
-        /* Delapan kolom tidak muat di laptop kecil, dan tabel yang digulir
-           mendatar menyembunyikan kolom Aksi di balik tepi layar. Wilayah
-           yang paling bisa dilepas: daerahnya tetap terbaca di kolom nama,
-           dan provinsinya sudah jadi saringan di atas. */
-        @media (min-width: 768px) and (max-width: 1399.98px) {
-            .mh-tabel thead th:nth-child(4),
-            .mh-tabel tbody td:nth-child(4) { display: none; }
-        }
+        /* Penyembunyian kolom di layar sempit TIDAK lagi memakai nomor kolom.
 
-        /* Lebih sempit lagi, "Dipakai" ikut dilepas: angkanya tetap bisa
-           dibuka lewat panel, sementara kolom Aksi yang hilang di balik
-           tepi layar tidak bisa ditemukan sama sekali. */
-        @media (min-width: 768px) and (max-width: 1099.98px) {
-            .mh-tabel thead th:nth-child(7),
-            .mh-tabel tbody td:nth-child(7) { display: none; }
+           Dua aturan nth-child dulu menunjuk Wilayah (ke-4) dan Dipakai
+           (ke-7) pada susunan delapan kolom. Begitu kolom Kategori dilebur
+           ke sel nama, nomornya bergeser — ke-7 jadi kolom AKSI, justru yang
+           kedua aturan itu dibuat untuk melindungi. Nomor kolom adalah
+           patokan yang diam-diam berubah arti.
+
+           Sekarang kolomnya sendiri yang menyandang kelasnya, dan salinannya
+           tetap terbaca sebagai .dsb-tabel-samar di baris lencana.
+
+           Wilayah memakai ambang 1400px, bukan .k-lebar (1200px) bawaan:
+           ambang itu DIUKUR penulis aslinya, dan memang di situ tujuh kolom
+           berhenti muat. Dipaksa ke 1200px, pada laptop 1280px sel namanya
+           meluber 20px dan tombol hapus menindih tepi kartu. */
+        @media (min-width: 768px) and (max-width: 1399.98px) {
+            .mh-tabel .mh-k-wilayah { display: none; }
+            /* Lebar yang ditinggalkan Wilayah diberikan ke kolom nama, bukan
+               dibagi rata: di sanalah isinya paling banyak, dan tanpa ini
+               baris lencananya meluber 8px keluar selnya. */
+            .mh-tabel th:nth-child(2), .mh-tabel td:nth-child(2) { width: 37%; }
+            /* Kolom aksi ikut dilebarkan dan paddingnya dirapatkan: empat
+               tombol 30px butuh 146px, dan 16% dari tabel 800px cuma 128px —
+               tombol hapus meluber menindih tepi kartu. */
+            .mh-tabel th:nth-child(7), .mh-tabel td:nth-child(7) { width: 19%; }
+            .mh-tabel td:nth-child(7) { padding-left: 6px; padding-right: 10px; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu

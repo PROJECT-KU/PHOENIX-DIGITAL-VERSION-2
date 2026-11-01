@@ -147,3 +147,38 @@ test('kartu status Master Harga dan Pesanan Toko memakai satu definisi', functio
             ->toContain('partials.kartu-tab-gaya');
     }
 });
+
+test('kolom tabel tidak disembunyikan lewat nomor urutnya', function () {
+    /*
+     | Nomor kolom adalah patokan yang diam-diam berubah arti.
+     |
+     | Master Harga sempat menyembunyikan kolom ke-4 dan ke-7 lewat
+     | :nth-child. Begitu kolom Kategori dilebur ke sel nama, nomornya
+     | bergeser satu — ke-7 jadi kolom AKSI, justru yang aturan itu dibuat
+     | untuk melindungi dari terpotong tepi layar. Tidak ada galat, tidak ada
+     | uji yang merah: tombol ubah & hapus sekadar lenyap di laptop kecil.
+     |
+     | Mengatur LEBAR lewat :nth-child tetap boleh — salah lebar terlihat
+     | seketika, sementara kolom yang hilang tidak terlihat sama sekali.
+     */
+    $nakal = [];
+
+    foreach (berkasOrchaBergaya() as $berkas) {
+        $isi = (string) file_get_contents($berkas->getPathname());
+
+        if (! preg_match_all('/<style>(.*?)<\/style>/s', $isi, $blok)) {
+            continue;
+        }
+
+        // Aturan yang pemilihnya memuat :nth-child DAN badannya display:none.
+        preg_match_all('/([^{}]*:nth-child[^{}]*)\{([^{}]*)\}/s', implode("\n", $blok[1]), $m, PREG_SET_ORDER);
+
+        foreach ($m as $aturan) {
+            if (preg_match('/(?:^|;)\s*display\s*:\s*none/', $aturan[2])) {
+                $nakal[] = $berkas->getFilename().': '.trim(preg_replace('/\s+/', ' ', $aturan[1]));
+            }
+        }
+    }
+
+    expect($nakal)->toBe([]);
+});
