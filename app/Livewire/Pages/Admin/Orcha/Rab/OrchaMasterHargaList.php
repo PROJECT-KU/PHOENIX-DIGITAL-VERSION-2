@@ -1206,7 +1206,32 @@ class OrchaMasterHargaList extends Component
                 continue;
             }
 
-            $bagian = preg_split('/\t|;/', $baris);
+            /*
+             | TIGA cara memisah, dicoba berurutan.
+             |
+             | Dulu hanya TAB dan titik koma — tepat untuk tempelan Excel,
+             | tetapi tidak bisa DIKETIK sama sekali: menekan TAB di dalam
+             | kotak teks memindahkan fokus, bukan menyisipkan tab. Admin
+             | yang mengetik "Tiket Borobudur,100.000" mendapat "belum ada
+             | baris yang terbaca" tanpa tahu apa yang kurang.
+             |
+             | 1. Ada TAB atau titik koma -> pakai itu. Tempelan Excel tetap
+             |    terbaca persis, termasuk nama yang memuat koma.
+             | 2. Ada koma -> pakai koma.
+             | 3. Tidak ada pemisah apa pun -> angka di UJUNG baris diambil
+             |    sebagai harganya, sisanya nama. "Tiket Borobudur 100.000"
+             |    pun terbaca.
+             */
+            if (preg_match('/[\t;]/', $baris)) {
+                $bagian = preg_split('/[\t;]/', $baris);
+            } elseif (str_contains($baris, ',')) {
+                $bagian = explode(',', $baris);
+            } elseif (preg_match('/^(.+?)[\s]+([\d][\d.\s]*)$/u', $baris, $c)) {
+                $bagian = [$c[1], $c[2]];
+            } else {
+                continue;
+            }
+
             $nama = trim($bagian[0] ?? '');
             $angka = preg_replace('/[^0-9]/', '', $bagian[1] ?? '');
 
@@ -1232,7 +1257,7 @@ class OrchaMasterHargaList extends Component
         $baris = $this->barisTempel();
 
         if ($baris === []) {
-            $this->addError('tempelIsi', 'Belum ada baris yang terbaca. Tiap baris: nama, lalu TAB, lalu harganya.');
+            $this->addError('tempelIsi', 'Belum ada baris yang terbaca. Tiap baris: nama, lalu harganya — dipisah koma atau spasi. Contoh: Tiket Borobudur, 100.000');
 
             return;
         }

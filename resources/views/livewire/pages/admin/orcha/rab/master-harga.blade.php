@@ -978,8 +978,18 @@ Master Harga || lemon
                                             <div class="mh-tempel-kepala">
                                                 <strong>Tempel dari Excel</strong>
                                                 <span class="dsb-kartu-sub">
-                                                    Satu baris satu harga: <strong>nama</strong>, TAB,
-                                                    <strong>harga</strong>, lalu boleh TAB lagi untuk destinasinya.
+                                                    {{-- Cara MENGETIK disebut lebih dulu, bukan TAB.
+                                                         TAB tidak bisa diketik di dalam kotak ini —
+                                                         tombolnya memindahkan fokus — jadi menyebutnya
+                                                         sebagai cara utama membuat admin menuruti
+                                                         petunjuk yang tidak mungkin dijalankan. --}}
+                                                    Satu baris satu harga: <strong>nama</strong>, koma,
+                                                    <strong>harga</strong>. Contoh:
+                                                    <code class="mh-tempel-contoh">Tiket Borobudur, 100.000</code>
+                                                </span>
+                                                <span class="dsb-kartu-sub">
+                                                    Menempel dari Excel juga langsung terbaca. Mau sekalian
+                                                    destinasinya? Tambahkan satu koma lagi di belakangnya.
                                                     Kategori, satuan, provinsi, dan vendornya diambil dari kotak di atas.
                                                 </span>
                                             </div>
@@ -991,7 +1001,7 @@ Master Harga || lemon
                                                  layar setelah barisnya masuk. --}}
                                             <textarea wire:model.live="tempelIsi" rows="5"
                                                 class="dsb-isian @error('tempelIsi') is-galat @enderror"
-                                                placeholder="Tiket Borobudur&#9;50.000&#10;Tiket Dieng&#9;30.000">{{ $tempelIsi }}</textarea>
+                                                placeholder="Tiket Borobudur, 50.000&#10;Tiket Dieng, 30.000">{{ $tempelIsi }}</textarea>
 
                                             @error('tempelIsi')<span class="dsb-galat">{{ $message }}</span>@enderror
 
@@ -2431,6 +2441,10 @@ Master Harga || lemon
         .mh-tempel-bungkus { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e5e9f0; }
         .mh-tempel { display: flex; flex-direction: column; gap: 10px; }
         .mh-tempel-kepala { display: flex; flex-direction: column; gap: 3px; }
+        .mh-tempel-contoh {
+            padding: 1px 7px 2px; border-radius: 6px;
+            background: #eef2ff; color: #4338ca; font-size: .78rem; font-weight: 600;
+        }
         .mh-tempel textarea.dsb-isian {
             /* Monospace: yang ditempel berkolom, dan kolom hanya terlihat
                lurus bila tiap hurufnya selebar huruf lain. */

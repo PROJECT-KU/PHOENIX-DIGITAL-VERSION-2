@@ -420,6 +420,68 @@ test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri',
         ->and(substr($kaki, 0, strpos($kaki, 'Batal')))->toContain('Tempel banyak baris');
 });
 
+/* ------------------- TEMPEL DARI EXCEL ------------------- */
+
+test('tempelan terbaca walau dipisah koma atau spasi, bukan cuma TAB', function () {
+    palsukanMaster();
+
+    /*
+     | TAB TIDAK BISA DIKETIK di dalam kotak teks — tombolnya memindahkan
+     | fokus, bukan menyisipkan tab. Formatnya karena itu cuma jalan untuk
+     | tempelan Excel, dan admin yang mengetik "Tiket Borobudur,100.000"
+     | mendapat "belum ada baris yang terbaca" tanpa tahu apa yang kurang.
+     */
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+
+    $baca = function (string $teks) use ($k) {
+        $k->set('tempelIsi', $teks);
+
+        return $k->instance()->barisTempel();
+    };
+
+    expect($baca('Tiket Borobudur,100.000'))
+        ->toBe([['nama' => 'Tiket Borobudur', 'harga' => 100000, 'destinasi' => null]]);
+
+    // Spasi saja pun cukup: angkanya diambil dari UJUNG baris.
+    expect($baca('Tiket Borobudur 100.000'))
+        ->toBe([['nama' => 'Tiket Borobudur', 'harga' => 100000, 'destinasi' => null]]);
+
+    // Koma kedua jadi destinasinya.
+    expect($baca('Tiket Borobudur, 100.000, Candi Borobudur'))
+        ->toBe([['nama' => 'Tiket Borobudur', 'harga' => 100000, 'destinasi' => 'Candi Borobudur']]);
+});
+
+test('tempelan Excel tetap terbaca persis, termasuk nama bertanda koma', function () {
+    palsukanMaster();
+
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+
+    /*
+     | TAB & titik koma didahulukan. Kalau koma ikut dipakai memecah saat
+     | TAB sudah ada, nama "Tiket Borobudur, Magelang" dari Excel akan
+     | terbelah di komanya dan harganya hilang — tempelan yang dulu benar
+     | jadi rusak demi memudahkan yang mengetik.
+     */
+    $k->set('tempelIsi', "Tiket Borobudur, Magelang\t100.000\tCandi Borobudur");
+
+    expect($k->instance()->barisTempel())->toBe([[
+        'nama' => 'Tiket Borobudur, Magelang',
+        'harga' => 100000,
+        'destinasi' => 'Candi Borobudur',
+    ]]);
+});
+
+test('baris tanpa angka tetap dilewati, bukan masuk berharga nol', function () {
+    palsukanMaster();
+
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+    $k->set('tempelIsi', "Tiket Borobudur, 100.000\nbaris tanpa angka\n");
+
+    // Harga nol adalah harga yang SAH; baris yang tidak terbaca tidak boleh
+    // diam-diam jadi gratis.
+    expect($k->instance()->barisTempel())->toHaveCount(1);
+});
+
 /* ------------------- CARTER PER RUTE ------------------- */
 
 /**
