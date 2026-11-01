@@ -59,9 +59,22 @@ Susun RAB || lemon
      | provinsi ini" padahal ada sepuluh membuat admin pergi mengisi data
      | yang sudah terisi.
      */
+    /*
+     | Sedang mencari? Hasil dari Orcha yang dipakai, bukan saringan lokal.
+     |
+     | Jawaban peladen sudah memuat katalog SELURUH provinsi digabung dengan
+     | destinasi yang hanya hidup di master harga — lebih lengkap daripada
+     | apa pun yang bisa disaring di layar. Saringan lokal tetap dipakai saat
+     | kotaknya kosong, dan untuk satu huruf yang sengaja tidak ditembakkan
+     | ke peladen.
+     */
+    $sedangMencari = $kata !== '';
+    $pakaiHasilServer = mb_strlen($kata) >= 2;
+    $daftarTempat = $pakaiHasilServer ? $hasilCari : $destinasi;
+
     $katalogKosong = $semuaDestinasi->isEmpty();
-    $cariTanpaHasil = ! $katalogKosong && $destinasi === [];
-    $tanpaDestinasi = $destinasi === [];
+    $cariTanpaHasil = $sedangMencari && $daftarTempat === [];
+    $tanpaDestinasi = $daftarTempat === [];
 
     $masterPerKategori = collect($katalog['master'] ?? [])->groupBy('kategori_label')->all();
     // Urutan kategorinya sudah dari Orcha (tiket, transportasi, akomodasi, …).
@@ -691,6 +704,34 @@ Susun RAB || lemon
         }
         .rab-biaya-vendor .bi { color: #94a3b8; }
 
+        /* Provinsi lain, disebut kecil di tombol tempatnya. Pencarian kini
+           lintas provinsi; tanpa penanda ini "Pantai Melasti" di tengah
+           perjalanan Banyuwangi terbaca sebagai salah klik. */
+        .rb-tempat-prov {
+            margin-left: 5px; padding: 0 6px 1px; border-radius: 999px;
+            background: #eef2ff; color: #4338ca; font-size: .66rem; font-weight: 700;
+        }
+
+        /* Hasil yang BUKAN tempat: dipisah dari deret destinasi, dan
+           tombolnya dibedakan supaya tidak terklik sebagai kegiatan. */
+        .rb-bukan-tempat {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px dashed var(--dsb-tepi, #e9edf3);
+        }
+        .rb-bukan-tempat > .orcha-label-kecil { flex: 1 1 100%; }
+        .rb-bukan-pil {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 10px; border-radius: 999px; cursor: pointer;
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+            font-size: .76rem; font-weight: 600;
+        }
+        .rb-bukan-pil:hover { background: #fef3c7; }
+        .rb-bukan-kat {
+            padding: 0 6px 1px; border-radius: 999px;
+            background: #fef3c7; font-size: .66rem; font-weight: 700;
+        }
+
         /* Sebab harga: pil kecil, bukan paragraf.
 
            Yang dijawabnya satu pertanyaan sempit — "kok Rp 31.000?" — dan
@@ -1144,7 +1185,7 @@ Susun RAB || lemon
              display:none ditulis sendiri — lihat catatan "wire:loading kalah
              bobot CSS". --}}
         <div class="rab-muat" wire:loading.flex
-            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,pakaiTiketKendaraan,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
+            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,pakaiTiketKendaraan,pakaiBiayaDariCari,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
             <span class="dsb-putar"></span>
             <span>Sedang menyimpan ke Orcha…</span>
         </div>
@@ -1668,23 +1709,34 @@ Susun RAB || lemon
                                 </div>
 
                                 <div class="rab-destinasi">
-                                @foreach ($destinasi as $d)
+                                @foreach ($daftarTempat as $d)
                                     <button type="button" wire:key="ds-{{ md5($d['nama']) }}"
                                         wire:click="tambahDestinasi(@js($d['nama']))"
                                         class="{{ isset($destinasiDipakai[$d['nama']]) ? 'dipakai' : '' }}"
-                                        title="{{ $d['daerah'] }}">
+                                        title="{{ trim(($d['daerah'] ?? '').' '.($d['provinsi'] ?? '')) }}">
                                         @if ($d['punya_tiket'])<i class="bi bi-ticket-perforated tiket"></i>@endif
                                         {{ $d['nama'] }}
+                                        @if ($pakaiHasilServer && ! empty($d['provinsi']) && $d['provinsi'] !== ($rab['provinsi'] ?? null))
+                                            {{-- Provinsi lain disebut di tombolnya.
+                                                 Pencarian kini lintas provinsi, dan
+                                                 "Pantai Melasti" di tengah perjalanan
+                                                 Banyuwangi harus terbaca sebagai pilihan
+                                                 yang disengaja, bukan salah klik. --}}
+                                            <span class="rb-tempat-prov">{{ $d['provinsi'] }}</span>
+                                        @endif
                                     </button>
                                 @endforeach
                                 @if ($cariTanpaHasil)
-                                    {{-- Kata yang dicari sering memang bukan destinasi:
-                                         nama di rincian biaya datang dari MASTER HARGA,
-                                         daftar yang berbeda dari katalog destinasi. Yang
-                                         ditawarkan di sini jalan keluarnya, bukan
-                                         sekadar kabar bahwa hasilnya nihil. --}}
+                                    {{-- Hasilnya nihil DAN jalan keluarnya ditawarkan.
+                                         Pencariannya kini sudah melihat katalog seluruh
+                                         provinsi beserta master harga, jadi nihil di
+                                         sini benar-benar berarti namanya belum ada di
+                                         mana pun — bukan sekadar belum di provinsi ini. --}}
                                     <div class="rb-pilih-kosong">
-                                        <p class="mb-2">Tidak ada destinasi bernama <strong>{{ $cariDestinasi }}</strong> di katalog provinsi ini.</p>
+                                        <p class="mb-2">
+                                            Tidak ada tempat bernama <strong>{{ $cariDestinasi }}</strong> —
+                                            baik di katalog destinasi maupun di master harga, provinsi mana pun.
+                                        </p>
                                         <div class="rb-kosong-aksi">
                                             <button type="button" wire:click="tambahDariCari" class="dsb-tombol is-lembut" style="--ikon: #047857">
                                                 <i class="bi bi-plus-lg"></i> Tambah sebagai kegiatan
@@ -1693,10 +1745,34 @@ Susun RAB || lemon
                                                 <i class="bi bi-x-circle"></i> Kosongkan pencarian
                                             </button>
                                         </div>
-                                        <p class="mt-2 mb-0">Mencari nama yang ada di rincian biaya? Itu dari <strong>Master Harga</strong>, daftar yang berbeda dari katalog destinasi.</p>
+                                        <p class="mt-2 mb-0">Ditambahkan sebagai kegiatan, tiketnya tidak ikut tertarik — isi dulu harganya di <strong>Master Harga</strong> kalau tempat ini berbayar.</p>
                                     </div>
-                                @elseif ($katalogKosong)
+                                @elseif ($katalogKosong && ! $sedangMencari)
                                     <div class="rb-pilih-kosong">Tidak ada destinasi katalog untuk provinsi ini. Tambahkan lewat menu Destinasi Populer, atau ketik sebagai kegiatan lain.</div>
+                                @endif
+
+                                {{-- Yang cocok di master harga tetapi BUKAN tempat.
+
+                                     Mengetik "hiace" di kotak ini wajar dilakukan, dan
+                                     menjadikannya kegiatan di itinerary adalah kesalahan
+                                     yang terlihat benar — kegiatannya bernama Hiace,
+                                     tiketnya tidak ada, dan tidak ada yang janggal
+                                     sampai armadanya tidak pernah masuk rincian biaya.
+                                     Jadi ditawarkan sebagai BIAYA, bukan ditolak. --}}
+                                @if ($bukanTempat !== [])
+                                    <div class="rb-bukan-tempat">
+                                        <span class="orcha-label-kecil">Bukan tempat — ini biaya di master harga</span>
+                                        @foreach ($bukanTempat as $bt)
+                                            <button type="button" wire:key="bt-{{ $bt['id'] }}"
+                                                wire:click="pakaiBiayaDariCari({{ $bt['id'] }})"
+                                                wire:loading.attr="disabled" wire:target="pakaiBiayaDariCari"
+                                                class="rb-bukan-pil" title="Tambahkan ke rincian biaya">
+                                                <i class="bi bi-plus-circle"></i>
+                                                <span>{{ $bt['nama'] }}</span>
+                                                <span class="rb-bukan-kat">{{ $bt['kategori_label'] }}</span>
+                                            </button>
+                                        @endforeach
+                                    </div>
                                 @endif
                                 </div>
 

@@ -40,6 +40,80 @@ class OrchaRabSusun extends Component
 
     public string $cariDestinasi = '';
 
+    /**
+     * Hasil pencarian tempat dari Orcha — katalog destinasi DAN master harga,
+     * lintas provinsi.
+     *
+     * Kotak ini dulu hanya menyaring katalog milik provinsi RAB, dan itu dua
+     * pembatasan sekaligus. "Baluran" punya tiket di master harga tetapi
+     * belum pernah masuk katalog, jadi mencarinya memulangkan "tidak ada
+     * destinasi bernama baluran" — admin lalu mengetiknya sebagai kegiatan
+     * bebas, dan tiketnya tidak pernah ikut tertarik. Perjalanan lintas
+     * provinsi pun tidak bisa disusun, padahal RAB cuma punya satu kolom
+     * provinsi sementara Jogja-Bromo melewati dua.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $hasilCari = [];
+
+    /**
+     * Yang cocok di master harga tetapi BUKAN tempat: armada, hotel, pemandu.
+     *
+     * Mengetik "hiace" wajar dilakukan. Menjadikannya kegiatan di itinerary
+     * adalah kesalahan yang terlihat benar, jadi ia ditampilkan terpisah
+     * dengan tombol yang menambahkannya ke rincian biaya.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $bukanTempat = [];
+
+    /** Pencariannya sedang menunggu jawaban Orcha. */
+    public bool $sedangCari = false;
+
+    public function updatedCariDestinasi(): void
+    {
+        $kata = trim($this->cariDestinasi);
+
+        /*
+         | Satu huruf tidak ditembakkan ke peladen: ia mencocokkan hampir
+         | segalanya, dan daftar sepanjang itu bukan hasil pencarian.
+         | Di bawah dua huruf, penyaringan katalog provinsi di layar sudah
+         | cukup dan langsung terasa.
+         */
+        if (mb_strlen($kata) < 2) {
+            $this->hasilCari = [];
+            $this->bukanTempat = [];
+            $this->sedangCari = false;
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->ambil('/rab/cari-tempat', ['q' => $kata]);
+
+            $this->hasilCari = $balasan['data'] ?? [];
+            $this->bukanTempat = $balasan['bukan_tempat'] ?? [];
+        } catch (OrchaTidakTerjangkau) {
+            /*
+             | Orcha tak terjangkau TIDAK mengosongkan layar.
+             |
+             | Katalog provinsi sudah ada di tangan; menyaringnya sendiri
+             | tetap menolong, dan pesan galat di tengah kotak cari hanya
+             | menghentikan pekerjaan yang sebenarnya masih bisa jalan.
+             */
+            $this->hasilCari = [];
+            $this->bukanTempat = [];
+        }
+
+        $this->sedangCari = false;
+    }
+
+    /** Menambahkan biaya dari hasil pencarian yang bukan tempat. */
+    public function pakaiBiayaDariCari(int $id): void
+    {
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], 'Biaya ditambahkan.');
+    }
+
     public string $kegiatanBaru = '';
 
     public string $marginJenis = 'persen';
@@ -383,8 +457,16 @@ class OrchaRabSusun extends Component
             return;
         }
 
+        /*
+         | Hasil pencarian ikut dibaca, bukan cuma katalog provinsi.
+         |
+         | Tempat yang hanya hidup di master harga tidak ada di katalog, jadi
+         | daerahnya tidak akan pernah ketemu di sana — dan kolom Kota RAB
+         | tetap kosong justru untuk tempat yang baru saja dipilih.
+         */
         $daerah = collect($this->katalog['destinasi'] ?? [])
-            ->firstWhere('nama', $nama)['daerah'] ?? null;
+            ->firstWhere('nama', $nama)['daerah']
+            ?? (collect($this->hasilCari)->firstWhere('nama', $nama)['daerah'] ?? null);
 
         if (! is_string($daerah) || trim($daerah) === '') {
             return;

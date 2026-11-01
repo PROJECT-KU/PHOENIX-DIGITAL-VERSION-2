@@ -1039,11 +1039,128 @@ test('pencarian tanpa hasil tidak dilaporkan sebagai katalog kosong', function (
         ->set('cariDestinasi', 'depok')
         ->html();
 
-    expect($isi)->toContain('Tidak ada destinasi bernama')
+    expect($isi)->toContain('Tidak ada tempat bernama')
         ->and($isi)->not->toContain('Tidak ada destinasi katalog untuk provinsi ini')
+        // Nihilnya kini berarti "tidak ada di mana pun", bukan "belum di
+        // provinsi ini" — pencariannya sudah melihat seluruh provinsi.
+        ->and($isi)->toContain('provinsi mana pun')
         // Dan ditawarkan jalan keluarnya, bukan sekadar kabar nihil.
         ->and($isi)->toContain('Tambah sebagai kegiatan')
         ->and($isi)->toContain('Master Harga');
+});
+
+/** Pemalsu yang menjawab /rab/cari-tempat dengan hasil yang ditentukan. */
+function palsukanCariTempat(array $tempat, array $bukanTempat = []): void
+{
+    Http::fake(function (Request $r) use ($tempat, $bukanTempat) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_ends_with($jalur, '/rab/cari-tempat') => Http::response([
+                'data' => $tempat, 'bukan_tempat' => $bukanTempat,
+            ]),
+            str_contains($jalur, '/rab/katalog') => Http::response(rekamanRab('katalog')),
+            str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
+            default => Http::response(['data' => [], 'meta' => []]),
+        };
+    });
+}
+
+test('tempat yang hanya ada di master harga ikut muncul di kotak cari', function () {
+    /*
+     | Kasus yang dilaporkan: "Baluran" punya tiket di master harga tetapi
+     | belum pernah masuk katalog destinasi, jadi mencarinya memulangkan
+     | "tidak ada destinasi bernama baluran". Admin lalu mengetiknya sebagai
+     | kegiatan bebas — dan tiketnya tidak pernah ikut tertarik.
+     */
+    palsukanCariTempat([[
+        'nama' => 'Taman Nasional Baluran', 'provinsi' => 'Jawa Timur',
+        'daerah' => 'Banyuwangi', 'punya_tiket' => true, 'asal' => 'master',
+    ]]);
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'baluran')
+        ->html();
+
+    expect($isi)->toContain('Taman Nasional Baluran')
+        ->and($isi)->not->toContain('Tidak ada tempat bernama');
+});
+
+test('tempat dari provinsi lain ditandai provinsinya', function () {
+    palsukanCariTempat([[
+        'nama' => 'Pantai Melasti', 'provinsi' => 'Bali',
+        'daerah' => 'Badung', 'punya_tiket' => true, 'asal' => 'master',
+    ]]);
+
+    // Pencarian kini lintas provinsi; tanpa penanda ini "Pantai Melasti" di
+    // tengah perjalanan Jogja terbaca sebagai salah klik.
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'melasti')
+        ->html();
+
+    expect($isi)->toContain('Pantai Melasti')->and($isi)->toContain('Bali');
+});
+
+test('yang bukan tempat ditawarkan sebagai biaya, bukan jadi kegiatan', function () {
+    palsukanCariTempat([], [[
+        'id' => 77, 'nama' => 'Sewa Hiace Jogja-Banyuwangi 4D3N',
+        'kategori_label' => 'Transportasi',
+    ]]);
+
+    /*
+     | Mengetik "hiace" wajar dilakukan. Menjadikannya kegiatan di itinerary
+     | adalah kesalahan yang terlihat benar: kegiatannya bernama Hiace,
+     | tiketnya tidak ada, dan tidak ada yang janggal sampai armadanya tidak
+     | pernah masuk rincian biaya.
+     */
+    $k = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'hiace');
+
+    expect($k->html())->toContain('Bukan tempat')
+        ->and($k->html())->toContain('Sewa Hiace Jogja-Banyuwangi 4D3N');
+
+    $k->call('pakaiBiayaDariCari', 77);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/biaya')
+        && $r['master_harga_id'] === 77);
+});
+
+test('satu huruf tidak ditembakkan ke peladen', function () {
+    palsukanCariTempat([]);
+
+    // Satu huruf mencocokkan hampir segalanya; daftar sepanjang itu bukan
+    // hasil pencarian, dan menembakkannya tiap ketukan hanya membebani.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'b');
+
+    Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/rab/cari-tempat'));
+});
+
+test('Orcha tak terjangkau saat mencari tidak mengosongkan layar', function () {
+    Http::fake(function (Request $r) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_ends_with($jalur, '/rab/cari-tempat') => Http::response(['pesan' => 'meledak'], 500),
+            str_contains($jalur, '/rab/katalog') => Http::response(rekamanRab('katalog')),
+            str_contains($jalur, '/rab/3') => Http::response(rekamanRab('show')),
+            default => Http::response(['data' => [], 'meta' => []]),
+        };
+    });
+
+    // Pesan galat di tengah kotak cari hanya menghentikan pekerjaan yang
+    // sebenarnya masih bisa jalan.
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('cariDestinasi', 'baluran')
+        ->html();
+
+    expect($isi)->toContain('Tambah sebagai kegiatan');
 });
 
 test('kata yang dicari bisa langsung jadi kegiatan', function () {
