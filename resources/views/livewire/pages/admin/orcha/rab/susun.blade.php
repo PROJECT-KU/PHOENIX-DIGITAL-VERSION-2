@@ -1135,7 +1135,14 @@ Susun RAB || lemon
             padding: 9px 11px; border-radius: 11px; background: #fef2f2; border: 1px solid #fecaca;
             font-size: .76rem; color: #991b1b; line-height: 1.45; cursor: pointer;
         }
-        .rb-sadar input { margin-top: 2px; flex: 0 0 auto; }
+        /* Ukurannya dipatok 1rem supaya sama dengan ceklis lain di admin;
+           Bootstrap memberinya 1em, dan em di sini mengikuti huruf induknya
+           yang kecil (.76rem) — hasilnya ceklis 12px yang nyaris tak terlihat
+           pada kalimat yang justru paling perlu disadari. */
+        .rb-sadar input {
+            flex: 0 0 auto; margin-top: 2px;
+            width: 1rem; height: 1rem; border-radius: .25rem;
+        }
         @media (max-width: 575.98px) {
             .rab-kegiatan-aksi { justify-content: flex-end; }
         }
@@ -2925,7 +2932,13 @@ Susun RAB || lemon
                                          persetujuan. --}}
                                     @if ($dibawahImpas)
                                         <label class="rb-sadar">
-                                            <input type="checkbox" wire:model.live="abaikanImpas">
+                                            {{-- form-check-input: tanpanya yang tergambar
+                                                 kontrol bawaan peramban — lebih kecil,
+                                                 bersudut tajam, dan tidak ikut berwarna saat
+                                                 dicentang. Pada pengakuan "saya menerima
+                                                 ruginya", ceklis yang terbaca seperti cacat
+                                                 adalah ceklis yang tidak dipercaya. --}}
+                                            <input type="checkbox" class="form-check-input" wire:model.live="abaikanImpas">
                                             <span>
                                                 Peserta baru {{ $rab['jumlah_peserta'] }} orang, balik modal mulai
                                                 {{ $impasPeserta }} orang. Saya tetap memberangkatkan dan menerima ruginya.

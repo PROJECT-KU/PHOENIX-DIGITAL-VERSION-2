@@ -411,7 +411,13 @@ Master Harga || lemon
                                      dulu di setiap formulir. --}}
                                 <div class="dsb-medan is-lebar">
                                     <label class="mh-dua-saklar">
-                                        <input type="checkbox" wire:model.live="duaHarga">
+                                        {{-- form-check-input, sama dengan SELURUH ceklis lain
+                                             di formulir ini. Tanpanya yang tergambar kontrol
+                                             bawaan peramban: 13px bukan 16px, bersudut tajam,
+                                             dan tidak ikut berwarna merek saat dicentang —
+                                             satu-satunya yang berbeda di antara enam ceklis,
+                                             dan bedanya terbaca sebagai cacat. --}}
+                                        <input type="checkbox" class="form-check-input" wire:model.live="duaHarga">
                                         <span>
                                             <strong>Akhir pekan &amp; hari libur lebih mahal</strong>
                                             <span class="dsb-kartu-sub">
@@ -1989,7 +1995,18 @@ Master Harga || lemon
             display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
             margin: 0;
         }
-        .mh-dua-saklar input { margin-top: 3px; flex: 0 0 auto; }
+        /* Ukurannya dipatok 1rem supaya SAMA PERSIS dengan lima ceklis lain
+           di formulir ini. Bootstrap memberinya 1em, dan em di sini mengikuti
+           ukuran huruf induknya — hasilnya 19px, tiga piksel lebih besar
+           daripada tetangganya. Selisih sekecil itu tidak terbaca sebagai
+           ukuran, cuma sebagai "yang satu ini agak lain".
+
+           margin-top 2px, bukan 3px: angka lama disetel saat ceklisnya masih
+           kontrol bawaan peramban yang 13px. */
+        .mh-dua-saklar input {
+            flex: 0 0 auto; margin-top: 2px;
+            width: 1rem; height: 1rem; border-radius: .25rem;
+        }
         .mh-dua-saklar > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
         .mh-dua-saklar strong { font-size: .83rem; font-weight: 700; }
         .mh-dua-isi {
