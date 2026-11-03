@@ -458,16 +458,32 @@ Susun RAB || lemon
         }
         .rb-modal-pecah + .rb-biaya-total { margin-top: 7px; }
 
+        /* SATU daftar berpembatas, bukan kartu-kartu lepas berjarak.
+
+           Lepas, tiap kartu punya bingkai sendiri DAN jarak 8px di antaranya
+           — dua penanda untuk satu pemisahan, dan jaraknya terbaca sebagai
+           ruang kosong berulang di sepanjang kolom. Satu bingkai luar dengan
+           garis tipis antar-baris memisahkan dengan tegas tanpa menyisakan
+           apa pun. */
+        .rab-kegiatan-daftar {
+            border: var(--orc-panel-garis); border-radius: 14px;
+            background: #fff; overflow: hidden;
+        }
+        .rab-kegiatan-daftar + .rab-kegiatan-daftar { margin-top: 10px; }
+
         .rab-kegiatan {
-            display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem;
-            padding: .75rem .75rem .75rem .9rem; border: var(--orc-panel-garis);
-            border-radius: 14px; background: #fff; margin-bottom: .5rem;
-            /* Pita warna di tepi kiri, bukan latar penuh: sepuluh kartu
+            display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .55rem;
+            padding: .6rem .7rem .6rem .85rem; background: #fff;
+            /* Pita warna di tepi kiri, bukan latar penuh: sepuluh baris
                berlatar warna membuat kotak isian di dalamnya susah dibaca,
                dan yang perlu dibedakan cuma JENISnya — bukan seluruh
-               kartunya. Warnanya sama dengan yang dipakai kedua PDF. */
+               barisnya. Warnanya sama dengan yang dipakai kedua PDF. */
             box-shadow: inset 4px 0 0 var(--c, #64748b);
         }
+        /* Pembatasnya di ATAS baris kedua dan seterusnya: border-bottom pada
+           semua baris menyisakan satu garis menggantung di dasar daftar. */
+        .rab-kegiatan + .rab-kegiatan { border-top: 1px solid var(--dsb-tepi, #e9edf3); }
+        .rab-kegiatan:hover { background: #fcfdff; }
         .rab-kegiatan .rab-jam { order: 1; flex: 0 0 auto; }
         /* Basis 140px, bukan 200: flex memutuskan pindah baris dari JUMLAH
            basis, bukan dari lebar setelah tumbuh. Dengan 200, jumlahnya
@@ -508,27 +524,29 @@ Susun RAB || lemon
             /* Sudutnya menyamai .dsb-isian, bukan bulat penuh: setinggi kotak
                isian, bentuk kapsul membuat ketiganya terbaca seperti tiga
                benda yang kebetulan bersebelahan.
-               Tingginya TIDAK dipatok angka — kotak isian di kartu ini
-               dipatok 38px oleh aturan di atas, bukan 40px bawaan sistem
+               Tingginya TIDAK dipatok angka — kotak isian di baris ini
+               dipatok 34px oleh aturan di bawah, bukan 40px bawaan sistem
                desain, dan angka yang disalin tangan akan meleset lagi begitu
                salah satunya berubah. Biar diregangkan oleh barisnya.
 
                min-height di sini LANTAI, bukan patokan: saat kotak isiannya
                turun ke baris sendiri di layar sempit, tidak ada lagi yang
                bisa diikuti — tanpa lantai keduanya menciut jadi 18px dan
-               kembali terbaca sebagai lencana kecil. */
-            padding: 0 13px; min-height: 34px; border-radius: 11px;
-            font-size: .74rem; font-weight: 700; white-space: nowrap;
+               kembali terbaca sebagai lencana kecil. Angkanya menyamai
+               tinggi kotak isian, supaya saat ikut turun ia tetap sebaris
+               rapi dengan yang lain. */
+            padding: 0 11px; min-height: 34px; border-radius: 10px;
+            font-size: .72rem; font-weight: 700; white-space: nowrap;
         }
         /* color-mix memberi latar setipis warnanya sendiri; peramban yang
            belum mengenalnya mengabaikan baris ini dan menyisakan tulisan
            berwarna tanpa latar — masih terbaca, cuma kurang tegas. */
         .rab-pil-jenis { color: var(--c, #64748b); background: color-mix(in srgb, var(--c, #64748b) 10%, transparent); }
         .rab-pil-lama { color: var(--dsb-redup, #6b7280); background: #f1f5f9; }
-        .rab-kegiatan .dsb-isian { height: 38px !important; min-height: 38px; font-size: .88rem; padding-left: .75rem !important; }
+        .rab-kegiatan .dsb-isian { height: 34px !important; min-height: 34px; font-size: .85rem; padding-left: .7rem !important; }
         .rab-kegiatan-aksi { display: flex; gap: .3rem; align-items: center; }
-        .rab-kegiatan-aksi .btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-        .rab-kegiatan-aksi .dsb-isian { width: 74px; padding-right: 1.6rem; }
+        .rab-kegiatan-aksi .btn { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+        .rab-kegiatan-aksi .dsb-isian { width: 70px; padding-right: 1.5rem; }
         /* Cip di dalam GRID, bukan flex-wrap.
 
            Flex-wrap meninggalkan sisa di ujung kanan tiap baris sebesar cip
@@ -588,11 +606,23 @@ Susun RAB || lemon
         }
         .rb-pegangan:hover { color: #94a3b8; }
 
-        .rb-hari-aksi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        /* Bilah alat hari: berlatar, bukan melayang.
+
+           Label di kiri dan kendali di kanan dengan margin-right:auto
+           menyisakan lubang melintang di tengahnya — sama persis dengan yang
+           terjadi di bilah tindakan kartu kepala. Diberi latar, ruang itu
+           berhenti jadi lubang dan jadi badan bilahnya sendiri. */
+        .rb-hari-aksi {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            padding: 7px 8px 7px 12px; border-radius: 12px;
+            background: #f6f8fb; border: 1px solid var(--dsb-tepi, #e9edf3);
+        }
         .rb-hari-aksi-label {
             font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
             color: var(--dsb-redup, #6b7280); margin-right: auto;
         }
+        .rb-hari-aksi .dsb-isian,
+        .rb-hari-aksi .btn { background: #fff; }
         .rb-hari-salin { width: auto; height: 34px; padding: 0 30px 0 11px; font-size: .8rem; }
         .rab-hari-tab .rb-semua-hari { margin-left: auto; }
         .rb-hari-kepala {
@@ -1639,7 +1669,7 @@ Susun RAB || lemon
                             @endif
 
                             @unless ($semuaHari)
-                                <div class="rb-hari-aksi mb-3">
+                                <div class="rb-hari-aksi mb-2">
                                     <span class="rb-hari-aksi-label">Hari {{ $hariAktif }}</span>
 
                                     @if ($jumlahHari > 1)
@@ -1710,7 +1740,7 @@ Susun RAB || lemon
                             {{-- Seret hanya pada satu hari: di mode semua hari, urutan
                                  yang dikirim akan bercampur antarhari dan hasilnya
                                  susunan yang tidak diminta siapa pun. --}}
-                            <div @if (! $semuaHari) x-data x-init="pasangSeretUrut($el, 'susunUlang')" @endif>
+                            <div class="rab-kegiatan-daftar" @if (! $semuaHari) x-data x-init="pasangSeretUrut($el, 'susunUlang')" @endif>
                             @foreach ($kegiatanHari as $i => $k)
                                 @php [$labelJenis, $warnaJenis] = $rupaDari($k); @endphp
                                 <div class="rab-kegiatan" style="--c: {{ $warnaJenis }}"
@@ -1743,7 +1773,7 @@ Susun RAB || lemon
                                             <span class="rab-pil-lama">{{ $k['durasi_teks'] }}</span>
                                         @endif
                                         <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
-                                            class="dsb-isian rab-ket" placeholder="Keterangan untuk pelanggan (boleh kosong)">
+                                            class="dsb-isian rab-ket" placeholder="Catatan untuk pelanggan — boleh dikosongkan">
                                     </div>
                                     <div class="rab-kegiatan-aksi">
                                         @unless ($semuaHari)

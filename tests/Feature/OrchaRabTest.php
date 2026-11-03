@@ -953,7 +953,7 @@ test('pil jenis dan lama setinggi kotak isian di sebelahnya', function () {
      | mematok tingginya dengan angka adalah rupa, dan rupa tidak menerbitkan
      | galat apa pun.
      |
-     | Kotak isian di kartu ini dipatok 38px — bukan 40px bawaan sistem
+     | Kotak isian di baris ini dipatok 34px — bukan 40px bawaan sistem
      | desain — jadi angka yang disalin tangan akan meleset lagi begitu salah
      | satunya berubah. Yang benar: diregangkan oleh barisnya.
      */
