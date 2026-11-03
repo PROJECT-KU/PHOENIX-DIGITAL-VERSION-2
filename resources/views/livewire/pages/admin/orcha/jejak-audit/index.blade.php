@@ -258,6 +258,18 @@ Jejak Audit Orcha || lemon
                                         wire:model.live.debounce.500ms="filterIp">
                                     <span class="dsb-kartu-sub">Untuk memeriksa akses dari luar kantor</span>
                                 </div>
+
+                                {{-- Kode satu benda, bukan pencarian bebas: pencarian
+                                     ikut menjaring baris yang kebetulan menyebut kode
+                                     itu di kalimatnya, dan daftar audit yang mencampur
+                                     dua benda lebih buruk daripada tidak ada daftar
+                                     sama sekali. Layar RAB menautkan ke sini. --}}
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="ja-kode">Kode</label>
+                                    <input id="ja-kode" type="text" class="dsb-isian" placeholder="mis. RAB-2609-R24J"
+                                        wire:model.live.debounce.500ms="filterKode">
+                                    <span class="dsb-kartu-sub">Jejak satu RAB atau satu pesanan saja</span>
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -269,7 +281,7 @@ Jejak Audit Orcha || lemon
         <section class="dsb-bagian">
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12" wire:loading.class="dsb-sedang-muat"
-                    wire:target="cari,filterAdmin,filterAksi,filterIp,rentang,dari,sampai,baris,bersihkanSaringan,bersihkanCari,keHalaman">
+                    wire:target="cari,filterAdmin,filterAksi,filterIp,filterKode,rentang,dari,sampai,baris,bersihkanSaringan,bersihkanCari,keHalaman">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-clock-history"></i></span>

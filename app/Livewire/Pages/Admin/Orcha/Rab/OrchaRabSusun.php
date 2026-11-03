@@ -952,9 +952,81 @@ class OrchaRabSusun extends Component
      * Orcha yang menolak bila barisnya tidak punya master atau harganya
      * sudah sama; alasannya sampai ke layar sebagai toast.
      */
-    public function simpanKeMaster(int $id): void
+    /**
+     * Membawa harga baris ini pulang ke master harga.
+     *
+     * $sisi hanya berarti bila masternya punya DUA harga. Pada baris yang
+     * ditarik sendiri dari jadwal, sisinya sudah pasti dari tanggal
+     * kunjungannya dan $sisi dibiarkan kosong. Pada baris yang digandakan
+     * tangan ia tidak pasti sama sekali — admin menggandakan justru untuk
+     * menutup hari yang jenisnya berbeda — jadi layar menanyakannya.
+     */
+    public function simpanKeMaster(int $id, string $sisi = ''): void
     {
-        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya/{$id}/ke-master");
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya/{$id}/ke-master",
+            $sisi !== '' ? ['sisi' => $sisi] : []);
+    }
+
+    /* ----------------------------- KIRIM EMAIL ----------------------------- */
+
+    /**
+     * Mengirim penawaran ke email pelanggan.
+     *
+     * Alamatnya ditentukan Orcha dari RAB-nya sendiri, tidak dikirim dari
+     * sini — layar tidak boleh jadi tempat mengetik alamat tujuan berkas
+     * yang berisi harga.
+     */
+    public function kirimEmail(): void
+    {
+        $this->kirimKe('kirim', "/rab/{$this->rabId}/kirim-email", [],
+            'Penawaran terkirim ke email pelanggan, berikut PDF-nya.');
+    }
+
+    /** Ada alamat email yang sah untuk dikirimi. */
+    public function adaEmail(): bool
+    {
+        return filter_var(trim((string) ($this->dataRab['email'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    /* --------------------------- SALIN & HAPUS RAB -------------------------- */
+
+    /**
+     * Menyalin RAB ini jadi penawaran baru, lalu membuka salinannya.
+     *
+     * Keduanya sudah lama ada di daftar, tetapi justru SAAT MENYUSUN-lah
+     * orang paling sering ingin menyalin — membuat varian 10 peserta di
+     * sebelah varian 15 peserta. Dari daftar, jalannya: kembali → cari
+     * barisnya → salin → buka lagi.
+     */
+    public function salinRab(): void
+    {
+        try {
+            $baru = $this->orcha()->kirim("/rab/{$this->rabId}/salin")['data'] ?? null;
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        $this->dispatch('orcha-sukses-pindah',
+            message: 'Disalin jadi '.($baru['kode'] ?? 'RAB baru').'. Statusnya draf, dengan masa berlaku baru.',
+            url: route('admin.orcha.rab.susun', $baru['id']));
+    }
+
+    /** Membuang RAB ini, lalu kembali ke daftarnya. */
+    public function hapusRab(): void
+    {
+        try {
+            $this->orcha()->hapus("/rab/{$this->rabId}");
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        $this->dispatch('orcha-sukses-pindah',
+            message: 'RAB dihapus beserta jadwal dan seluruh rincian biayanya.',
+            url: route('admin.orcha.rab'));
     }
 
     /**
@@ -1120,6 +1192,11 @@ class OrchaRabSusun extends Component
 
     public bool $bukaVersi = false;
 
+    /** Panel "simpan jadwal jadi templat". */
+    public bool $bukaTemplat = false;
+
+    public string $namaTemplat = '';
+
     public array $versi = [];
 
     public array $versiMeta = [];
@@ -1148,6 +1225,72 @@ class OrchaRabSusun extends Component
     public function tutupVersi(): void
     {
         $this->bukaVersi = false;
+    }
+
+    /**
+     * Memasang kembali penawaran yang pernah dikirim.
+     *
+     * Jadwal perjalanannya TIDAK ikut mundur — itu aturan Orcha, dan
+     * disebut di pesan suksesnya supaya tidak ada yang mengira jadwalnya
+     * ikut hilang.
+     */
+    public function pulihkanVersi(int $versi): void
+    {
+        if ($this->kirimKe('kirim', "/rab/{$this->rabId}/versi/{$versi}/pulihkan")) {
+            $this->bukaVersi = false;
+        }
+    }
+
+    /* ------------------------- TEMPLAT JADWAL ------------------------- */
+
+    /**
+     * Menyimpan jadwal yang baru disusun supaya bisa dipakai lagi.
+     *
+     * Jalurnya dulu satu arah: jadwal bisa diambil dari paket, tetapi yang
+     * baru disusun tidak bisa disimpan ke mana pun — jadi tiap "Jogja 3H2M"
+     * berikutnya disusun dari nol lagi.
+     */
+    public function simpanTemplat(): void
+    {
+        $this->validate(
+            ['namaTemplat' => 'required|string|min:3|max:150'],
+            ['namaTemplat.required' => 'Beri namanya dulu — nama itulah yang Anda cari lain kali.'],
+        );
+
+        try {
+            $this->orcha()->kirim("/rab/{$this->rabId}/simpan-templat", ['nama' => trim($this->namaTemplat)]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        // Daftar sumber dikosongkan supaya ditarik lagi: ia hanya diambil
+        // sekali per kunjungan halaman, jadi tanpa ini templat yang baru
+        // disimpan tidak muncul di panel "ambil jadwal" sampai halamannya
+        // dimuat ulang — dan admin akan mengira penyimpanannya gagal.
+        $this->paketSumber = [];
+
+        $this->dispatch('order-updated',
+            message: 'Jadwal disimpan sebagai "'.trim($this->namaTemplat).'". '
+                .'Mulai sekarang ia muncul di panel "ambil jadwal" RAB mana pun.');
+
+        $this->bukaTemplat = false;
+        $this->namaTemplat = '';
+    }
+
+    public function bukaSimpanTemplat(): void
+    {
+        $this->bukaTemplat = true;
+        $this->namaTemplat = (string) ($this->dataRab['judul'] ?? '');
+        $this->resetValidation();
+    }
+
+    public function tutupSimpanTemplat(): void
+    {
+        $this->bukaTemplat = false;
+        $this->namaTemplat = '';
+        $this->resetValidation();
     }
 
     /* ------------------------------ NEGOSIASI ------------------------------ */

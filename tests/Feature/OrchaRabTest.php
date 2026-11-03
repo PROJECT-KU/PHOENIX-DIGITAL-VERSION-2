@@ -3665,7 +3665,9 @@ test('tawaran mulai dari paket muncul saat itinerary masih kosong', function () 
     });
 
     $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()
-        ->assertSee('Mulai dari paket yang sudah ada?');
+        // Kalimatnya kini menyebut KEDUA sumbernya: templat yang pernah tim
+        // simpan, dan agenda paket wisata.
+        ->assertSee('Mulai dari jadwal yang sudah ada?');
 });
 
 test('tawaran mulai dari paket hilang begitu itinerary terisi', function () {
@@ -3853,4 +3855,201 @@ test('borang ubah tersusun bagian demi bagian, tiap bagian kartunya sendiri', fu
 
     expect($baru)->toContain('Jenis perjalanan')
         ->and($baru)->not->toContain('Catatan internal');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Lima jalan keluar yang dulu tidak ada di penyusun
+|--------------------------------------------------------------------------
+*/
+
+test('penyusun bisa menyalin dan menghapus RAB tanpa kembali ke daftar', function () {
+    /*
+     | Keduanya sudah lama ada di daftar, tetapi justru SAAT MENYUSUN-lah
+     | orang paling sering ingin menyalin — membuat varian 10 peserta di
+     | sebelah varian 15 peserta.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('salinRab')
+        ->assertDispatched('orcha-sukses-pindah', url: route('admin.orcha.rab.susun', 9));
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('hapusRab')
+        ->assertDispatched('orcha-sukses-pindah', url: route('admin.orcha.rab'));
+});
+
+test('tombol email mati saat RAB belum punya alamat, bukan hilang', function () {
+    /*
+     | Yang hilang sama sekali tidak mengajari siapa pun bahwa jalurnya ada
+     | dan tinggal diisi alamatnya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    expect($layar->instance()->adaEmail())->toBeFalse()
+        ->and($layar->html())->toContain('isi dulu di Data perjalanan');
+});
+
+test('kirim email meneruskan ke Orcha tanpa menyebut alamat tujuannya', function () {
+    /*
+     | Alamatnya ditentukan Orcha dari RAB-nya sendiri. Layar tidak boleh
+     | jadi tempat mengetik alamat tujuan berkas yang berisi harga.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('kirimEmail');
+
+    Http::assertSent(function (Request $r) {
+        return $r->method() === 'POST'
+            && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/kirim-email')
+            && ! array_key_exists('email', $r->data());
+    });
+});
+
+test('versi yang rinciannya tersimpan menawarkan dipulihkan, yang lama tidak', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        if (str_ends_with($jalur, '/versi')) {
+            return Http::response(['data' => [
+                ['id' => 4, 'urutan' => 2, 'harga_per_orang_teks' => 'Rp 900.000', 'harga_total_teks' => 'Rp 9.000.000',
+                    'untung_teks' => 'Rp 1.200.000', 'persen_untung' => 15.4, 'jumlah_peserta' => 10,
+                    'jumlah_baris' => 6, 'bisa_dipulihkan' => true, 'oleh' => 'Berto',
+                    'pada' => '20 Okt 2026, 10:00', 'pada_teks' => 'seminggu yang lalu', 'beda_kini' => null],
+                ['id' => 3, 'urutan' => 1, 'harga_per_orang_teks' => 'Rp 800.000', 'harga_total_teks' => 'Rp 8.000.000',
+                    'untung_teks' => 'Rp 1.000.000', 'persen_untung' => 12.0, 'jumlah_peserta' => 10,
+                    'jumlah_baris' => 5, 'bisa_dipulihkan' => false, 'oleh' => 'Berto',
+                    'pada' => '10 Okt 2026, 09:00', 'pada_teks' => 'tiga pekan lalu', 'beda_kini' => null],
+            ], 'meta' => []]);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('bukaRiwayatVersi')
+        ->html();
+
+    // Versi lama menyebut sebabnya, bukan menyodorkan tombol yang gagal diam-diam.
+    expect($html)->toContain('data-action="pulihkanVersi"')
+        ->and($html)->toContain('data-arg="4"')
+        ->and($html)->not->toContain('data-arg="3"')
+        ->and($html)->toContain('rinciannya tidak tersimpan');
+});
+
+test('memulihkan versi meneruskan ke jalur Orcha-nya', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('bukaVersi', true)
+        ->call('pulihkanVersi', 4)
+        ->assertSet('bukaVersi', false);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/versi/4/pulihkan'));
+});
+
+test('jadwal bisa disimpan jadi templat, dan namanya wajib', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('bukaSimpanTemplat')
+        ->set('namaTemplat', '')
+        ->call('simpanTemplat')
+        ->assertHasErrors('namaTemplat');
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('bukaSimpanTemplat')
+        ->set('namaTemplat', 'Jogja Heritage 3 hari')
+        ->call('simpanTemplat')
+        ->assertHasNoErrors()
+        ->assertSet('bukaTemplat', false)
+        // Daftar sumber dikosongkan supaya templat yang baru disimpan
+        // langsung muncul, bukan menunggu halaman dimuat ulang.
+        ->assertSet('paketSumber', []);
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3/simpan-templat')
+        && ($r->data()['nama'] ?? null) === 'Jogja Heritage 3 hari');
+});
+
+test('baris bermaster dua harga menanyakan sisinya, yang lain tidak', function () {
+    /*
+     | Tanpa pertanyaan ini, harga akhir pekan tertulis ke kolom hari kerja
+     | pada baris yang digandakan tangan — dan SELURUH RAB berikutnya
+     | memakainya di hari Selasa.
+     */
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+
+        foreach ($show['data']['ringkasan']['baris'] as $i => $b) {
+            $show['data']['ringkasan']['baris'][$i]['harga_master_kini'] = 60_000;
+            $show['data']['ringkasan']['baris'][$i]['selisih_master'] = -10_000;
+            $show['data']['ringkasan']['baris'][$i]['master_dua_harga'] = $i === 0;
+        }
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Simpan ke hari kerja')
+        ->and($html)->toContain('Simpan ke akhir pekan')
+        ->and($html)->toContain('Simpan ke master');
+});
+
+test('simpan ke master meneruskan sisi yang dipilih', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('simpanKeMaster', 11, 'akhir_pekan');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_contains((string) parse_url($r->url(), PHP_URL_PATH), '/ke-master')
+        && ($r->data()['sisi'] ?? null) === 'akhir_pekan');
+});
+
+test('tanpa sisi, badan permintaannya tidak membawa kunci sisi sama sekali', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('simpanKeMaster', 11);
+
+    Http::assertSent(fn (Request $r) => str_contains((string) parse_url($r->url(), PHP_URL_PATH), '/ke-master')
+        && ! array_key_exists('sisi', $r->data()));
+});
+
+test('penyusun menautkan ke jejak audit RAB ini saja', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain(route('admin.orcha.jejak-audit', ['kode' => rekamanRab('show')['data']['kode']]));
+});
+
+test('saringan kode jejak audit diteruskan ke Orcha', function () {
+    Http::fake(fn () => Http::response(['data' => [], 'meta' => ['total' => 0]]));
+
+    // withQueryParams, bukan parameter mount(): #[Url] membaca alamatnya,
+    // dan parameter mount tidak pernah menyentuhnya.
+    Livewire::actingAs(adminRab())
+        ->withQueryParams(['kode' => 'RAB-2609-R24J'])
+        ->test(\App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList::class)
+        ->assertSet('filterKode', 'RAB-2609-R24J');
+
+    Http::assertSent(fn (Request $r) => ($r->data()['kode'] ?? null) === 'RAB-2609-R24J');
 });

@@ -598,10 +598,24 @@ Susun RAB || lemon
         .rb-versi-tabel td { padding: 5px 0; vertical-align: top; }
         .rb-versi-tabel td:last-child { text-align: right; font-weight: 700; white-space: nowrap; }
         .rb-versi-tabel tr + tr td { border-top: 1px solid #f1f5f9; }
+        /* Tombol pulihkan duduk DI DALAM sel harga, bukan sebagai kolom
+           ketiga: rel kanan hanya 336px, dan kolom ketiga memaksa harga dan
+           tanggalnya melipat jadi dua baris masing-masing. */
+        .rb-versi-pulih {
+            display: inline-flex; align-items: center; gap: 5px; margin-top: 5px;
+            padding: 3px 9px; border-radius: 999px; cursor: pointer;
+            background: #eef2ff; border: 1px solid #c7d2fe; color: #4338ca;
+            font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        .rb-versi-pulih:hover { background: #e0e7ff; }
         .rb-versi-tabel small {
             display: block; font-size: .7rem; font-weight: 400;
             color: var(--dsb-redup, #94a3b8); line-height: 1.35;
         }
+
+        /* Dibedakan dari tab hari di sebelahnya: ia bukan penyaring tampilan,
+           melainkan tindakan yang meninggalkan sesuatu. */
+        .rb-simpan-templat { margin-left: auto; color: #4338ca !important; border-color: #c7d2fe !important; }
 
         .rb-paket {
             display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
@@ -1387,6 +1401,48 @@ Susun RAB || lemon
                                         <i class="bi bi-whatsapp"></i> WhatsApp
                                     </a>
                                 @endif
+
+                                {{-- Email pelanggan dulu dikumpulkan di borang lalu
+                                     tidak pernah dipakai. Tombolnya tetap TERLIHAT
+                                     walau alamatnya kosong, cuma mati: yang hilang
+                                     sama sekali tidak mengajari siapa pun bahwa
+                                     jalurnya ada dan tinggal diisi alamatnya. --}}
+                                @if ($this->adaEmail())
+                                    <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #0369a1"
+                                        data-action="kirimEmail"
+                                        data-title="Kirim penawaran ke email pelanggan?"
+                                        data-text="PDF penawarannya ikut dilampirkan. Yang internal tidak pernah ikut."
+                                        data-confirm="Ya, kirim" data-icon="question">
+                                        <i class="bi bi-envelope-arrow-up"></i> Email
+                                    </button>
+                                @else
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #cbd5e1" disabled
+                                        title="Belum ada alamat email pelanggan — isi dulu di Data perjalanan">
+                                        <i class="bi bi-envelope"></i> Email
+                                    </button>
+                                @endif
+
+                                {{-- Menyalin & menghapus sudah lama ada di daftar,
+                                     tetapi justru SAAT MENYUSUN-lah orang paling
+                                     sering ingin menyalin — membuat varian 10 peserta
+                                     di sebelah varian 15 peserta. --}}
+                                <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
+                                    data-action="salinRab"
+                                    data-title="Salin RAB ini?"
+                                    data-text="Jadwal dan seluruh rincian biayanya ikut disalin. Salinannya draf, dengan masa berlaku baru."
+                                    data-confirm="Ya, salin" data-icon="question">
+                                    <i class="bi bi-files"></i> Salin
+                                </button>
+
+                                @if (empty($rab['kode_pendaftaran']))
+                                    <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #be123c"
+                                        data-action="hapusRab"
+                                        data-title="Hapus {{ $rab['kode'] }}?"
+                                        data-text="Jadwal dan seluruh rincian biayanya ikut terhapus. Ini tidak bisa dibatalkan."
+                                        data-confirm="Ya, hapus" data-icon="warning">
+                                        <i class="bi bi-trash"></i> Hapus
+                                    </button>
+                                @endif
                             </div>
 
                             <div class="rb-aksi-baris rb-aksi-berkas">
@@ -1407,6 +1463,19 @@ Susun RAB || lemon
                                 <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'internal']) }}" class="dsb-tombol is-lembut" style="--ikon: #64748b"
                                     title="Berisi modal & margin — jangan dikirim ke pelanggan">
                                     <i class="bi bi-lock"></i> Internal
+                                </a>
+                            </div>
+
+                            {{-- Siapa mengubah apa pada RAB ini. Jejaknya selama ini
+                                 tercatat, tetapi layar auditnya tidak punya penyaring
+                                 per benda — jadi tidak pernah dibuka dari sini.
+                                 Bandingkan Master Harga, yang panel riwayatnya justru
+                                 sudah lengkap dengan pelakunya. --}}
+                            <div class="rb-aksi-baris">
+                                <a href="{{ route('admin.orcha.jejak-audit', ['kode' => $rab['kode']]) }}" wire:navigate
+                                    class="dsb-tombol is-lembut" style="--ikon: #0ea5e9"
+                                    title="Siapa mengubah apa pada RAB ini">
+                                    <i class="bi bi-clock-history"></i> Riwayat perubahan
                                 </a>
                             </div>
                         </div>
@@ -1450,21 +1519,21 @@ Susun RAB || lemon
                                 <div class="rb-paket">
                                     <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-box-seam"></i></span>
                                     <span class="rb-paket-teks">
-                                        <strong>Mulai dari paket yang sudah ada?</strong>
-                                        <span class="dsb-kartu-sub">Agendanya disalin ke sini, lalu boleh disunting.</span>
+                                        <strong>Mulai dari jadwal yang sudah ada?</strong>
+                                        <span class="dsb-kartu-sub">Templat yang pernah tim simpan, atau agenda paket wisata. Isinya disalin ke sini, lalu boleh disunting.</span>
                                     </span>
                                     <button type="button" wire:click="bukaDariPaket" wire:loading.attr="disabled" wire:target="bukaDariPaket"
                                         class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
                                         <i class="bi bi-box-seam" wire:loading.remove wire:target="bukaDariPaket"></i>
                                         <span class="dsb-putar" wire:loading wire:target="bukaDariPaket"></span>
-                                        <span>Pilih paket</span>
+                                        <span>Pilih jadwal</span>
                                     </button>
                                 </div>
 
                                 @if ($bukaPaket)
                                     <div class="rb-paket-panel">
                                         @if ($paketSumber === [])
-                                            <span class="dsb-kartu-sub">Belum ada paket wisata beragenda untuk provinsi ini.</span>
+                                            <span class="dsb-kartu-sub">Belum ada jadwal tersimpan untuk provinsi ini — susun saja dari nol, nanti bisa disimpan jadi templat.</span>
                                         @else
                                             <div class="dsb-medan">
                                                 <label class="dsb-label" for="rb-paket">Paket</label>
@@ -1473,8 +1542,10 @@ Susun RAB || lemon
                                                          pilihan yang dipulihkan dari server tidak tergambar
                                                          sebagai terpilih. Dijaga SelectCariOrchaTest. --}}
                                                     <option value="" @selected($this->paketTerpilih === '')>Pilih paket…</option>
+                                                    {{-- Asalnya DISEBUT: templat disusun tim untuk
+                                                         pekerjaan ini, paket disusun untuk dijual. --}}
                                                     @foreach ($paketSumber as $pk)
-                                                        <option value="{{ $pk['id'] }}" @selected((string) $this->paketTerpilih === (string) $pk['id'])>{{ $pk['nama'] }} — {{ $pk['jumlah_hari'] }} hari, {{ $pk['jumlah_kegiatan'] }} kegiatan</option>
+                                                        <option value="{{ $pk['id'] }}" @selected((string) $this->paketTerpilih === (string) $pk['id'])>{{ ($pk['asal'] ?? 'paket') === 'templat' ? 'Templat tim' : 'Paket' }} · {{ $pk['nama'] }} — {{ $pk['jumlah_hari'] }} hari, {{ $pk['jumlah_kegiatan'] }} kegiatan</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -1508,7 +1579,49 @@ Susun RAB || lemon
                                     title="Tampilkan seluruh hari sekaligus">
                                     <i class="bi bi-list-ul"></i> Semua
                                 </button>
+
+                                {{-- Jalurnya dulu SATU ARAH: jadwal bisa diambil dari
+                                     paket, tetapi yang baru disusun tidak bisa disimpan
+                                     ke mana pun — jadi tiap "Jogja 3H2M" berikutnya
+                                     disusun dari nol lagi. --}}
+                                @if ($itinerary !== [])
+                                    <button type="button" wire:click="bukaSimpanTemplat"
+                                        class="rb-semua-hari rb-simpan-templat"
+                                        title="Simpan jadwal ini supaya bisa dipakai di RAB berikutnya">
+                                        <i class="bi bi-bookmark-plus"></i> Simpan jadi templat
+                                    </button>
+                                @endif
                             </div>
+
+                            @if ($bukaTemplat)
+                                <div class="rb-paket-panel mb-3">
+                                    <div class="dsb-medan">
+                                        <label class="dsb-label" for="rb-nama-templat">Nama templat</label>
+                                        <input id="rb-nama-templat" type="text" maxlength="150"
+                                            wire:model="namaTemplat" wire:keydown.enter="simpanTemplat"
+                                            class="dsb-isian @error('namaTemplat') is-galat @enderror"
+                                            placeholder="Jogja Heritage 3 hari">
+                                        @error('namaTemplat')<span class="dsb-galat">{{ $message }}</span>@enderror
+                                        <span class="dsb-kartu-sub">
+                                            Nama inilah yang Anda cari lain kali. Harganya tidak ikut disimpan —
+                                            ia selalu diambil ulang dari Master Harga.
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-2 justify-content-end mt-2">
+                                        <button type="button" wire:click="tutupSimpanTemplat"
+                                            class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                            <i class="bi bi-x-lg"></i><span>Batal</span>
+                                        </button>
+                                        <button type="button" wire:click="simpanTemplat"
+                                            wire:loading.attr="disabled" wire:target="simpanTemplat"
+                                            class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
+                                            <i class="bi bi-bookmark-plus" wire:loading.remove wire:target="simpanTemplat"></i>
+                                            <span class="dsb-putar" wire:loading wire:target="simpanTemplat"></span>
+                                            <span>Simpan</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
 
                             @unless ($semuaHari)
                                 <div class="rb-hari-aksi mb-3">
@@ -2153,8 +2266,24 @@ Susun RAB || lemon
                                                 <div class="rb-beda-aksi">
                                                     <button type="button" wire:click="pakaiHargaMaster({{ $b['id'] }})"
                                                         title="Baris ini ikut harga master">Pakai harga master</button>
-                                                    <button type="button" wire:click="simpanKeMaster({{ $b['id'] }})"
-                                                        title="Master ikut harga baris ini, dan RAB berikutnya memakainya">Simpan ke master</button>
+                                                    {{-- Masternya punya DUA harga → sisinya DITANYAKAN.
+
+                                                         Penanda baris benar untuk yang ditarik sendiri dari
+                                                         jadwal: tanggal kunjungannya diketahui. Ia tidak benar
+                                                         untuk baris yang digandakan tangan — admin menggandakan
+                                                         justru untuk menutup hari yang jenisnya berbeda, lalu
+                                                         mengetik harga hari itu. Tanpa pertanyaan ini, harga
+                                                         akhir pekan tertulis ke kolom hari kerja, dan SELURUH
+                                                         RAB berikutnya memakainya di hari Selasa. --}}
+                                                    @if ($b['master_dua_harga'] ?? false)
+                                                        <button type="button" wire:click="simpanKeMaster({{ $b['id'] }}, 'hari_kerja')"
+                                                            title="Tulis angka ini ke harga hari kerja di Master Harga">Simpan ke hari kerja</button>
+                                                        <button type="button" wire:click="simpanKeMaster({{ $b['id'] }}, 'akhir_pekan')"
+                                                            title="Tulis angka ini ke harga akhir pekan di Master Harga">Simpan ke akhir pekan</button>
+                                                    @else
+                                                        <button type="button" wire:click="simpanKeMaster({{ $b['id'] }})"
+                                                            title="Master ikut harga baris ini, dan RAB berikutnya memakainya">Simpan ke master</button>
+                                                    @endif
                                                     @if (! $this->catatanTerbuka($b['id']))
                                                         <button type="button" wire:click="bukaCatatan({{ $b['id'] }})"
                                                             title="Catat kenapa harganya berbeda">+ Catatan</button>
@@ -2694,7 +2823,26 @@ Susun RAB || lemon
                                                                 <td>
                                                                     {{ $v['harga_per_orang_teks'] ?? '' }}/org
                                                                     <small>{{ $v['beda_kini'] ?? '' }}</small>
+                                                                    {{-- Memulihkan, bukan cuma melihat. Tanpa ini tim
+                                                                         yang menurunkan harga lalu menyesal harus
+                                                                         mengetik ulang seluruh angkanya dari
+                                                                         tangkapan layar. Versi lama — dicatat
+                                                                         sebelum rinciannya ikut disimpan — menyebut
+                                                                         sebabnya, bukan menyodorkan tombol yang
+                                                                         gagal diam-diam. --}}
+                                                                    @if ($v['bisa_dipulihkan'] ?? false)
+                                                                        <button type="button" class="rb-versi-pulih pcek-konfirmasi"
+                                                                            data-action="pulihkanVersi" data-arg="{{ $v['id'] }}"
+                                                                            data-title="Pasang kembali penawaran #{{ $v['urutan'] }}?"
+                                                                            data-text="Seluruh rincian biaya yang sekarang diganti dengan rincian versi itu. Jadwal perjalanannya tidak ikut diubah."
+                                                                            data-confirm="Ya, pasang kembali" data-icon="question">
+                                                                            <i class="bi bi-arrow-counterclockwise"></i> Pulihkan
+                                                                        </button>
+                                                                    @else
+                                                                        <small>rinciannya tidak tersimpan</small>
+                                                                    @endif
                                                                 </td>
+
                                                             </tr>
                                                         @endforeach
                                                     </tbody>

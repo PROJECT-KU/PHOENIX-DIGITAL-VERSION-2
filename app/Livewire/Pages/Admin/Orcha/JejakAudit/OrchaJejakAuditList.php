@@ -52,6 +52,18 @@ class OrchaJejakAuditList extends Component
     #[Url(as: 'ip', except: '')]
     public string $filterIp = '';
 
+    /**
+     * Satu benda saja — "siapa mengubah apa pada RAB ini".
+     *
+     * Dibawa di alamat supaya layar lain bisa menautkannya langsung, dan
+     * supaya tautannya bisa disalin ke orang lain. Pencarian bebas
+     * sebetulnya menemukan kodenya, tetapi ikut menjaring baris yang
+     * kebetulan menyebut kode itu di kalimatnya — dan daftar audit yang
+     * mencampur dua benda lebih buruk daripada tidak ada daftar sama sekali.
+     */
+    #[Url(as: 'kode', except: '')]
+    public string $filterKode = '';
+
     /** Baris per halaman; angka yang boleh dipilih ada di PILIHAN_BARIS. */
     #[Url(as: 'baris', except: 25)]
     public int $baris = 25;
@@ -208,7 +220,7 @@ class OrchaJejakAuditList extends Component
 
     public function bersihkanSaringan(): void
     {
-        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'dari', 'sampai', 'cari', 'rentang', 'lainnya']);
+        $this->reset(['filterAdmin', 'filterAksi', 'filterIp', 'filterKode', 'dari', 'sampai', 'cari', 'rentang', 'lainnya']);
         $this->halaman = 1;
     }
 
@@ -222,7 +234,7 @@ class OrchaJejakAuditList extends Component
      */
     public function jumlahSaringanLanjut(): int
     {
-        return collect([$this->filterAksi, $this->filterIp])
+        return collect([$this->filterAksi, $this->filterIp, $this->filterKode])
             ->filter(fn ($n) => $n !== '')
             ->count();
     }
@@ -230,7 +242,7 @@ class OrchaJejakAuditList extends Component
     /** Ada saringan apa pun yang aktif — penentu munculnya tombol pengosong. */
     public function jumlahSaringan(): int
     {
-        return collect([$this->cari, $this->filterAdmin, $this->filterAksi, $this->filterIp, $this->dari, $this->sampai])
+        return collect([$this->cari, $this->filterAdmin, $this->filterAksi, $this->filterIp, $this->filterKode, $this->dari, $this->sampai])
             ->filter(fn ($n) => $n !== '')
             ->count();
     }
@@ -483,6 +495,7 @@ class OrchaJejakAuditList extends Component
             'admin' => $this->filterAdmin ?: null,
             'aksi' => $this->filterAksi ?: null,
             'ip' => $this->filterIp ?: null,
+            'kode' => $this->filterKode ?: null,
             'dari' => $this->dari ?: null,
             'sampai' => $this->sampai ?: null,
         ]);
@@ -553,6 +566,7 @@ class OrchaJejakAuditList extends Component
             'admin' => $this->filterAdmin ?: null,
             'aksi' => $this->filterAksi ?: null,
             'ip' => $this->filterIp ?: null,
+            'kode' => $this->filterKode ?: null,
             'dari' => $this->dari ?: null,
             'sampai' => $this->sampai ?: null,
         ]);
