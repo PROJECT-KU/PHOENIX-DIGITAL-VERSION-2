@@ -15,10 +15,11 @@
            tetap 200. Direktifnya sengaja tidak ditulis di komentar ini —
            Blade mengompilasinya juga di sini, dan halamannya mati. */
 
-        /* Kolom tunggal selebar layar membuat isian pendek — "Hari", "Malam",
-           "Peserta" — membentang 1.200px untuk menampung tiga angka. Borangnya
-           dipatok selebar kartu yang masih enak dibaca. */
-        .rb-borang { max-width: 980px; margin-inline: auto; }
+        /* TIDAK dipatok max-width: kartunya harus selebar kartu di daftar RAB
+           dan selebar hero di atasnya. Dipersempit, ia terbaca seperti layar
+           lain yang kebetulan menumpang di sini. Isian pendek — "Hari",
+           "Malam", "Peserta" — dijaga tidak membentang oleh kisi tiga
+           kolomnya, bukan oleh lebar halamannya. */
 
         /* Pemilih jenis perjalanan: dua kartu, bukan kotak pilih. Keputusannya
            menentukan isian berikutnya, jadi ia pantas terlihat sebagai
