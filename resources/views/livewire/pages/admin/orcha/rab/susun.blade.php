@@ -788,7 +788,36 @@ Susun RAB || lemon
         .rb-armada-kepala { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
         .rb-armada-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .rb-armada-teks strong { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
-        .rb-armada-deret { display: flex; flex-direction: column; gap: 6px; }
+        /* Berapa banyak pilihannya. Tanpa angka ini, yang melihat empat baris
+           tidak tahu masih ada enam lagi di balik gulungannya. */
+        .rb-armada-jumlah {
+            display: inline-block; margin-left: 6px; padding: 1px 8px 2px;
+            border-radius: 999px; background: #e0f2fe; color: #0369a1;
+            font-size: .68rem; font-weight: 700; vertical-align: 1px;
+        }
+        /* DIGULUNG, bukan memanjang sepanjang daftarnya.
+
+           Daftar armada tumbuh mengikuti isi Master Harga — sepuluh pilihan
+           membuat panelnya setinggi 700px, dan rincian biaya di bawahnya
+           terdorong keluar layar. Yang dicari di sini cuma satu baris: yang
+           dipakai. Empat baris pertama cukup untuk memilih, sisanya digulung.
+
+           max-height, bukan tinggi pasti: daftar pendek tidak perlu digulung
+           sama sekali, dan kotak bergulir yang isinya cuma dua baris
+           menyisakan ruang kosong di dalamnya sendiri. */
+        .rb-armada-deret {
+            display: flex; flex-direction: column; gap: 6px;
+            /* 310px, bukan 268px. Satu pil setinggi 84px: 268 memotong tepat
+               di batas pil ketiga, dan potongan yang jatuh pas di sambungan
+               terbaca seperti daftarnya memang habis di situ. Dengan 310,
+               pil keempat MENGINTIP — itu satu-satunya tanda yang tidak
+               perlu dibaca untuk dimengerti. */
+            max-height: 310px; overflow-y: auto;
+            /* Ruang untuk bayangan fokus pil pertama supaya tidak terpotong
+               tepi kotak gulirnya. */
+            padding: 3px; margin: -3px;
+            overscroll-behavior: contain;
+        }
         .rb-armada-pil {
             display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto;
             align-items: center; gap: 10px;
@@ -806,7 +835,15 @@ Susun RAB || lemon
                baris terbaca seperti dua lencana yang berbeda. */
             white-space: nowrap;
         }
-        .rb-armada-hitung { display: flex; flex-direction: column; gap: 1px; text-align: right; }
+        /* min-width: 0 — tanpanya kolom ini menolak menyempit di bawah lebar
+           kalimat terpanjangnya ("muat 6/unit · 1 kursi kosong"), dan di
+           layar 390px ia meluap keluar pilnya. Kalimatnya boleh melipat;
+           yang tidak boleh cuma angkanya. */
+        .rb-armada-hitung {
+            display: flex; flex-direction: column; gap: 1px; text-align: right;
+            min-width: 0;
+        }
+        .rb-armada-hitung .dsb-kartu-sub { white-space: normal; }
         .rb-armada-unit { font-weight: 700; font-size: .82rem; color: #0369a1; }
         /* Cara menghargainya: pil kecil, bukan kalimat. Yang dijawabnya satu
            pertanyaan sempit — "kenapa yang ini jauh lebih mahal?" */
@@ -831,6 +868,15 @@ Susun RAB || lemon
             .rb-armada-pil { grid-template-columns: minmax(0, 1fr) auto; }
             .rb-armada-hitung { grid-column: 1; text-align: left; }
             .rb-armada-angka { grid-column: 2; grid-row: 2; }
+        }
+
+        @media (max-width: 575.98px) {
+            /* "carter per rute, sekali bayar" selebar 166px tidak muat di
+               jalur 124px, dan nowrap membuatnya meluap keluar pil alih-alih
+               melipat. Boleh melipat DI SINI saja: di layar lebar ia memang
+               harus utuh sebaris, karena di sanalah ia dibaca sambil
+               membandingkan harga antar-armada. */
+            .rb-armada-cara { white-space: normal; }
         }
 
         .rab-biaya-nama { font-weight: 700; color: var(--dsb-tinta, #1c1f26); font-size: .88rem; }
@@ -2116,7 +2162,10 @@ Susun RAB || lemon
                                     <div class="rb-armada-kepala">
                                         <span class="dsb-ikon is-kecil" style="--c: #0369a1"><i class="bi bi-bus-front"></i></span>
                                         <div class="rb-armada-teks">
-                                            <strong>Kendaraan untuk {{ $rab['jumlah_peserta'] }} peserta</strong>
+                                            <strong>
+                                                Kendaraan untuk {{ $rab['jumlah_peserta'] }} peserta
+                                                <span class="rb-armada-jumlah">{{ count($saranKendaraan) }} pilihan</span>
+                                            </strong>
                                             <span class="dsb-kartu-sub">
                                                 Yang termurah ditaruh paling atas. Harganya sudah harga jadi:
                                                 sewa harian sudah dikali {{ $rab['jumlah_hari'] }} hari, sedangkan
