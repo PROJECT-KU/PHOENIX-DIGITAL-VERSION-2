@@ -320,14 +320,26 @@ Susun RAB || lemon
            bukan tindakan — di bilah bawah ia terbaca seperti salah satu tombol. */
         .rb-kepala-atas { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
         .rb-kepala-status { flex: 0 0 auto; width: auto; min-width: 150px; }
-        /* Baris tiga: bilah tindakan selebar kartu, DUA kelompok di dua tepi.
-           Rata kanan semuanya menyisakan separuh bilah kosong; dipisah begini
-           lebarnya terpakai DAN pengelompokannya ikut terbaca — yang kiri
-           mengubah & mengirim, yang kanan mencetak berkas. */
+        /* Baris tiga: bilah tindakan selebar kartu, DUA BARIS yang masing-masing
+           terisi di kedua tepinya.
+
+           Satu flex berisi empat kelompok tidak bisa dikendalikan: begitu
+           lebarnya tidak muat, yang terakhir melipat SENDIRIAN dan
+           space-between mendorongnya ke satu sisi — tepat lubang yang
+           hendak dihindari. Barisnya karena itu dinyatakan, bukan diserahkan
+           ke pembungkus otomatis.
+
+           Pasangannya ikut terbaca: baris satu mengerjakan RAB ini
+           (ubah, kirim) lawan memperlakukannya sebagai benda (salin, hapus);
+           baris dua melihat jejaknya lawan mencetak berkasnya. */
         .rb-kepala-bar {
-            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            display: flex; flex-direction: column; align-items: stretch;
             gap: .5rem; margin-top: .85rem; padding-top: .8rem;
             border-top: 1px solid #f1f5f9;
+        }
+        .rb-bar-baris {
+            display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: .5rem;
         }
         .rb-aksi-baris { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
         .rb-aksi-label {
@@ -345,8 +357,8 @@ Susun RAB || lemon
                pilihnya menyisakan 90px untuk judul perjalanan. */
             .rb-kepala-atas { flex-direction: column; align-items: stretch; }
             .rb-kepala-status { width: 100%; }
-            .rb-kepala-bar { justify-content: flex-start; }
-            .rb-kepala-bar > * { width: 100%; }
+            .rb-bar-baris { justify-content: flex-start; }
+            .rb-bar-baris > * { width: 100%; }
         }
 
         .rb-kepala-jenis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px; margin-top: 2px; }
@@ -1382,6 +1394,7 @@ Susun RAB || lemon
                          muat dalam satu baris — dulu terpaksa dua baris karena
                          hanya kebagian sisa lebar di sebelah teks jati diri. --}}
                     <div class="rb-kepala-bar">
+                            <div class="rb-bar-baris">
                             <div class="rb-aksi-baris">
                                 {{-- Halaman tersendiri, bukan panel yang terbuka di
                                      sini. Lima belas isian yang mekar di tengah layar
@@ -1422,10 +1435,15 @@ Susun RAB || lemon
                                     </button>
                                 @endif
 
-                                {{-- Menyalin & menghapus sudah lama ada di daftar,
-                                     tetapi justru SAAT MENYUSUN-lah orang paling
-                                     sering ingin menyalin — membuat varian 10 peserta
-                                     di sebelah varian 15 peserta. --}}
+                            </div>
+
+                            {{-- Menyalin & menghapus sudah lama ada di daftar, tetapi
+                                 justru SAAT MENYUSUN-lah orang paling sering ingin
+                                 menyalin — membuat varian 10 peserta di sebelah varian
+                                 15 peserta. Keduanya di tepi SEBERANG: yang satu
+                                 mengerjakan RAB ini, yang satu lagi memperlakukan
+                                 RAB-nya sebagai benda. --}}
+                            <div class="rb-aksi-baris">
                                 <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
                                     data-action="salinRab"
                                     data-title="Salin RAB ini?"
@@ -1443,6 +1461,22 @@ Susun RAB || lemon
                                         <i class="bi bi-trash"></i> Hapus
                                     </button>
                                 @endif
+                            </div>
+
+                            </div>
+
+                            <div class="rb-bar-baris">
+                            {{-- Siapa mengubah apa pada RAB ini. Jejaknya selama ini
+                                 tercatat, tetapi layar auditnya tidak punya penyaring
+                                 per benda — jadi tidak pernah dibuka dari sini.
+                                 Bandingkan Master Harga, yang panel riwayatnya justru
+                                 sudah lengkap dengan pelakunya. --}}
+                            <div class="rb-aksi-baris">
+                                <a href="{{ route('admin.orcha.jejak-audit', ['kode' => $rab['kode']]) }}" wire:navigate
+                                    class="dsb-tombol is-lembut" style="--ikon: #0ea5e9"
+                                    title="Siapa mengubah apa pada RAB ini">
+                                    <i class="bi bi-clock-history"></i> Riwayat perubahan
+                                </a>
                             </div>
 
                             <div class="rb-aksi-baris rb-aksi-berkas">
@@ -1466,17 +1500,6 @@ Susun RAB || lemon
                                 </a>
                             </div>
 
-                            {{-- Siapa mengubah apa pada RAB ini. Jejaknya selama ini
-                                 tercatat, tetapi layar auditnya tidak punya penyaring
-                                 per benda — jadi tidak pernah dibuka dari sini.
-                                 Bandingkan Master Harga, yang panel riwayatnya justru
-                                 sudah lengkap dengan pelakunya. --}}
-                            <div class="rb-aksi-baris">
-                                <a href="{{ route('admin.orcha.jejak-audit', ['kode' => $rab['kode']]) }}" wire:navigate
-                                    class="dsb-tombol is-lembut" style="--ikon: #0ea5e9"
-                                    title="Siapa mengubah apa pada RAB ini">
-                                    <i class="bi bi-clock-history"></i> Riwayat perubahan
-                                </a>
                             </div>
                         </div>
                 </div>
