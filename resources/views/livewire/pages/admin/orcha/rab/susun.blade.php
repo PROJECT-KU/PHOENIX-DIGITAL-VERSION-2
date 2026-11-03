@@ -316,7 +316,19 @@ Susun RAB || lemon
            justify-content-between menyisakan lubang di tengah kartu, dan
            keping faktanya terlipat lebih awal daripada seharusnya. */
         .rb-kepala-info { flex: 1 1 auto; min-width: 0; }
-        .rb-kepala-aksi { display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; flex: 0 0 auto; }
+        /* Baris satu: jati diri di kiri, status di kanan. Statusnya KEADAAN,
+           bukan tindakan — di bilah bawah ia terbaca seperti salah satu tombol. */
+        .rb-kepala-atas { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+        .rb-kepala-status { flex: 0 0 auto; width: auto; min-width: 150px; }
+        /* Baris tiga: bilah tindakan selebar kartu, DUA kelompok di dua tepi.
+           Rata kanan semuanya menyisakan separuh bilah kosong; dipisah begini
+           lebarnya terpakai DAN pengelompokannya ikut terbaca — yang kiri
+           mengubah & mengirim, yang kanan mencetak berkas. */
+        .rb-kepala-bar {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+            gap: .5rem; margin-top: .85rem; padding-top: .8rem;
+            border-top: 1px solid #f1f5f9;
+        }
         .rb-aksi-baris { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
         .rb-aksi-label {
             font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
@@ -328,9 +340,13 @@ Susun RAB || lemon
             background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
             border-radius: 15px; padding: .35rem .6rem;
         }
-        @media (min-width: 992px) {
-            .rb-kepala-aksi { align-items: flex-end; }
-            .rb-aksi-baris { justify-content: flex-end; }
+        @media (max-width: 575.98px) {
+            /* Di ponsel statusnya turun ke bawah judulnya: berdampingan, kotak
+               pilihnya menyisakan 90px untuk judul perjalanan. */
+            .rb-kepala-atas { flex-direction: column; align-items: stretch; }
+            .rb-kepala-status { width: 100%; }
+            .rb-kepala-bar { justify-content: flex-start; }
+            .rb-kepala-bar > * { width: 100%; }
         }
 
         .rb-kepala-jenis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px; margin-top: 2px; }
@@ -343,7 +359,7 @@ Susun RAB || lemon
         .rb-jenis-cap.is-open { background: #fff7ed; color: #b45309; }
         .rb-kepala-jenis-ket { font-size: .78rem; color: var(--dsb-redup, #6b7280); line-height: 1.45; }
 
-        .rab-fakta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .85rem; }
+        .rab-fakta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .7rem; }
         /* Nama pelanggan memimpin barisnya: ia keterangan paling penting
            di antara keping-keping itu, dan tanpa penegasan ia tenggelam
            jadi salah satu dari enam keping yang terlihat sama. */
@@ -1267,7 +1283,15 @@ Susun RAB || lemon
             <div class="dsb-rak">
             <div class="dsb-kartu k-12 rb-kartu">
                 <div class="dsb-kartu-isi">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                    {{-- TIGA baris penuh, bukan dua kolom berdampingan.
+
+                         Dua kolom tidak akan pernah sama tinggi: blok tombol dua
+                         baris (155px) melawan teks jati diri tiga baris (82px),
+                         jadi salah satunya SELALU menyisakan pita kosong — dan
+                         menukar isinya cuma memindahkan pitanya ke sisi sebelah.
+                         Dalam satu lajur, tiap baris selebar kartunya dan tidak
+                         ada tinggi yang perlu disamakan. --}}
+                    <div class="rb-kepala-atas">
                         <div class="rb-kepala-info">
                             {{-- Statusnya TIDAK dilencanakan di sini: kotak pilih di
                                  sebelah kanan sudah menuliskannya, dan dua kata yang
@@ -1299,19 +1323,52 @@ Susun RAB || lemon
                                     @endif
                                 </span>
                             </div>
+
                         </div>
 
-                        {{-- DUA baris yang disengaja, bukan satu baris yang kebetulan
-                             pecah. Enam kendali berjajar membuat yang terakhir —
-                             PDF Internal — terdampar sendirian di baris kedua,
-                             dan tombol yang menggantung terbaca seperti sisa. --}}
-                        <div class="rb-kepala-aksi">
+                        {{-- Statusnya naik ke baris jati diri: ia KEADAAN, bukan
+                             tindakan, dan berdiri di antara tombol membuatnya
+                             terbaca seperti salah satunya. --}}
+                        <select class="dsb-isian rb-isian-ringkas rb-kepala-status" wire:change="ubahStatus($event.target.value)" title="Status RAB">
+                            @foreach ($kosakata['status'] ?? [] as $kunci => $label)
+                                <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                {{-- Barisnya sendiri, selebar kartu: kepingnya melipat
+                     mengikuti ruang yang ada, bukan mengikuti sisa lebar
+                     sesudah kolom tombol. --}}
+                    <div class="rab-fakta">
+                        <span class="rb-fakta-pelanggan">
+                            <i class="bi bi-person"></i>
+                            {{ $rab['nama_pelanggan'] }}@if ($rab['whatsapp']) · {{ $rab['whatsapp'] }}@endif
+                        </span>
+                        <span><i class="bi bi-geo-alt"></i> {{ $rab['daerah'] ? $rab['daerah'].', ' : '' }}{{ $rab['provinsi'] }}</span>
+                        <span><i class="bi bi-calendar3"></i> {{ $tanggalTeks }}</span>
+                        <span><i class="bi bi-moon-stars"></i> {{ $rab['jumlah_hari'] }} hari {{ $rab['jumlah_malam'] }} malam</span>
+                        <span><i class="bi bi-people"></i> {{ $rab['jumlah_peserta'] }} peserta</span>
+                        {{-- Masa berlaku sudah lama jadi alasan lencana peringatan
+                             di atas, tetapi tanggalnya sendiri tidak pernah
+                             ditampilkan di mana pun di layar ini. --}}
+                        @if (! empty($rab['berlaku_sampai']))
+                            <span class="{{ $rab['kedaluwarsa'] ? 'is-lewat' : '' }}">
+                                <i class="bi bi-hourglass-split"></i>
+                                Berlaku sampai {{ \Illuminate\Support\Carbon::parse($rab['berlaku_sampai'])->locale('id')->translatedFormat('j M Y') }}
+                            </span>
+                        @endif
+                        {{-- "Dibuat oleh" sempat ikut di sini dan membuat barisnya
+                             butuh 1113px dari 1024px yang ada — melipat jadi dua, dan
+                             menambah tinggi kartu alih-alih merapikannya. Namanya
+                             sudah terbaca di Jejak Audit. --}}
+                    </div>
+
+                    {{-- Bilah tindakan selebar kartu, rata kanan. Enam kendali
+                         berjajar butuh 720px dari 1040px yang ada, jadi keenamnya
+                         muat dalam satu baris — dulu terpaksa dua baris karena
+                         hanya kebagian sisa lebar di sebelah teks jati diri. --}}
+                    <div class="rb-kepala-bar">
                             <div class="rb-aksi-baris">
-                                <select class="dsb-isian rb-isian-ringkas" wire:change="ubahStatus($event.target.value)" title="Status RAB">
-                                    @foreach ($kosakata['status'] ?? [] as $kunci => $label)
-                                        <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
-                                    @endforeach
-                                </select>
                                 {{-- Halaman tersendiri, bukan panel yang terbuka di
                                      sini. Lima belas isian yang mekar di tengah layar
                                      penyusun mendorong itinerary keluar pandangan, dan
@@ -1353,37 +1410,6 @@ Susun RAB || lemon
                                 </a>
                             </div>
                         </div>
-                    </div>
-
-                    {{-- Nama pelanggan dan keping fakta DISATUKAN jadi satu baris.
-
-                         Terpisah, barisnya cuma memakai 563px dari 1024px yang
-                         tersedia — 461px kosong melintang di tengah kartu, tepat
-                         di tempat mata turun dari judul ke faktanya. --}}
-                    <div class="rab-fakta">
-                        <span class="rb-fakta-pelanggan">
-                            <i class="bi bi-person"></i>
-                            {{ $rab['nama_pelanggan'] }}@if ($rab['whatsapp']) · {{ $rab['whatsapp'] }}@endif
-                        </span>
-                        <span><i class="bi bi-geo-alt"></i> {{ $rab['daerah'] ? $rab['daerah'].', ' : '' }}{{ $rab['provinsi'] }}</span>
-                        <span><i class="bi bi-calendar3"></i> {{ $tanggalTeks }}</span>
-                        <span><i class="bi bi-moon-stars"></i> {{ $rab['jumlah_hari'] }} hari {{ $rab['jumlah_malam'] }} malam</span>
-                        <span><i class="bi bi-people"></i> {{ $rab['jumlah_peserta'] }} peserta</span>
-                        {{-- Masa berlaku sudah lama jadi alasan lencana peringatan
-                             di atas, tetapi tanggalnya sendiri tidak pernah
-                             ditampilkan di mana pun di layar ini. --}}
-                        @if (! empty($rab['berlaku_sampai']))
-                            <span class="{{ $rab['kedaluwarsa'] ? 'is-lewat' : '' }}">
-                                <i class="bi bi-hourglass-split"></i>
-                                Berlaku sampai {{ \Illuminate\Support\Carbon::parse($rab['berlaku_sampai'])->locale('id')->translatedFormat('j M Y') }}
-                            </span>
-                        @endif
-                        {{-- "Dibuat oleh" sempat ikut di sini dan membuat barisnya
-                             butuh 1113px dari 1024px yang ada — melipat jadi dua, dan
-                             menambah tinggi kartu alih-alih merapikannya. Namanya
-                             sudah terbaca di Jejak Audit. --}}
-                    </div>
-
                 </div>
             </div>
 
