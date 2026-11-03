@@ -901,6 +901,17 @@ Susun RAB || lemon
             font-size: .76rem; line-height: 1.45; color: #1e3a8a;
         }
         .rab-biaya-syarat .bi { color: #3b82f6; flex: 0 0 auto; margin-top: 1px; }
+        /* Pil hari: ungu, warna yang sama dengan nomor bagian "Jadwal
+           perjalanan" di sebelahnya — ia memang menunjuk ke sana. */
+        .rab-pil-hari {
+            flex: 0 0 auto; display: inline-flex; align-items: center;
+            padding: 2px 9px 3px; border-radius: 999px;
+            background: #eef2ff; color: #4338ca;
+            font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        /* "Seluruh perjalanan" bukan hari tertentu, jadi warnanya netral —
+           ungu yang sama akan membuatnya terbaca seolah menunjuk satu hari. */
+        .rab-pil-hari.is-semua { background: #f1f5f9; color: var(--dsb-redup, #64748b); }
         /* pre-line: kedua syarat dirakit jadi satu teks berpemisah baris
            baru, supaya markahnya tidak perlu direktif bersarang. */
         .rab-syarat-teks { white-space: pre-line; min-width: 0; }
@@ -2433,6 +2444,20 @@ Susun RAB || lemon
                                                     </div>
                                                 @endif
                                                 <div class="rab-biaya-hitung">
+                                                    {{-- Hari ke berapa biaya ini terpakai. Rinciannya
+                                                         dikelompokkan per KATEGORI, jadi tanpa pil ini
+                                                         tidak ada satu pun tanda kapan sebuah biaya
+                                                         dipakai — dan admin harus menggulung balik ke
+                                                         jadwal untuk tahu.
+
+                                                         Kalimatnya dirakit di PHP, bukan lewat direktif
+                                                         bersarang: direktif di dalam direktif membuat
+                                                         penanda morph Livewire timpang. --}}
+                                                    @if (($b['hari'] ?? []) !== [])
+                                                        <span class="rab-pil-hari">{{ count($b['hari']) > 1 ? 'Hari '.implode(', ', $b['hari']) : 'Hari '.$b['hari'][0] }}</span>
+                                                    @elseif ($b['seluruh_perjalanan'] ?? false)
+                                                        <span class="rab-pil-hari is-semua">Seluruh perjalanan</span>
+                                                    @endif
                                                     <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
                                                     @if ($b['kapasitas'])
                                                         <span class="rab-pil-satuan">kapasitas {{ $b['kapasitas'] }}</span>

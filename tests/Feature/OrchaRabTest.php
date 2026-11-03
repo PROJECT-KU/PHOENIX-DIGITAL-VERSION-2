@@ -4178,3 +4178,79 @@ test('daftar kapasitas urut dari muatan terkecil', function () {
     // ketahuan di hari berangkat.
     expect($html)->toContain('>4<');
 });
+
+test('tiap baris biaya menyebut hari ke berapa ia terpakai', function () {
+    /*
+     | Rinciannya dikelompokkan per KATEGORI, jadi tanpa pil ini tidak ada
+     | satu pun tanda kapan sebuah biaya dipakai — dan admin harus
+     | menggulung balik ke jadwal untuk tahu.
+     */
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0]['hari'] = [2];
+        $show['data']['ringkasan']['baris'][0]['seluruh_perjalanan'] = false;
+
+        if (isset($show['data']['ringkasan']['baris'][1])) {
+            $show['data']['ringkasan']['baris'][1]['hari'] = [];
+            $show['data']['ringkasan']['baris'][1]['seluruh_perjalanan'] = true;
+        }
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Hari 2')
+        // Sewa armada memang tidak menempati satu hari tertentu; kolom yang
+        // dibiarkan kosong tanpa sebab justru membingungkan.
+        ->and($html)->toContain('Seluruh perjalanan');
+});
+
+test('tempat yang dikunjungi dua hari menyebut keduanya di satu pil', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0]['hari'] = [1, 3];
+        $show['data']['ringkasan']['baris'][0]['seluruh_perjalanan'] = false;
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Hari 1, 3');
+});
+
+test('baris tanpa hari dan bukan sepanjang trip tidak memasang pil apa pun', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        foreach ($show['data']['ringkasan']['baris'] as $i => $b) {
+            $show['data']['ringkasan']['baris'][$i]['hari'] = [];
+            $show['data']['ringkasan']['baris'][$i]['seluruh_perjalanan'] = false;
+        }
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    // Kosong berarti "tidak bisa dipastikan", bukan "hari 1".
+    expect($html)->not->toContain('rab-pil-hari">');
+});
