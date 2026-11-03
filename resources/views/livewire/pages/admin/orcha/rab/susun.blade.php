@@ -409,6 +409,25 @@ Susun RAB || lemon
         }
         .rb-biaya-total strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
 
+        /* Rincian modal per kategori: dulu kartu tersendiri di rel kanan, jauh
+           dari angka yang dipecahnya. Di sini ia duduk TEPAT di atas Modal
+           total, berjajar sebagai keping supaya lebar kolom kiri terpakai
+           tanpa menambah tinggi. */
+        .rb-modal-pecah {
+            display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px;
+        }
+        .rb-modal-keping {
+            display: inline-flex; align-items: baseline; gap: 7px;
+            padding: 7px 12px; border-radius: 11px;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+            font-size: .82rem; color: var(--dsb-redup, #5b6477);
+        }
+        .rb-modal-keping b {
+            font-weight: 700; color: var(--dsb-tinta, #1c1f26);
+            font-variant-numeric: tabular-nums;
+        }
+        .rb-modal-pecah + .rb-biaya-total { margin-top: 7px; }
+
         .rab-kegiatan {
             display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem;
             padding: .75rem .75rem .75rem .9rem; border: var(--orc-panel-garis);
@@ -610,7 +629,10 @@ Susun RAB || lemon
         .rab-harga-besar { font-size: 1.9rem; font-weight: 800; color: var(--orc-primer); line-height: 1.1; }
         .rab-baris-angka { display: flex; justify-content: space-between; font-size: .88rem; padding: .3rem 0; color: var(--orc-tinta); }
         .rab-baris-angka.garis { border-top: 1px dashed #e2e8f0; margin-top: .3rem; padding-top: .55rem; }
-        .rab-pilih-margin { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+        /* DUA kolom, bukan tiga: pilihannya ada empat, jadi tiga kolom selalu
+           meninggalkan satu sendirian di baris kedua — dan jalur selebar 70px
+           memotong kata "rombongan" tanpa tanda. Dua kali dua rata. */
+        .rab-pilih-margin { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
         .rab-pilih-margin label { border: 2px solid #e2e8f0; border-radius: 10px; padding: .45rem .3rem; text-align: center; font-size: .78rem; font-weight: 600; cursor: pointer; color: var(--orc-tinta); }
         .rab-pilih-margin label.aktif { border-color: var(--orc-primer); color: var(--orc-primer); background: #f5f0ff; }
         .rab-pilih-margin input { display: none; }
@@ -694,7 +716,12 @@ Susun RAB || lemon
             font-size: .75rem; font-weight: 600; color: #047857; white-space: nowrap;
         }
 
-        @media (max-width: 575.98px) {
+        /* Di bawah 1400px kolom kiri menyempit sampai jalur nama tinggal 91px,
+           sementara lencana "paling murah" sendirian sudah 103px: namanya
+           terpotong tanpa satu pun tanda bahwa ada yang hilang. Pilnya disusun
+           ulang persis seperti di ponsel — nama sebaris penuh, hitungan dan
+           angkanya di bawahnya. */
+        @media (max-width: 1399.98px) {
             .rb-armada-pil { grid-template-columns: minmax(0, 1fr) auto; }
             .rb-armada-hitung { grid-column: 1; text-align: left; }
             .rb-armada-angka { grid-column: 2; grid-row: 2; }
@@ -2224,6 +2251,18 @@ Susun RAB || lemon
                                     Belum ada biaya. Klik satu destinasi di atas — tiketnya ikut terhitung sendiri.
                                 </div>
                             @else
+                                {{-- Pecahannya dulu, totalnya sesudahnya. Keduanya
+                                     dibaca sekali turun; dulu pecahannya ada di rel
+                                     kanan, 1.300px di bawah angka yang dipecahnya. --}}
+                                @if (! empty($r['per_kategori']))
+                                    <div class="rb-modal-pecah">
+                                        @foreach ($r['per_kategori'] as $kat)
+                                            <span class="rb-modal-keping">
+                                                {{ $kat['label'] }} <b>{{ $kat['total_teks'] }}</b>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                                 {{-- Angka yang dicari mata sesudah membaca rinciannya. --}}
                                 <div class="rb-biaya-total">
                                     <span>Modal total</span>
@@ -2904,20 +2943,6 @@ Susun RAB || lemon
                                     </div>
                                 </div>
                             </div>
-
-                            {{-- Kartu terakhir berdiri SENDIRI, lengkap dengan
-                                 penutupnya, supaya @unless yang tidak jalan tidak
-                                 meninggalkan kartu yang menganga. --}}
-                            @unless ($tanpaBiaya)
-                                <div class="dsb-kartu k-12 rb-kartu">
-                                    <div class="dsb-kartu-isi">
-                                        <div class="orcha-label-kecil mb-2">Modal per kategori</div>
-                                        @foreach ($r['per_kategori'] ?? [] as $kat)
-                                            <div class="rab-baris-angka"><span>{{ $kat['label'] }}</span><span>{{ $kat['total_teks'] }}</span></div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endunless
 
                         {{-- ===================== JADIKAN PENDAFTARAN ===================== --}}
                         <div class="dsb-kartu k-12 rb-kartu">

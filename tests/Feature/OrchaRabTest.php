@@ -3506,9 +3506,14 @@ test('tiap bagian panel ringkasan berdiri sebagai kartunya sendiri', function ()
     $html = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
 
     foreach (['Dari mana harganya', 'Hasilnya', 'Kalau pelanggan menawar',
-        'Atur margin &amp; pembulatan', 'Modal per kategori', 'Pelanggan setuju?'] as $judul) {
+        'Atur margin &amp; pembulatan', 'Pelanggan setuju?'] as $judul) {
         expect($html)->toContain($judul);
     }
+
+    // "Modal per kategori" SENGAJA tidak lagi di daftar itu: pecahannya
+    // pindah ke kolom biaya, tepat di atas angka yang dipecahnya. Kartunya
+    // sendiri tidak boleh hidup kembali di rel kanan.
+    expect($html)->not->toContain('Modal per kategori');
 
     // Judulnya memakai kelas yang sama dengan kartu lain di kolom itu —
     // kelas baru hanya menambah satu gaya lagi yang harus dijaga sama.
@@ -3516,6 +3521,25 @@ test('tiap bagian panel ringkasan berdiri sebagai kartunya sendiri', function ()
     // gaya menyebut kelas yang dihapus, dan itu bukan pelanggaran.
     expect($html)->not->toContain('class="rb-kartu-judul"')
         ->and($html)->not->toContain('class="rb-pisah"');
+});
+
+test('pecahan modal per kategori duduk tepat di atas modal totalnya', function () {
+    palsukanRab();
+
+    $html = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
+
+    // Dulu pecahannya ada di rel kanan, 1.300px di bawah angka yang
+    // dipecahnya: dua layar jauhnya, jadi tidak pernah terbaca bersama.
+    // Dicari MARKAH-nya, bukan namanya: blok gaya di kepala halaman menyebut
+    // kedua kelas itu lebih dulu, dengan urutan terbalik, dan asersi yang
+    // memakai nama telanjang mengukur urutan aturan CSS — bukan urutan yang
+    // dibaca mata.
+    $pecah = strpos($html, 'class="rb-modal-pecah"');
+    $total = strpos($html, 'class="rb-biaya-total"');
+
+    expect($pecah)->not->toBeFalse()
+        ->and($total)->not->toBeFalse()
+        ->and($pecah)->toBeLessThan($total);
 });
 
 test('kartu simulasi open trip berdiri sendiri, tidak bersarang di kartu lain', function () {
