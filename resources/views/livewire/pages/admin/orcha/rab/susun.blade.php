@@ -270,8 +270,11 @@ Susun RAB || lemon
             grid-column: 1 / -1; font-size: .76rem;
             color: var(--dsb-redup, #6b7280); line-height: 1.5;
         }
+        /* Kedua tombolnya MEMANJANG mengisi barisnya: dipaku lebar isinya,
+           separuh baris menganga di kanannya — pola yang sama dengan bilah
+           tindakan dan baris tab hari. */
         .rb-kosong-aksi { display: flex; flex-wrap: wrap; gap: 6px; }
-        .rb-kosong-aksi .dsb-tombol { flex: 0 0 auto; }
+        .rb-kosong-aksi .dsb-tombol { flex: 1 1 auto; justify-content: center; }
 
         .rb-pilih-pisah {
             margin: 11px 0 7px; padding-top: 10px; border-top: 1px solid var(--dsb-tepi, #e9edf3);
@@ -846,16 +849,28 @@ Susun RAB || lemon
         /* Hasil yang BUKAN tempat: dipisah dari deret destinasi, dan
            tombolnya dibedakan supaya tidak terklik sebagai kegiatan. */
         .rb-bukan-tempat {
+            /* SELEBAR kisinya, bukan satu kolom.
+
+               Blok ini anak .rab-destinasi, yang kolomnya minmax(120px, 1fr).
+               Tanpa baris ini ia cuma kebagian satu kolom — dan nama panjang
+               seperti "Makan di Restoku Chen-Chen Ceria" melipat jadi enam
+               baris di dalam pil berujung bulat, yang terbaca seperti lonjong
+               berdiri, bukan seperti tombol. */
+            grid-column: 1 / -1;
             display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
             margin-top: 10px; padding-top: 10px;
             border-top: 1px dashed var(--dsb-tepi, #e9edf3);
         }
         .rb-bukan-tempat > .orcha-label-kecil { flex: 1 1 100%; }
         .rb-bukan-pil {
+            /* flex-shrink 0: di baris yang padat, pil yang boleh menyusut
+               akan memotong namanya sendiri alih-alih pindah baris — dan
+               nama yang tidak terbaca utuh tidak bisa dipilih dengan yakin. */
+            flex: 0 0 auto; max-width: 100%;
             display: inline-flex; align-items: center; gap: 5px;
             padding: 5px 10px; border-radius: 999px; cursor: pointer;
             background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
-            font-size: .76rem; font-weight: 600;
+            font-size: .76rem; font-weight: 600; text-align: left;
         }
         .rb-bukan-pil:hover { background: #fef3c7; }
         .rb-bukan-kat {
