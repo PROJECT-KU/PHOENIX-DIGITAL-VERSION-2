@@ -2407,7 +2407,12 @@ Master Harga || lemon
            Angkanya berjumlah 100% dan diukur dari isi yang sebenarnya: aksi
            butuh 154px dan harga 160px pada lebar tabel 1039px. */
         .mh-tabel { table-layout: fixed; }
-        .mh-tabel th:nth-child(1), .mh-tabel td:nth-child(1) { width: 4%; }
+        /* PIKSEL, bukan persen: kotak centang lebarnya tetap 33px berapa pun
+           lebar layarnya, dan 4% dari tabel selebar 790px cuma 32px — satu
+           piksel kurang, dan kotaknya meluap keluar selnya. min-width tidak
+           menolong: di table-layout: fixed lebar kolom diambil dari width
+           saja, dan min-width pada selnya diabaikan. */
+        .mh-tabel th:nth-child(1), .mh-tabel td:nth-child(1) { width: 36px; }
         .mh-tabel th:nth-child(2), .mh-tabel td:nth-child(2) { width: 28%; }
         .mh-tabel th:nth-child(3), .mh-tabel td:nth-child(3) { width: 13%; }
         .mh-tabel th:nth-child(4), .mh-tabel td:nth-child(4) { width: 13%; }
@@ -2680,9 +2685,19 @@ Master Harga || lemon
            kolom terakhir — tombol ubah & hapus — tidak pernah terlihat
            tanpa digeser lebih dulu. */
         @media (max-width: 767.98px) {
-            .mh-tabel { min-width: 0; }
+            /* table-layout: fixed TERUS BERLAKU walau barisnya sudah jadi
+               blok: kotak tabelnya masih ada, jadi persentase kolom di atas
+               tetap mengunci lebar sel, dan nama harga meluap keluar kartunya
+               tanpa satu pun tanda. Kotak tabelnya ikut dibubarkan di sini,
+               dan lebar selnya dikembalikan ke isi. */
+            .mh-tabel { min-width: 0; display: block; table-layout: auto; }
+            .mh-tabel tbody { display: block; }
             .mh-tabel thead { display: none; }
             .mh-tabel tbody tr { display: block; padding: 13px 15px; border-bottom: 1px solid #f2f5f9; }
+            /* !important: aturan persentase di atas memakai :nth-child, dan
+               bobotnya lebih tinggi daripada pemilih mana pun yang masuk akal
+               di sini. */
+            .mh-tabel tbody td { width: auto !important; }
             .mh-tabel tbody td {
                 display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
                 padding: 4px 0; border: 0; text-align: left !important;
