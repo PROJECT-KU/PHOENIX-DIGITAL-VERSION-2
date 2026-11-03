@@ -837,6 +837,30 @@ Susun RAB || lemon
             font-size: .74rem; font-weight: 500; color: var(--dsb-redup, #6b7280);
         }
         .rab-biaya-vendor .bi { color: #94a3b8; }
+        /* Syarat vendor & master: biru keterangan, BUKAN merah peringatan.
+           Isinya aturan yang memang berlaku, bukan kesalahan yang harus
+           dibereskan — dicat merah, sepuluh baris biaya terbaca seperti
+           sepuluh masalah. */
+        .rab-biaya-syarat {
+            display: flex; align-items: flex-start; gap: 6px; margin-top: 5px;
+            padding: 6px 10px; border-radius: 9px;
+            background: #eff6ff; border: 1px solid #dbeafe;
+            font-size: .76rem; line-height: 1.45; color: #1e3a8a;
+        }
+        .rab-biaya-syarat .bi { color: #3b82f6; flex: 0 0 auto; margin-top: 1px; }
+        /* pre-line: kedua syarat dirakit jadi satu teks berpemisah baris
+           baru, supaya markahnya tidak perlu direktif bersarang. */
+        .rab-syarat-teks { white-space: pre-line; min-width: 0; }
+        /* Di kunjungan jadwal: satu baris yang dipotong, bukan paragraf.
+           Barisnya sudah padat, dan syarat yang panjang akan menggeser
+           seluruh jadwal jadi dua kali lebih tinggi. Selengkapnya ada di
+           title-nya, dan di rincian biaya ia ditulis utuh. */
+        .rab-keg-syarat {
+            flex: 1 1 100%; min-width: 0; display: inline-flex; align-items: center; gap: 5px;
+            font-size: .74rem; color: #1d4ed8;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .rab-keg-syarat .bi { flex: 0 0 auto; color: #3b82f6; }
 
         /* Provinsi lain, disebut kecil di tombol tempatnya. Pencarian kini
            lintas provinsi; tanpa penanda ini "Pantai Melasti" di tengah
@@ -1870,6 +1894,16 @@ Susun RAB || lemon
                                             </button>
                                         @endif
 
+                                        {{-- Catatan master harga TEMPAT ini — "pendakian
+                                             ditutup pukul 02.00". Ditulis admin di Master
+                                             Harga berbulan-bulan lalu, lalu tidak pernah
+                                             terlihat justru saat jadwalnya disusun. --}}
+                                        @if (! empty($k['catatan_master']))
+                                            <span class="rab-keg-syarat" title="{{ $k['catatan_master'] }}">
+                                                <i class="bi bi-info-circle-fill"></i>{{ $k['catatan_master'] }}
+                                            </span>
+                                        @endif
+
                                     {{-- Tombolnya DI BARIS KEDUA bersama pil dan catatan,
                                          bukan di baris pertama bersama jam dan nama.
 
@@ -2318,6 +2352,28 @@ Susun RAB || lemon
                                                         @if (! empty($b['vendor_kontak']))
                                                             <span class="rab-vendor-nomor">{{ $b['vendor_kontak'] }}</span>
                                                         @endif
+                                                    </div>
+                                                @endif
+                                                {{-- Syarat yang sudah lama diketik di Master Harga
+                                                     dan di Vendor, lalu tidak pernah terlihat lagi:
+                                                     "tutup hari Senin", "DP 50% H-3". Dibaca hidup,
+                                                     jadi yang tertulis selalu syarat hari ini —
+                                                     bukan syarat saat penawarannya dibuat. --}}
+                                                @if (! empty($b['master_catatan']) || ! empty($b['vendor_catatan']))
+                                                    <div class="rab-biaya-syarat">
+                                                        <i class="bi bi-info-circle-fill"></i>
+                                                        {{-- SATU ekspresi, bukan dua @if bersarang di
+                                                             dalam <span>. Direktif bersarang di sini
+                                                             membuat penanda morph Livewire timpang —
+                                                             pembukanya bertanda, penutupnya tidak — dan
+                                                             pembaruan berikutnya rusak tanpa galat.
+                                                             Dijaga PenandaMorphAdminTest.
+
+                                                             Dirakit di sini pula, bukan di blok PHP
+                                                             tersendiri: berkas ini punya dua @php
+                                                             sebaris di atasnya, dan blok @php yang
+                                                             menyusul salah satunya ikut tertelan. --}}
+                                                        <span class="rab-syarat-teks">{{ trim(trim((string) ($b['master_catatan'] ?? ''))."\n".(empty($b['vendor_catatan']) ? '' : (($b['vendor'] ?: 'Vendor').': '.$b['vendor_catatan']))) }}</span>
                                                     </div>
                                                 @endif
                                                 <div class="rab-biaya-hitung">

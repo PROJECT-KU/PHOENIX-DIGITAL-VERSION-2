@@ -4053,3 +4053,89 @@ test('saringan kode jejak audit diteruskan ke Orcha', function () {
 
     Http::assertSent(fn (Request $r) => ($r->data()['kode'] ?? null) === 'RAB-2609-R24J');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Catatan master harga & vendor terlihat di layar
+|--------------------------------------------------------------------------
+*/
+
+test('baris biaya menampilkan catatan master harga dan catatan vendornya', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0]['master_catatan'] = 'Tutup hari Senin.';
+        $show['data']['ringkasan']['baris'][0]['vendor_catatan'] = 'Minta Pak Budi.';
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Tutup hari Senin.')
+        ->and($html)->toContain('Minta Pak Budi.');
+});
+
+test('kunjungan di jadwal menampilkan catatan tempatnya', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['itinerary'][0]['catatan_master'] = 'Pendakian ditutup pukul 02.00';
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Pendakian ditutup pukul 02.00');
+});
+
+test('biaya yang juga kejadian berwaktu ikut masuk jadwal, yang lain tidak', function () {
+    /*
+     | "Makan di Restoku Chen-Chen" menempati jam di hari itu; "Hiace" tidak.
+     | Yang menentukan Orcha lewat bisa_jadi_kegiatan — bukan daftar kategori
+     | yang disalin ke lemon.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->set('bukanTempat', [
+            ['id' => 77, 'nama' => 'Makan di Restoku Chen-Chen', 'kategori' => 'konsumsi',
+                'kategori_label' => 'Konsumsi', 'catatan' => null, 'bisa_jadi_kegiatan' => true],
+            ['id' => 88, 'nama' => 'Sewa Hiace', 'kategori' => 'transportasi',
+                'kategori_label' => 'Transportasi', 'catatan' => null, 'bisa_jadi_kegiatan' => false],
+        ]);
+
+    /*
+     | Yang diperiksa APA YANG DIKIRIM, bukan keadaan lokal sesudahnya:
+     | menyisipkan kegiatan ikut menyimpan itinerary ke Orcha, dan jawaban
+     | palsu yang tetap itu menimpa kembali daftar lokalnya. Memeriksa
+     | keadaan lokal berarti memeriksa rekamannya, bukan kodenya.
+     */
+    $layar->call('pakaiBiayaDariCari', 77);
+
+    Http::assertSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
+        && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('Makan di Restoku Chen-Chen'));
+
+    $layar->call('pakaiBiayaDariCari', 88);
+
+    // Hiace masuk biaya saja — tidak ada satu pun penyimpanan itinerary yang
+    // menyebut namanya.
+    Http::assertNotSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
+        && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('Sewa Hiace'));
+
+    // Keduanya tetap ditambahkan sebagai BIAYA.
+    expect(collect(Http::recorded())->filter(
+        fn ($p) => str_ends_with((string) parse_url($p[0]->url(), PHP_URL_PATH), '/rab/3/biaya')
+    )->count())->toBe(2);
+});

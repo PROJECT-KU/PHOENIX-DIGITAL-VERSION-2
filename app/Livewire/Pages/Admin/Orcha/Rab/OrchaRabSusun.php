@@ -109,9 +109,34 @@ class OrchaRabSusun extends Component
     }
 
     /** Menambahkan biaya dari hasil pencarian yang bukan tempat. */
+    /**
+     * Memakai hasil cari yang BUKAN tempat.
+     *
+     * Sebagian di antaranya biaya SEKALIGUS kejadian berwaktu: "Makan di
+     * Restoku Chen-Chen" menempati jam di hari itu, dan admin yang
+     * mengkliknya memang berharap jadwalnya ikut terisi — sebelum ini ia
+     * cuma masuk rincian biaya, dan jadwalnya tetap kosong tanpa penjelasan.
+     *
+     * Yang menentukan Orcha lewat `bisa_jadi_kegiatan`, bukan daftar kategori
+     * yang disalin ke sini: dua tebakan untuk hal yang sama suatu hari akan
+     * berselisih.
+     */
     public function pakaiBiayaDariCari(int $id): void
     {
-        $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], 'Biaya ditambahkan.');
+        $bt = collect($this->bukanTempat)->firstWhere('id', $id);
+        $jugaKegiatan = (bool) ($bt['bisa_jadi_kegiatan'] ?? false);
+
+        $pesan = $jugaKegiatan
+            ? 'Masuk rincian biaya, dan ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.'
+            : 'Biaya ditambahkan.';
+
+        if (! $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], $pesan)) {
+            return;
+        }
+
+        if ($jugaKegiatan && trim((string) ($bt['nama'] ?? '')) !== '') {
+            $this->tambahKegiatanBernama(trim($bt['nama']));
+        }
     }
 
     public string $kegiatanBaru = '';
