@@ -608,6 +608,13 @@ Route::middleware('permission:akses_orcha')->group(function () {
 
     // RAB & itinerary private trip, beserta master harga yang dipakainya.
     Route::get('/admin/orcha/rab', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList::class)->name('admin.orcha.rab');
+    // Didaftarkan SEBELUM /rab/{rab}: "tambah" bukan angka, jadi whereNumber
+    // sudah melindunginya — tetapi urutan yang terbaca sama dengan urutan yang
+    // berlaku menghemat satu pertanyaan tiap kali rutenya dibaca lagi.
+    Route::get('/admin/orcha/rab/tambah', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabForm::class)
+        ->name('admin.orcha.rab.tambah');
+    Route::get('/admin/orcha/rab/{rab}/ubah', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabForm::class)
+        ->whereNumber('rab')->name('admin.orcha.rab.ubah');
     Route::get('/admin/orcha/rab/{rab}', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun::class)
         ->whereNumber('rab')->name('admin.orcha.rab.susun');
     Route::get('/admin/orcha/rab/{rab}/pdf', [OrchaEksporController::class, 'rab'])

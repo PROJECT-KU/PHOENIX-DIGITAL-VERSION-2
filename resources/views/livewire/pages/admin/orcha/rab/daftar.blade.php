@@ -25,8 +25,6 @@ RAB & Itinerary || lemon
             'disetujui' => ['#047857', 'bi-check-circle'],
             'batal' => ['#be123c', 'bi-x-circle'],
         ];
-
-        $judulRakitan = $this->judulOtomatis();
     @endphp
 
     <div class="dsb">
@@ -146,9 +144,9 @@ RAB & Itinerary || lemon
                                 ])
                             </div>
 
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
+                            <a href="{{ route('admin.orcha.rab.tambah') }}" class="dsb-tombol is-utama" wire:navigate>
                                 <i class="bi bi-plus-lg"></i><span>RAB Baru</span>
-                            </button>
+                            </a>
 
                             <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = !buka" :aria-expanded="buka">
                                 <i class="bi bi-sliders"></i><span>Saringan lainnya</span>
@@ -203,191 +201,6 @@ RAB & Itinerary || lemon
                 </div>
             </div>
         </section>
-
-        {{-- ================== RAB BARU ================== --}}
-        @if ($tambah)
-            <section class="dsb-bagian">
-                <div class="dsb-rak">
-                    <div class="dsb-kartu k-12">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-calculator"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">RAB Baru</h3>
-                                    <span class="dsb-kartu-sub">Cukup yang dibutuhkan untuk mulai menghitung; destinasinya dipilih di langkah berikutnya.</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dsb-kartu-isi">
-                            {{-- Judul, kota, dan jumlah malam punya jawaban yang
-                                 hampir selalu benar, jadi ketiganya terisi sendiri —
-                                 tetapi kotaknya TETAP TERLIHAT. Menyembunyikannya di
-                                 balik tombol menghemat ruang dengan menyembunyikan
-                                 juga bahwa ketiganya boleh diubah. Baris rakitan di
-                                 bawah memperlihatkan hasilnya, kotaknya menerima
-                                 timpaan. --}}
-                            {{-- Jenis perjalanan dipilih lebih dulu: ia menentukan
-                                 isian mana yang berikutnya masuk akal. Private trip
-                                 jumlah orangnya sudah pasti di kesepakatan; open trip
-                                 harganya diumumkan lebih dulu dan jumlah orangnya baru
-                                 ketahuan belakangan. --}}
-                            <div class="rb-jenis">
-                                @foreach ([
-                                    'private' => ['Private Trip', 'Rombongan sudah pasti — kursi kosong bukan risiko kantor', 'bi-people-fill'],
-                                    'open' => ['Open Trip', 'Harga diumumkan dulu, pesertanya menyusul', 'bi-megaphone-fill'],
-                                ] as $kunci => [$label, $ket, $ikon])
-                                    <button type="button" wire:click="$set('isian.jenis', '{{ $kunci }}')"
-                                        class="rb-jenis-pilih {{ ($isian['jenis'] ?? 'private') === $kunci ? 'is-aktif' : '' }}">
-                                        <span class="dsb-ikon is-kecil" style="--c: {{ $kunci === 'open' ? '#b45309' : '#4f46e5' }}">
-                                            <i class="bi {{ $ikon }}"></i>
-                                        </span>
-                                        <span class="rb-jenis-teks">
-                                            <strong>{{ $label }}</strong>
-                                            <span class="dsb-kartu-sub">{{ $ket }}</span>
-                                        </span>
-                                    </button>
-                                @endforeach
-                            </div>
-
-                            <div class="rb-medan-rak">
-                                <div class="dsb-medan rb-medan-lebar">
-                                    <label class="dsb-label" for="rb-nama">Nama pelanggan <span class="rb-wajib">*</span></label>
-                                    <input id="rb-nama" type="text" maxlength="120" wire:model="isian.nama_pelanggan"
-                                        class="dsb-isian @error('isian.nama_pelanggan') is-galat @enderror"
-                                        placeholder="Keluarga Bpk. Hendra">
-                                    @error('isian.nama_pelanggan')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-wa">WhatsApp</label>
-                                    <input id="rb-wa" type="text" maxlength="32" inputmode="tel" wire:model="isian.whatsapp"
-                                        class="dsb-isian" placeholder="0812…">
-                                    <span class="dsb-kartu-sub">Diperlukan nanti saat RAB dijadikan pendaftaran.</span>
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-prov">Provinsi tujuan <span class="rb-wajib">*</span></label>
-                                    <select id="rb-prov" wire:model.live="isian.provinsi"
-                                        class="dsb-isian @error('isian.provinsi') is-galat @enderror">
-                                        <option value="" @selected((string) ($this->isian['provinsi'] ?? '') === '')>Pilih provinsi</option>
-                                        @foreach ($provinsi as $p)
-                                            <option value="{{ $p }}" @selected((string) ($this->isian['provinsi'] ?? '') === (string) $p)>{{ $p }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('isian.provinsi')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-tgl">Tanggal berangkat</label>
-                                    <input id="rb-tgl" type="date" wire:model.live="isian.tanggal_mulai" class="dsb-isian">
-                                    <span class="dsb-kartu-sub">Boleh dikosongkan bila belum pasti.</span>
-                                </div>
-
-                                <div class="dsb-medan">
-                                    {{-- Yang disepakati dengan pelanggan TANGGALNYA
-                                         ("berangkat 10, pulang 12"), bukan jumlah harinya.
-                                         Menyuruh admin menerjemahkannya sendiri adalah
-                                         hitungan kepala yang mudah meleset satu — dan yang
-                                         meleset satu hari menggeser seluruh modal
-                                         akomodasi. --}}
-                                    <label class="dsb-label" for="rb-tgl-pulang">Tanggal pulang</label>
-                                    <input id="rb-tgl-pulang" type="date" wire:model.live="isian.tanggal_pulang"
-                                        class="dsb-isian" min="{{ $isian['tanggal_mulai'] ?? '' }}">
-                                    <span class="dsb-kartu-sub">Jumlah hari &amp; malam terisi sendiri dari rentangnya.</span>
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-hari">Jumlah hari <span class="rb-wajib">*</span></label>
-                                    <input id="rb-hari" type="number" min="1" max="30"
-                                        wire:model.live.debounce.400ms="isian.jumlah_hari"
-                                        class="dsb-isian @error('isian.jumlah_hari') is-galat @enderror">
-                                    @error('isian.jumlah_hari')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-peserta">
-                                        {{ $this->openTrip() ? 'Target peserta' : 'Jumlah peserta' }} <span class="rb-wajib">*</span>
-                                    </label>
-                                    <input id="rb-peserta" type="number" min="1" max="500" wire:model.live.debounce.400ms="isian.jumlah_peserta"
-                                        class="dsb-isian @error('isian.jumlah_peserta') is-galat @enderror">
-                                    @error('isian.jumlah_peserta')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                </div>
-
-                                {{-- Angka yang menentukan harga open trip, dan satu-satunya
-                                     yang benar-benar melindungi kantor: jumlah paling rendah
-                                     yang masih mau diberangkatkan. Harga dipatok dari sini,
-                                     sehingga yang datang di atasnya jadi untung — bukan
-                                     penyelamat. --}}
-                                @if ($this->openTrip())
-                                    <div class="dsb-medan">
-                                        <label class="dsb-label" for="rb-minimum">Peserta minimum <span class="rb-wajib">*</span></label>
-                                        <input id="rb-minimum" type="number" min="1" max="500" wire:model.live.debounce.400ms="isian.peserta_minimum"
-                                            class="dsb-isian @error('isian.peserta_minimum') is-galat @enderror">
-                                        @error('isian.peserta_minimum')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                        <span class="dsb-kartu-sub">Harga dihitung dari angka ini, bukan dari target.</span>
-                                    </div>
-                                @endif
-                            </div>
-
-                            {{-- Judul yang dirakit diperlihatkan, bukan dikerjakan
-                                 diam-diam: yang tidak terlihat sebelum disimpan akan
-                                 mengejutkan saat muncul di PDF penawaran. Baris ini
-                                 tetap ada walau kotaknya terbuka — ia menjawab
-                                 "kalau saya biarkan kosong, jadinya apa?". --}}
-                            <div class="rb-rakitan">
-                                <span class="dsb-ikon is-kecil" style="--c: #047857"><i class="bi bi-magic"></i></span>
-                                <div class="rb-rakitan-teks">
-                                    <span class="dsb-kartu-sub">Judul &amp; jumlah malam terisi sendiri</span>
-                                    <strong class="rb-rakitan-judul">
-                                        {{ trim((string) $isian['judul']) ?: $judulRakitan }}
-                                        <span class="rb-rakitan-malam">· {{ (int) $isian['jumlah_malam'] }} malam</span>
-                                    </strong>
-                                </div>
-                                <span class="rb-rakitan-ket">Boleh ditimpa di bawah</span>
-                            </div>
-
-                            <div class="rb-medan-rak rb-medan-sambung">
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-judul">Judul perjalanan</label>
-                                    <input id="rb-judul" type="text" maxlength="150" wire:model.live.debounce.400ms="isian.judul"
-                                        class="dsb-isian @error('isian.judul') is-galat @enderror"
-                                        placeholder="{{ $judulRakitan }}">
-                                    @error('isian.judul')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                    <span class="dsb-kartu-sub">Kosong berarti pakai judul rakitan di atas.</span>
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-daerah">Kota / daerah</label>
-                                    <input id="rb-daerah" type="text" maxlength="80" wire:model.live.debounce.400ms="isian.daerah"
-                                        class="dsb-isian" placeholder="Yogyakarta">
-                                    <span class="dsb-kartu-sub">Ikut terbaca di judul rakitan.</span>
-                                </div>
-
-                                <div class="dsb-medan">
-                                    <label class="dsb-label" for="rb-malam">Jumlah malam</label>
-                                    <input id="rb-malam" type="number" min="0" max="30" wire:model="isian.jumlah_malam"
-                                        class="dsb-isian @error('isian.jumlah_malam') is-galat @enderror">
-                                    @error('isian.jumlah_malam')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                </div>
-                            </div>
-
-                            <div class="rb-kaki">
-                                <button type="button" wire:click="tutup" class="dsb-tombol is-lembut" style="--ikon: #64748b">
-                                    <i class="bi bi-x-lg"></i><span>Batal</span>
-                                </button>
-                                <button type="button" wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan"
-                                    class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
-                                    <i class="bi bi-arrow-right-circle" wire:loading.remove wire:target="simpan"></i>
-                                    <span class="dsb-putar" wire:loading wire:target="simpan"></span>
-                                    <span>Buat &amp; Susun</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        @endif
 
         {{-- ================== SALIN PENAWARAN ==================
 
@@ -677,6 +490,10 @@ RAB & Itinerary || lemon
                                                         class="dsb-tabel-btn" style="--c: #4f46e5" title="Buka penyusun">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </a>
+                                                    <a href="{{ route('admin.orcha.rab.ubah', ['rab' => $baris['id'], 'dari' => 'daftar']) }}" wire:navigate
+                                                        class="dsb-tabel-btn" style="--c: var(--dsb-telaah)" title="Ubah data perjalanan">
+                                                        <i class="bi bi-sliders"></i>
+                                                    </a>
                                                     <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $baris['id'], 'jenis' => 'penawaran']) }}"
                                                         class="dsb-tabel-btn" style="--c: #0369a1" title="Unduh PDF penawaran">
                                                         <i class="bi bi-file-earmark-pdf"></i>
@@ -768,45 +585,6 @@ RAB & Itinerary || lemon
 
         /* Isian RAB baru: grid yang membagi habis lebar kartunya, bukan flex
            yang menyisakan ruang kosong di kanan baris terakhir. */
-        /* Pemilih jenis perjalanan: dua kartu, bukan kotak pilih. Keputusannya
-           menentukan isian berikutnya, jadi ia pantas terlihat sebagai
-           persimpangan — bukan sebagai satu baris di antara baris lain. */
-        .rb-jenis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-        .rb-jenis-pilih {
-            display: flex; align-items: flex-start; gap: 11px; text-align: left; cursor: pointer;
-            padding: 12px 14px; border-radius: 13px; background: #fff;
-            border: 1px solid var(--dsb-tepi, #e9edf3);
-        }
-        .rb-jenis-pilih:hover { border-color: #c7d2fe; }
-        .rb-jenis-pilih.is-aktif { border-color: #4f46e5; background: #f6f5ff; box-shadow: 0 0 0 3px rgba(99, 102, 241, .1); }
-        .rb-jenis-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .rb-jenis-teks strong { color: var(--dsb-tinta, #1c1f26); font-size: .92rem; }
-
-        .rb-medan-rak { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 16px; align-items: start; }
-        .rb-medan-rak > .dsb-medan { min-width: 0; }
-        /* Tujuh medan di kisi tiga kolom menyisakan satu yang berdiri
-           sendirian di baris terakhir. Nama pelanggan — yang memang paling
-           butuh ruang — mengambil dua kolom, jadi barisnya terbagi 3/3/2. */
-        .rb-medan-rak > .rb-medan-lebar { grid-column: span 2; }
-        .rb-medan-rak .dsb-kartu-sub { display: block; margin-top: 5px; }
-        .rb-medan-sambung { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
-        .rb-wajib { color: #dc2626; }
-
-        /* Baris "terisi sendiri": memperlihatkan hasil rakitan sebelum
-           disimpan. Yang dikerjakan diam-diam akan mengejutkan saat muncul
-           di PDF penawaran. */
-        .rb-rakitan {
-            display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
-            margin-top: 14px; padding: 11px 14px;
-            background: #f6fbf8; border: 1px solid #d1fae5; border-radius: 13px;
-        }
-        .rb-rakitan-teks { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; }
-        .rb-rakitan-judul { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
-        .rb-rakitan-malam { color: var(--dsb-redup, #6b7280); font-weight: 500; }
-        .rb-rakitan-ket { font-size: .78rem; color: var(--dsb-redup, #94a3b8); white-space: nowrap; }
-
-        .rb-kaki { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
-
         /* Sel bertumpuk: judul tegas di atas, keterangannya di bawah. */
         .rb-utama { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .rb-utama.is-kanan { align-items: flex-end; }
@@ -850,12 +628,13 @@ RAB & Itinerary || lemon
            Angkanya berjumlah 100% dan diturunkan dari isi sebenarnya: aksi
            butuh 154px pada tabel 1038px. */
         .rb-tabel { table-layout: fixed; }
-        .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 27%; }
-        .rb-tabel th:nth-child(2), .rb-tabel td:nth-child(2) { width: 14%; }
+        .rb-tabel thead th { white-space: normal; }
+        .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 24%; }
+        .rb-tabel th:nth-child(2), .rb-tabel td:nth-child(2) { width: 13%; }
         .rb-tabel th:nth-child(3), .rb-tabel td:nth-child(3) { width: 13%; }
         .rb-tabel th:nth-child(4), .rb-tabel td:nth-child(4) { width: 11%; }
         .rb-tabel th:nth-child(5), .rb-tabel td:nth-child(5) { width: 16%; }
-        .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 19%; }
+        .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 23%; }
 
         /* Tombol aksi dirapatkan DI SEMUA LEBAR, bukan cuma di layar kecil.
 
@@ -864,8 +643,8 @@ RAB & Itinerary || lemon
            Baris yang statusnya "dikirim" punya LIMA tombol, dan lima tombol
            34px butuh 222px; dirapatkan jadi 30px, cukup 194px. Selisihnya
            persis yang kurang. */
-        .rb-tabel .dsb-tabel-aksi { gap: 4px; }
-        .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 30px; height: 30px; }
+        .rb-tabel .dsb-tabel-aksi { gap: 3px; }
+        .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 28px; height: 28px; }
 
         /* Yang BOLEH melipat di dalam selnya.
 
@@ -887,21 +666,38 @@ RAB & Itinerary || lemon
            layarnya; yang bisa mengalah kolom lain, bukan tombol yang hilang
            di balik tepi kartu. */
         @media (max-width: 1399.98px) {
-            .rb-tabel .dsb-tabel-aksi { gap: 3px; }
-            .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 28px; height: 28px; }
-            .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 24%; }
-            /* Nama daerah sering SATU KATA yang panjang — "Banyuwangi" 87px —
-               dan satu kata tidak bisa dipatahkan tanpa memotongnya di tengah.
-               Jadi kolomnya yang diberi ruang, bukan katanya yang dipotong. */
+            .rb-tabel .dsb-tabel-aksi { gap: 2px; }
+            .rb-tabel .dsb-tabel-aksi .dsb-tabel-btn { width: 26px; height: 26px; }
+            /* Tidak boleh lebih sempit dari ini: kode "RAB-2609-R24J" selebar
+               95px dan tidak bisa dipatahkan — memecahnya di tengah membuat
+               nomor rujukan yang justru paling sering disalin jadi tak
+               terbaca. Satu persen sisanya diambil dari Status, yang
+               lencananya memang boleh melipat. */
+            .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 21%; }
+            .rb-tabel th:nth-child(5), .rb-tabel td:nth-child(5) { width: 14%; }
+            /* Nama daerah sering SATU KATA yang panjang — "Yogyakarta" 81px di
+               1200 — dan satu kata tidak bisa dipatahkan tanpa memotongnya di
+               tengah. Jadi kolomnya yang diberi ruang, bukan katanya yang
+               dipotong; yang dua persen itu diambil dari Perjalanan, satu-
+               satunya kolom yang isinya memang boleh melipat. */
             .rb-tabel th:nth-child(2), .rb-tabel td:nth-child(2) { width: 15%; }
-            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 21%; }
+            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 26%; }
         }
 
         /* Berangkat ke tersembunyi: lebarnya dibagi antara sel jati diri dan
            kolom aksi, bukan diberikan semuanya ke salah satunya. */
+        /* Ikon status di sel jati diri dilepas lebih dulu, sebelum satu
+           kolom pun dipersempit lagi: ia memakan 46px untuk mengulang apa
+           yang kolom Status sudah katakan dengan kata-kata. Tanpa ini kode
+           "RAB-2609-R24J" kurang 4px dari muat, dan 4px itu hanya bisa
+           diambil dari kolom yang isinya tidak boleh melipat. */
+        @media (max-width: 1299.98px) {
+            .rb-tabel tbody .dsb-tabel-utama > .dsb-ikon { display: none; }
+        }
+
         @media (max-width: 1199.98px) {
             .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 35%; }
-            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 24%; }
+            .rb-tabel th:nth-child(6), .rb-tabel td:nth-child(6) { width: 28%; }
         }
         @media (max-width: 991.98px) {
             .rb-tabel th:nth-child(1), .rb-tabel td:nth-child(1) { width: 44%; }
@@ -942,18 +738,25 @@ RAB & Itinerary || lemon
         @media (max-width: 991.98px) {
             .rb-saring > .rb-medan-cari { flex: 1 1 100%; }
             .rb-saring > .rb-pilih { flex: 1 1 160px; max-width: none; }
-            .rb-medan-rak { grid-template-columns: repeat(2, 1fr); }
-            .rb-medan-rak > .rb-medan-lebar { grid-column: span 1; }
-            .rb-jenis { grid-template-columns: 1fr; }
         }
 
         /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu
            bertumpuk, aturan yang sama dengan daftar lemon lain. */
         @media (max-width: 767.98px) {
-            .rb-medan-rak { grid-template-columns: 1fr; }
-            .rb-tabel { min-width: 0; }
+            /* table-layout: fixed TERUS BERLAKU walau barisnya sudah jadi
+               blok: kotak tabelnya masih ada, jadi persentase kolom di atas
+               tetap mengunci lebar sel. Sel "Perjalanan" dapat 24% dari 546px
+               — 131px — dan judul perjalanan meluap keluar kartunya tanpa
+               satu pun tanda. Kotak tabelnya ikut dibubarkan di sini, dan
+               lebar selnya dikembalikan ke isi. */
+            .rb-tabel { min-width: 0; display: block; table-layout: auto; }
+            .rb-tabel tbody { display: block; }
             .rb-tabel thead { display: none; }
             .rb-tabel tbody tr { display: block; padding: 13px 15px; border-bottom: 1px solid #f2f5f9; }
+            /* !important: aturan persentase di atas memakai :nth-child, dan
+               bobotnya lebih tinggi daripada pemilih mana pun yang masuk akal
+               di sini. */
+            .rb-tabel tbody td { width: auto !important; }
             .rb-tabel tbody td {
                 display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
                 padding: 4px 0; border: 0; text-align: left !important;
@@ -965,8 +768,14 @@ RAB & Itinerary || lemon
             }
             /* Isi sel harus boleh menyempit; medan flex yang mempertahankan
                lebar isinya mendorong kartunya keluar layar. */
-            .rb-tabel tbody td > * { min-width: 0; }
+            .rb-tabel tbody td > * { min-width: 0; overflow-wrap: anywhere; }
             .rb-utama, .rb-status-rak { align-items: flex-end; text-align: right; }
+        }
+
+        @media (max-width: 575.98px) {
+            .rb-tabel tbody td { flex-direction: column; align-items: stretch; gap: 2px; }
+            .rb-tabel tbody td .rb-utama,
+            .rb-tabel tbody td .rb-status-rak { align-items: flex-start; text-align: left; }
         }
     </style>
 

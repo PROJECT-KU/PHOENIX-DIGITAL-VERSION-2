@@ -133,20 +133,6 @@ class OrchaRabSusun extends Component
 
     public array $manual = [];
 
-    public bool $bukaKepala = false;
-
-    public array $kepala = [];
-
-    /*
-     | Salinan kepala seperti saat dimuat.
-     |
-     | Panel ini hanya tersimpan saat tombol Simpan ditekan — menutupnya
-     | atau berpindah halaman membuang perubahannya tanpa sepatah kata.
-     | Pembandingnya dipegang di sini supaya layar bisa mengatakan "belum
-     | disimpan" alih-alih membiarkannya hilang diam-diam.
-     */
-    public array $kepalaAwal = [];
-
     /*
      | Tiket yang baru dihapus sementara tempatnya MASIH ada di itinerary.
      |
@@ -270,81 +256,6 @@ class OrchaRabSusun extends Component
         // mengubah harga jual tidak boleh bersembunyi di balik tombol.
         $this->bukaNego = $this->bukaNego || $this->hargaNego !== '';
 
-        $this->kepala = [
-            'judul' => (string) $data['judul'],
-            'nama_pelanggan' => (string) $data['nama_pelanggan'],
-            'whatsapp' => (string) ($data['whatsapp'] ?? ''),
-            'email' => (string) ($data['email'] ?? ''),
-            'daerah' => (string) ($data['daerah'] ?? ''),
-            'tanggal_mulai' => (string) ($data['tanggal_mulai'] ?? ''),
-            // Diturunkan Orcha dari tanggal mulai + jumlah hari. Ikut
-            // dipegang di sini supaya bisa disunting, tetapi TIDAK dikirim
-            // balik — lihat simpanKepala().
-            'tanggal_pulang' => (string) ($data['tanggal_pulang'] ?? ''),
-            'jumlah_hari' => (int) $data['jumlah_hari'],
-            'jumlah_malam' => (int) $data['jumlah_malam'],
-            'jumlah_peserta' => (int) $data['jumlah_peserta'],
-            'berlaku_sampai' => (string) ($data['berlaku_sampai'] ?? ''),
-            'catatan_penawaran' => (string) ($data['catatan_penawaran'] ?? ''),
-            'catatan' => (string) ($data['catatan'] ?? ''),
-        ];
-
-        $this->kepalaAwal = $this->kepala;
-    }
-
-    public function updatedKepalaTanggalPulang(): void
-    {
-        $this->hitungHariDariTanggal();
-    }
-
-    public function updatedKepalaTanggalMulai(): void
-    {
-        $this->hitungHariDariTanggal();
-    }
-
-    /**
-     * Jumlah hari & malam dihitung dari rentang tanggalnya.
-     *
-     * Hari keberangkatan ikut terhitung: 10 → 12 adalah 3 hari 2 malam.
-     * Pulang sebelum berangkat diabaikan — menolaknya diam-diam lebih baik
-     * daripada menulis "0 hari" yang lalu menghapus seluruh itinerary.
-     */
-    private function hitungHariDariTanggal(): void
-    {
-        $mulai = trim((string) ($this->kepala['tanggal_mulai'] ?? ''));
-        $pulang = trim((string) ($this->kepala['tanggal_pulang'] ?? ''));
-
-        if ($mulai === '' || $pulang === '') {
-            return;
-        }
-
-        try {
-            $a = \Carbon\Carbon::parse($mulai)->startOfDay();
-            $b = \Carbon\Carbon::parse($pulang)->startOfDay();
-        } catch (\Throwable) {
-            return;
-        }
-
-        if ($b->lessThan($a)) {
-            return;
-        }
-
-        $this->kepala['jumlah_hari'] = $a->diffInDays($b) + 1;
-        $this->kepala['jumlah_malam'] = $a->diffInDays($b);
-    }
-
-    /** Ada perubahan di panel data perjalanan yang belum dikirim. */
-    public function kepalaBerubah(): bool
-    {
-        return $this->kepalaAwal !== [] && $this->kepala !== $this->kepalaAwal;
-    }
-
-    /** Menutup panel kepala, membuang perubahan yang belum disimpan. */
-    public function batalKepala(): void
-    {
-        $this->kepala = $this->kepalaAwal;
-        $this->bukaKepala = false;
-        $this->resetValidation();
     }
 
     /**
@@ -1566,48 +1477,6 @@ class OrchaRabSusun extends Component
     }
 
     /* ------------------------------ KEPALA RAB ----------------------------- */
-
-    public function simpanKepala(): void
-    {
-        $this->validate([
-            'kepala.judul' => 'required|string|min:3|max:150',
-            'kepala.nama_pelanggan' => 'required|string|min:2|max:120',
-            'kepala.email' => 'nullable|email|max:150',
-            'kepala.tanggal_mulai' => 'nullable|date',
-            'kepala.jumlah_hari' => 'required|integer|min:1|max:30',
-            'kepala.jumlah_malam' => 'required|integer|min:0|max:30|lte:kepala.jumlah_hari',
-            'kepala.jumlah_peserta' => 'required|integer|min:1|max:500',
-            'kepala.berlaku_sampai' => 'nullable|date',
-        ], [
-            'kepala.jumlah_malam.lte' => 'Jumlah malam tidak boleh melebihi jumlah hari.',
-        ], [
-            'kepala.judul' => 'judul', 'kepala.nama_pelanggan' => 'nama pelanggan', 'kepala.email' => 'email',
-            'kepala.jumlah_hari' => 'jumlah hari', 'kepala.jumlah_peserta' => 'jumlah peserta',
-        ]);
-
-        /*
-         | Memperpendek perjalanan ditolak bila masih ada kegiatan di hari yang
-         | akan hilang. Membuangnya diam-diam berarti admin kehilangan susunan
-         | hari keempat hanya karena salah ketik 3.
-         */
-        $hariTerjauh = (int) collect($this->itinerary)->max('hari_ke');
-        if ($hariTerjauh > (int) $this->kepala['jumlah_hari']) {
-            $this->addError('kepala.jumlah_hari', "Masih ada kegiatan di hari ke-{$hariTerjauh}. Pindahkan atau hapus dulu.");
-
-            return;
-        }
-
-        $data = collect($this->kepala)
-            // tanggal_pulang tidak dikirim: di Orcha ia diturunkan, bukan
-            // disimpan. Dua angka untuk hal yang sama pasti berselisih.
-            ->except('tanggal_pulang')
-            ->map(fn ($v) => is_string($v) ? (trim($v) ?: null) : $v)->all();
-
-        if ($this->kirimKe('ubah', "/rab/{$this->rabId}", $data, 'Data perjalanan disimpan.')) {
-            $this->bukaKepala = false;
-            $this->kepalaAwal = $this->kepala;
-        }
-    }
 
     public function ubahStatus(string $status): void
     {

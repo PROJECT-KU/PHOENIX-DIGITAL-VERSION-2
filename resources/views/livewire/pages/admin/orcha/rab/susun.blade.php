@@ -552,11 +552,6 @@ Susun RAB || lemon
             background: #eef2ff; border: 1px solid #c7d2fe;
             font-size: .83rem; font-weight: 600; color: #3730a3;
         }
-        .rab-tertahan { border-color: #fde68a !important; background: #fffbeb !important; }
-        .rab-titik {
-            display: inline-block; width: 7px; height: 7px; margin-left: 5px;
-            border-radius: 999px; background: #b45309;
-        }
         .rb-pegangan {
             display: inline-flex; align-items: center; justify-content: center;
             width: 24px; height: 32px; color: #cbd5e1; flex: 0 0 auto;
@@ -622,10 +617,6 @@ Susun RAB || lemon
         .rab-tertinggal > i { color: #1d4ed8; font-size: 1.02rem; }
         .rab-tertinggal-teks { flex: 1 1 240px; min-width: 0; font-size: .83rem; line-height: 1.45; color: #1e3a8a; }
 
-        .rab-tertahan-ket {
-            display: inline-flex; align-items: center; gap: 6px; margin-right: auto;
-            font-size: .79rem; font-weight: 600; color: #92400e;
-        }
         .rab-harga-besar { font-size: 1.9rem; font-weight: 800; color: var(--orc-primer); line-height: 1.1; }
         .rab-baris-angka { display: flex; justify-content: space-between; font-size: .88rem; padding: .3rem 0; color: var(--orc-tinta); }
         .rab-baris-angka.garis { border-top: 1px dashed #e2e8f0; margin-top: .3rem; padding-top: .55rem; }
@@ -1227,7 +1218,7 @@ Susun RAB || lemon
              display:none ditulis sendiri — lihat catatan "wire:loading kalah
              bobot CSS". --}}
         <div class="rab-muat" wire:loading.flex
-            wire:target="tarikBiaya,simpanKepala,tambahDariMaster,tambahManual,pakaiKendaraan,pakaiTiketKendaraan,pakaiBiayaDariCari,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
+            wire:target="tarikBiaya,tambahDariMaster,tambahManual,pakaiKendaraan,pakaiTiketKendaraan,pakaiBiayaDariCari,ubahStatus,jadikanPendaftaran,hapusBiaya,simpanItinerary">
             <span class="dsb-putar"></span>
             <span>Sedang menyimpan ke Orcha…</span>
         </div>
@@ -1302,15 +1293,15 @@ Susun RAB || lemon
                                         <option value="{{ $kunci }}" @selected($kunci === $statusKini)>{{ $label }}</option>
                                     @endforeach
                                 </select>
-                                {{-- Panel ini hanya tersimpan saat Simpan ditekan.
-                                     Tanpa tanda, menutupnya atau berpindah halaman
-                                     membuang perubahannya tanpa sepatah kata. --}}
-                                <button type="button" wire:click="$toggle('bukaKepala')"
-                                    class="dsb-tombol is-lembut {{ $this->kepalaBerubah() ? 'rab-tertahan' : '' }}"
-                                    style="--ikon: {{ $this->kepalaBerubah() ? '#b45309' : '#64748b' }}">
+                                {{-- Halaman tersendiri, bukan panel yang terbuka di
+                                     sini. Lima belas isian yang mekar di tengah layar
+                                     penyusun mendorong itinerary keluar pandangan, dan
+                                     perubahan yang hanya tersimpan saat Simpan ditekan
+                                     hilang tanpa sepatah kata begitu admin berpindah. --}}
+                                <a href="{{ route('admin.orcha.rab.ubah', $rabId) }}" wire:navigate
+                                    class="dsb-tombol is-lembut" style="--ikon: #64748b">
                                     <i class="bi bi-sliders"></i> Data perjalanan
-                                    @if ($this->kepalaBerubah())<span class="rab-titik" title="Ada perubahan yang belum disimpan"></span>@endif
-                                </button>
+                                </a>
                                 {{-- Penawaran SELESAI disiapkan di layar ini, dan di
                                      sinilah orang menekan kirim — bukan di daftar. --}}
                                 @if ($tautanWa)
@@ -1374,115 +1365,6 @@ Susun RAB || lemon
                              sudah terbaca di Jejak Audit. --}}
                     </div>
 
-                    @if ($bukaKepala)
-                        <div class="border-top mt-3 pt-3">
-                            {{-- Barisnya dibuat GENAP dua belas kolom.
-
-                                 Sebelumnya tidak: baris hari/malam/peserta hanya
-                                 memakai enam kolom, jadi "Catatan di penawaran" naik
-                                 menyusup ke sisanya dan "Catatan internal" tertinggal
-                                 sendirian dengan separuh baris kosong di sebelahnya.
-                                 Grid mengalir — yang tidak dijumlahkan akan menata
-                                 dirinya sendiri, dan hasilnya terbaca acak. --}}
-                            <div class="orcha-label-kecil mb-2">Pelanggan</div>
-                            <div class="row g-3">
-                                <div class="col-12 col-md-6">
-                                    <label class="dsb-label">Judul <span class="text-danger">*</span></label>
-                                    <input type="text" wire:model="kepala.judul" maxlength="150" class="dsb-isian @error('kepala.judul') is-galat @enderror">
-                                    @error('kepala.judul')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <label class="dsb-label">Nama pelanggan <span class="text-danger">*</span></label>
-                                    <input type="text" wire:model="kepala.nama_pelanggan" maxlength="120" class="dsb-isian @error('kepala.nama_pelanggan') is-galat @enderror">
-                                    @error('kepala.nama_pelanggan')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="dsb-label">WhatsApp</label>
-                                    <input type="text" wire:model="kepala.whatsapp" maxlength="32" class="dsb-isian">
-                                    <div class="dsb-kartu-sub">Wajib sebelum dijadikan pendaftaran.</div>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="dsb-label">Email</label>
-                                    <input type="email" wire:model="kepala.email" maxlength="150" class="dsb-isian @error('kepala.email') is-galat @enderror">
-                                    @error('kepala.email')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="dsb-label">Kota / daerah</label>
-                                    <input type="text" wire:model="kepala.daerah" maxlength="80" class="dsb-isian">
-                                    <div class="dsb-kartu-sub">Ikut terbaca di judul rakitan.</div>
-                                </div>
-                            </div>
-
-                            <div class="orcha-label-kecil mb-2 mt-3">Perjalanan</div>
-                            <div class="row g-3">
-                                <div class="col-12 col-md-4">
-                                    <label class="dsb-label">Tanggal berangkat</label>
-                                    <input type="date" wire:model.live="kepala.tanggal_mulai" class="dsb-isian">
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    {{-- Yang disepakati dengan pelanggan tanggalnya, bukan
-                                         jumlah harinya — dan yang meleset satu hari
-                                         menggeser seluruh modal akomodasi. --}}
-                                    <label class="dsb-label">Tanggal pulang</label>
-                                    <input type="date" wire:model.live="kepala.tanggal_pulang" class="dsb-isian"
-                                        min="{{ $kepala['tanggal_mulai'] ?? '' }}">
-                                    <div class="dsb-kartu-sub">Hari &amp; malam terisi sendiri dari rentangnya.</div>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="dsb-label">Penawaran berlaku sampai</label>
-                                    <input type="date" wire:model="kepala.berlaku_sampai" class="dsb-isian">
-                                    <div class="dsb-kartu-sub">Lewat tanggal ini, RAB ditandai kedaluwarsa.</div>
-                                </div>
-                                <div class="col-4">
-                                    <label class="dsb-label">Hari</label>
-                                    <input type="number" min="1" max="30" wire:model="kepala.jumlah_hari" class="dsb-isian @error('kepala.jumlah_hari') is-galat @enderror">
-                                    @error('kepala.jumlah_hari')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-4">
-                                    <label class="dsb-label">Malam</label>
-                                    <input type="number" min="0" max="30" wire:model="kepala.jumlah_malam" class="dsb-isian @error('kepala.jumlah_malam') is-galat @enderror">
-                                    @error('kepala.jumlah_malam')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                                <div class="col-4">
-                                    <label class="dsb-label">Peserta</label>
-                                    <input type="number" min="1" max="500" wire:model="kepala.jumlah_peserta" class="dsb-isian @error('kepala.jumlah_peserta') is-galat @enderror">
-                                    @error('kepala.jumlah_peserta')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                </div>
-                            </div>
-
-                            <div class="orcha-label-kecil mb-2 mt-3">Catatan</div>
-                            <div class="row g-3">
-                                <div class="col-12 col-md-6">
-                                    <label class="dsb-label">Catatan di penawaran <span class="text-muted fw-normal">(dibaca pelanggan)</span></label>
-                                    <textarea wire:model="kepala.catatan_penawaran" rows="4" maxlength="3000" class="dsb-isian"
-                                        placeholder="Harga belum termasuk tiket pesawat PP."></textarea>
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <label class="dsb-label">Catatan internal <span class="text-muted fw-normal">(hanya di PDF internal)</span></label>
-                                    <textarea wire:model="kepala.catatan" rows="4" maxlength="3000" class="dsb-isian"
-                                        placeholder="Vendor, hasil negosiasi, hal yang perlu dicek."></textarea>
-                                </div>
-                            </div>
-                            <div class="d-flex gap-2 justify-content-end pt-3">
-                                @if ($this->kepalaBerubah())
-                                    <span class="rab-tertahan-ket">
-                                        <i class="bi bi-exclamation-triangle-fill"></i>
-                                        Ada perubahan yang belum disimpan.
-                                    </span>
-                                    <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
-                                        data-action="batalKepala"
-                                        data-title="Buang perubahannya?"
-                                        data-text="Yang sudah diketik di panel ini akan kembali seperti semula."
-                                        data-confirm="Ya, buang" data-icon="warning">Batal</button>
-                                @else
-                                    <button type="button" wire:click="batalKepala" class="dsb-tombol is-lembut" style="--ikon: #64748b">Batal</button>
-                                @endif
-                                <button type="button" wire:click="simpanKepala" wire:loading.attr="disabled" wire:target="simpanKepala" class="dsb-tombol is-lembut" style="--ikon: #4f46e5">
-                                    <i class="bi bi-check2-circle"></i> Simpan
-                                </button>
-                            </div>
-                        </div>
-                    @endif
                 </div>
             </div>
 

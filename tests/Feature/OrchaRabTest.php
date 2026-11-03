@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList;
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabForm;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun;
 use Illuminate\Http\Client\Request;
@@ -144,8 +145,7 @@ test('RAB baru dikirim lalu admin dibawa ke penyusunnya', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaRabList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaRabForm::class)
         ->set('isian.judul', 'Jogja Heritage 3H2M')
         ->set('isian.nama_pelanggan', 'Keluarga Hendra')
         ->set('isian.provinsi', 'DI Yogyakarta')
@@ -166,8 +166,7 @@ test('malam lebih banyak dari hari ditahan sebelum sampai ke Orcha', function ()
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaRabList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaRabForm::class)
         ->set('isian.judul', 'Trip')
         ->set('isian.nama_pelanggan', 'Bu Siti')
         ->set('isian.provinsi', 'DI Yogyakarta')
@@ -230,11 +229,11 @@ test('memperpendek perjalanan ditolak bila masih ada kegiatan di hari yang hilan
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaRabSusun::class, ['rab' => 3])
-        ->set('kepala.jumlah_hari', 1)
-        ->set('kepala.jumlah_malam', 0)
-        ->call('simpanKepala')
-        ->assertHasErrors('kepala.jumlah_hari');
+    Livewire::test(OrchaRabForm::class, ['rab' => 3])
+        ->set('isian.jumlah_hari', 1)
+        ->set('isian.jumlah_malam', 0)
+        ->call('simpan')
+        ->assertHasErrors('isian.jumlah_hari');
 
     Http::assertNotSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/rab/3'));
 });
@@ -476,7 +475,7 @@ test('judul RAB dirakit sendiri dari tujuan dan lamanya', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.nama_pelanggan', 'Keluarga Hendra')
         ->set('isian.provinsi', 'DI Yogyakarta')
         ->set('isian.jumlah_hari', 3)
@@ -493,7 +492,7 @@ test('kota yang diisi admin menang atas provinsi di judul', function () {
     palsukanRab();
 
     $komponen = Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.provinsi', 'DI Yogyakarta')
         ->set('isian.daerah', 'Sleman')
         ->set('isian.jumlah_hari', 2);
@@ -505,7 +504,7 @@ test('judul yang ditulis sendiri tidak ditimpa rakitan', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.judul', 'Jogja Heritage Spesial')
         ->set('isian.nama_pelanggan', 'Keluarga Hendra')
         ->set('isian.provinsi', 'DI Yogyakarta')
@@ -718,8 +717,7 @@ test('jenis perjalanan dipilih lebih dulu, dan open trip menuntut peserta minimu
     palsukanRab();
 
     $komponen = Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
-        ->call('bukaTambah');
+        ->test(OrchaRabForm::class);
 
     // Private trip sebagai bawaan: jumlah orangnya sudah pasti di kesepakatan.
     expect($komponen->instance()->openTrip())->toBeFalse();
@@ -737,7 +735,7 @@ test('open trip mengirim dasar harga ke Orcha, private trip tidak membawanya', f
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.jenis', 'open')
         ->set('isian.nama_pelanggan', 'Rombongan Umum')
         ->set('isian.provinsi', 'Jawa Timur')
@@ -762,7 +760,7 @@ test('private trip tidak membawa sisa isian open trip', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.jenis', 'open')
         ->set('isian.peserta_minimum', 5)
         ->set('isian.jenis', 'private')          // berubah pikiran
@@ -784,7 +782,7 @@ test('judul rakitan menyebut jenis perjalanannya', function () {
     palsukanRab();
 
     $komponen = Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
+        ->test(OrchaRabForm::class)
         ->set('isian.provinsi', 'Jawa Timur')
         ->set('isian.jumlah_hari', 3);
 
@@ -2662,25 +2660,20 @@ test('jumlah baris daftar RAB dibatasi ke pilihan yang dikenal', function () {
     Http::assertSent(fn (Request $r) => str_contains($r->url(), 'per_halaman=10'));
 });
 
-test('perubahan data perjalanan yang belum disimpan ditandai, dan batal mengembalikannya', function () {
+test('data perjalanan diubah di halamannya sendiri, bukan di panel yang menumpang', function () {
     /*
-     | Panel itu hanya tersimpan saat Simpan ditekan. Tanpa tanda,
-     | menutupnya membuang perubahannya tanpa sepatah kata.
+     | Dulu panel yang terbuka di tengah penyusun, dan ia hanya tersimpan
+     | saat Simpan ditekan: menutupnya atau berpindah halaman membuang
+     | perubahannya tanpa sepatah kata. Penandanya ikut dicabut bersama
+     | panelnya — halaman tersendiri tidak bisa ditutup tanpa disadari.
      */
     palsukanRab();
 
-    $layar = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
 
-    expect($layar->instance()->kepalaBerubah())->toBeFalse();
-
-    $layar->set('kepala.judul', 'Judul yang diketik tapi belum disimpan');
-
-    expect($layar->instance()->kepalaBerubah())->toBeTrue()
-        ->and($layar->html())->toContain('belum disimpan');
-
-    $layar->call('batalKepala');
-
-    expect($layar->instance()->kepalaBerubah())->toBeFalse();
+    expect($html)->toContain('Data perjalanan')
+        ->and($html)->toContain(route('admin.orcha.rab.ubah', 3))
+        ->and($html)->not->toContain('bukaKepala');
 });
 
 test('tiket yang ikut terbuang bersama itinerary dikatakan, tidak hilang diam-diam', function () {
@@ -2898,8 +2891,7 @@ test('tanggal pulang mengisi jumlah hari dan malam, hari berangkat ikut terhitun
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
-        ->call('bukaTambah')
+        ->test(OrchaRabForm::class)
         ->set('isian.tanggal_mulai', '2026-11-10')
         ->set('isian.tanggal_pulang', '2026-11-12')
         // 10 → 12 adalah 3 hari 2 malam, bukan 2 hari.
@@ -2915,8 +2907,7 @@ test('mengubah jumlah hari menggeser tanggal pulangnya', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
-        ->call('bukaTambah')
+        ->test(OrchaRabForm::class)
         ->set('isian.tanggal_mulai', '2026-11-10')
         ->set('isian.jumlah_hari', 5)
         ->assertSet('isian.tanggal_pulang', '2026-11-14')
@@ -2927,8 +2918,7 @@ test('pulang sebelum berangkat diabaikan, bukan dihitung negatif', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
-        ->call('bukaTambah')
+        ->test(OrchaRabForm::class)
         ->set('isian.tanggal_mulai', '2026-11-10')
         ->set('isian.tanggal_pulang', '2026-11-05')
         // Tetap di nilai bawaannya; tidak ada "0 hari" atau angka minus.
@@ -2945,8 +2935,7 @@ test('tanggal pulang tidak ikut dikirim ke Orcha', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabList::class)
-        ->call('bukaTambah')
+        ->test(OrchaRabForm::class)
         ->set('isian.nama_pelanggan', 'Keluarga Uji')
         ->set('isian.provinsi', 'DI Yogyakarta')
         ->set('isian.tanggal_mulai', '2026-11-10')
@@ -2963,11 +2952,11 @@ test('panel data perjalanan ikut menghitung dari rentang tanggalnya', function (
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaRabSusun::class, ['rab' => 3])
-        ->set('kepala.tanggal_mulai', '2026-12-01')
-        ->set('kepala.tanggal_pulang', '2026-12-04')
-        ->assertSet('kepala.jumlah_hari', 4)
-        ->assertSet('kepala.jumlah_malam', 3);
+        ->test(OrchaRabForm::class, ['rab' => 3])
+        ->set('isian.tanggal_mulai', '2026-12-01')
+        ->set('isian.tanggal_pulang', '2026-12-04')
+        ->assertSet('isian.jumlah_hari', 4)
+        ->assertSet('isian.jumlah_malam', 3);
 });
 
 test('judul, kota, dan jumlah malam terlihat tanpa membuka apa pun', function () {
@@ -2975,14 +2964,13 @@ test('judul, kota, dan jumlah malam terlihat tanpa membuka apa pun', function ()
 
     // Ketiganya terisi sendiri, tetapi kotaknya TIDAK disembunyikan: yang
     // tersembunyi di balik tombol menyembunyikan juga bahwa ia boleh diubah.
-    Livewire::actingAs(adminRab())->test(OrchaRabList::class)
-        ->call('bukaTambah')
+    Livewire::actingAs(adminRab())->test(OrchaRabForm::class)
         ->assertSee('Judul perjalanan')
         ->assertSee('Kota / daerah')
         ->assertSee('Jumlah malam')
         // Baris rakitannya tetap ada — ia menjawab "kalau dibiarkan kosong,
         // jadinya apa?" sebelum penawarannya tercetak.
-        ->assertSee('Judul & jumlah malam terisi sendiri')
+        ->assertSee('Judul terisi sendiri bila dikosongkan')
         ->assertDontSee('Sesuaikan sendiri');
 });
 
@@ -3780,25 +3768,89 @@ test('tiap isian uang membawa awalan Rp, dan angkanya tidak menimpanya', functio
     expect($cocok[0])->not->toBeEmpty();
 });
 
-test('panel data perjalanan tersusun bagian demi bagian, barisnya genap', function () {
+test('RAB baru membuka halamannya sendiri, bukan panel di bawah daftar', function () {
+    /*
+     | Borang lima belas isian yang mekar di bawah daftar mendorong tabelnya
+     | keluar layar, dan admin kehilangan tempat ia tadi berada begitu
+     | borangnya ditutup.
+     */
     palsukanRab();
 
-    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
-        ->set('bukaKepala', true)
-        ->html();
+    $html = $this->actingAs(adminRab())->get('/admin/orcha/rab')->assertOk()->getContent();
+
+    expect($html)->toContain(route('admin.orcha.rab.tambah'))
+        ->and($html)->toContain('RAB Baru')
+        // Tombol pembuka panel tidak boleh hidup kembali di sebelah tautannya.
+        ->and($html)->not->toContain('bukaTambah');
+});
+
+test('tiap baris daftar punya jalan ke borang ubahnya', function () {
+    palsukanRab();
+
+    $html = $this->actingAs(adminRab())->get('/admin/orcha/rab')->assertOk()->getContent();
+
+    // 'dari' dibawa di alamat: yang datang dari daftar dikembalikan ke
+    // daftar, yang datang dari penyusun dikembalikan ke penyusun.
+    expect($html)->toContain(route('admin.orcha.rab.ubah', ['rab' => 3, 'dari' => 'daftar']));
+});
+
+test('ubah yang selesai mengembalikan admin ke tempat ia datang', function () {
+    palsukanRab();
+
+    // Dari penyusun — bawaannya.
+    Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertDispatched('orcha-sukses-pindah', url: route('admin.orcha.rab.susun', 3));
+
+    // Dari daftar.
+    Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])
+        ->set('dari', 'daftar')
+        ->call('simpan')
+        ->assertDispatched('orcha-sukses-pindah', url: route('admin.orcha.rab'));
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'PATCH'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/rab/3')
+        && ($r->data()['nama_pelanggan'] ?? null) === 'Keluarga Hendra');
+});
+
+test('jenis perjalanan tidak bisa diganti pada RAB yang sudah dihitung', function () {
+    /*
+     | Harga, modal, dan titik impas sudah terlanjur dihitung atas dasarnya;
+     | menukarnya diam-diam menggeser seluruh angka tanpa sebab yang terlihat.
+     */
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    expect(substr_count($html, 'rb-jenis-pilih'))->toBeGreaterThan(1)
+        ->and($html)->toContain('disabled');
+
+    // Pada yang baru, justru harus bisa dipilih.
+    $baru = Livewire::actingAs(adminRab())->test(OrchaRabForm::class)->html();
+
+    expect($baru)->toContain("\$set('isian.jenis', 'open')");
+});
+
+test('borang ubah tersusun bagian demi bagian, tiap bagian kartunya sendiri', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
 
     /*
-     | Grid Bootstrap MENGALIR: baris yang tidak dijumlahkan dua belas kolom
-     | akan menarik medan berikutnya ke sisanya. Sebelum ini baris
-     | hari/malam/peserta hanya memakai enam kolom, jadi "Catatan di
-     | penawaran" menyusup ke sana dan "Catatan internal" tertinggal
-     | sendirian dengan separuh baris kosong di sebelahnya.
+     | Lima belas isian dalam satu kartu panjang terbaca seperti borang
+     | pajak: tidak ada tempat mata beristirahat, dan tidak ada yang
+     | mengatakan pertanyaan mana yang sedang dijawab.
      */
-    foreach (['Pelanggan', 'Perjalanan', 'Catatan'] as $bagian) {
+    foreach (['Jenis perjalanan', 'Pelanggan', 'Ke mana dan kapan', 'Catatan'] as $bagian) {
         expect($html)->toContain($bagian);
     }
 
-    // Tiga medan angka berbagi satu baris penuh, bukan menempel di sisa
-    // baris tanggal.
-    expect(substr_count($html, 'class="col-4"'))->toBe(3);
+    // Catatan hanya pada yang sudah ada: RAB yang baru dibuat belum punya
+    // apa pun untuk dicatat, dan dua kotak teks kosong di langkah pertama
+    // membuat borangnya terbaca lebih panjang daripada yang perlu.
+    $baru = Livewire::actingAs(adminRab())->test(OrchaRabForm::class)->html();
+
+    expect($baru)->toContain('Jenis perjalanan')
+        ->and($baru)->not->toContain('Catatan internal');
 });
