@@ -68,7 +68,19 @@ class OrchaMasterHargaList extends Component
          | kotak kapasitas tetap muatan satu kendaraan, dan kendaraannya
          | kendaraan yang sama.
          */
+        /*
+         | Urut dari muatan TERKECIL. Daftarnya dibaca sambil mencari yang
+         | mendekati, dan urutan yang melompat-lompat memaksa pembacanya
+         | membandingkan angka satu per satu.
+         |
+         | Jeep wisata (Bromo, Ijen, Baluran) baku empat penumpang — itu
+         | angka yang dipakai operator saat menghitung berapa unit untuk satu
+         | rombongan. Ada yang memuat enam, tetapi mengisi 6 berarti RAB
+         | memesan unit lebih SEDIKIT daripada yang benar-benar dibutuhkan,
+         | dan kekurangan satu jeep baru ketahuan di hari berangkat.
+         */
         'unit' => [
+            ['Jeep wisata', 4],
             ['Mobil pribadi', 6],
             ['Hiace', 14],
             ['Elf long', 19],
@@ -76,6 +88,7 @@ class OrchaMasterHargaList extends Component
             ['Bus besar', 59],
         ],
         'unit_hari' => [
+            ['Jeep wisata', 4],
             ['Mobil pribadi', 6],
             ['Hiace', 14],
             ['Elf long', 19],

@@ -326,8 +326,9 @@ test('kapasitas tidak ditebak, tetapi dipilih dari daftar bernama', function () 
         ->call('bukaTambah')
         ->set('isian.kategori', 'transportasi');
 
-    // Transportasi bukan cuma Hiace.
-    expect($layar->html())->toContain('Mobil pribadi')
+    // Transportasi bukan cuma Hiace — dari jeep sampai bus besar.
+    expect($layar->html())->toContain('Jeep wisata')
+        ->and($layar->html())->toContain('Mobil pribadi')
         ->and($layar->html())->toContain('Hiace')
         ->and($layar->html())->toContain('Bus besar')
         // Kata yang memisahkan dua angka yang selama ini tertukar.
@@ -4138,4 +4139,31 @@ test('biaya yang juga kejadian berwaktu ikut masuk jadwal, yang lain tidak', fun
     expect(collect(Http::recorded())->filter(
         fn ($p) => str_ends_with((string) parse_url($p[0]->url(), PHP_URL_PATH), '/rab/3/biaya')
     )->count())->toBe(2);
+});
+
+test('daftar kapasitas urut dari muatan terkecil', function () {
+    /*
+     | Daftarnya dibaca sambil mencari yang mendekati, dan urutan yang
+     | melompat-lompat memaksa pembacanya membandingkan angka satu per satu.
+     */
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'transportasi')
+        ->html();
+
+    $urut = [];
+    foreach (['Jeep wisata', 'Mobil pribadi', 'Hiace', 'Elf long', 'Bus sedang', 'Bus besar'] as $nama) {
+        $urut[$nama] = strpos($html, $nama);
+        expect($urut[$nama])->not->toBeFalse();
+    }
+
+    expect(array_values($urut))->toBe(array_values(collect($urut)->sort()->all()));
+
+    // Jeep wisata baku EMPAT penumpang: mengisi 6 membuat RAB memesan unit
+    // lebih sedikit daripada yang dibutuhkan, dan kekurangannya baru
+    // ketahuan di hari berangkat.
+    expect($html)->toContain('>4<');
 });
