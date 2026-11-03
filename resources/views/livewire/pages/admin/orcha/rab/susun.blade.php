@@ -489,7 +489,7 @@ Susun RAB || lemon
            basis, bukan dari lebar setelah tumbuh. Dengan 200, jumlahnya
            melewati lebar kartu sedikit saja — dan tombolnya terlempar ke
            baris sendiri walau ruangnya sebenarnya cukup. */
-        .rab-kegiatan .rab-nama { order: 2; flex: 1 1 140px; min-width: 0; }
+        .rab-kegiatan .rab-nama { order: 2; flex: 1 1 200px; min-width: 0; }
         /* Tombol di baris PERTAMA bersama jam dan namanya; keterangan turun
            sendiri ke baris kedua.
 
@@ -497,7 +497,9 @@ Susun RAB || lemon
            mendorong tombolnya ke baris KETIGA — satu kegiatan jadi setinggi
            tiga baris, dan sepuluh kegiatan jadi layar yang harus digulir
            dua kali. */
-        .rab-kegiatan .rab-kegiatan-aksi { order: 3; flex: 0 0 auto; }
+        /* Blok aksi kini anak .rab-ket-baris, bukan anak kartu — order-nya
+           tidak lagi berarti di sini. Dibiarkan menempel di ujung barisnya. */
+        .rab-kegiatan .rab-kegiatan-aksi { flex: 0 0 auto; margin-left: auto; }
 
         .rab-waktu { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
         .rab-waktu-isian { display: flex; align-items: center; gap: 4px; min-width: 0; }
@@ -518,6 +520,18 @@ Susun RAB || lemon
            terjepit jadi selebar dua kata — kotak isian yang tidak bisa
            dibaca isinya sama saja dengan tidak ada. */
         .rab-ket-baris .rab-ket { flex: 1 1 180px; min-width: 0; }
+        .rab-ket-tambah {
+            flex: 1 1 180px; min-width: 0;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0 12px; min-height: 34px; border-radius: 11px; cursor: pointer;
+            background: #fbfcfe; border: 1px dashed var(--dsb-tepi, #e9edf3);
+            color: var(--dsb-redup, #94a3b8); font-size: .8rem; text-align: left;
+        }
+        /* Putus-putus, bukan garis penuh: ia TEMPAT yang belum terisi, dan
+           garis penuh membuatnya terbaca sebagai kotak isian yang sudah siap
+           diketik — padahal masih harus diklik sekali. */
+        .rab-ket-tambah:hover { border-color: #c7d2fe; color: #4338ca; background: #f6f5ff; }
+        .rab-ket-tambah i { font-size: .72rem; }
 
         .rab-pil-jenis, .rab-pil-lama {
             flex: 0 0 auto; display: inline-flex; align-items: center;
@@ -618,8 +632,13 @@ Susun RAB || lemon
             background: #f6f8fb; border: 1px solid var(--dsb-tepi, #e9edf3);
         }
         .rb-hari-aksi-label {
+            display: inline-flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
             font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
             color: var(--dsb-redup, #6b7280); margin-right: auto;
+        }
+        .rb-hari-aksi-ket {
+            font-weight: 600; letter-spacing: 0; text-transform: none;
+            font-size: .78rem; color: var(--dsb-tinta, #1c1f26);
         }
         .rb-hari-aksi .dsb-isian,
         .rb-hari-aksi .btn { background: #fff; }
@@ -1670,7 +1689,41 @@ Susun RAB || lemon
 
                             @unless ($semuaHari)
                                 <div class="rb-hari-aksi mb-2">
-                                    <span class="rb-hari-aksi-label">Hari {{ $hariAktif }}</span>
+                                    {{-- Labelnya membawa KETERANGAN, bukan cuma nomor
+                                         harinya. Nomor saja menyisakan lubang melintang
+                                         sampai ke kendali di ujung kanan; jumlah
+                                         kegiatan dan rentang jamnya mengisi ruang itu
+                                         dengan sesuatu yang memang dicari mata sebelum
+                                         membaca daftarnya. --}}
+                                    {{-- Kalimatnya dirakit di PHP, bukan lewat direktif
+                                         sebaris di tengah teks.
+
+                                         Direktif yang MENEMPEL huruf tidak dikompilasi
+                                         Blade, sementara penutupnya — yang didahului
+                                         spasi — tetap dikompilasi. Hasilnya sepasang
+                                         yang timpang, dan halamannya mati dengan
+                                         ParseError yang menunjuk berkas kompilasi,
+                                         bukan berkas ini.
+
+                                         Direktifnya sengaja TIDAK ditulis di komentar
+                                         ini: penjaga PenandaMorphAdminTest membaca
+                                         berkasnya mentah, jadi contoh yang ditulis
+                                         apa adanya akan menimpangkan hitungannya. --}}
+                                    @php
+                                        $jamMulai = collect($kegiatanAktif)->pluck('jam')->filter()->min();
+                                        $jamAkhir = collect($kegiatanAktif)->pluck('jam_selesai')->filter()->max()
+                                            ?: collect($kegiatanAktif)->pluck('jam')->filter()->max();
+
+                                        $jam = fn ($t) => str_replace(':', '.', (string) $t);
+                                        $ketHari = $hariAktifKosong
+                                            ? 'belum ada kegiatan'
+                                            : count($kegiatanAktif).' kegiatan'
+                                                .($jamMulai && $jamAkhir ? ' · '.$jam($jamMulai).'–'.$jam($jamAkhir) : '');
+                                    @endphp
+                                    <span class="rb-hari-aksi-label">
+                                        Hari {{ $hariAktif }}
+                                        <span class="rb-hari-aksi-ket">{{ $ketHari }}</span>
+                                    </span>
 
                                     @if ($jumlahHari > 1)
                                         <select class="dsb-isian rb-hari-salin"
@@ -1772,9 +1825,32 @@ Susun RAB || lemon
                                         @if (($k['durasi_teks'] ?? '') !== '')
                                             <span class="rab-pil-lama">{{ $k['durasi_teks'] }}</span>
                                         @endif
-                                        <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
-                                            class="dsb-isian rab-ket" placeholder="Catatan untuk pelanggan — boleh dikosongkan">
-                                    </div>
+                                        {{-- Kotak isian kosong selebar baris, dikalikan
+                                             sepuluh kegiatan, membuat kolom jadwal
+                                             terbaca seperti deretan lubang. Yang kosong
+                                             diganti satu tombol yang MEMANJANG mengisi
+                                             sisa baris: ia mengatakan "boleh diisi" tanpa
+                                             menyediakan ruang kosong untuk dipandangi,
+                                             dan jejak ruangnya sama persis dengan kotak
+                                             yang akan menggantikannya. --}}
+                                        @if ($this->catatanKegiatanTerbuka($i))
+                                            <input type="text" wire:model.blur="itinerary.{{ $i }}.keterangan" maxlength="500"
+                                                class="dsb-isian rab-ket" placeholder="Catatan untuk pelanggan">
+                                        @else
+                                            <button type="button" wire:click="bukaCatatanKegiatan({{ $i }})"
+                                                class="rab-ket-tambah" title="Tulis catatan untuk pelanggan">
+                                                <i class="bi bi-plus-lg"></i> Catatan untuk pelanggan
+                                            </button>
+                                        @endif
+
+                                    {{-- Tombolnya DI BARIS KEDUA bersama pil dan catatan,
+                                         bukan di baris pertama bersama jam dan nama.
+
+                                         Di atas, ia mengambil 200px dari baris yang sama
+                                         dengan kotak nama — dan nama perjalanan tinggal
+                                         kebagian sisa yang tidak cukup untuk dibaca. Di
+                                         sini, baris pertama seluruhnya milik jam & nama,
+                                         dan baris kedua terisi penuh sampai ujung. --}}
                                     <div class="rab-kegiatan-aksi">
                                         @unless ($semuaHari)
                                             <span class="rb-pegangan" data-seret-pegangan title="Seret untuk memindahkan">
@@ -1801,6 +1877,7 @@ Susun RAB || lemon
                                             data-confirm="Ya, hapus" data-icon="warning" title="Hapus kegiatan">
                                             <i class="bi bi-x-lg"></i>
                                         </button>
+                                    </div>
                                     </div>
                                 </div>
                             @endforeach

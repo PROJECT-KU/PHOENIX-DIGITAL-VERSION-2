@@ -1087,6 +1087,9 @@ class OrchaRabSusun extends Component
     /** Baris yang kotak catatannya sedang dibuka admin. */
     public array $catatanDibuka = [];
 
+    /** Indeks kegiatan yang kotak catatannya sedang dibuka admin. */
+    public array $catatanKegiatanDibuka = [];
+
     /**
      * Kotak catatan terbuka bila SUDAH berisi, atau baru saja diminta.
      *
@@ -1103,6 +1106,26 @@ class OrchaRabSusun extends Component
     public function bukaCatatan(int $id): void
     {
         $this->catatanDibuka[] = $id;
+    }
+
+    /**
+     * Kotak catatan kegiatan hanya digambar saat memang dipakai.
+     *
+     * Pola yang sama dengan catatan baris biaya di atas, dan alasannya sama:
+     * kotak isian kosong selebar baris, dikalikan sepuluh kegiatan, membuat
+     * kolom jadwal terbaca seperti deretan lubang. Yang kosong diganti satu
+     * tombol — ia mengatakan "boleh diisi" tanpa menyediakan ruang kosong
+     * untuk dipandangi.
+     */
+    public function catatanKegiatanTerbuka(int $i): bool
+    {
+        return in_array($i, $this->catatanKegiatanDibuka, true)
+            || trim((string) ($this->itinerary[$i]['keterangan'] ?? '')) !== '';
+    }
+
+    public function bukaCatatanKegiatan(int $i): void
+    {
+        $this->catatanKegiatanDibuka[] = $i;
     }
 
     public function updatedCatatanBaris($nilai, $id): void
