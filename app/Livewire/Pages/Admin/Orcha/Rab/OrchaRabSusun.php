@@ -336,15 +336,42 @@ class OrchaRabSusun extends Component
      * tiap RAB. Satu klik mengganti sekitar lima belas ketukan, dan kalimatnya
      * jadi sama di semua penawaran.
      */
+    /**
+     * Pintasan kegiatan, DIKELOMPOKKAN menurut jenisnya.
+     *
+     * Ruas perjalanan sebelumnya tidak ada sama sekali — padahal separuh
+     * jadwal sebenarnya perpindahan: ke destinasi, ke tempat makan, balik ke
+     * hotel. Yang terjadi tanpa pintasannya: admin mengetik "Perjalanan
+     * Menuju Restoku Chen-Chen Ceria" huruf demi huruf, tiap hari, tiap RAB.
+     *
+     * Namanya sengaja PENDEK dan umum ("Menuju destinasi"), bukan lengkap:
+     * yang lengkap tetap harus disunting begitu tempatnya diketahui, dan
+     * nama panjang melipat jadi tiga baris di cip selebar 120px.
+     *
+     * Urutannya mengikuti kelompok, bukan jam: deretnya dipindai mata untuk
+     * mencari sesuatu yang SEJENIS, dan kelompok yang berselang-seling
+     * memaksa pembacanya membaca seluruhnya. Jenis & warnanya ditebak Orcha
+     * dari namanya sendiri (BerkasRab::jenis) — kata "menuju", "ishoma", dan
+     * "oleh-oleh" sudah dikenalnya, jadi tidak ada yang perlu diubah di sana.
+     */
     public const KEGIATAN_BAKU = [
+        // Perpindahan
         'Penjemputan peserta',
+        'Menuju destinasi',
+        'Menuju tempat makan',
+        'Kembali ke hotel',
+        'Perjalanan pulang',
+        // Makan
         'Sarapan',
         'Makan siang',
-        'Check-in hotel',
         'Makan malam',
-        'Acara bebas',
+        'ISHOMA',
+        'Belanja oleh-oleh',
+        // Jeda & penginapan
+        'Check-in hotel',
         'Check-out hotel',
-        'Perjalanan pulang',
+        'Acara bebas',
+        'Foto bersama',
     ];
 
     public function tambahDestinasi(string $nama): void

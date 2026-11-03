@@ -267,7 +267,9 @@ Susun RAB || lemon
            dan kalimatnya terpotong di tengah — pesan yang menjelaskan
            keadaan justru jadi keadaan yang perlu dijelaskan. */
         .rb-pilih-kosong {
-            grid-column: 1 / -1; font-size: .76rem;
+            /* Selebar penuh. Dulu grid-column: 1 / -1; deretnya kini flex,
+               dan di flex yang menyatakan "sebaris sendiri" adalah basis 100%. */
+            flex: 1 1 100%; font-size: .76rem;
             color: var(--dsb-redup, #6b7280); line-height: 1.5;
         }
         /* Kedua tombolnya MEMANJANG mengisi barisnya: dipaku lebar isinya,
@@ -573,22 +575,27 @@ Susun RAB || lemon
         .rab-kegiatan-aksi { display: flex; gap: .3rem; align-items: center; }
         .rab-kegiatan-aksi .btn { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
         .rab-kegiatan-aksi .dsb-isian { width: 70px; padding-right: 1.5rem; }
-        /* Cip di dalam GRID, bukan flex-wrap.
+        /* Cip dalam FLEX yang MEMANJANG, bukan grid auto-fill.
 
-           Flex-wrap meninggalkan sisa di ujung kanan tiap baris sebesar cip
-           yang tidak muat lagi — dan pada baris terakhir sisanya bisa
-           selebar setengah kartu. Grid auto-fill membagi lebarnya rata, jadi
-           tiap baris selalu habis. */
+           Grid memang membagi lebar tiap baris rata — tetapi hanya baris yang
+           PENUH. Begitu jumlah cipnya bukan kelipatan jumlah kolom, baris
+           terakhir menyisakan sel kosong: empat belas cip di empat kolom
+           meninggalkan dua sel menganga di ujung.
+
+           Flex-wrap polos memang lebih buruk lagi (sisa di tiap baris), tetapi
+           flex-wrap dengan flex-grow tidak: sisanya dibagi ke cip di baris itu
+           sendiri, jadi SETIAP baris habis — termasuk yang terakhir.
+
+           Basis 120px: di kartu lebar memberi empat per baris, di ponsel masih
+           muat dua. Angkanya dihitung dari ruang yang BENAR-BENAR tersedia —
+           lebar panel dikurangi padding 13px di kedua sisinya. */
         .rab-destinasi,
         .rb-baku-deret {
-            /* 120px: di kartu lebar memberi empat kolom, di ponsel masih muat
-               dua. Angkanya dihitung dari ruang yang BENAR-BENAR tersedia —
-               lebar panel dikurangi padding 13px di kedua sisinya. Dengan
-               146px ponsel jatuh ke satu kolom dan daftarnya jadi dua kali
-               lebih panjang tanpa alasan. */
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            display: flex; flex-wrap: wrap; align-items: stretch;
             gap: 6px; padding: 1px;
         }
+        .rab-destinasi > button,
+        .rb-baku-deret > button { flex: 1 1 120px; }
         .rab-destinasi { max-height: 196px; overflow-y: auto; }
         /* Dibiarkan membungkus, bukan dipotong.
 
@@ -875,12 +882,12 @@ Susun RAB || lemon
         .rb-bukan-tempat {
             /* SELEBAR kisinya, bukan satu kolom.
 
-               Blok ini anak .rab-destinasi, yang kolomnya minmax(120px, 1fr).
-               Tanpa baris ini ia cuma kebagian satu kolom — dan nama panjang
+               Blok ini anak .rab-destinasi, yang cipnya berbasis 120px.
+               Tanpa baris ini ia ikut mengecil seukuran cip — dan nama panjang
                seperti "Makan di Restoku Chen-Chen Ceria" melipat jadi enam
                baris di dalam pil berujung bulat, yang terbaca seperti lonjong
                berdiri, bukan seperti tombol. */
-            grid-column: 1 / -1;
+            flex: 1 1 100%;
             display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
             margin-top: 10px; padding-top: 10px;
             border-top: 1px dashed var(--dsb-tepi, #e9edf3);

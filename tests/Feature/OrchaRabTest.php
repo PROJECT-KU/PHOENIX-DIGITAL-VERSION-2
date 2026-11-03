@@ -845,23 +845,34 @@ test('penolakan dari Orcha sampai apa adanya, bukan jadi kode 422', function () 
 
 test('kartu itinerary tidak menyisakan baris cip yang ragged', function () {
     /*
-     | Deret cip yang melipat dengan flex meninggalkan sisa di ujung kanan
-     | tiap baris sebesar cip yang tidak muat lagi — dan pada baris terakhir
-     | sisanya bisa selebar setengah kartu. Grid auto-fill membagi lebarnya
-     | rata, jadi tiap baris selalu habis.
+     | Yang dijaga JAMINANNYA — tiap baris cip habis — bukan caranya.
      |
-     | Dijaga di sumber gayanya: yang rusak kalau seseorang mengembalikannya
-     | ke flex adalah rupa, dan rupa tidak menerbitkan galat apa pun.
+     | Dulu grid auto-fill, dengan alasan flex-wrap meninggalkan sisa di ujung
+     | tiap baris. Alasan itu benar untuk flex POLOS, tetapi grid punya
+     | lubangnya sendiri yang baru terlihat setelah cipnya bertambah: ia cuma
+     | membagi rata baris yang PENUH, jadi begitu jumlah cip bukan kelipatan
+     | jumlah kolom, baris terakhir menyisakan sel menganga — empat belas cip
+     | di empat kolom meninggalkan dua sel kosong.
+     |
+     | Flex-wrap DENGAN flex-grow tidak punya keduanya: sisanya dibagi ke cip
+     | di baris itu sendiri, termasuk baris terakhir. Diukur 3 Nov 2026 — sisa
+     | tiap baris persis sebesar jaraknya (18px untuk empat cip, 6px untuk
+     | dua), jadi tidak ada ruang yang tertinggal.
+     |
+     | Dijaga di sumber gayanya: yang rusak kalau seseorang membuang
+     | flex-grow-nya adalah rupa, dan rupa tidak menerbitkan galat apa pun.
      */
     $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/rab/susun.blade.php'));
 
     // Jendelanya dibuat lapang: komentar di dalam aturannya panjang, dan
     // jendela yang terlalu sempit memotong justru baris yang diperiksa —
     // uji merah yang menunjuk hal yang tidak bersalah.
-    $aturan = substr($gaya, strpos($gaya, '.rab-destinasi,'), 1200);
+    $aturan = substr($gaya, strpos($gaya, '.rab-destinasi,'), 1600);
 
-    expect($aturan)->toContain('display: grid')
-        ->and($aturan)->toContain('auto-fill')
+    expect($aturan)->toContain('flex-wrap: wrap')
+        // flex-grow WAJIB: tanpanya kembali jadi flex polos, yang justru
+        // alasan deret ini dulu dipindah ke grid.
+        ->and($aturan)->toContain('flex: 1 1 120px')
         // Nama tombol tidak boleh dipotong: yang namanya tidak terbaca utuh
         // tidak bisa dipilih dengan yakin.
         ->and($aturan)->not->toContain('text-overflow: ellipsis');
