@@ -1099,6 +1099,18 @@ Susun RAB || lemon
            ringkasan memanjang keluar layar, dan yang pertama hilang dari
            pandangan justru harga jualnya di paling atas. */
         .rb-sim-bungkus { max-height: 232px; overflow-y: auto; border-radius: 10px; border: 1px solid #eef2f7; }
+
+        /* Jawaban satu kalimat, tabelnya di balik tombol. */
+        .rb-sim-jawab { margin: 0 0 9px; font-size: .84rem; line-height: 1.5; color: var(--dsb-tinta, #1c1f26); }
+        .rb-sim-buka {
+            display: inline-flex; align-items: center; gap: 7px; width: 100%;
+            padding: 8px 11px; border-radius: 10px; cursor: pointer;
+            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
+            font-size: .8rem; font-weight: 600; color: var(--dsb-redup, #5b6477);
+        }
+        .rb-sim-buka:hover { border-color: #c7d2fe; }
+        .rb-sim-panah { margin-left: auto; transition: transform .15s ease; }
+        .rb-sim-panah.is-buka { transform: rotate(180deg); }
         .rb-sim { width: 100%; border-collapse: collapse; font-size: .76rem; }
         .rb-sim thead th {
             position: sticky; top: 0; z-index: 1;
@@ -1226,10 +1238,17 @@ Susun RAB || lemon
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
-                <h1 class="dsb-judul">Susun RAB</h1>
+                {{-- .dsb-salam, bukan .dsb-judul: judul layar ini sempat tercetak
+                     sepertiga lebih kecil daripada "RAB & Itinerary" di daftarnya
+                     dan judul di borangnya, jadi berpindah antar-ketiganya terasa
+                     seperti berpindah antar-aplikasi. --}}
+                <h1 class="dsb-salam">Susun Perjalanan</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">Klik destinasinya; jam, tiket, dan harganya mengikuti.</span>
-                    <span class="d-block">Setiap klik langsung tersimpan — tidak ada tombol Simpan yang bisa terlupa.</span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">
+                        Klik tempat yang dikunjungi — jam, tiket, dan harganya ikut terisi sendiri.
+                        Semua tersimpan begitu diklik, jadi tidak ada tombol Simpan yang bisa terlupa.
+                    </span>
                 </p>
             </div>
 
@@ -1380,8 +1399,8 @@ Susun RAB || lemon
                             <div class="orcha-bagian-kepala">
                                 <div class="orcha-bagian-nomor">1</div>
                                 <div>
-                                    <div class="orcha-bagian-judul">Itinerary</div>
-                                    <div class="orcha-bagian-sub">Pilih harinya, lalu klik destinasinya. Jamnya ditebak sendiri (08.00, lalu +2 jam) dan tiketnya langsung ikut terhitung.</div>
+                                    <div class="orcha-bagian-judul">Jadwal perjalanan</div>
+                                    <div class="orcha-bagian-sub">Pilih harinya, lalu klik tempat yang dikunjungi. Jamnya diisikan sendiri (mulai 08.00, tiap tempat +2 jam) dan harga tiketnya langsung ikut terhitung.</div>
                                 </div>
                             </div>
 
@@ -1721,7 +1740,7 @@ Susun RAB || lemon
                                 <div class="orcha-bagian-nomor">2</div>
                                 <div>
                                     <div class="orcha-bagian-judul">Rincian biaya</div>
-                                    <div class="orcha-bagian-sub">Tiket dari itinerary ikut masuk dan ikut pergi sendiri. Sisanya — armada, hotel, pemandu — dipilih dari master harga.</div>
+                                    <div class="orcha-bagian-sub">Tiket tempat yang tadi dipilih sudah masuk sendiri — ikut hilang sendiri juga kalau tempatnya dibuang. Sisanya, seperti kendaraan, hotel, dan pemandu, diambil dari Master Harga.</div>
                                 </div>
                             </div>
 
@@ -1736,15 +1755,15 @@ Susun RAB || lemon
                                 <div class="rab-tertinggal">
                                     <i class="bi bi-info-circle-fill"></i>
                                     <span class="rab-tertinggal-teks">
-                                        Kunjungan ke <strong>{{ $tiketTertinggal }}</strong> masih ada di itinerary,
-                                        jadi tiketnya akan ikut tertarik lagi saat <strong>Tarik ulang</strong>.
+                                        <strong>{{ $tiketTertinggal }}</strong> masih ada di jadwal, jadi tiketnya
+                                        akan masuk lagi begitu Anda menekan <strong>Ambil ulang</strong>.
                                     </span>
                                     <button type="button" wire:click="buangKunjungan"
                                         wire:loading.attr="disabled" wire:target="buangKunjungan"
                                         class="dsb-tombol is-awas">
                                         <i class="bi bi-calendar-x" wire:loading.remove wire:target="buangKunjungan"></i>
                                         <span class="dsb-putar" wire:loading wire:target="buangKunjungan"></span>
-                                        <span>Buang juga dari itinerary</span>
+                                        <span>Buang juga dari jadwal</span>
                                     </button>
                                     <button type="button" wire:click="lupakanTertinggal" class="dsb-tombol is-lembut"
                                         title="Biarkan kunjungannya">
@@ -1770,9 +1789,9 @@ Susun RAB || lemon
                                         <div class="rb-armada-teks">
                                             <strong>Kendaraan untuk {{ $rab['jumlah_peserta'] }} peserta</strong>
                                             <span class="dsb-kartu-sub">
-                                                Termurah lebih dulu, dihitung dengan rumus yang sama dengan rincian di bawah.
-                                                Sewa harian sudah dikali {{ $rab['jumlah_hari'] }} hari; carter per rute
-                                                dibayar sekali untuk seluruh perjalanan.
+                                                Yang termurah ditaruh paling atas. Harganya sudah harga jadi:
+                                                sewa harian sudah dikali {{ $rab['jumlah_hari'] }} hari, sedangkan
+                                                yang dibayar borongan per rute dihitung sekali untuk seluruh perjalanan.
                                             </span>
                                         </div>
                                     </div>
@@ -1897,8 +1916,8 @@ Susun RAB || lemon
                             <div class="d-flex flex-wrap gap-2 align-items-center mb-3 rb-biaya-bilah">
                                 <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"
                                     class="dsb-tombol is-lembut" style="--ikon: #64748b"
-                                    title="Tarik ulang biaya dari itinerary — untuk destinasi yang harga tiketnya baru diisi di master setelah itinerary dibuat">
-                                    <i class="bi bi-arrow-repeat"></i> Tarik ulang
+                                    title="Ambil ulang harga tiket dari jadwal — untuk tempat yang harga tiketnya baru diisi di Master Harga setelah jadwalnya dibuat">
+                                    <i class="bi bi-arrow-repeat"></i> Ambil ulang
                                 </button>
                                 <div class="rb-biaya-pilih">
                                     <div class="rb-gandeng">
@@ -1925,7 +1944,7 @@ Susun RAB || lemon
                                 <button type="button" wire:click="$set('bukaManual', true)"
                                     class="dsb-tombol is-lembut" style="--ikon: #b45309"
                                     title="Untuk biaya yang belum ada di master harga">
-                                    <i class="bi bi-pencil"></i> Biaya manual
+                                    <i class="bi bi-pencil"></i> Biaya lain-lain
                                 </button>
                             </div>
 
@@ -1947,11 +1966,9 @@ Susun RAB || lemon
                                 <div class="rb-beda-banner">
                                     <i class="bi bi-arrow-left-right"></i>
                                     <span>
-                                        Ada baris yang harganya <strong>berbeda dari master</strong> —
-                                        bisa karena harga master bergerak, bisa karena tim menemukan
-                                        harga lain. Bedanya disebut di baris masing-masing, berikut
-                                        dua pilihan: pakai harga master, atau simpan harga baris ini
-                                        ke master.
+                                        Ada harga di bawah yang <strong>tidak sama dengan Master Harga</strong>.
+                                        Itu wajar — harganya mungkin baru naik, atau tim memang dapat yang lebih murah.
+                                        Barisnya ditandai sendiri, dan Anda tinggal pilih mana yang dipakai.
                                     </span>
                                 </div>
                             @endif
@@ -2155,7 +2172,7 @@ Susun RAB || lemon
                             <div class="{{ $bukaManual ? 'mt-3' : '' }}">
                                 @if ($bukaManual)
                                     <div class="border rounded-4 p-3">
-                                        <div class="fw-semibold small mb-2">Biaya manual</div>
+                                        <div class="fw-semibold small mb-2">Biaya lain-lain</div>
                                         <div class="row g-2">
                                             <div class="col-12 col-md-4">
                                                 <input type="text" wire:model="manual.nama" maxlength="150" class="dsb-isian @error('manual.nama') is-galat @enderror" placeholder="Dokumentasi drone">
@@ -2671,11 +2688,28 @@ Susun RAB || lemon
                                 <div class="dsb-kartu-isi">
                                     <div class="orcha-label-kecil mb-2">Kalau yang datang sekian</div>
 
-                                            {{-- Enam belas baris tanpa judul kolom menuntut
-                                                 pembacanya menebak angka mana yang mana.
-                                                 Digulung di dalam kotaknya sendiri supaya
-                                                 panelnya tidak memanjang keluar layar. --}}
-                                            <div class="rb-sim-bungkus">
+                                            {{-- Enam belas baris angka adalah RUJUKAN, bukan
+                                                 kendali: pertanyaan yang sebenarnya ditanyakan
+                                                 cuma satu — "mulai berapa orang kita tidak
+                                                 nombok?" — dan itu dijawab satu kalimat di
+                                                 bawah ini. Tabelnya dilipat supaya yang
+                                                 membacanya memang sedang mencarinya. --}}
+                                            <div x-data="{ buka: false }">
+                                                <p class="rb-sim-jawab">
+                                                    @if ($impasPeserta)
+                                                        Mulai <strong>{{ $impasPeserta }} orang</strong> perjalanan ini sudah balik modal.
+                                                        Di bawah itu kantor masih nombok.
+                                                    @else
+                                                        Dengan harga sekarang, berapa pun yang datang kantor masih nombok.
+                                                    @endif
+                                                </p>
+                                                <button type="button" class="rb-sim-buka"
+                                                    x-on:click="buka = !buka" :aria-expanded="buka">
+                                                    <i class="bi bi-table"></i>
+                                                    <span x-text="buka ? 'Sembunyikan rinciannya' : 'Lihat rincian per jumlah orang'"></span>
+                                                    <i class="bi bi-chevron-down rb-sim-panah" :class="buka && 'is-buka'"></i>
+                                                </button>
+                                            <div class="rb-sim-bungkus mt-2" x-show="buka" x-cloak>
                                                 <table class="rb-sim">
                                                     <thead>
                                                         <tr>
@@ -2698,6 +2732,7 @@ Susun RAB || lemon
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            </div>
                                     @endif
                                 @endif
 
@@ -2706,7 +2741,7 @@ Susun RAB || lemon
 
                             <div class="dsb-kartu k-12 rb-kartu">
                                 <div class="dsb-kartu-isi">
-                                    <div class="orcha-label-kecil mb-2">Atur margin &amp; pembulatan</div>
+                                    <div class="orcha-label-kecil mb-2">Atur untung &amp; pembulatan</div>
 
 
                                     {{-- Kotak ini BERHENTI menentukan harga begitu ada

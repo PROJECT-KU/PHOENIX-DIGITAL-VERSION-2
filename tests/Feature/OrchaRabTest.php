@@ -2704,8 +2704,8 @@ test('menghapus tiket yang tempatnya masih dikunjungi menawarkan membuang kunjun
 
     $layar->assertSet('tiketTertinggal', 'Candi Prambanan');
 
-    expect($layar->html())->toContain('masih ada di itinerary')
-        ->and($layar->html())->toContain('Buang juga dari itinerary');
+    expect($layar->html())->toContain('masih ada di jadwal')
+        ->and($layar->html())->toContain('Buang juga dari jadwal');
 
     // Dan menolak tawaran itu tidak menyentuh itinerary.
     $layar->call('lupakanTertinggal')->assertSet('tiketTertinggal', '');
@@ -3494,7 +3494,7 @@ test('tiap bagian panel ringkasan berdiri sebagai kartunya sendiri', function ()
     $html = $this->actingAs(adminRab())->get('/admin/orcha/rab/3')->assertOk()->getContent();
 
     foreach (['Dari mana harganya', 'Hasilnya', 'Kalau pelanggan menawar',
-        'Atur margin &amp; pembulatan', 'Pelanggan setuju?'] as $judul) {
+        'Atur untung &amp; pembulatan', 'Pelanggan setuju?'] as $judul) {
         expect($html)->toContain($judul);
     }
 
