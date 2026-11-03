@@ -320,27 +320,29 @@ Susun RAB || lemon
            bukan tindakan — di bilah bawah ia terbaca seperti salah satu tombol. */
         .rb-kepala-atas { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
         .rb-kepala-status { flex: 0 0 auto; width: auto; min-width: 150px; }
-        /* Baris tiga: bilah tindakan selebar kartu, DUA BARIS yang masing-masing
-           terisi di kedua tepinya.
+        /* Bilah tindakan: tombolnya MEMANJANG mengisi barisnya.
 
-           Satu flex berisi empat kelompok tidak bisa dikendalikan: begitu
-           lebarnya tidak muat, yang terakhir melipat SENDIRIAN dan
-           space-between mendorongnya ke satu sisi — tepat lubang yang
-           hendak dihindari. Barisnya karena itu dinyatakan, bukan diserahkan
-           ke pembungkus otomatis.
+           Sembilan tombol butuh 1.219px dari 994px yang ada, jadi dua baris
+           tidak bisa dihindari. Yang bisa dihindari lubangnya.
 
-           Pasangannya ikut terbaca: baris satu mengerjakan RAB ini
-           (ubah, kirim) lawan memperlakukannya sebagai benda (salin, hapus);
-           baris dua melihat jejaknya lawan mencetak berkasnya. */
+           justify-content: space-between menaruh sisanya di TENGAH baris —
+           dua lubang melintang yang terbaca seperti ada yang hilang.
+           flex-start menaruhnya di ujung — satu lubang, tetapi tetap lubang.
+           Dengan flex-grow, sisanya dibagi rata ke tombolnya sendiri: tiap
+           baris penuh, dan tidak ada ruang yang perlu dijelaskan.
+
+           Grup PDF mengambil satu baris penuh untuk dirinya sendiri: ia
+           satu-satunya yang berlatar, dan latar yang separuh baris terbaca
+           seperti kotak yang gagal melebar. */
         .rb-kepala-bar {
-            display: flex; flex-direction: column; align-items: stretch;
+            display: flex; flex-wrap: wrap; align-items: stretch;
             gap: .5rem; margin-top: .85rem; padding-top: .8rem;
             border-top: 1px solid #f1f5f9;
         }
-        .rb-bar-baris {
-            display: flex; flex-wrap: wrap; align-items: center;
-            justify-content: space-between; gap: .5rem;
-        }
+        .rb-kepala-bar > .dsb-tombol { flex: 1 1 auto; justify-content: center; }
+        .rb-aksi-berkas { flex: 1 1 100%; }
+        .rb-aksi-berkas .dsb-tombol { flex: 1 1 auto; justify-content: center; }
+
         .rb-aksi-baris { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
         .rb-aksi-label {
             font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
@@ -357,8 +359,8 @@ Susun RAB || lemon
                pilihnya menyisakan 90px untuk judul perjalanan. */
             .rb-kepala-atas { flex-direction: column; align-items: stretch; }
             .rb-kepala-status { width: 100%; }
-            .rb-bar-baris { justify-content: flex-start; }
-            .rb-bar-baris > * { width: 100%; }
+            .rb-kepala-bar > .dsb-tombol,
+            .rb-aksi-berkas .dsb-tombol { flex: 1 1 100%; }
         }
 
         .rb-kepala-jenis { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 9px; margin-top: 2px; }
@@ -1394,8 +1396,6 @@ Susun RAB || lemon
                          muat dalam satu baris — dulu terpaksa dua baris karena
                          hanya kebagian sisa lebar di sebelah teks jati diri. --}}
                     <div class="rb-kepala-bar">
-                            <div class="rb-bar-baris">
-                            <div class="rb-aksi-baris">
                                 {{-- Halaman tersendiri, bukan panel yang terbuka di
                                      sini. Lima belas isian yang mekar di tengah layar
                                      penyusun mendorong itinerary keluar pandangan, dan
@@ -1435,7 +1435,6 @@ Susun RAB || lemon
                                     </button>
                                 @endif
 
-                            </div>
 
                             {{-- Menyalin & menghapus sudah lama ada di daftar, tetapi
                                  justru SAAT MENYUSUN-lah orang paling sering ingin
@@ -1443,7 +1442,6 @@ Susun RAB || lemon
                                  15 peserta. Keduanya di tepi SEBERANG: yang satu
                                  mengerjakan RAB ini, yang satu lagi memperlakukan
                                  RAB-nya sebagai benda. --}}
-                            <div class="rb-aksi-baris">
                                 <button type="button" class="dsb-tombol is-lembut pcek-konfirmasi" style="--ikon: #b45309"
                                     data-action="salinRab"
                                     data-title="Salin RAB ini?"
@@ -1461,23 +1459,18 @@ Susun RAB || lemon
                                         <i class="bi bi-trash"></i> Hapus
                                     </button>
                                 @endif
-                            </div>
 
-                            </div>
 
-                            <div class="rb-bar-baris">
                             {{-- Siapa mengubah apa pada RAB ini. Jejaknya selama ini
                                  tercatat, tetapi layar auditnya tidak punya penyaring
                                  per benda — jadi tidak pernah dibuka dari sini.
                                  Bandingkan Master Harga, yang panel riwayatnya justru
                                  sudah lengkap dengan pelakunya. --}}
-                            <div class="rb-aksi-baris">
                                 <a href="{{ route('admin.orcha.jejak-audit', ['kode' => $rab['kode']]) }}" wire:navigate
                                     class="dsb-tombol is-lembut" style="--ikon: #0ea5e9"
                                     title="Siapa mengubah apa pada RAB ini">
                                     <i class="bi bi-clock-history"></i> Riwayat perubahan
                                 </a>
-                            </div>
 
                             <div class="rb-aksi-baris rb-aksi-berkas">
                                 {{-- Nama tombolnya dipendekkan jadi "Penawaran" dan
@@ -1498,7 +1491,6 @@ Susun RAB || lemon
                                     title="Berisi modal & margin — jangan dikirim ke pelanggan">
                                     <i class="bi bi-lock"></i> Internal
                                 </a>
-                            </div>
 
                             </div>
                         </div>
