@@ -386,7 +386,16 @@ Susun RAB || lemon
             padding: .28rem .7rem; font-size: .8rem; color: var(--orc-tinta); white-space: nowrap;
         }
         .rab-fakta i { color: var(--dsb-redup, #94a3b8); margin-right: .15rem; }
-        .rab-hari-tab { display: flex; flex-wrap: wrap; gap: .5rem; }
+        /* Tab hari MEMANJANG mengisi barisnya, sama seperti bilah tindakan
+           di kartu kepala.
+
+           Sebelumnya dua tombol di ujung masing-masing dipaku dengan
+           margin-left:auto — "Semua" terdorong ke tengah dan "Simpan jadi
+           templat" ke ujung kanan, jadi lubangnya DUA, bukan satu. Dengan
+           flex-grow, sisanya dibagi ke tombolnya sendiri menurut lebar
+           isinya: barisnya penuh dan tidak ada yang perlu dipaku. */
+        .rab-hari-tab { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem; }
+        .rab-hari-tab > * { flex: 1 1 auto; justify-content: center; text-align: center; }
         .rab-hari-tab button { border: 2px solid #e2e8f0; background: #fff; border-radius: 12px; padding: .45rem .9rem; font-weight: 600; font-size: .85rem; color: var(--orc-tinta); }
         .rab-hari-tab button.aktif { border-color: var(--orc-primer); background: var(--orc-gradien); color: #fff; }
         .rab-hari-tab small { opacity: .75; font-weight: 500; margin-left: .25rem; }
@@ -634,7 +643,7 @@ Susun RAB || lemon
         .rb-hari-aksi-label {
             display: inline-flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
             font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
-            color: var(--dsb-redup, #6b7280); margin-right: auto;
+            color: var(--dsb-redup, #6b7280); flex: 0 0 auto;
         }
         .rb-hari-aksi-ket {
             font-weight: 600; letter-spacing: 0; text-transform: none;
@@ -642,8 +651,11 @@ Susun RAB || lemon
         }
         .rb-hari-aksi .dsb-isian,
         .rb-hari-aksi .btn { background: #fff; }
-        .rb-hari-salin { width: auto; height: 34px; padding: 0 30px 0 11px; font-size: .8rem; }
-        .rab-hari-tab .rb-semua-hari { margin-left: auto; }
+        /* Kotak pilihnya yang MEMANJANG, bukan labelnya yang dipaku ke kiri
+           dengan margin-right:auto. Dipaku, sisanya menganga di tengah
+           bilah; direntangkan, sisanya jadi badan kendalinya sendiri. */
+        .rb-hari-salin { flex: 1 1 160px; min-width: 0; width: auto; height: 34px; padding: 0 30px 0 11px; font-size: .8rem; }
+
         .rb-hari-kepala {
             display: flex; align-items: baseline; gap: 8px; margin: 14px 0 8px;
             padding-bottom: 6px; border-bottom: 1px solid #eef2f7;
@@ -678,7 +690,7 @@ Susun RAB || lemon
 
         /* Dibedakan dari tab hari di sebelahnya: ia bukan penyaring tampilan,
            melainkan tindakan yang meninggalkan sesuatu. */
-        .rb-simpan-templat { margin-left: auto; color: #4338ca !important; border-color: #c7d2fe !important; }
+        .rb-simpan-templat { color: #4338ca !important; border-color: #c7d2fe !important; }
 
         .rb-paket {
             display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
