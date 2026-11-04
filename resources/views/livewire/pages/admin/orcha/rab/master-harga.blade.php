@@ -607,6 +607,18 @@ Master Harga || lemon
                                              ikut tertarik ke RAB, lalu tiketnya ditagih dua
                                              kali. Muncul hanya setelah destinasi utamanya
                                              dipilih: tanpa itu ia tidak berarti apa-apa. --}}
+                                        {{-- Fiturnya menyebut dirinya sendiri walau belum bisa
+                                             dipakai. Dulu blok di bawah muncul HANYA setelah
+                                             destinasinya dipilih, jadi admin yang mencari cara
+                                             menulis tiket terusan tidak menemukan apa pun untuk
+                                             diklik — dan menyerah mengira fiturnya tidak ada. --}}
+                                        @if (trim((string) ($isian['destinasi'] ?? '')) === '')
+                                            <span class="mh-terusan-petunjuk">
+                                                Satu tiket berlaku untuk beberapa tempat?
+                                                Pilih destinasi utamanya dulu, nanti muncul tempat kedua di sini.
+                                            </span>
+                                        @endif
+
                                         @if (trim((string) ($isian['destinasi'] ?? '')) !== '')
                                             <div class="mh-terusan">
                                                 <div class="mh-terusan-judul">
@@ -2207,6 +2219,10 @@ Master Harga || lemon
         .mh-baru.is-vendor .mh-baru-judul { color: #0369a1; }
         /* Tiket terusan: daftar tempat lain yang tercakup. */
         .mh-terusan { margin-top: 10px; padding: 9px 11px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); }
+        .mh-terusan-petunjuk {
+            display: block; margin-top: 7px; font-size: .76rem; line-height: 1.45;
+            color: var(--dsb-redup, #6b7280);
+        }
         .mh-terusan-judul { font-size: .78rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26); margin-bottom: 6px; }
         .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
         .mh-terusan-tambah > .dsb-isian { flex: 1 1 180px; min-width: 0; }

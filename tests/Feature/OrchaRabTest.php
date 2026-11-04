@@ -4952,3 +4952,31 @@ test('Orcha lama yang belum mengirim daya_tampung tidak mematikan layar', functi
 
     expect($html)->not->toContain('belum kebagian');
 });
+
+test('tiket terusan menyebut dirinya walau destinasinya belum dipilih', function () {
+    // Dulu bloknya muncul HANYA setelah destinasi dipilih, jadi admin yang
+    // mencari cara menulis tiket terusan tidak menemukan apa pun untuk
+    // diklik — dan menyerah mengira fiturnya tidak ada.
+    palsukanMasterTerusan();
+
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.destinasi', '');
+
+    expect($k->html())->toContain('Satu tiket berlaku untuk beberapa tempat?')
+        ->and($k->html())->not->toContain('Tempat lain yang pakai tiket yang sama');
+});
+
+test('petunjuknya hilang begitu destinasinya dipilih, diganti isiannya', function () {
+    palsukanMasterTerusan();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.destinasi', 'Candi Arjuna')
+        ->html();
+
+    expect($html)->toContain('Tempat lain yang pakai tiket yang sama')
+        ->and($html)->not->toContain('Satu tiket berlaku untuk beberapa tempat?');
+});
