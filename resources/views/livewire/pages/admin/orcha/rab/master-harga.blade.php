@@ -619,41 +619,6 @@ Master Harga || lemon
                                             </span>
                                         @endif
 
-                                        @if (trim((string) ($isian['destinasi'] ?? '')) !== '')
-                                            <div class="mh-terusan">
-                                                <div class="mh-terusan-judul">
-                                                    Tempat lain yang pakai tiket yang sama
-                                                    <span class="dsb-label-ket">dibayar sekali untuk semuanya</span>
-                                                </div>
-
-                                                @if ($destinasiLain !== [])
-                                                    <div class="mh-cip-rak">
-                                                        @foreach ($destinasiLain as $i => $d)
-                                                            <span class="mh-cip" wire:key="dl-{{ $i }}-{{ md5($d) }}">
-                                                                {{ $d }}
-                                                                <button type="button" wire:click="hapusDestinasiLain({{ $i }})" title="Keluarkan dari tiket ini">
-                                                                    <i class="bi bi-x"></i>
-                                                                </button>
-                                                            </span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-
-                                                <div class="mh-terusan-tambah">
-                                                    <select wire:model="destinasiLainPilih" class="dsb-isian">
-                                                        <option value="">Pilih tempat lain…</option>
-                                                        @foreach ($destinasi as $d)
-                                                            @if ($d !== ($isian['destinasi'] ?? '') && ! in_array($d, $destinasiLain, true))
-                                                                <option value="{{ $d }}" @selected($destinasiLainPilih === $d)>{{ $d }}</option>
-                                                            @endif
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="button" wire:click="tambahDestinasiLain" class="mh-tambah">
-                                                        <i class="bi bi-plus-lg"></i> Tambah
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        @endif
                                     </div>
                                 @endif
 
@@ -759,6 +724,42 @@ Master Harga || lemon
                                                 <a href="{{ route('admin.orcha.vendor') }}" wire:navigate>daftar vendor</a>.
                                             </span>
                                         @enderror
+                                    </div>
+                                @endif
+
+                                @if ($medanDestinasi && trim((string) ($isian['destinasi'] ?? '')) !== '')
+                                    <div class="mh-terusan">
+                                        <div class="mh-terusan-judul">
+                                            Tempat lain yang pakai tiket yang sama
+                                            <span class="dsb-label-ket">dibayar sekali untuk semuanya</span>
+                                        </div>
+
+                                        @if ($destinasiLain !== [])
+                                            <div class="mh-cip-rak">
+                                                @foreach ($destinasiLain as $i => $d)
+                                                    <span class="mh-cip" wire:key="dl-{{ $i }}-{{ md5($d) }}">
+                                                        {{ $d }}
+                                                        <button type="button" wire:click="hapusDestinasiLain({{ $i }})" title="Keluarkan dari tiket ini">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        <div class="mh-terusan-tambah">
+                                            <select wire:model="destinasiLainPilih" class="dsb-isian">
+                                                <option value="">Pilih tempat lain…</option>
+                                                @foreach ($destinasi as $d)
+                                                    @if ($d !== ($isian['destinasi'] ?? '') && ! in_array($d, $destinasiLain, true))
+                                                        <option value="{{ $d }}" @selected($destinasiLainPilih === $d)>{{ $d }}</option>
+                                                    @endif
+                                                @endforeach
+                                            </select>
+                                            <button type="button" wire:click="tambahDestinasiLain" class="mh-tambah">
+                                                <i class="bi bi-plus-lg"></i> Tambah
+                                            </button>
+                                        </div>
                                     </div>
                                 @endif
 
@@ -2218,15 +2219,25 @@ Master Harga || lemon
         .mh-baru.is-vendor { background: #f5fafd; border-color: #cfe6f3; }
         .mh-baru.is-vendor .mh-baru-judul { color: #0369a1; }
         /* Tiket terusan: daftar tempat lain yang tercakup. */
-        .mh-terusan { margin-top: 10px; padding: 9px 11px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); }
+        /* SELEBAR RAK, bukan terjepit di dalam medan Destinasi.
+           Di seperempat lebar kartu, kotaknya berdiri sendirian sementara
+           tiga kolom di sebelahnya — Vendor, Provinsi, Daerah — menganggur
+           satu baris penuh. Isinya pun mendatar supaya lebar itu terpakai,
+           bukan menumpuk ke bawah di kolom yang sempit. */
+        .mh-terusan {
+            flex: 1 1 100%; padding: 10px 12px; border-radius: 12px;
+            background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+        }
         .mh-terusan-petunjuk {
             display: block; margin-top: 7px; font-size: .76rem; line-height: 1.45;
             color: var(--dsb-redup, #6b7280);
         }
-        .mh-terusan-judul { font-size: .78rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26); margin-bottom: 6px; }
-        .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .mh-terusan-judul { flex: 0 0 auto; font-size: .78rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26); line-height: 1.35; }
+        .mh-terusan-judul .dsb-label-ket { display: block; font-weight: 400; }
+        .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 240px; }
         .mh-terusan-tambah > .dsb-isian { flex: 1 1 180px; min-width: 0; }
-        .mh-cip-rak { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .mh-cip-rak { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; }
         .mh-cip {
             display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
             padding: 3px 6px 3px 10px; border-radius: 999px; font-size: .78rem;

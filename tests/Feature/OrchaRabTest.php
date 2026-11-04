@@ -4997,3 +4997,30 @@ test('kamar yang sudah dipilah tidak memunculkan peringatan itu', function () {
 
     expect($html)->not->toContain('seluruh rombongan masing-masing');
 });
+
+test('kotak tiket terusan berdiri selebar rak, bukan di dalam medan Destinasi', function () {
+    /*
+     | Di seperempat lebar kartu, kotaknya berdiri sendirian sementara tiga
+     | kolom di sebelahnya — Vendor, Provinsi, Daerah — menganggur satu baris
+     | penuh. Yang dikunci letaknya, bukan rupanya: selama ia masih anak dari
+     | medan Destinasi, lebarnya tidak mungkin lebih dari kolom itu.
+     */
+    palsukanMasterTerusan();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.destinasi', 'Candi Arjuna')
+        ->html();
+
+    $medan = strpos($html, 'id="mh-destinasi"');
+    $terusan = strpos($html, 'class="mh-terusan"');
+    $vendor = strpos($html, 'id="mh-vendor"');
+
+    expect($terusan)->not->toBeFalse()
+        // Sesudah ketiga medan lain, bukan terselip di antara mereka.
+        ->and($terusan)->toBeGreaterThan($vendor)
+        ->and($vendor)->toBeGreaterThan($medan)
+        // Dan memang dilebarkan sepenuh rak.
+        ->and($html)->toContain('flex: 1 1 100%');
+});
