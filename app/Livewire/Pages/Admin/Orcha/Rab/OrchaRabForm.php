@@ -246,7 +246,16 @@ class OrchaRabForm extends Component
 
         $this->validate([
             'isian.judul' => 'required|string|min:3|max:150',
-            'isian.nama_pelanggan' => 'required|string|min:2|max:120',
+            /*
+             | Open trip tidak punya pelanggan saat RAB-nya disusun — harganya
+             | diumumkan dulu, pesertanya menyusul. Mewajibkannya di sana
+             | memaksa admin mengarang isian supaya tombol simpan mau jalan,
+             | dan isian karangan lebih buruk daripada kolom kosong karena ia
+             | terlihat seperti data. Orcha mengisinya 'Umum' sendiri.
+             */
+            'isian.nama_pelanggan' => $this->openTrip()
+                ? 'nullable|string|min:2|max:120'
+                : 'required|string|min:2|max:120',
             'isian.whatsapp' => 'nullable|string|max:32',
             'isian.email' => 'nullable|email|max:150',
             'isian.provinsi' => 'required|string|max:80',

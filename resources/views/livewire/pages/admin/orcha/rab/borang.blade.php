@@ -187,12 +187,22 @@
                         <div class="rb-bagian-kepala">
                             <span class="dsb-ikon is-kecil" style="--c: var(--dsb-info)"><i class="bi bi-person-vcard"></i></span>
                             <div class="rb-bagian-teks">
-                                <strong>Pelanggan</strong>
-                                <span class="dsb-kartu-sub">Nama yang tercetak di penawaran, dan ke mana penawarannya dikirim.</span>
+                                <strong>{{ $this->openTrip() ? 'Penawaran' : 'Pelanggan' }}</strong>
+                                <span class="dsb-kartu-sub">
+                                    @if ($this->openTrip())
+                                        Open trip belum punya pelanggan — harganya diumumkan dulu, pesertanya menyusul lewat halaman pendaftaran.
+                                    @else
+                                        Nama yang tercetak di penawaran, dan ke mana penawarannya dikirim.
+                                    @endif
+                                </span>
                             </div>
                         </div>
 
                         <div class="rb-medan-rak">
+                            {{-- Ketiganya tidak ada pada open trip. Menampilkannya
+                                 abu-abu atau "boleh dikosongkan" tetap menyuruh admin
+                                 memutuskan sesuatu yang tidak perlu diputuskan. --}}
+                            @unless ($this->openTrip())
                             <div class="dsb-medan rb-medan-lebar">
                                 <label class="dsb-label" for="rb-nama">Nama pelanggan <span class="rb-wajib">*</span></label>
                                 <input id="rb-nama" type="text" maxlength="120" wire:model="isian.nama_pelanggan"
@@ -215,6 +225,7 @@
                                 @error('isian.email')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 <span class="dsb-kartu-sub">Boleh dikosongkan; penawaran tetap bisa dikirim lewat WhatsApp.</span>
                             </div>
+                            @endunless
 
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="rb-berlaku">Penawaran berlaku sampai</label>

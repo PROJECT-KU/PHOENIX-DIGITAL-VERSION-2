@@ -3856,7 +3856,9 @@ test('borang ubah tersusun bagian demi bagian, tiap bagian kartunya sendiri', fu
      | pajak: tidak ada tempat mata beristirahat, dan tidak ada yang
      | mengatakan pertanyaan mana yang sedang dijawab.
      */
-    foreach (['Jenis perjalanan', 'Pelanggan', 'Ke mana dan kapan', 'Catatan'] as $bagian) {
+    // Rekaman show.json berjenis open, dan di sana kartunya bernama
+    // "Penawaran" — open trip belum punya pelanggan saat RAB-nya disusun.
+    foreach (['Jenis perjalanan', 'Penawaran', 'Ke mana dan kapan', 'Catatan'] as $bagian) {
         expect($html)->toContain($bagian);
     }
 
@@ -4535,4 +4537,82 @@ test('tombolnya memanggil jalur Orcha yang benar', function () {
         ->assertDispatched('orcha-sukses-pindah');
 
     expect($dipanggil)->toContain('/rab/3/jadikan-paket');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Open trip belum punya pelanggan
+|--------------------------------------------------------------------------
+|
+| Harganya diumumkan DULU, pesertanya menyusul. Meminta nama pelanggan di sana
+| memaksa admin mengarang isian supaya tombol simpan mau jalan — dan isian
+| karangan lebih buruk daripada kolom kosong, karena ia terlihat seperti data
+| lalu ikut tercetak di penawaran yang dibaca orang.
+*/
+test('open trip tidak meminta nama pelanggan, WhatsApp, atau email', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    // Dicari ID medannya, bukan tulisannya: "Nama pelanggan" juga muncul di
+    // komentar CSS pada blok <style> halaman ini, dan uji yang mencarinya
+    // sebagai teks akan merah tanpa ada yang salah.
+    expect($html)->toContain('Open trip belum punya pelanggan')
+        ->and($html)->not->toContain('id="rb-nama"')
+        ->and($html)->not->toContain('id="rb-wa"')
+        ->and($html)->not->toContain('id="rb-email"')
+        // Masa berlaku penawaran TETAP ditanyakan: itu berlaku di keduanya.
+        ->and($html)->toContain('Penawaran berlaku sampai');
+});
+
+test('private trip tetap meminta ketiganya', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'private';
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('id="rb-nama"')
+        ->and($html)->toContain('id="rb-wa"')
+        ->and($html)->toContain('id="rb-email"')
+        ->and($html)->not->toContain('Open trip belum punya pelanggan');
+});
+
+test('open trip bisa disimpan tanpa nama pelanggan', function () {
+    $dikirim = null;
+
+    Http::fake(function (Request $r) use (&$dikirim) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+        if ($r->method() === 'POST') {
+            $dikirim = $r->data();
+
+            return Http::response(['data' => ['id' => 9, 'kode' => 'RAB-2611-ZZZZ']], 201);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    Livewire::actingAs(adminRab())->test(OrchaRabForm::class)
+        ->set('isian.jenis', 'open')
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->set('isian.jumlah_hari', 3)
+        ->set('isian.jumlah_peserta', 20)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    expect($dikirim)->not->toBeNull()
+        ->and($dikirim['jenis'])->toBe('open');
 });
