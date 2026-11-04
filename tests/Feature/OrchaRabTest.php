@@ -4302,3 +4302,97 @@ test('RAB yang seluruh harganya terisi tidak memasang spanduk apa pun', function
     expect($html)->not->toContain('masih berharga Rp 0')
         ->and($html)->not->toContain('rb-beda is-nol');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Item wajib yang belum ikut di RAB lama
+|--------------------------------------------------------------------------
+|
+| Master harga bertanda `otomatis` ikut sendiri ke RAB yang BARU dibuat. RAB
+| yang sudah ada sengaja TIDAK disentuh: penawaran yang mungkin sudah terkirim
+| tidak boleh berubah harganya sendiri. Konsekuensinya RAB lama diam-diam
+| kekurangan biaya yang selalu ikut — dan tanpa penanda, tombol yang
+| memperbaikinya tidak akan pernah ditekan.
+*/
+test('item wajib yang belum ada disebut namanya berikut tombolnya', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalog = rekamanRab('katalog');
+            $katalog['data']['master'][] = [
+                'id' => 9901, 'kategori' => 'lainnya', 'kategori_label' => 'Lain-lain',
+                'nama' => 'Banner Kegiatan', 'destinasi' => null, 'daerah' => null,
+                'satuan' => 'rombongan', 'satuan_label' => 'per rombongan',
+                'harga' => 50_000, 'harga_teks' => 'Rp 50.000', 'kapasitas' => null,
+                'otomatis' => true, 'umum' => true,
+                'vendor_id' => null, 'vendor' => null, 'vendor_kontak' => null,
+            ];
+
+            return Http::response($katalog);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Banner Kegiatan')
+        ->and($html)->toContain('belum ada di RAB ini')
+        ->and($html)->toContain('Tambahkan sekarang');
+});
+
+test('item wajib yang sudah ada di RAB tidak memunculkan ajakan', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalog = rekamanRab('katalog');
+            $katalog['data']['master'][] = [
+                'id' => 9902, 'kategori' => 'lainnya', 'kategori_label' => 'Lain-lain',
+                'nama' => 'Banner Kegiatan', 'destinasi' => null, 'daerah' => null,
+                'satuan' => 'rombongan', 'satuan_label' => 'per rombongan',
+                'harga' => 50_000, 'harga_teks' => 'Rp 50.000', 'kapasitas' => null,
+                'otomatis' => true, 'umum' => true,
+                'vendor_id' => null, 'vendor' => null, 'vendor_kontak' => null,
+            ];
+
+            return Http::response($katalog);
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0]['master_harga_id'] = 9902;
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('belum ada di RAB ini');
+});
+
+test('master harga per unit tidak ikut diajak, karena jenis kendaraannya dipilih sendiri', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalog = rekamanRab('katalog');
+            $katalog['data']['master'][] = [
+                'id' => 9903, 'kategori' => 'transportasi', 'kategori_label' => 'Transportasi',
+                'nama' => 'Shuttle Jeep', 'destinasi' => null, 'daerah' => null,
+                'satuan' => 'unit', 'satuan_label' => 'per unit',
+                'harga' => 500_000, 'harga_teks' => 'Rp 500.000', 'kapasitas' => 4,
+                'otomatis' => true, 'umum' => true,
+                'vendor_id' => null, 'vendor' => null, 'vendor_kontak' => null,
+            ];
+
+            return Http::response($katalog);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('belum ada di RAB ini');
+});

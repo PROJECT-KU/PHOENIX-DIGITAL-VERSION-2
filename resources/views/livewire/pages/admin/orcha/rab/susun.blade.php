@@ -76,6 +76,22 @@ Susun RAB || lemon
     $cariTanpaHasil = $sedangMencari && $daftarTempat === [];
     $tanpaDestinasi = $daftarTempat === [];
 
+    /*
+     | Item wajib yang BELUM ada di RAB ini.
+     |
+     | Master harga bertanda `otomatis` ikut sendiri ke RAB yang BARU dibuat.
+     | RAB yang sudah ada tidak disentuh — penawaran yang mungkin sudah
+     | terkirim tidak boleh berubah harganya sendiri — jadi untuk RAB lama
+     | item itu masuk lewat tombol "Ambil ulang". Tanpa baris ini tidak ada
+     | apa pun yang memberi tahu bahwa ada yang belum ikut, dan tombolnya
+     | tidak akan pernah ditekan.
+     */
+    $sudahDariMaster = collect($r['baris'] ?? [])->pluck('master_harga_id')->filter()->map(fn ($x) => (int) $x)->all();
+    $wajibBelum = collect($katalog['master'] ?? [])
+        ->filter(fn ($m) => ! empty($m['otomatis']) && ($m['satuan'] ?? '') !== 'unit')
+        ->reject(fn ($m) => in_array((int) $m['id'], $sudahDariMaster, true))
+        ->pluck('nama')->values()->all();
+
     $masterPerKategori = collect($katalog['master'] ?? [])->groupBy('kategori_label')->all();
     // Urutan kategorinya sudah dari Orcha (tiket, transportasi, akomodasi, …).
     $barisPerKategori = collect($r['baris'] ?? [])->groupBy('kategori_label')->all();
@@ -999,6 +1015,13 @@ Susun RAB || lemon
         }
         /* Kuning, bukan merah: harga nol bukan galat — yang gratis memang ada.
            Yang dituju cuma supaya tidak terlewat saat RAB-nya dikirim. */
+        .rb-wajib { align-items: center; }
+        .rb-wajib-btn {
+            flex: 0 0 auto; margin-left: auto; white-space: nowrap;
+            padding: 5px 12px; border-radius: 999px; font-size: .76rem; font-weight: 600;
+            border: 1px solid #d97706; background: #fff; color: #92400e;
+        }
+        .rb-wajib-btn:hover { background: #fef3c7; }
         .rb-beda.is-nol { background: #fffbeb; border-color: #fcd34d; }
         .rb-beda.is-nol .rb-beda-teks { color: #92400e; }
         .rb-beda.is-nol .rb-beda-teks strong { color: #78350f; }
@@ -2312,10 +2335,28 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Yang belum ikut disebut NAMANYA, berikut tombolnya.
+                                 Memberi tahu bahwa "ada yang kurang" tanpa menunjuk apa
+                                 dan tanpa jalan memperbaikinya hanya memindahkan
+                                 pekerjaan mencari ke admin. --}}
+                            @if ($wajibBelum !== [])
+                                <div class="rb-beda-banner is-awas rb-wajib">
+                                    <i class="bi bi-plus-circle"></i>
+                                    <span>
+                                        <strong>{{ implode(', ', $wajibBelum) }}</strong>
+                                        belum ada di RAB ini. Itu biaya yang selalu ikut, tapi RAB ini dibuat
+                                        sebelum biayanya didaftarkan — jadi tidak ditambahkan sendiri supaya
+                                        harga penawaran yang mungkin sudah terkirim tidak berubah diam-diam.
+                                    </span>
+                                    <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"
+                                        class="rb-wajib-btn">Tambahkan sekarang</button>
+                                </div>
+                            @endif
+
                             <div class="d-flex flex-wrap gap-2 align-items-center mb-3 rb-biaya-bilah">
                                 <button type="button" wire:click="tarikBiaya" wire:loading.attr="disabled" wire:target="tarikBiaya"
                                     class="dsb-tombol is-lembut" style="--ikon: #64748b"
-                                    title="Ambil ulang harga tiket dari jadwal — untuk tempat yang harga tiketnya baru diisi di Master Harga setelah jadwalnya dibuat">
+                                    title="Ambil tiket destinasi di jadwal yang harganya baru diisi di Master Harga, sekaligus biaya yang selalu ikut tiap trip — dokumentasi, P3K, banner, tour leader">
                                     <i class="bi bi-arrow-repeat"></i> Ambil ulang
                                 </button>
                                 <div class="rb-biaya-pilih">
