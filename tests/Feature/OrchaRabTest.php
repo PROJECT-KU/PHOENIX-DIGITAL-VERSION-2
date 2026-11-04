@@ -4254,3 +4254,51 @@ test('baris tanpa hari dan bukan sepanjang trip tidak memasang pil apa pun', fun
     // Kosong berarti "tidak bisa dipastikan", bukan "hari 1".
     expect($html)->not->toContain('rab-pil-hari">');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Item wajib yang harganya belum diisi
+|--------------------------------------------------------------------------
+|
+| Dokumentasi, P3K, banner, dan tour leader kini masuk sendiri ke tiap RAB
+| lewat tanda `otomatis` di master harga Orcha, dan sebagiannya sengaja lahir
+| berharga Rp 0 supaya admin mengisinya sendiri.
+|
+| Selama masih nol, barisnya ADA di layar dan IKUT tercetak di penawaran
+| sebagai yang sudah termasuk — tetapi tidak menyumbang satu rupiah pun ke
+| harga jual. Itu bentuk kerugian yang paling sulit terlihat: tidak ada galat,
+| tidak ada angka merah, dan RAB-nya tampak lengkap.
+*/
+test('baris yang harganya masih nol ditandai, di spanduk dan di barisnya', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0]['nama'] = 'Banner Kegiatan';
+        $show['data']['ringkasan']['baris'][0]['harga_satuan'] = 0;
+        $show['data']['ringkasan']['harga_nol'] = ['Banner Kegiatan'];
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('masih berharga Rp 0')
+        // Spanduk menyebut namanya; yang dicari admin sesudah membacanya
+        // adalah baris mana yang harus diketik, jadi barisnya ikut ditandai.
+        ->and($html)->toContain('rb-beda is-nol')
+        ->and($html)->toContain('belum menambah modal');
+});
+
+test('RAB yang seluruh harganya terisi tidak memasang spanduk apa pun', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('masih berharga Rp 0')
+        ->and($html)->not->toContain('rb-beda is-nol');
+});

@@ -98,6 +98,11 @@ Susun RAB || lemon
        kunjungannya — tanggal berangkat atau itinerary-nya digeser sesudah
        biaya ditarik. Harganya TIDAK ikut bergeser; itu aturannya. */
     $hargaSalahHari = (bool) ($r['ada_harga_salah_hari'] ?? false);
+    /* Baris yang harganya masih Rp 0 — umumnya item wajib yang baru masuk
+       sendiri (dokumentasi, P3K, banner, tour leader) dan belum diisi
+       harganya di Master Harga. Nol bukan galat, jadi yang benar menyebut
+       namanya, bukan menolak menghitung. */
+    $hargaNol = array_values(array_filter((array) ($r['harga_nol'] ?? [])));
     // Daftarnya dari kosakata Orcha — lihat OrchaRabSusun::satuanBerkapasitas().
     $manualBerkapasitas = in_array($manual['satuan'] ?? '', $this->satuanBerkapasitas(), true);
     // Kedua jenis persen memakai kotak isian bersatuan "%", bukan rupiah.
@@ -992,6 +997,11 @@ Susun RAB || lemon
             margin-top: 6px; padding: 7px 9px; border-radius: 10px;
             background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3);
         }
+        /* Kuning, bukan merah: harga nol bukan galat — yang gratis memang ada.
+           Yang dituju cuma supaya tidak terlewat saat RAB-nya dikirim. */
+        .rb-beda.is-nol { background: #fffbeb; border-color: #fcd34d; }
+        .rb-beda.is-nol .rb-beda-teks { color: #92400e; }
+        .rb-beda.is-nol .rb-beda-teks strong { color: #78350f; }
         .rb-beda-teks { font-size: .75rem; color: var(--dsb-redup, #6b7280); line-height: 1.45; }
         .rb-beda-teks strong { color: var(--dsb-tinta, #1c1f26); }
         .rb-beda-teks span { display: block; font-size: .7rem; opacity: .9; }
@@ -2383,6 +2393,27 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Harganya masih Rp 0.
+
+                                 Barisnya ADA di layar dan IKUT tercetak di penawaran
+                                 sebagai yang sudah termasuk — tetapi tidak menyumbang
+                                 satu rupiah pun ke modal. Itulah bentuk kerugian yang
+                                 paling sulit terlihat: penawaran yang menjanjikan
+                                 banner dan P3K dengan harga jual yang tidak pernah
+                                 menghitung keduanya. Namanya disebut satu per satu;
+                                 menyuruh "periksa lagi" tanpa menunjuk yang mana
+                                 sama saja dengan tidak memberi tahu. --}}
+                            @if ($hargaNol !== [])
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>
+                                        <strong>{{ implode(', ', $hargaNol) }}</strong>
+                                        masih berharga Rp 0, jadi belum ikut terhitung ke harga jual. Kalau memang gratis, biarkan saja.
+                                        Kalau tidak, isi angkanya di baris bawah atau di menu Master Harga.
+                                    </span>
+                                </div>
+                            @endif
+
                             {{-- KARTU, bukan tabel.
 
                                  Satu baris biaya membawa delapan hal: nama, vendor,
@@ -2541,6 +2572,18 @@ Susun RAB || lemon
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {{-- Penanda di barisnya sendiri, bukan hanya di spanduk atas.
+                                             Spanduk menyebut namanya; yang dicari admin sesudah membaca
+                                             spanduk adalah BARIS MANA yang harus diketik. --}}
+                                        @if ((int) ($b['harga_satuan'] ?? 0) === 0)
+                                            <div class="rb-beda is-nol">
+                                                <div class="rb-beda-teks">
+                                                    Harganya masih <strong>Rp 0</strong>
+                                                    <span>ikut tercetak di penawaran, tapi belum menambah modal</span>
+                                                </div>
+                                            </div>
+                                        @endif
 
                                         @isset($b['harga_master_kini'])
                                             <div class="rb-beda">
