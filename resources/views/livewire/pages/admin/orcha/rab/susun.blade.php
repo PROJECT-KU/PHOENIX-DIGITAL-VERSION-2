@@ -2474,6 +2474,25 @@ Susun RAB || lemon
                                  berlaku lagi — dan dua kamar Family berisi 8 orang
                                  untuk rombongan 20 adalah kesalahan yang tidak
                                  menampakkan diri di satu angka pun. --}}
+                            {{-- Beberapa tipe kamar, jumlahnya belum dipilah.
+
+                                 Keadaan yang persis dialami sesudah menarik dua tipe
+                                 dari master: keduanya masih menghitung diri dari jumlah
+                                 peserta, jadi masing-masing menginapkan SELURUH
+                                 rombongan dan modalnya berlipat. Bukan galat, bukan
+                                 angka merah — cuma angka yang salah. --}}
+                            @if (($r['kamar_belum_dipilah'] ?? []) !== [])
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-door-open"></i>
+                                    <span>
+                                        <strong>{{ implode(', ', $r['kamar_belum_dipilah']) }}</strong>
+                                        masih dihitung untuk <strong>seluruh rombongan masing-masing</strong>,
+                                        jadi kamarnya terhitung dobel. Isi kotak <strong>Kamar</strong> di tiap
+                                        barisnya — berapa kamar tipe itu yang benar-benar dipesan.
+                                    </span>
+                                </div>
+                            @endif
+
                             @if (($r['daya_tampung']['kurang'] ?? 0) > 0)
                                 <div class="rb-beda-banner is-awas">
                                     <i class="bi bi-people"></i>

@@ -4980,3 +4980,20 @@ test('petunjuknya hilang begitu destinasinya dipilih, diganti isiannya', functio
     expect($html)->toContain('Tempat lain yang pakai tiket yang sama')
         ->and($html)->not->toContain('Satu tiket berlaku untuk beberapa tempat?');
 });
+
+test('dua tipe kamar yang belum dipilah diperingatkan dengan nama barisnya', function () {
+    palsukanKamar([], ['kamar_belum_dipilah' => ['Hotel X — Family', 'Hotel X — Standard']]);
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Hotel X — Family, Hotel X — Standard')
+        ->and($html)->toContain('seluruh rombongan masing-masing');
+});
+
+test('kamar yang sudah dipilah tidak memunculkan peringatan itu', function () {
+    palsukanKamar([], ['kamar_belum_dipilah' => []]);
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('seluruh rombongan masing-masing');
+});
