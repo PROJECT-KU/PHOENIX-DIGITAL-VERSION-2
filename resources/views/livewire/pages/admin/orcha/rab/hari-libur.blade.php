@@ -371,4 +371,9 @@ Hari Libur || lemon
            tetap perlu bisa dibaca saat memeriksa penawaran lama. */
         .hl-tabel tr.is-mati { opacity: .62; }
     </style>
+    {{-- Layar ini mengirim `toast-error` saat penyimpanan ditolak, dan
+         yang mendengarkannya hidup di partial ini. Tanpanya, gagal simpan
+         tidak memunculkan apa pun — tanggal yang tidak tersimpan terlihat
+         persis seperti tanggal yang tersimpan. --}}
+    @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

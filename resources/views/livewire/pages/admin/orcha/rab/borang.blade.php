@@ -441,4 +441,14 @@
         </div>
     </div>
     </div>
+
+    {{-- Tanpa ini, simpan terlihat seperti tidak menekan apa pun.
+         simpan() mengirim event `orcha-sukses-pindah` yang berisi pesan dan
+         alamat tujuan, dan yang mendengarkannya hidup di partial ini —
+         bersama penangan `toast-error`. Halaman susun dan daftar memuatnya;
+         halaman borang tidak pernah. Akibatnya eventnya terkirim ke ruang
+         kosong: tidak ada toast, tidak ada perpindahan, dan tidak ada galat
+         apa pun yang bisa dicurigai. Perubahannya SUDAH tersimpan di Orcha,
+         jadi gejalanya menipu dua arah. --}}
+    @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

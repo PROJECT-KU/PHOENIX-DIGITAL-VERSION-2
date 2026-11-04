@@ -4690,3 +4690,38 @@ test('borang private trip tidak menyisakan kolom kosong', function () {
         // Di private judul tetap span 2: ia berbagi baris dengan jumlah peserta.
         ->and($html)->not->toContain('dsb-medan rb-medan-penuh');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Halaman borang harus memuat penangan eventnya
+|--------------------------------------------------------------------------
+|
+| simpan() mengirim `orcha-sukses-pindah` berisi pesan dan alamat tujuan, dan
+| yang mendengarkannya hidup di partial skrip Orcha — bersama penangan
+| `toast-error`. Halaman susun dan daftar memuat partial itu; halaman borang
+| tidak pernah.
+|
+| Akibatnya eventnya terkirim ke ruang kosong: menekan Simpan tidak
+| memunculkan toast, tidak berpindah halaman, dan tidak melempar galat apa pun
+| yang bisa dicurigai — padahal perubahannya SUDAH tersimpan di Orcha. Gejala
+| yang menipu dua arah: admin mengira gagal lalu menekan berkali-kali.
+|
+| Uji komponen tidak bisa menangkap ini: di sana assertDispatched hijau justru
+| karena yang diperiksa pengirimannya, bukan ada tidaknya yang mendengarkan.
+*/
+test('halaman borang RAB memuat penangan sukses-pindah dan toast', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    expect($html)->toContain("Livewire.on('orcha-sukses-pindah'")
+        ->and($html)->toContain("Livewire.on('toast-error'");
+});
+
+test('borang RAB baru juga memuatnya', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class)->html();
+
+    expect($html)->toContain("Livewire.on('orcha-sukses-pindah'");
+});
