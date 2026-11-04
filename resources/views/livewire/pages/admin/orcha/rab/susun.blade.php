@@ -130,6 +130,15 @@ Susun RAB || lemon
         ? \Illuminate\Support\Carbon::parse($rab['tanggal_mulai'])->locale('id')->translatedFormat('j M Y')
         : 'Tanggal belum pasti';
     $bolehJadiPendaftaran = ! $sudahPendaftaran && $statusKini !== 'batal' && ! $tanpaBiaya;
+    /*
+     | Paket wisata publik yang dirakit dari RAB ini.
+     |
+     | Status tayangnya ikut dibaca, bukan cuma keberadaannya: paket draf
+     | tidak pernah muncul di halaman pendaftaran, dan admin yang mengira
+     | tripnya sudah terbuka baru tahu saat tidak ada satu pun yang mendaftar.
+     */
+    $paketRab = $rab['paket'] ?? null;
+    $paketTayang = (bool) ($paketRab['tayang'] ?? false);
 
     $openTrip = ($rab['jenis'] ?? 'private') === 'open';
     $pesertaDasar = (int) ($r['peserta_dasar'] ?? ($rab['jumlah_peserta'] ?? 1));
@@ -1015,6 +1024,9 @@ Susun RAB || lemon
         }
         /* Kuning, bukan merah: harga nol bukan galat — yang gratis memang ada.
            Yang dituju cuma supaya tidak terlewat saat RAB-nya dikirim. */
+        .rb-tayang { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+        .rb-tayang.is-ya { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .rb-tayang.is-belum { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
         .rb-wajib { align-items: center; }
         .rb-wajib-btn {
             flex: 0 0 auto; margin-left: auto; white-space: nowrap;
@@ -3404,6 +3416,53 @@ Susun RAB || lemon
                                     </div>
                                 </div>
                             </div>
+
+                        {{-- ===================== BUKA UNTUK UMUM ===================== --}}
+                        {{-- Hanya open trip. Private trip dipesan atas nama satu
+                             rombongan — membukanya ke publik bukan sekadar tidak
+                             berguna, melainkan salah. --}}
+                        @if ($openTrip)
+                            <div class="dsb-kartu k-12 rb-kartu">
+                                <div class="dsb-kartu-isi">
+                                    <div class="orcha-label-kecil mb-2"><i class="bi bi-globe2"></i> Buka untuk umum?</div>
+                                    @if ($paketRab)
+                                        <p class="small mb-2">
+                                            Paket <strong>{{ $paketRab['nama'] }}</strong>
+                                            @if ($paketTayang)
+                                                <span class="rb-tayang is-ya">sudah tayang</span> — orang bisa mendaftar lewat halaman publik.
+                                            @else
+                                                <span class="rb-tayang is-belum">masih draf</span> — belum bisa didaftari siapa pun.
+                                            @endif
+                                        </p>
+                                        <p class="small text-muted mb-2">
+                                            Harga, jadwal, destinasi, dan daftar fasilitasnya ikut berubah
+                                            sendiri setiap RAB ini disunting. Yang sudah telanjur mendaftar
+                                            tidak terpengaruh — harganya dibekukan saat mereka mendaftar.
+                                        </p>
+                                        <a href="{{ route('admin.orcha.paket.ubah', $paketRab['id']) }}" class="dsb-tombol is-lembut w-100 justify-content-center" style="--ikon: #0369a1" wire:navigate>
+                                            <i class="bi bi-box-arrow-up-right"></i> {{ $paketTayang ? 'Buka paketnya' : 'Lengkapi lalu terbitkan' }}
+                                        </a>
+                                    @elseif ($tanpaBiaya || $itinerary === [])
+                                        <p class="small text-muted mb-0">
+                                            Tersedia setelah RAB berisi biaya dan jadwalnya terisi — halaman
+                                            paket menampilkan itinerary hari per hari.
+                                        </p>
+                                    @else
+                                        <p class="small text-muted mb-2">
+                                            Nama, durasi, tanggal, harga jual, modal, destinasi, daftar fasilitas,
+                                            dan seluruh jadwalnya disalin dari RAB ini — tidak ada yang diketik ulang.
+                                        </p>
+                                        <button type="button" class="dsb-tombol is-lembut w-100 justify-content-center pcek-konfirmasi" style="--ikon: #0369a1"
+                                            data-action="jadikanPaket"
+                                            data-title="Buat paket wisata dari RAB ini?"
+                                            data-text="Paketnya dibuat sebagai DRAF — belum bisa didaftari siapa pun. Anda lengkapi dulu foto, kuota, dan titik jemputnya, baru terbitkan."
+                                            data-confirm="Ya, buat paketnya" data-icon="question">
+                                            <i class="bi bi-globe2"></i> Jadikan Paket Wisata
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
 
                         {{-- ===================== JADIKAN PENDAFTARAN ===================== --}}
                         <div class="dsb-kartu k-12 rb-kartu">

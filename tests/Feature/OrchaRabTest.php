@@ -4396,3 +4396,143 @@ test('master harga per unit tidak ikut diajak, karena jenis kendaraannya dipilih
 
     expect($html)->not->toContain('belum ada di RAB ini');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Buka untuk umum: paket wisata dari RAB
+|--------------------------------------------------------------------------
+|
+| Open trip disusun lengkap di RAB — harga, jadwal, destinasi, fasilitas —
+| lalu dulu harus diketik ULANG ke borang paket wisata supaya bisa didaftari
+| publik. Sesudah itu ada dua sumber untuk angka yang sama, dan yang satu
+| pasti tertinggal.
+*/
+function rabPalsuOpen(array $ubahRab = []): callable
+{
+    return function (Request $r) use ($ubahRab) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'open';
+        $show['data'] = array_merge($show['data'], $ubahRab);
+
+        return Http::response($show);
+    };
+}
+
+test('open trip menawarkan jalan membuka pendaftaran untuk umum', function () {
+    Http::fake(rabPalsuOpen());
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Buka untuk umum?')
+        ->and($html)->toContain('Jadikan Paket Wisata')
+        // Kalimatnya menyebut bahwa tidak ada yang diketik ulang.
+        ->and($html)->toContain('disalin dari RAB ini');
+});
+
+test('private trip tidak pernah menawarkannya', function () {
+    // Dipesan atas nama satu rombongan — membukanya ke publik bukan sekadar
+    // tidak berguna, melainkan salah.
+    //
+    // Rekaman show.json kebetulan berjenis open, jadi jenisnya ditimpa di
+    // sini. Memakai rekaman apa adanya akan membuat uji ini lulus tanpa
+    // pernah memeriksa apa pun.
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'private';
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('Buka untuk umum?')
+        ->and($html)->not->toContain('Jadikan Paket Wisata');
+});
+
+test('paket yang masih draf dikatakan belum bisa didaftari siapa pun', function () {
+    // Paket draf tidak pernah muncul di halaman pendaftaran, dan admin yang
+    // mengira tripnya sudah terbuka baru tahu saat tak satu pun mendaftar.
+    Http::fake(rabPalsuOpen(['paket' => [
+        'id' => 77, 'uuid' => 'uuid-77', 'nama' => 'Open Trip Banyuwangi',
+        'status' => 'draf', 'tayang' => false,
+    ]]));
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('masih draf')
+        ->and($html)->toContain('belum bisa didaftari siapa pun')
+        ->and($html)->toContain('Lengkapi lalu terbitkan')
+        // Tombol pembuatan tidak muncul lagi: satu RAB satu paket.
+        ->and($html)->not->toContain('Jadikan Paket Wisata');
+});
+
+test('paket yang sudah tayang dikatakan bisa didaftari, berikut akibat menyunting RAB', function () {
+    Http::fake(rabPalsuOpen(['paket' => [
+        'id' => 77, 'uuid' => 'uuid-77', 'nama' => 'Open Trip Banyuwangi',
+        'status' => 'terbit', 'tayang' => true,
+    ]]));
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('sudah tayang')
+        ->and($html)->toContain('orang bisa mendaftar lewat halaman publik')
+        // Yang paling perlu diketahui sebelum menyunting RAB yang sudah tayang.
+        ->and($html)->toContain('harganya dibekukan saat mereka mendaftar');
+});
+
+test('jadwal kosong ditahan, karena halaman paket memang menampilkan jadwal', function () {
+    $show = rekamanRab('show');
+    $show['data']['jenis'] = 'open';
+    $show['data']['itinerary'] = [];
+
+    Http::fake(function (Request $r) use ($show) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        return str_contains($jalur, '/rab/katalog')
+            ? Http::response(rekamanRab('katalog'))
+            : Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('Buka untuk umum?')
+        ->and($html)->not->toContain('Jadikan Paket Wisata')
+        ->and($html)->toContain('jadwalnya terisi');
+});
+
+test('tombolnya memanggil jalur Orcha yang benar', function () {
+    $dipanggil = null;
+
+    Http::fake(function (Request $r) use (&$dipanggil) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+        if (str_contains($jalur, 'jadikan-paket')) {
+            $dipanggil = $jalur;
+
+            return Http::response(['data' => ['id' => 77, 'nama' => 'Open Trip Banyuwangi', 'status' => 'draf']], 201);
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('jadikanPaket')
+        ->assertDispatched('orcha-sukses-pindah');
+
+    expect($dipanggil)->toContain('/rab/3/jadikan-paket');
+});

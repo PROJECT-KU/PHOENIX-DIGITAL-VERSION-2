@@ -1722,6 +1722,35 @@ class OrchaRabSusun extends Component
             url: route('admin.orcha.pendaftaran.detail', $baru['id']));
     }
 
+    /**
+     * Merakit paket wisata publik dari RAB ini.
+     *
+     * Sampai sekarang open trip yang sudah lengkap di RAB tetap harus diketik
+     * ulang ke borang paket — dua puluhan kolom berikut seluruh itinerary —
+     * supaya bisa didaftari lewat halaman publik.
+     *
+     * Paketnya lahir DRAF, dan layar langsung membawa admin ke borangnya:
+     * foto, kuota, dan titik jemput tidak ada di RAB, dan paket yang tayang
+     * tanpa ketiganya terlihat rusak di mata calon pelanggan. Mengantarkannya
+     * ke sana lebih jujur daripada memberi kabar "berhasil" lalu meninggalkan
+     * paket setengah jadi yang tidak kelihatan dari mana pun.
+     */
+    public function jadikanPaket(): void
+    {
+        try {
+            $baru = $this->orcha()->kirim("/rab/{$this->rabId}/jadikan-paket")['data'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        \App\Support\HitunganOrcha::lupakanSemua();
+        $this->dispatch('orcha-sukses-pindah',
+            message: 'Paket dibuat sebagai draf. Lengkapi foto, kuota, dan titik jemputnya, lalu terbitkan.',
+            url: route('admin.orcha.paket.ubah', $baru['id'] ?? 0));
+    }
+
     public function render()
     {
         return view('livewire.pages.admin.orcha.rab.susun', ['rab' => $this->dataRab])
