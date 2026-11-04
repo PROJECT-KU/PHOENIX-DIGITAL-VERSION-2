@@ -47,6 +47,10 @@
            sendirian di baris terakhir. Nama pelanggan — yang memang paling
            butuh ruang — mengambil dua kolom, jadi barisnya terbagi 3/3/2. */
         .rb-medan-rak > .rb-medan-lebar { grid-column: span 2; }
+        /* Judul mengambil seluruh baris pada open trip: di sana baris di
+           atasnya sudah genap tiga, jadi span 2 justru menyisakan satu
+           kolom menganga di bawahnya. */
+        .rb-medan-rak > .rb-medan-penuh { grid-column: 1 / -1; }
         .rb-medan-rak .dsb-kartu-sub { display: block; margin-top: 5px; }
         .rb-wajib { color: #dc2626; }
 
@@ -180,6 +184,13 @@
         </section>
 
         {{-- ================== PELANGGAN ================== --}}
+        {{-- Seluruh kartu ini milik private trip.
+             Open trip belum punya pelanggan — harganya diumumkan dulu,
+             pesertanya menyusul — dan kartu berisi satu kotak tanggal di
+             kisi tiga kolom menyisakan dua kolom kosong selebar layar.
+             Tanggal berlakunya pindah ke kartu perjalanan, tempat ia justru
+             menggenapkan barisnya. --}}
+        @unless ($this->openTrip())
         <section class="dsb-bagian rb-bagian">
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12">
@@ -187,22 +198,12 @@
                         <div class="rb-bagian-kepala">
                             <span class="dsb-ikon is-kecil" style="--c: var(--dsb-info)"><i class="bi bi-person-vcard"></i></span>
                             <div class="rb-bagian-teks">
-                                <strong>{{ $this->openTrip() ? 'Penawaran' : 'Pelanggan' }}</strong>
-                                <span class="dsb-kartu-sub">
-                                    @if ($this->openTrip())
-                                        Open trip belum punya pelanggan — harganya diumumkan dulu, pesertanya menyusul lewat halaman pendaftaran.
-                                    @else
-                                        Nama yang tercetak di penawaran, dan ke mana penawarannya dikirim.
-                                    @endif
-                                </span>
+                                <strong>Pelanggan</strong>
+                                <span class="dsb-kartu-sub">Nama yang tercetak di penawaran, dan ke mana penawarannya dikirim.</span>
                             </div>
                         </div>
 
                         <div class="rb-medan-rak">
-                            {{-- Ketiganya tidak ada pada open trip. Menampilkannya
-                                 abu-abu atau "boleh dikosongkan" tetap menyuruh admin
-                                 memutuskan sesuatu yang tidak perlu diputuskan. --}}
-                            @unless ($this->openTrip())
                             <div class="dsb-medan rb-medan-lebar">
                                 <label class="dsb-label" for="rb-nama">Nama pelanggan <span class="rb-wajib">*</span></label>
                                 <input id="rb-nama" type="text" maxlength="120" wire:model="isian.nama_pelanggan"
@@ -225,7 +226,6 @@
                                 @error('isian.email')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 <span class="dsb-kartu-sub">Boleh dikosongkan; penawaran tetap bisa dikirim lewat WhatsApp.</span>
                             </div>
-                            @endunless
 
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="rb-berlaku">Penawaran berlaku sampai</label>
@@ -233,11 +233,13 @@
                                 @error('isian.berlaku_sampai')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 <span class="dsb-kartu-sub">Lewat tanggal ini, RAB ditandai kedaluwarsa.</span>
                             </div>
+
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+        @endunless
 
         {{-- ================== PERJALANAN ================== --}}
         <section class="dsb-bagian rb-bagian">
@@ -334,7 +336,18 @@
                                 </div>
                             @endif
 
-                            <div class="dsb-medan rb-medan-lebar">
+                            {{-- Hanya di sini pada open trip: tanpa kolom ketiga
+                                 ini, barisnya berhenti di dua dan menyisakan lubang. --}}
+                            @if ($this->openTrip())
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rb-berlaku">Penawaran berlaku sampai</label>
+                                <input id="rb-berlaku" type="date" wire:model="isian.berlaku_sampai" class="dsb-isian @error('isian.berlaku_sampai') is-galat @enderror">
+                                @error('isian.berlaku_sampai')<span class="dsb-galat">{{ $message }}</span>@enderror
+                                <span class="dsb-kartu-sub">Lewat tanggal ini, RAB ditandai kedaluwarsa.</span>
+                            </div>
+                            @endif
+
+                            <div class="dsb-medan {{ $this->openTrip() ? 'rb-medan-penuh' : 'rb-medan-lebar' }}">
                                 <label class="dsb-label" for="rb-judul">Judul perjalanan</label>
                                 <input id="rb-judul" type="text" maxlength="150" wire:model.live.debounce.400ms="isian.judul"
                                     class="dsb-isian @error('isian.judul') is-galat @enderror"

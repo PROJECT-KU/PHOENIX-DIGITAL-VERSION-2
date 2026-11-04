@@ -3856,9 +3856,9 @@ test('borang ubah tersusun bagian demi bagian, tiap bagian kartunya sendiri', fu
      | pajak: tidak ada tempat mata beristirahat, dan tidak ada yang
      | mengatakan pertanyaan mana yang sedang dijawab.
      */
-    // Rekaman show.json berjenis open, dan di sana kartunya bernama
-    // "Penawaran" — open trip belum punya pelanggan saat RAB-nya disusun.
-    foreach (['Jenis perjalanan', 'Penawaran', 'Ke mana dan kapan', 'Catatan'] as $bagian) {
+    // Rekaman show.json berjenis open, dan di sana kartu pelanggan memang
+    // tidak ada — open trip belum punya pelanggan saat RAB-nya disusun.
+    foreach (['Jenis perjalanan', 'Ke mana dan kapan', 'Catatan'] as $bagian) {
         expect($html)->toContain($bagian);
     }
 
@@ -4554,14 +4554,22 @@ test('open trip tidak meminta nama pelanggan, WhatsApp, atau email', function ()
 
     $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
 
-    // Dicari ID medannya, bukan tulisannya: "Nama pelanggan" juga muncul di
-    // komentar CSS pada blok <style> halaman ini, dan uji yang mencarinya
-    // sebagai teks akan merah tanpa ada yang salah.
-    expect($html)->toContain('Open trip belum punya pelanggan')
-        ->and($html)->not->toContain('id="rb-nama"')
+    /*
+     | Dicari ID medannya, bukan tulisannya: "Nama pelanggan" juga muncul di
+     | komentar CSS pada blok <style> halaman ini, dan uji yang mencarinya
+     | sebagai teks akan merah tanpa ada yang salah.
+     |
+     | Kartunya hilang SELURUHNYA, bukan dikosongkan isinya: kartu berisi satu
+     | kotak tanggal di kisi tiga kolom menyisakan dua kolom kosong selebar
+     | layar.
+     */
+    expect($html)->not->toContain('id="rb-nama"')
         ->and($html)->not->toContain('id="rb-wa"')
         ->and($html)->not->toContain('id="rb-email"')
-        // Masa berlaku penawaran TETAP ditanyakan: itu berlaku di keduanya.
+        ->and($html)->not->toContain('<strong>Pelanggan</strong>')
+        // Masa berlaku penawaran TETAP ditanyakan — pindah ke kartu
+        // perjalanan, tempat ia justru menggenapkan barisnya.
+        ->and($html)->toContain('id="rb-berlaku"')
         ->and($html)->toContain('Penawaran berlaku sampai');
 });
 
@@ -4584,7 +4592,10 @@ test('private trip tetap meminta ketiganya', function () {
     expect($html)->toContain('id="rb-nama"')
         ->and($html)->toContain('id="rb-wa"')
         ->and($html)->toContain('id="rb-email"')
-        ->and($html)->not->toContain('Open trip belum punya pelanggan');
+        ->and($html)->toContain('<strong>Pelanggan</strong>')
+        // Pada private, tanggal berlakunya tetap di kartu pelanggan —
+        // di sanalah ia menggenapkan baris kedua.
+        ->and($html)->toContain('id="rb-berlaku"');
 });
 
 test('open trip bisa disimpan tanpa nama pelanggan', function () {
@@ -4615,4 +4626,67 @@ test('open trip bisa disimpan tanpa nama pelanggan', function () {
 
     expect($dikirim)->not->toBeNull()
         ->and($dikirim['jenis'])->toBe('open');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Kisi borang tidak menyisakan kolom menganga
+|--------------------------------------------------------------------------
+|
+| Medannya tersusun di kisi TIGA kolom. Begitu jumlah kolom yang terpakai
+| dalam satu kartu bukan kelipatan tiga, sisanya berdiri kosong selebar layar
+| — dan itu tidak pernah terlihat saat menulis blade-nya, hanya saat membuka
+| halamannya.
+|
+| Yang dihitung lebar tiap medan: biasa 1 kolom, rb-medan-lebar 2,
+| rb-medan-penuh 3.
+*/
+function kolomTerpakai(string $html): int
+{
+    preg_match_all('/<div class="dsb-medan([^"]*)"/', $html, $m);
+
+    return array_sum(array_map(
+        fn ($kelas) => str_contains($kelas, 'rb-medan-penuh') ? 3 : (str_contains($kelas, 'rb-medan-lebar') ? 2 : 1),
+        $m[1]
+    ));
+}
+
+test('borang open trip tidak menyisakan kolom kosong', function () {
+    // Rekaman show.json memang berjenis open.
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    expect(kolomTerpakai($html) % 3)->toBe(0, 'kisi borang open trip menyisakan kolom menganga')
+        // Satu kartu medan saja: kartu pelanggan tidak ada di open trip.
+        ->and(substr_count($html, 'class="rb-medan-rak"'))->toBe(1)
+        // Judul mengambil seluruh baris — di open trip baris di atasnya sudah
+        // genap tiga, jadi span 2 justru menyisakan satu kolom.
+        // Dicari pemakaiannya di atribut class: nama kelasnya juga muncul di
+        // aturan CSS pada blok <style> halaman ini.
+        ->and($html)->toContain('dsb-medan rb-medan-penuh')
+        ->and($html)->toContain('id="rb-minimum"')
+        ->and($html)->toContain('id="rb-berlaku"');
+});
+
+test('borang private trip tidak menyisakan kolom kosong', function () {
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['jenis'] = 'private';
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabForm::class, ['rab' => 3])->html();
+
+    expect(kolomTerpakai($html) % 3)->toBe(0, 'kisi borang private trip menyisakan kolom menganga')
+        ->and(substr_count($html, 'class="rb-medan-rak"'))->toBe(2)
+        // Di private judul tetap span 2: ia berbagi baris dengan jumlah peserta.
+        ->and($html)->not->toContain('dsb-medan rb-medan-penuh');
 });
