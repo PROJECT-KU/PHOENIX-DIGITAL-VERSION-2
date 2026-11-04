@@ -152,6 +152,23 @@ class OrchaRabSusun extends Component
 
     public array $jumlahBaris = [];
 
+    /**
+     * Jumlah kamar/unit per baris, bila admin menentukannya sendiri.
+
+     *
+
+     * Kosong berarti sistem menurunkannya dari jumlah peserta seperti
+
+     * biasa. Diisi hanya saat rombongannya memakai campuran — dua kamar
+
+     * Family dan tiga Standard di hotel yang sama.
+
+     *
+
+     * @var array<int, string>
+     */
+    public array $unitBaris = [];
+
     public string $pilihMaster = '';
 
     public bool $bukaManual = false;
@@ -265,10 +282,13 @@ class OrchaRabSusun extends Component
 
         $this->hargaBaris = [];
         $this->jumlahBaris = [];
+        $this->unitBaris = [];
         $this->catatanBaris = [];
         foreach ($data['ringkasan']['baris'] ?? [] as $b) {
             $this->hargaBaris[$b['id']] = $this->keRupiah($b['harga_satuan']) ?: '0';
             $this->jumlahBaris[$b['id']] = (string) $b['jumlah'];
+            // Kosong berarti "hitung dari jumlah peserta", bukan nol kamar.
+            $this->unitBaris[$b['id']] = (string) ($b['unit_manual'] ?? '');
             $this->catatanBaris[$b['id']] = (string) ($b['catatan'] ?? '');
         }
 
@@ -985,6 +1005,21 @@ class OrchaRabSusun extends Component
     public function updatedJumlahBaris($nilai, $id): void
     {
         $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", ['jumlah' => max(1, min(100, (int) $nilai))]);
+    }
+
+    /**
+     * Jumlah kamar/unit yang ditentukan sendiri.
+     *
+     * Kotak yang DIKOSONGKAN mengirim null, bukan nol — artinya "kembalikan
+     * ke hitungan dari jumlah peserta". Nol akan menggratiskan barisnya.
+     */
+    public function updatedUnitBaris($nilai, $id): void
+    {
+        $bersih = trim((string) $nilai);
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
+            'unit_manual' => $bersih === '' ? null : max(1, min(500, (int) $bersih)),
+        ]);
     }
 
     public function pakaiHargaMaster(int $id): void

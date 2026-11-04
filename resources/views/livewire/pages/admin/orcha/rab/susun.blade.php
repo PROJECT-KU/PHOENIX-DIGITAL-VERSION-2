@@ -2467,6 +2467,25 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Kamar yang dipesan tidak cukup untuk seluruh rombongan.
+
+                                 Begitu jumlah kamarnya ditentukan sendiri, penurunan
+                                 otomatis yang dulu menjamin "semua kebagian" tidak
+                                 berlaku lagi — dan dua kamar Family berisi 8 orang
+                                 untuk rombongan 20 adalah kesalahan yang tidak
+                                 menampakkan diri di satu angka pun. --}}
+                            @if (($r['daya_tampung']['kurang'] ?? 0) > 0)
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-people"></i>
+                                    <span>
+                                        Kamar yang dipesan muat <strong>{{ $r['daya_tampung']['muat'] }} orang</strong>,
+                                        sementara pesertanya {{ $r['daya_tampung']['peserta'] }} —
+                                        <strong>{{ $r['daya_tampung']['kurang'] }} orang belum kebagian.</strong>
+                                        Tambah kamarnya, atau kosongkan kotak "Kamar" supaya dihitung sendiri dari jumlah peserta.
+                                    </span>
+                                </div>
+                            @endif
+
                             {{-- KARTU, bukan tabel.
 
                                  Satu baris biaya membawa delapan hal: nama, vendor,
@@ -2596,6 +2615,22 @@ Susun RAB || lemon
                                                         <input type="text" inputmode="numeric" data-uang wire:model.blur="hargaBaris.{{ $b['id'] }}" class="dsb-isian">
                                                     </span>
                                                 </label>
+                                                {{-- Jumlah kamar/unit, hanya untuk satuan yang
+                                                     memang menghitungnya.
+
+                                                     Dikosongkan = diturunkan dari jumlah peserta
+                                                     seperti biasa. Diisi saat rombongannya memakai
+                                                     campuran: dua kamar Family dan tiga Standard di
+                                                     hotel yang sama tidak bisa ditulis tanpa ini,
+                                                     karena kedua barisnya akan menginapkan SELURUH
+                                                     rombongan. --}}
+                                                @if (in_array($b['satuan'], $this->satuanBerkapasitas(), true))
+                                                    <label class="rb-biaya-medan is-sempit">
+                                                        <span>{{ $b['satuan'] === 'kamar_malam' ? 'Kamar' : 'Unit' }}</span>
+                                                        <input type="number" min="1" max="500" placeholder="otomatis"
+                                                            wire:model.blur="unitBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                    </label>
+                                                @endif
                                                 <label class="rb-biaya-medan is-sempit">
                                                     <span>Jumlah</span>
                                                     <input type="number" min="1" max="100" wire:model.blur="jumlahBaris.{{ $b['id'] }}" class="dsb-isian">

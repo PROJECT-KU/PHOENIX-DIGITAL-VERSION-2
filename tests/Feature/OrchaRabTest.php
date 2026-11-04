@@ -4834,3 +4834,121 @@ test('tiket tanpa destinasi utama tidak pernah mengirim daftar tempat lain', fun
     expect($dikirim['destinasi'])->toBeNull()
         ->and($dikirim['destinasi_lain'])->toBe([]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Campuran tipe kamar di hotel yang sama
+|--------------------------------------------------------------------------
+|
+| Satuan berkapasitas menurunkan jumlah unitnya sendiri dari jumlah peserta.
+| Begitu pelanggan minta dua kamar Family dan tiga Standard di hotel yang
+| sama, kedua barisnya masing-masing menginapkan SELURUH rombongan — dan
+| kolom "Jumlah" tidak menolong karena ia mengalikan, bukan menggantikan.
+*/
+function palsukanKamar(array $ubahBaris = [], array $ringkasan = []): void
+{
+    Http::fake(function (Request $r) use ($ubahBaris, $ringkasan) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+        $show['data']['ringkasan']['baris'][0] = array_merge(
+            $show['data']['ringkasan']['baris'][0], $ubahBaris
+        );
+        $show['data']['ringkasan'] = array_merge($show['data']['ringkasan'], $ringkasan);
+
+        return Http::response($show);
+    });
+}
+
+test('kotak jumlah kamar hanya muncul untuk satuan yang menghitung unit', function () {
+    palsukanKamar(['satuan' => 'kamar_malam', 'unit_manual' => 2]);
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('<span>Kamar</span>')
+        ->and($html)->toContain('unitBaris.');
+});
+
+test('satuan per orang tidak menampilkan kotak itu', function () {
+    // SELURUH barisnya, bukan yang pertama saja: rekaman show.json memuat
+    // beberapa baris, dan satu saja yang bersatuan kamar sudah cukup membuat
+    // uji ini lulus tanpa memeriksa apa pun.
+    Http::fake(function (Request $r) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        $show = rekamanRab('show');
+
+        foreach ($show['data']['ringkasan']['baris'] as $i => $b) {
+            $show['data']['ringkasan']['baris'][$i]['satuan'] = 'orang';
+            $show['data']['ringkasan']['baris'][$i]['unit_manual'] = null;
+        }
+
+        return Http::response($show);
+    });
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('<span>Kamar</span>')
+        ->and($html)->not->toContain('<span>Unit</span>');
+});
+
+test('mengosongkan kotak kamar mengirim null, bukan nol', function () {
+    // Nol akan menggratiskan barisnya; yang dimaksud "hitung sendiri lagi".
+    $dikirim = null;
+
+    Http::fake(function (Request $r) use (&$dikirim) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+        if (in_array($r->method(), ['PATCH', 'PUT'], true)) {
+            $dikirim = $r->data();
+        }
+
+        return Http::response(rekamanRab('show'));
+    });
+
+    $k = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3]);
+    $id = collect($k->get('dataRab')['ringkasan']['baris'])->first()['id'];
+
+    $k->set("unitBaris.{$id}", '');
+
+    expect($dikirim)->toHaveKey('unit_manual')
+        ->and($dikirim['unit_manual'])->toBeNull();
+});
+
+test('kamar yang kurang dari jumlah peserta diperingatkan dengan angkanya', function () {
+    palsukanKamar([], ['daya_tampung' => ['manual' => true, 'muat' => 8, 'peserta' => 20, 'kurang' => 12]]);
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->toContain('muat <strong>8 orang</strong>')
+        ->and($html)->toContain('12 orang belum kebagian');
+});
+
+test('kamar yang cukup tidak memunculkan peringatan apa pun', function () {
+    palsukanKamar([], ['daya_tampung' => ['manual' => true, 'muat' => 20, 'peserta' => 20, 'kurang' => 0]]);
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('belum kebagian');
+});
+
+test('Orcha lama yang belum mengirim daya_tampung tidak mematikan layar', function () {
+    // Layar yang mati karena kunci yang belum ada jauh lebih buruk daripada
+    // penanda yang belum muncul.
+    palsukanKamar();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    expect($html)->not->toContain('belum kebagian');
+});
