@@ -217,6 +217,20 @@ class OrchaMasterHargaList extends Component
 
     public string $pasangKeVendor = '';
 
+    /**
+     * Destinasi LAIN yang tercakup tiket yang sama.
+     *
+     * Tiket terusan Dieng berlaku untuk Candi Arjuna dan Kawah Sikidang,
+     * dibayar sekali. Tanpa daftar ini admin terpaksa membuat dua baris —
+     * dan keduanya tertarik ke RAB, lalu tiketnya ditagih dua kali.
+     *
+     * @var array<int, string>
+     */
+    public array $destinasiLain = [];
+
+    /** Pilihan yang sedang disorot di kotak "tambah destinasi lain". */
+    public string $destinasiLainPilih = '';
+
     /** Kotak isian destinasi baru sedang terbuka. */
     public bool $destinasiBaru = false;
 
@@ -294,6 +308,8 @@ class OrchaMasterHargaList extends Component
         $this->otomatis = false;
         $this->duaHarga = false;
         $this->satuanDisetel = false;
+        $this->destinasiLain = [];
+        $this->destinasiLainPilih = '';
         $this->destinasiBaru = false;
         $this->namaDestinasiBaru = '';
         $this->vendorBaru = false;
@@ -423,6 +439,11 @@ class OrchaMasterHargaList extends Component
         // sama dengan hari kerja tetap harga yang pernah diisi orang, dan
         // kotaknya tidak boleh menghilang saat barisnya dibuka lagi.
         $this->duaHarga = ($baris['harga_akhir_pekan'] ?? null) !== null;
+
+        $this->destinasiLain = array_values(array_filter(
+            array_map(fn ($d) => trim((string) $d), $baris['destinasi_lain'] ?? [])
+        ));
+        $this->destinasiLainPilih = '';
 
         // Baris yang sudah tersimpan satuannya memang pilihan orang, bukan
         // terkaan — mengganti kategorinya tidak boleh menimpanya.
@@ -555,6 +576,38 @@ class OrchaMasterHargaList extends Component
      * — dan muncul di RAB Bali. Mengisinya otomatis dari katalog menutup
      * kemungkinan itu tanpa menambah satu kotak pun untuk diisi admin.
      */
+    /**
+     * Menambah destinasi lain yang tercakup tiket yang sama.
+     *
+     * Tidak boleh sama dengan destinasi utamanya, dan tidak boleh ganda —
+     * keduanya hanya akan membingungkan tanpa mengubah apa pun, karena
+     * penjodohannya memang menyaring yang kembar.
+     */
+    public function tambahDestinasiLain(): void
+    {
+        $pilih = trim($this->destinasiLainPilih);
+        $utama = trim((string) ($this->isian['destinasi'] ?? ''));
+        $rapi = fn (string $t) => mb_strtolower($t);
+
+        if ($pilih === '') {
+            return;
+        }
+
+        $sudah = collect($this->destinasiLain)->push($utama)->map($rapi);
+
+        if (! $sudah->contains($rapi($pilih))) {
+            $this->destinasiLain[] = $pilih;
+        }
+
+        $this->destinasiLainPilih = '';
+    }
+
+    public function hapusDestinasiLain(int $i): void
+    {
+        unset($this->destinasiLain[$i]);
+        $this->destinasiLain = array_values($this->destinasiLain);
+    }
+
     /**
      * Menambah destinasi ke katalog tanpa meninggalkan formulir ini.
      *
@@ -718,6 +771,9 @@ class OrchaMasterHargaList extends Component
             'provinsi' => $this->isian['provinsi'] ?: null,
             'daerah' => trim($this->isian['daerah']) ?: null,
             'destinasi' => trim($this->isian['destinasi']) ?: null,
+            // Hanya berarti bila destinasi utamanya terisi: tiket yang tidak
+            // terikat destinasi tidak pernah dijodohkan ke jadwal sama sekali.
+            'destinasi_lain' => trim($this->isian['destinasi']) !== '' ? $this->destinasiLain : [],
             'satuan' => $this->isian['satuan'],
             'harga' => $this->angkaDari($this->isian['harga']),
             /*

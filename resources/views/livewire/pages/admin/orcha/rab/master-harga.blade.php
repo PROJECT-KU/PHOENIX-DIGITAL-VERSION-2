@@ -599,6 +599,49 @@ Master Harga || lemon
                                                 <i class="bi bi-plus-circle"></i> Destinasinya belum ada di daftar
                                             </button>
                                         @endunless
+
+                                        {{-- SATU tiket untuk beberapa tempat.
+                                             Tiket terusan Dieng berlaku di Candi Arjuna dan
+                                             Kawah Sikidang, dibayar sekali. Tanpa daftar ini
+                                             admin terpaksa membuat dua baris — dan keduanya
+                                             ikut tertarik ke RAB, lalu tiketnya ditagih dua
+                                             kali. Muncul hanya setelah destinasi utamanya
+                                             dipilih: tanpa itu ia tidak berarti apa-apa. --}}
+                                        @if (trim((string) ($isian['destinasi'] ?? '')) !== '')
+                                            <div class="mh-terusan">
+                                                <div class="mh-terusan-judul">
+                                                    Tempat lain yang pakai tiket yang sama
+                                                    <span class="dsb-label-ket">dibayar sekali untuk semuanya</span>
+                                                </div>
+
+                                                @if ($destinasiLain !== [])
+                                                    <div class="mh-cip-rak">
+                                                        @foreach ($destinasiLain as $i => $d)
+                                                            <span class="mh-cip" wire:key="dl-{{ $i }}-{{ md5($d) }}">
+                                                                {{ $d }}
+                                                                <button type="button" wire:click="hapusDestinasiLain({{ $i }})" title="Keluarkan dari tiket ini">
+                                                                    <i class="bi bi-x"></i>
+                                                                </button>
+                                                            </span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
+                                                <div class="mh-terusan-tambah">
+                                                    <select wire:model="destinasiLainPilih" class="dsb-isian">
+                                                        <option value="">Pilih tempat lain…</option>
+                                                        @foreach ($destinasi as $d)
+                                                            @if ($d !== ($isian['destinasi'] ?? '') && ! in_array($d, $destinasiLain, true))
+                                                                <option value="{{ $d }}" @selected($destinasiLainPilih === $d)>{{ $d }}</option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="button" wire:click="tambahDestinasiLain" class="mh-tambah">
+                                                        <i class="bi bi-plus-lg"></i> Tambah
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endif
 
@@ -2162,6 +2205,18 @@ Master Harga || lemon
            saja yang mengikuti warna vendor di seluruh layar. */
         .mh-baru.is-vendor { background: #f5fafd; border-color: #cfe6f3; }
         .mh-baru.is-vendor .mh-baru-judul { color: #0369a1; }
+        /* Tiket terusan: daftar tempat lain yang tercakup. */
+        .mh-terusan { margin-top: 10px; padding: 9px 11px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); }
+        .mh-terusan-judul { font-size: .78rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26); margin-bottom: 6px; }
+        .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .mh-terusan-tambah > .dsb-isian { flex: 1 1 180px; min-width: 0; }
+        .mh-cip-rak { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .mh-cip {
+            display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+            padding: 3px 6px 3px 10px; border-radius: 999px; font-size: .78rem;
+            background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe;
+        }
+        .mh-cip button { border: 0; background: transparent; color: inherit; line-height: 1; padding: 0 2px; }
         .mh-tambah {
             display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
             padding: 0; border: 0; background: none;

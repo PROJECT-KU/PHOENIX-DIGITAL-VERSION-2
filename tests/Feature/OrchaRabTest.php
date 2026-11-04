@@ -4725,3 +4725,112 @@ test('borang RAB baru juga memuatnya', function () {
 
     expect($html)->toContain("Livewire.on('orcha-sukses-pindah'");
 });
+
+/*
+|--------------------------------------------------------------------------
+| Tiket terusan: satu tiket untuk beberapa tempat
+|--------------------------------------------------------------------------
+|
+| Tiket terusan Dieng berlaku untuk Candi Arjuna DAN Kawah Sikidang, dibayar
+| sekali. Tanpa daftar "tempat lain", admin terpaksa membuat dua baris master
+| — dan keduanya ikut tertarik ke RAB, lalu tiketnya ditagih dua kali.
+*/
+function palsukanMasterTerusan(?array &$dikirim = null): void
+{
+    Http::fake(function (Request $r) use (&$dikirim) {
+        $jalur = (string) parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/master-harga') && in_array($r->method(), ['POST', 'PATCH', 'PUT'], true)) {
+            $dikirim = $r->data();
+
+            return Http::response(['data' => ['id' => 1]], 201);
+        }
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        return Http::response(['data' => [], 'meta' => ['total' => 0]]);
+    });
+}
+
+test('destinasi lain hanya ditawarkan setelah destinasi utamanya dipilih', function () {
+    palsukanMasterTerusan();
+
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->call('bukaTambah');
+
+    expect($k->html())->not->toContain('Tempat lain yang pakai tiket yang sama');
+
+    expect($k->set('isian.destinasi', 'Candi Arjuna')->html())
+        ->toContain('Tempat lain yang pakai tiket yang sama');
+});
+
+test('tempat lain ditambahkan sebagai cip dan ikut terkirim ke Orcha', function () {
+    $dikirim = null;
+    palsukanMasterTerusan($dikirim);
+
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.nama', 'Tiket Terusan Dieng')
+        ->set('isian.provinsi', 'Jawa Tengah')
+        ->set('isian.destinasi', 'Candi Arjuna')
+        ->set('isian.satuan', 'orang')
+        ->set('isian.harga', '30.000')
+        ->set('destinasiLainPilih', 'Kawah Sikidang')
+        ->call('tambahDestinasiLain')
+        ->assertSet('destinasiLain', ['Kawah Sikidang'])
+        ->call('simpan');
+
+    expect($dikirim['destinasi'])->toBe('Candi Arjuna')
+        ->and($dikirim['destinasi_lain'])->toBe(['Kawah Sikidang']);
+});
+
+test('destinasi utama dan yang ganda tidak bisa masuk dua kali', function () {
+    palsukanMasterTerusan();
+
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.destinasi', 'Candi Arjuna')
+        // Sama dengan destinasi utamanya.
+        ->set('destinasiLainPilih', 'Candi Arjuna')
+        ->call('tambahDestinasiLain')
+        ->assertSet('destinasiLain', [])
+        ->set('destinasiLainPilih', 'Kawah Sikidang')
+        ->call('tambahDestinasiLain')
+        // Ganda.
+        ->set('destinasiLainPilih', 'Kawah Sikidang')
+        ->call('tambahDestinasiLain')
+        ->assertSet('destinasiLain', ['Kawah Sikidang']);
+});
+
+test('tempat lain bisa dikeluarkan lagi', function () {
+    palsukanMasterTerusan();
+
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.destinasi', 'Candi Arjuna')
+        ->set('destinasiLainPilih', 'Kawah Sikidang')
+        ->call('tambahDestinasiLain')
+        ->call('hapusDestinasiLain', 0)
+        ->assertSet('destinasiLain', []);
+});
+
+test('tiket tanpa destinasi utama tidak pernah mengirim daftar tempat lain', function () {
+    // Tiket yang tidak terikat destinasi tidak pernah dijodohkan ke jadwal,
+    // jadi daftarnya tidak berarti apa-apa dan tidak boleh ikut tersimpan.
+    $dikirim = null;
+    palsukanMasterTerusan($dikirim);
+
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
+        ->call('bukaTambah')
+        ->set('isian.kategori', 'lainnya')
+        ->set('isian.nama', 'Dana Tak Terduga')
+        ->set('isian.satuan', 'rombongan')
+        ->set('isian.harga', '300.000')
+        ->set('destinasiLain', ['Kawah Sikidang'])
+        ->call('simpan');
+
+    expect($dikirim['destinasi'])->toBeNull()
+        ->and($dikirim['destinasi_lain'])->toBe([]);
+});
