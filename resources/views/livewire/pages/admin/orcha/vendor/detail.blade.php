@@ -63,9 +63,14 @@
                         <i class="bi bi-telephone"></i><span>Telepon</span>
                     </a>
                 @endif
-                <button type="button" wire:click="bukaUbah" class="dsb-tombol is-utama">
+                {{-- Halaman tersendiri, dan ia tahu harus kembali ke SINI:
+                     ?dari=detail. Tanpa itu, menyimpan dari halaman rincian
+                     melemparkan admin ke daftar — jauh dari jejak vendor yang
+                     sedang ia baca. --}}
+                <a href="{{ route('admin.orcha.vendor.ubah', ['vendor' => $vendorId, 'dari' => 'detail']) }}"
+                    class="dsb-tombol is-utama" wire:navigate>
                     <i class="bi bi-pencil-square"></i><span>Ubah</span>
-                </button>
+                </a>
                 @if ($v['aktif'] ?? false)
                     {{-- Keputusan mematikan vendor justru lahir di sini, saat
                          angka belanjanya terlihat. Melempar admin kembali ke
@@ -87,39 +92,6 @@
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        @if ($sunting)
-            <section class="dsb-bagian">
-                <div class="dsb-rak">
-                    <div class="dsb-kartu k-12">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-utama)"><i class="bi bi-pencil-square"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">Ubah vendor</h3>
-                                    <span class="dsb-kartu-sub">Nomornya dibaca <strong>hidup</strong> — RAB lama pun ikut menunjuk nomor yang baru.</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dsb-kartu-isi">
-                            @include('livewire.pages.admin.orcha.vendor.partials.medan')
-
-                            <div class="vd-kaki">
-                                <button type="button" wire:click="tutup" class="dsb-tombol is-lembut">
-                                    <i class="bi bi-x-lg"></i><span>Batal</span>
-                                </button>
-                                <button type="button" wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan"
-                                    class="dsb-tombol is-utama">
-                                    <i class="bi bi-check2-circle" wire:loading.remove wire:target="simpan"></i>
-                                    <span class="dsb-putar" wire:loading wire:target="simpan"></span>
-                                    <span>Simpan</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        @endif
 
         {{-- ===== Angka yang menjawab "sudah sejauh apa dengan vendor ini" ===== --}}
         {{-- Satu angka, bukan tiga.

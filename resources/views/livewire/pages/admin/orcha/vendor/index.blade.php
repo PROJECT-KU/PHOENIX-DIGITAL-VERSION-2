@@ -99,9 +99,14 @@ Vendor || lemon
                                 <option value="nonaktif" @selected((string) $this->filterStatus2 === 'nonaktif')>Hanya nonaktif</option>
                             </select>
 
-                            <button type="button" wire:click="bukaTambah" class="dsb-tombol is-utama">
+                            {{-- Halaman tersendiri, bukan kartu yang menyelip di
+                                 antara saringan dan tabel. Formulir yang terbuka di
+                                 dalam daftar mendorong daftarnya keluar pandangan,
+                                 dan alamatnya tidak pernah menunjuk apa yang sedang
+                                 dikerjakan. --}}
+                            <a href="{{ route('admin.orcha.vendor.tambah') }}" class="dsb-tombol is-utama" wire:navigate>
                                 <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
-                            </button>
+                            </a>
 
                             {{-- Tautan biasa, bukan aksi Livewire: berkasnya dirakit
                                  Orcha dan diteruskan apa adanya, jadi tidak ada yang
@@ -468,11 +473,11 @@ Vendor || lemon
                                             </td>
                                             <td data-judul="Aksi" class="text-end">
                                                 <span class="dsb-tabel-aksi">
-                                                    <button type="button" class="dsb-tabel-btn" style="--c: var(--dsb-utama)"
-                                                        wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
-                                                        title="Ubah vendor ini">
+                                                    <a class="dsb-tabel-btn" style="--c: var(--dsb-utama)"
+                                                        href="{{ route('admin.orcha.vendor.ubah', $baris['id']) }}"
+                                                        title="Ubah vendor ini" wire:navigate>
                                                         <i class="bi bi-pencil-square"></i>
-                                                    </button>
+                                                    </a>
                                                     {{-- Ikon union tidak langsung terbaca artinya,
                                                          jadi yang dipakai panah-menyatu plus
                                                          judul yang menyebut maksudnya. --}}

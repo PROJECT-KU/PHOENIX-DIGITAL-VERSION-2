@@ -631,6 +631,15 @@ Route::middleware('permission:akses_orcha')->group(function () {
     // Sebelum /vendor/{vendor}: rute berparameter yang terdaftar lebih dulu
     // menelan rute bernama.
     Route::get('/admin/orcha/vendor-pdf', [OrchaEksporController::class, 'vendor'])->name('admin.orcha.vendor.pdf');
+    /*
+     | Rute bertambah DI ATAS rute berparameter.
+     |
+     | /vendor/tambah harus terdaftar sebelum /vendor/{vendor}; dibalik,
+     | "tambah" terbaca sebagai id vendor dan halamannya galat 404 — lihat
+     | catatan yang sama di routes/api.php Orcha untuk /rab/katalog.
+     */
+    Route::get('/admin/orcha/vendor/tambah', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorForm::class)->name('admin.orcha.vendor.tambah');
+    Route::get('/admin/orcha/vendor/{vendor}/ubah', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorForm::class)->name('admin.orcha.vendor.ubah');
     Route::get('/admin/orcha/vendor/{vendor}', \App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorDetail::class)->name('admin.orcha.vendor.detail');
 
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');

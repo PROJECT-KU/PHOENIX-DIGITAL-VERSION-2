@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorDetail;
+use App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorForm;
 use App\Livewire\Pages\Admin\Orcha\Vendor\OrchaVendorList;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -497,29 +498,75 @@ test('tombol PDF membawa saringan yang sedang aktif', function () {
         ->and($isi)->not->toContain('Excel');
 });
 
-test('halaman rincian bisa menyunting dan mematikan di tempat', function () {
+test('halaman rincian mengantar ke borang ubah, dan borangnya kembali ke sini', function () {
     /*
      | Halaman ini satu-satunya tempat yang menyebut sudah dibelanjakan
      | berapa — dan keputusan mengubah kontaknya justru lahir di sini, saat
-     | angkanya terlihat. Melempar admin ke daftar berarti menyuruhnya
-     | mencari baris yang baru saja ia buka.
+     | angkanya terlihat. Yang dijaga BUKAN formulirnya ada di sini,
+     | melainkan admin kembali ke sini sesudah menyimpan.
      */
     palsukanVendor();
 
-    $layar = Livewire::actingAs(adminRab())
+    $html = Livewire::actingAs(adminRab())
         ->test(OrchaVendorDetail::class, ['vendor' => 1])
-        ->call('bukaUbah')
+        ->html();
+
+    expect($html)->toContain(route('admin.orcha.vendor.ubah', ['vendor' => 1, 'dari' => 'detail']));
+
+    // Dan borangnya memang pulang ke rincian, bukan ke daftar.
+    $borang = Livewire::actingAs(adminRab())
+        ->test(OrchaVendorForm::class, ['vendor' => 1])
+        ->set('dari', 'detail');
+
+    expect($borang->instance()->tujuanKembali())
+        ->toBe(route('admin.orcha.vendor.detail', 1));
+});
+
+test('borang ubah memuat vendornya lalu menyimpan ke jalur yang benar', function () {
+    palsukanVendor();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaVendorForm::class, ['vendor' => 1])
+        ->assertSet('ubah', true)
         ->assertSet('sunting', 1)
         ->assertSet('isian.nama', 'PO Sumber Jaya');
 
-    $layar->set('isian.kontak', '082199900022')->call('simpan')->assertHasNoErrors();
+    $layar->set('isian.kontak', '082199900022')
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertDispatched('orcha-sukses-pindah');
 
     Http::assertSent(fn (Request $r) => in_array($r->method(), ['PATCH', 'PUT'], true)
         && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor/1')
         && $r['kontak'] === '082199900022');
+});
 
-    // Formulirnya menutup sendiri dan rinciannya dibaca ulang.
-    $layar->assertSet('sunting', null);
+test('borang vendor baru mengirim POST dan pulang ke daftar', function () {
+    palsukanVendor();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaVendorForm::class)
+        ->assertSet('ubah', false)
+        ->set('isian.nama', 'PO Baru Jaya')
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertDispatched('orcha-sukses-pindah');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/vendor')
+        && $r['nama'] === 'PO Baru Jaya');
+});
+
+test('daftar vendor mengantar ke halaman, bukan membuka formulir di tempat', function () {
+    // Formulir yang terbuka di dalam daftar mendorong daftarnya keluar
+    // pandangan, dan alamatnya tidak pernah menunjuk apa yang dikerjakan.
+    palsukanVendor();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaVendorList::class)->html();
+
+    expect($html)->toContain(route('admin.orcha.vendor.tambah'))
+        ->and($html)->toContain(route('admin.orcha.vendor.ubah', 1))
+        ->and($html)->not->toContain('wire:click="bukaTambah"');
 });
 
 test('daftar RAB di rincian berhalaman, belanjanya tidak ikut terpotong', function () {

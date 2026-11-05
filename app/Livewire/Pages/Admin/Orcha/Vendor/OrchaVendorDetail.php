@@ -56,39 +56,19 @@ class OrchaVendorDetail extends Component
         $this->muatRincian();
     }
 
-    /**
-     * Menyunting di tempat, bukan dilempar kembali ke daftar.
-     *
-     * Halaman ini satu-satunya tempat yang menyebut sudah dibelanjakan
-     * berapa — dan keputusan mengubah kontaknya justru lahir di sini, saat
-     * angkanya terlihat. Melempar admin ke daftar berarti menyuruhnya
-     * mencari baris yang baru saja ia buka.
+    /*
+     | Menyuntingnya pindah ke halaman tersendiri.
+     |
+     | Dulu formulirnya terbuka di tempat, dan alasannya masuk akal: halaman
+     | ini satu-satunya yang menyebut sudah dibelanjakan berapa, dan
+     | keputusan mengubah kontaknya lahir saat angka itu terlihat. Yang
+     | dijaga sebenarnya BUKAN formulirnya ada di sini, melainkan admin
+     | kembali ke sini sesudah menyimpan — dan itu dipegang ?dari=detail di
+     | tombol Ubah.
+     |
+     | Trait-nya tetap dipakai untuk nomorDari() dan pilihanJenis(), yang
+     | dibaca tampilannya saat menggambar rincian.
      */
-    public function bukaUbah(): void
-    {
-        $v = $this->data['vendor'] ?? null;
-
-        if ($v === null) {
-            return;
-        }
-
-        $this->bukaSunting((int) $v['id'], $v);
-    }
-
-    public function simpan(): void
-    {
-        $data = $this->periksaVendor();
-
-        try {
-            $balasan = $this->orcha()->ubah("/vendor/{$this->vendorId}", $data);
-            cache()->forget('orcha.rab.katalog');
-            $this->tutup();
-            $this->muatRincian();
-            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor diperbarui.');
-        } catch (OrchaTidakTerjangkau $e) {
-            $this->dispatch('toast-error', message: $e->getMessage());
-        }
-    }
 
     public function matikanIni(): void
     {
