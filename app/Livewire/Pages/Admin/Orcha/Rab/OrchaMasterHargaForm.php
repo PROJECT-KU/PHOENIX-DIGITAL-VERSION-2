@@ -145,6 +145,16 @@ class OrchaMasterHargaForm extends Component
             'vendorAda' => $katalog['vendor'] ?? [],
             'kosakata' => $katalog['kosakata'] ?? [],
             'provinsiAda' => $katalog['provinsi'] ?? [],
+            /*
+             | Musim yang berlaku, satu kotak tarif masing-masing.
+             |
+             | Ikut katalog, jadi tidak ada panggilan tambahan tiap borang
+             | digambar — dan borang ini digambar ulang pada setiap ketikan.
+             | Katalog disimpan 10 menit, karena itu layar Musim Harga
+             | membuangnya sesudah menyimpan: musim yang baru dibuat harus
+             | punya kotaknya SEKARANG, bukan sepuluh menit lagi.
+             */
+            'musimAda' => $katalog['musim'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

@@ -527,6 +527,15 @@ new class extends Component
                                 // di dalam formulir harga — yang diisi sekali
                                 // setahun tidak akan pernah ditemukan lagi.
                                 ['admin.orcha.hari-libur', 'bi-calendar3', 'Hari Libur'],
+                                // Tepat di bawah Hari Libur, dan itu disengaja:
+                                // keduanya paling mudah TERTUKAR. Hari libur
+                                // memakai tarif akhir pekan yang sudah diisi;
+                                // musim punya angkanya sendiri per harga.
+                                // Nataru yang diisi sebagai tanggal merah akan
+                                // dibayar tarif hari Sabtu, dan tidak ada apa
+                                // pun yang berbunyi. Bertetangga supaya bedanya
+                                // terbaca saat memilih, bukan sesudah salah.
+                                ['admin.orcha.musim-harga', 'bi-graph-up-arrow', 'Musim Harga'],
                                 // Vendor tepat di bawah Master Harga: nomor
                                 // yang disimpan di sana yang muncul di tiap
                                 // baris harga dan di rincian biaya RAB.

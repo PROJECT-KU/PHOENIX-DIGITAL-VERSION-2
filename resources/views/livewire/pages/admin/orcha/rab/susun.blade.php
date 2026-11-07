@@ -114,6 +114,13 @@ Susun RAB || lemon
        kunjungannya — tanggal berangkat atau itinerary-nya digeser sesudah
        biaya ditarik. Harganya TIDAK ikut bergeser; itu aturannya. */
     $hargaSalahHari = (bool) ($r['ada_harga_salah_hari'] ?? false);
+
+    /* Musim yang memuat tanggal berangkat, dan baris yang jatuh di dalamnya
+       tanpa punya tarif musim. Keduanya dari ringkasan, bukan dihitung di
+       layar: aturan "tanggal mana menentukan harga" tinggal di HargaHari,
+       dan salinannya di sini akan berselisih begitu salah satunya diubah. */
+    $musimPerjalanan = $r['musim_perjalanan'] ?? null;
+    $musimBelum = $r['musim_belum_diisi'] ?? [];
     /* Baris yang harganya masih Rp 0 — umumnya item wajib yang baru masuk
        sendiri (dokumentasi, P3K, banner, tour leader) dan belum diisi
        harganya di Master Harga. Nol bukan galat, jadi yang benar menyebut
@@ -2446,6 +2453,50 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Perjalanannya jatuh di musim bertarif tinggi.
+
+                                 Disebut WALAU semua tarifnya sudah terpasang:
+                                 yang membaca penawaran Nataru berhak tahu bahwa
+                                 angkanya memang angka Nataru, bukan angka hari
+                                 biasa yang lupa dinaikkan. --}}
+                            @if ($musimPerjalanan)
+                                <div class="rb-beda-banner">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                    <span>
+                                        Tanggal perjalanan ini masuk <strong>{{ $musimPerjalanan['nama'] }}</strong>
+                                        ({{ $musimPerjalanan['rentang_teks'] }}), jadi harga yang ditarik memakai
+                                        tarif musim itu — bukan tarif akhir pekan.
+                                    </span>
+                                </div>
+                            @endif
+
+                            {{-- Jatuh di musim, tetapi tarif musimnya belum ada.
+
+                                 BUKAN galat: tiket Candi Arjuna memang tetap
+                                 Rp 10.000 pada 25 Desember, dan sebagian besar
+                                 baris memang tidak naik. Tetapi "memang tidak
+                                 naik" dan "lupa diisi" terlihat persis sama dari
+                                 angkanya, dan yang kedua baru terbaca di meja
+                                 resepsionis hotel saat rombongannya sudah berdiri
+                                 di sana.
+
+                                 Namanya disebut satu per satu; menyuruh "periksa
+                                 lagi" tanpa menunjuk yang mana sama saja dengan
+                                 tidak memberi tahu. --}}
+                            @if ($musimBelum !== [])
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-cash-stack"></i>
+                                    <span>
+                                        <strong>{{ implode(', ', array_column($musimBelum, 'nama')) }}</strong>
+                                        belum punya tarif {{ $musimBelum[0]['musim'] }}, jadi masih dihitung
+                                        harga hari biasa. Kalau memang tidak naik, biarkan saja — kalau naik,
+                                        isi tarifnya di
+                                        <a href="{{ route('admin.orcha.musim-harga') }}">Musim Harga</a>
+                                        lalu tarik biayanya lagi.
+                                    </span>
+                                </div>
+                            @endif
+
                             {{-- Harganya masih Rp 0.
 
                                  Barisnya ADA di layar dan IKUT tercetak di penawaran
@@ -2711,11 +2762,26 @@ Susun RAB || lemon
                                                          mengetik harga hari itu. Tanpa pertanyaan ini, harga
                                                          akhir pekan tertulis ke kolom hari kerja, dan SELURUH
                                                          RAB berikutnya memakainya di hari Selasa. --}}
-                                                    @if ($b['master_dua_harga'] ?? false)
-                                                        <button type="button" wire:click="simpanKeMaster({{ $b['id'] }}, 'hari_kerja')"
-                                                            title="Tulis angka ini ke harga hari kerja di Master Harga">Simpan ke hari kerja</button>
-                                                        <button type="button" wire:click="simpanKeMaster({{ $b['id'] }}, 'akhir_pekan')"
-                                                            title="Tulis angka ini ke harga akhir pekan di Master Harga">Simpan ke akhir pekan</button>
+                                                    {{-- Daftar sisinya dari PELADEN, bukan dirakit di sini.
+
+                                                         Sejak ada tarif musim, sisinya bukan lagi dua
+                                                         yang bisa ditulis tangan: tiap musim yang punya
+                                                         tarif di baris ini adalah satu sisi lagi, dan
+                                                         musim bertambah sendiri. Merakitnya di layar
+                                                         berarti layar harus tahu bahwa musim TANPA tarif
+                                                         tidak boleh ditawarkan — aturan yang akan
+                                                         berselisih dengan yang dipakai peladen saat
+                                                         menyimpannya, lalu tombol "simpan" membuat tarif
+                                                         musim yang tidak pernah diminta siapa pun. --}}
+                                                    @php($sisiMaster = $this->sisiMaster($b))
+                                                    @if (count($sisiMaster) !== 1 && $sisiMaster !== [])
+                                                        @foreach ($sisiMaster as $sisi)
+                                                            <button type="button"
+                                                                wire:click="simpanKeMaster({{ $b['id'] }}, @js($sisi['nilai']))"
+                                                                title="Tulis angka ini ke {{ mb_strtolower($sisi['label']) }} di Master Harga">
+                                                                Simpan ke {{ mb_strtolower(preg_replace('/^Harga /', '', $sisi['label'])) }}
+                                                            </button>
+                                                        @endforeach
                                                     @else
                                                         <button type="button" wire:click="simpanKeMaster({{ $b['id'] }})"
                                                             title="Master ikut harga baris ini, dan RAB berikutnya memakainya">Simpan ke master</button>

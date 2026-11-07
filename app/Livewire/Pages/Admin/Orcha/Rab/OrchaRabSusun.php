@@ -1042,7 +1042,14 @@ class OrchaRabSusun extends Component
     /**
      * Membawa harga baris ini pulang ke master harga.
      *
-     * $sisi hanya berarti bila masternya punya DUA harga. Pada baris yang
+     * $sisi boleh 'hari_kerja', 'akhir_pekan', atau 'musim:<id>'. Daftarnya
+     * TIDAK dirakit di sini maupun di layar: ia datang dari ringkasan RAB
+     * (`sisi_master`), karena hanya peladen yang tahu musim mana yang
+     * benar-benar punya tarif di baris itu — dan menawarkan musim yang tidak
+     * punya tarif berarti tombol "simpan" MEMBUAT tarif baru, lalu seluruh
+     * RAB berikutnya memakainya.
+     *
+     * $sisi hanya berarti bila masternya punya lebih dari satu harga. Pada baris yang
      * ditarik sendiri dari jadwal, sisinya sudah pasti dari tanggal
      * kunjungannya dan $sisi dibiarkan kosong. Pada baris yang digandakan
      * tangan ia tidak pasti sama sekali — admin menggandakan justru untuk
@@ -1129,6 +1136,43 @@ class OrchaRabSusun extends Component
     public function temuanLebihMurah(array $baris): bool
     {
         return (int) ($baris['selisih_master'] ?? 0) < 0;
+    }
+
+    /**
+     * Sisi master yang bisa dipilih "Simpan ke master" untuk sebuah baris.
+     *
+     * Datang dari Orcha (`sisi_master`), karena hanya peladen yang tahu musim
+     * mana yang BENAR-BENAR punya tarif di baris itu — dan menawarkan musim
+     * yang tidak punya tarif berarti tombol "simpan" membuat tarif baru,
+     * lalu seluruh RAB berikutnya memakainya.
+     *
+     * Jalan mundurnya bukan kemewahan: Orcha dan lemon tidak naik ke server
+     * pada detik yang sama. Lemon baru yang bicara dengan Orcha lama tidak
+     * menerima `sisi_master` sama sekali, dan tanpa rakitan ini kedua tombol
+     * sisi HILANG dari layar — "Simpan ke master" kembali menebak sisinya,
+     * yaitu kemunduran yang persis dicegah tombol itu dibuat.
+     *
+     * @return array<int, array{nilai: string, label: string, harga: int}>
+     */
+    public function sisiMaster(array $baris): array
+    {
+        if (! empty($baris['sisi_master'])) {
+            return $baris['sisi_master'];
+        }
+
+        if (! ($baris['master_dua_harga'] ?? false)) {
+            return [];
+        }
+
+        /*
+         | Tanpa angkanya: Orcha lama tidak mengirimkannya, dan menebaknya
+         | dari harga baris ini akan menampilkan angka yang bukan angka
+         | master. Judulnya saja sudah cukup untuk memilih sisi.
+         */
+        return [
+            ['nilai' => 'hari_kerja', 'label' => 'Harga hari kerja', 'harga' => 0],
+            ['nilai' => 'akhir_pekan', 'label' => 'Harga akhir pekan', 'harga' => 0],
+        ];
     }
 
     /**

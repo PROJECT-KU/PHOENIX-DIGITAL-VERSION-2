@@ -174,6 +174,19 @@
         }
         .mh-dua-ket { display: block; margin-top: 8px; }
 
+        /* Tarif musim: satu kotak per musim, warna berbeda dari kotak akhir
+           pekan. Keduanya kotak harga bersyarat yang bersebelahan, dan yang
+           berwarna sama akan tertukar — lalu tarif Nataru terketik di kotak
+           Sabtu, yang berlaku sepanjang tahun. */
+        .mh-sakelar-musim { margin-top: 12px; }
+        .mh-musim-rak { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .mh-musim-kotak {
+            flex: 1 1 190px; min-width: 0;
+            display: flex; flex-direction: column; gap: 5px;
+            padding: 11px 12px 12px; border-radius: 12px;
+            background: #f5f3ff; border: 1px solid #ddd6fe;
+        }
+
         /* Harga akhir pekan di daftar: pil, bukan angka kedua yang telanjang.
            Dua angka bertumpuk tanpa penanda terbaca sebagai "harga lama &
            harga baru", dan yang dipakai orang selalu yang atas. */

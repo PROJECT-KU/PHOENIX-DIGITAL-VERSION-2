@@ -43,7 +43,8 @@ class OrchaMenuKelompokTest extends TestCase
         // ditambah atau dibuang, angkanya ikut disunting — dan suntingan itu
         // yang membuat perubahannya terlihat di ulasan, bukan lewat begitu saja.
         // 24 sejak Hari Libur ditambahkan (1 Nov 2026).
-        $this->assertCount(24, $rute, 'Jumlah menu Orcha berubah: '.implode(', ', $rute));
+        // 25 sejak Musim Harga ditambahkan (7 Nov 2026).
+        $this->assertCount(25, $rute, 'Jumlah menu Orcha berubah: '.implode(', ', $rute));
         $this->assertSame(array_unique($rute), $rute, 'Ada menu Orcha yang tercantum dua kali.');
     }
 

@@ -1586,6 +1586,21 @@
         font-weight: 600;
     }
 
+    /* Isian bahasa rupa dasbor, yang TIDAK memakai .form-control.
+
+       Awalan "Rp" di atas digambar oleh .orcha-rupiah apa pun isiannya,
+       sedangkan ruang untuknya hanya dibuatkan untuk .form-control. Layar
+       dsb yang memasangkan keduanya karena itu mendapat "Rp" yang bertumpuk
+       di atas digit pertama — tanpa galat, dan hanya terlihat kalau dilihat.
+       Master Harga sempat menambalnya sendiri di gayanya; aturan ini yang
+       seharusnya sejak awal ada di sini, supaya layar berikutnya tidak
+       mengulang penemuan yang sama. */
+    .orcha-rupiah .dsb-isian {
+        padding-left: 2.4rem;
+        padding-right: .75rem;
+        font-weight: 600;
+    }
+
     /* Isian uang di dalam tabel: sempit, dan angkanya rata kanan. Tanpa
        penyesuaian ini "Rp" di kiri memakan ruang yang sama sedangkan angkanya
        tumbuh ke kiri — pada nominal jutaan, digit depannya tenggelam di balik

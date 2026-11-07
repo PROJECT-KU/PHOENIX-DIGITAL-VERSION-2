@@ -162,6 +162,62 @@ trait MenyuntingMasterHarga
     }
 
     /**
+     * Tarif musim baris ini, per musim_id, sebagai teks rupiah.
+     *
+     * Kosong berarti HAPUS tarif musim itu — dan itu bukan sama dengan nol:
+     * nol adalah harga yang sah. Satu-satunya cara mengatakan "harga ini
+     * tidak naik di Nataru" adalah tidak adanya angkanya.
+     *
+     * @var array<int, string>
+     */
+    public array $hargaMusim = [];
+
+    /**
+     * Kotak tarif musim sedang dibuka.
+     *
+     * Saklar, dengan alasan yang sama dengan $duaHarga: sebagian besar harga
+     * tidak naik di musim mana pun — tiket Candi Arjuna tetap Rp 10.000 pada
+     * 25 Desember — dan deretan kotak yang ada untuk tidak diisi tetap
+     * menuntut dibaca lebih dulu di setiap formulir.
+     */
+    public bool $pakaiMusim = false;
+
+    /**
+     * Angka tarif musim ditampilkan bertitik begitu kotaknya ditinggalkan.
+     *
+     * Satu penangan untuk SELURUH kotak: Livewire memanggil updated() dengan
+     * nama medannya, dan menulis satu metode per musim mustahil — musimnya
+     * bertambah sendiri.
+     */
+    public function updatedHargaMusim($nilai, $kunci): void
+    {
+        if ($kunci === null) {
+            return;
+        }
+
+        $this->hargaMusim[$kunci] = $nilai === '' || $nilai === null
+            ? ''
+            : $this->keRupiah($this->angkaDari($nilai));
+    }
+
+    /**
+     * Mematikan saklarnya MENGOSONGKAN seluruh angkanya.
+     *
+     * Alasannya sama dengan saklar harga akhir pekan: angka yang tidak
+     * terlihat lagi tetap terkirim, dan tarif musim terus berlaku padahal
+     * admin yakin sudah mematikannya — selisih yang tidak bisa ditemukan
+     * karena kotaknya tidak ada di layar.
+     */
+    public function updatedPakaiMusim(): void
+    {
+        if (! $this->pakaiMusim) {
+            foreach ($this->hargaMusim as $k => $v) {
+                $this->hargaMusim[$k] = '';
+            }
+        }
+    }
+
+    /**
      * Mematikan saklarnya MENGOSONGKAN angkanya.
      *
      * Kalau tidak, angka yang tidak terlihat lagi tetap tersimpan dan harga
@@ -198,6 +254,8 @@ trait MenyuntingMasterHarga
         $this->aktif = true;
         $this->otomatis = false;
         $this->duaHarga = false;
+        $this->pakaiMusim = false;
+        $this->hargaMusim = [];
         $this->satuanDisetel = false;
         $this->destinasiLain = [];
         $this->destinasiLainPilih = '';
@@ -243,6 +301,22 @@ trait MenyuntingMasterHarga
         // sama dengan hari kerja tetap harga yang pernah diisi orang, dan
         // kotaknya tidak boleh menghilang saat barisnya dibuka lagi.
         $this->duaHarga = ($baris['harga_akhir_pekan'] ?? null) !== null;
+
+        /*
+         | Tarif musim yang sudah tersimpan dimuat ke kotaknya.
+         |
+         | Dari isinya, bukan dari ada/tidaknya musim di sistem: baris yang
+         | tidak punya tarif musim membuka borang dengan saklarnya mati, dan
+         | menyalakannya hanya karena ada musim terdaftar berarti deretan
+         | kotak kosong di setiap formulir.
+         */
+        $this->hargaMusim = [];
+
+        foreach ($baris['harga_musim'] ?? [] as $hm) {
+            $this->hargaMusim[(int) $hm['musim_id']] = $this->keRupiah($hm['harga']);
+        }
+
+        $this->pakaiMusim = $this->hargaMusim !== [];
 
         $this->destinasiLain = array_values(array_filter(
             array_map(fn ($d) => trim((string) $d), $baris['destinasi_lain'] ?? [])
@@ -589,6 +663,15 @@ trait MenyuntingMasterHarga
              */
             'harga_akhir_pekan' => $this->duaHarga
                 ? $this->angkaDari($this->isian['harga_akhir_pekan']) : null,
+            /*
+             | Tarif musim, satu baris per musim yang ADA di layar.
+             |
+             | Yang kosong ikut dikirim dengan harga null — itulah yang
+             | menghapus tarifnya. Mengirim hanya yang terisi berarti tarif
+             | yang dikosongkan admin tetap bertahan di peladen, dan
+             | penawaran berikutnya masih memakainya.
+             */
+            'harga_musim' => $this->bentukHargaMusim(),
             // Satuan yang tidak menghitung unit tidak mengirim kapasitas:
             // kotaknya memang disembunyikan untuk satuan itu, dan nilai yang
             // tidak terlihat tidak boleh ikut tersimpan.
@@ -600,6 +683,32 @@ trait MenyuntingMasterHarga
         ];
 
         $this->kirimSimpan($data, $this->paksaBerikutnya);
+    }
+
+    /**
+     * Tarif musim dalam bentuk yang diterima Orcha.
+     *
+     * Hanya musim yang punya KOTAK di layar — kotak itu dibuat dari daftar
+     * musim yang dimuat render(). Mengirim musim yang tidak ada kotaknya
+     * berarti menghapus tarif yang tidak pernah dilihat admin.
+     *
+     * @return array<int, array{musim_id: int, harga: int|null}>
+     */
+    private function bentukHargaMusim(): array
+    {
+        $baris = [];
+
+        foreach ($this->hargaMusim as $id => $angka) {
+            $angka = is_string($angka) ? trim($angka) : $angka;
+
+            $baris[] = [
+                'musim_id' => (int) $id,
+                // Kosong = hapus tarifnya. Nol = harga nol, yang sah.
+                'harga' => ($angka === '' || $angka === null) ? null : $this->angkaDari($angka),
+            ];
+        }
+
+        return $baris;
     }
 
     /** Menyimpan lagi, kali ini menerobos penjaga kembaran. */

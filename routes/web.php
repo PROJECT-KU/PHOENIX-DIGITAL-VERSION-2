@@ -623,6 +623,20 @@ Route::middleware('permission:akses_orcha')->group(function () {
     // Tanggal merah yang dihargai seperti akhir pekan — pasangan
     // kolom "harga akhir pekan" di master harga.
     Route::get('/admin/orcha/hari-libur', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaHariLiburList::class)->name('admin.orcha.hari-libur');
+
+    /*
+     | Musim harga — Nataru, Lebaran, long weekend.
+     |
+     | Sengaja bertetangga dengan hari-libur di berkas ini karena keduanya
+     | mudah tertukar, dan BUKAN hal yang sama: hari libur memakai tarif
+     | akhir pekan, musim punya angkanya sendiri per harga. Yang tertukar
+     | membuat Nataru dibayar tarif hari Sabtu.
+     |
+     | /musim-harga/{musim}/isi didaftarkan setelah /musim-harga, dan
+     | tidak akan tertelan: ia punya dua segmen.
+     */
+    Route::get('/admin/orcha/musim-harga', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMusimHargaList::class)->name('admin.orcha.musim-harga');
+    Route::get('/admin/orcha/musim-harga/{musim}/isi', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMusimHargaIsi::class)->name('admin.orcha.musim-harga.isi');
     /*
      | Rute bertambah DI ATAS /master-harga-pdf dan di bawah /master-harga,
      | keduanya tanpa parameter — jadi urutannya tidak menentukan apa pun di

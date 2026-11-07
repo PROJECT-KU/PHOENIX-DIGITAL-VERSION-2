@@ -355,7 +355,7 @@ test('formulir harga terbagi bagian berjudul, bukan satu dinding kotak', functio
         ->and(substr_count($html, 'class="mh-bagian-ikon"'))->toBe(4);
 });
 
-test('ketiga sakelar nyala/mati memakai satu bentuk yang sama', function () {
+test('semua sakelar nyala/mati memakai satu bentuk yang sama', function () {
     /*
      | "Akhir pekan lebih mahal" sempat berupa ceklis polos sementara "Aktif"
      | dan "Dipilih manual" berupa kartu sakelar — satu formulir, dua idiom
@@ -373,9 +373,22 @@ test('ketiga sakelar nyala/mati memakai satu bentuk yang sama', function () {
         resource_path('views/livewire/pages/admin/orcha/rab/partials/master-harga-borang.blade.php')
     );
 
-    expect(substr_count($isi, 'class="orcha-sakelar-kartu'))->toBe(3)
+    // Keempat: tarif musim — Nataru, Lebaran, long weekend.
+    expect(substr_count($isi, 'class="orcha-sakelar-kartu'))->toBe(4)
         // Ceklis polosnya benar-benar pergi, bukan sekadar ditimpa.
         ->and($isi)->not->toContain('mh-dua-saklar');
+
+    /*
+     | Dan TIDAK ADA sakelar yang memakai bentuk lain.
+     |
+     | Angka di atas sendirian hanya menghitung yang memakai kartu; ia tetap
+     | hijau kalau sakelar kelima ditambahkan sebagai ceklis polos — yaitu
+     | persis kemunduran yang menyebabkan uji ini dibuat. Jadi jumlah kartu
+     | dibandingkan dengan jumlah sakelarnya.
+     */
+    expect(substr_count($isi, 'role="switch"'))
+        ->toBe(substr_count($isi, 'class="orcha-sakelar-kartu'),
+            'ada sakelar yang tidak memakai kartu orcha-sakelar-kartu');
 });
 
 test('kartu sakelar menyebut KEADAANNYA, bukan nama setelannya', function () {

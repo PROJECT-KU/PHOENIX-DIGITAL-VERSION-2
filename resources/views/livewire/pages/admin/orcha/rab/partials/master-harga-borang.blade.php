@@ -158,6 +158,67 @@
                                         kalau tidak tanggal itu dihargai tarif hari kerja.
                                     </span>
                                 @endif
+
+                                {{-- ========== TARIF MUSIM ==========
+
+                                     Tingkat KETIGA, dan sengaja di bawah sakelar
+                                     akhir pekan: urutan di layar mengikuti urutan
+                                     menangnya, supaya "musim mengalahkan akhir
+                                     pekan" terbaca dari susunannya sendiri.
+
+                                     Hanya muncul kalau ADA musim terdaftar. Sakelar
+                                     untuk sesuatu yang belum ada hanya mengundang
+                                     pertanyaan yang tidak bisa dijawab layar ini. --}}
+                                @if (count($musimAda ?? []) > 0)
+                                    <label class="orcha-sakelar-kartu mh-sakelar-musim {{ $pakaiMusim ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $pakaiMusim ? 'bi-graph-up-arrow' : 'bi-dash-circle' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $pakaiMusim ? 'Naik di musim tertentu' : 'Tidak naik di musim mana pun' }}
+                                            </span>
+                                            <span class="ket">
+                                                {{ $pakaiMusim
+                                                    ? 'Tarif musim mengalahkan tarif akhir pekan pada tanggal yang keduanya.'
+                                                    : 'Nataru & Lebaran memakai tarif biasa — benar untuk tiket masuk.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" wire:model.live="pakaiMusim">
+                                        </span>
+                                    </label>
+
+                                    @if ($pakaiMusim)
+                                        <div class="mh-musim-rak">
+                                            @foreach ($musimAda as $m)
+                                                <div class="mh-musim-kotak" wire:key="mh-musim-{{ $m['id'] }}">
+                                                    <label class="orcha-label-kecil" for="mh-musim-{{ $m['id'] }}">
+                                                        {{ $m['nama'] }}
+                                                        <span class="dsb-label-ket">{{ $m['rentang_teks'] }}</span>
+                                                    </label>
+                                                    <div class="orcha-rupiah">
+                                                        <input id="mh-musim-{{ $m['id'] }}" type="text" inputmode="numeric"
+                                                            wire:model.blur="hargaMusim.{{ $m['id'] }}"
+                                                            class="orcha-uang dsb-isian"
+                                                            placeholder="kosong = tarif biasa">
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        {{-- Bedanya kosong dan nol ditulis, karena ia
+                                             tidak bisa ditebak dari bentuk kotaknya —
+                                             dan yang salah menebak akan menggratiskan
+                                             tiketnya sepanjang Nataru. --}}
+                                        <span class="dsb-kartu-sub mh-dua-ket">
+                                            Kosong berarti harga ini <strong>tidak naik</strong> di musim itu.
+                                            Nol tersimpan sebagai harga nol — keduanya bukan hal yang sama.
+                                            Rentang musimnya diatur di
+                                            <a href="{{ route('admin.orcha.musim-harga') }}">Musim Harga</a>.
+                                        </span>
+                                    @endif
+                                @endif
                             </div>
 
                             {{-- Kapasitas hanya untuk satuan yang menghitung unit.
