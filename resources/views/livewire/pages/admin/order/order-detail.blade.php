@@ -2397,7 +2397,16 @@ Detail Pesanan || lemon
         });
     }
 
-    document.addEventListener('livewire:init', () => {
+    /* Dipasang LANGSUNG bila Livewire sudah hidup.
+
+       `livewire:init` dikirim sekali per muat halaman penuh dan tidak pernah
+       diulang. Layar ini hampir selalu dicapai lewat wire:navigate dari
+       daftar pesanan — body ditukar, skrip ini jalan lagi, lalu mendaftar
+       menunggu peristiwa yang sudah lewat. Akibatnya modal WhatsApp tidak
+       pernah menutup sendiri sesudah dikirim, dan tidak ada galat yang
+       menyebutkannya. Menekan F5 memperbaikinya, jadi gejalanya hilang
+       timbul. Ditemukan 7 Nov 2026 bersama cacat yang sama di layar Orcha. */
+    const pasangPenangganPesanan = () => {
         Livewire.on('close-wa-modal', () => {
             if (window.Swal) Swal.close();
         });
@@ -2417,7 +2426,21 @@ Detail Pesanan || lemon
             const msg = (e && (e.message ?? (Array.isArray(e) ? e[0]?.message : null))) || 'Berhasil diperbarui.';
             Swal.fire({ title: 'Berhasil', text: msg, icon: 'success', timer: 2200, showConfirmButton: false, ...waGlossyConfig });
         });
-    });
+    };
+
+    if (window.__pesananPenangganBound) {
+        // Sudah terpasang di kunjungan sebelumnya; Livewire.on bertahan
+        // melintasi wire:navigate, jadi memasang lagi hanya menggandakan
+        // popupnya.
+    } else {
+        window.__pesananPenangganBound = true;
+
+        if (window.Livewire) {
+            pasangPenangganPesanan();
+        } else {
+            document.addEventListener('livewire:init', pasangPenangganPesanan);
+        }
+    }
 
     function salinLinkCek() {
         const el = document.getElementById('cust-cek-link');

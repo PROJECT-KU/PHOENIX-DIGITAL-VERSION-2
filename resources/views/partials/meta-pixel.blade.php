@@ -33,7 +33,13 @@ src="https://www.facebook.com/tr?id={{ urlencode($pixelId) }}&ev=PageView&noscri
     if (!window.__pixelJembatanTerpasang) {
         window.__pixelJembatanTerpasang = true;
 
-        document.addEventListener('livewire:init', function () {
+        /* Dipasang LANGSUNG bila Livewire sudah hidup.
+
+           `livewire:init` dikirim sekali per muat halaman penuh. Halaman yang
+           dicapai lewat wire:navigate menjalankan ulang skrip ini, lalu
+           mendaftar menunggu peristiwa yang sudah lewat — dan seluruh
+           pixel-event sesudah itu hilang tanpa jejak. */
+        var pasangPixel = function () {
             Livewire.on('pixel-event', function (payload) {
                 // Livewire 3 membungkus argumen bernama dalam sebuah array.
                 var isi = Array.isArray(payload) ? payload[0] : payload;
@@ -45,7 +51,17 @@ src="https://www.facebook.com/tr?id={{ urlencode($pixelId) }}&ev=PageView&noscri
 
                 fbq('track', isi.nama, isi.data || {});
             });
-        });
+        };
+
+        if (!window.__pixelPenangganBound) {
+            window.__pixelPenangganBound = true;
+
+            if (window.Livewire) {
+                pasangPixel();
+            } else {
+                document.addEventListener('livewire:init', pasangPixel);
+            }
+        }
     }
 </script>
 @endunless

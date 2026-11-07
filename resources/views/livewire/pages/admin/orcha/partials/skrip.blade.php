@@ -341,7 +341,34 @@
         }
     })();
 
-    document.addEventListener('livewire:initialized', () => {
+    /* Penangan peristiwa Livewire untuk halaman Orcha.
+
+       DIPASANG LANGSUNG kalau Livewire sudah hidup, dan hanya menunggu
+       `livewire:initialized` kalau belum. Perbedaan itu bukan kehati-hatian
+       berlebih — tanpanya seluruh pemberitahuan Orcha MATI pada jalur
+       pemakaian yang paling biasa:
+
+         1. Admin membuka lemon dan mendarat di dasbor toko. Halaman itu
+            tidak memuat partial ini, jadi belum ada penangan Orcha.
+         2. Livewire menyala dan mengirim `livewire:initialized` SEKALI —
+            dikirim di dalam start2(), dan tidak pernah diulang.
+         3. Admin menekan menu Orcha di bilah samping. Seluruh menu memakai
+            wire:navigate, jadi body ditukar TANPA muat ulang halaman.
+            Livewire menjalankan ulang tiap <script> di body baru
+            (prepNewBodyScriptTagsToRun), jadi berkas ini ikut jalan lagi —
+            lalu mendaftar menunggu `livewire:initialized` yang SUDAH LEWAT
+            dan tidak akan datang lagi.
+
+       Akibatnya: tombol Simpan di Vendor, Master Harga, dan RAB mengirim
+       `orcha-sukses-pindah` ke ruang kosong. Tidak ada toast, tidak ada
+       perpindahan, tidak ada galat — dan datanya SUDAH tersimpan di Orcha,
+       jadi gejalanya menipu dua arah.
+
+       Yang membuatnya sulit tertangkap: menekan F5 di halaman Orcha
+       memperbaikinya sendiri, karena itu muat penuh. Jadi pengujian manual
+       dan potret layar — yang selalu memuat halamannya langsung — selalu
+       melihatnya bekerja. */
+    const pasangPenangan = () => {
         if (window.__orchaNotifBound) return;
         window.__orchaNotifBound = true;
 
@@ -402,7 +429,13 @@
                 ...glossy,
             });
         });
-    });
+    };
+
+    if (window.Livewire) {
+        pasangPenangan();
+    } else {
+        document.addEventListener('livewire:initialized', pasangPenangan);
+    }
 
     /* Isian uang bertitik SAMBIL diketik.
        Server tetap yang memegang angkanya (wire:model.blur memformat ulang
