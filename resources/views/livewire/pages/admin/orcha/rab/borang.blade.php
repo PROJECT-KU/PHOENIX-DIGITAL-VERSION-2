@@ -32,6 +32,14 @@
         }
         .rb-jenis-pilih:hover { border-color: #c7d2fe; }
         .rb-jenis-pilih.is-aktif { border-color: #4f46e5; background: #f6f5ff; box-shadow: 0 0 0 3px rgba(99, 102, 241, .1); }
+        /* Pilihan dasar harga: dua kartu yang sama, tetapi turun satu baris
+           di layar sempit — keterangannya lebih panjang daripada kartu
+           Private/Open, dan dipaksa berdampingan ia terpotong. */
+        .rb-dasar { margin-top: 5px; }
+        .rb-dasar-ket { display: block; margin-top: 7px; }
+        @media (max-width: 767.98px) {
+            .rb-dasar { grid-template-columns: 1fr; }
+        }
         .rb-jenis-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .rb-jenis-teks strong { color: var(--dsb-tinta, #1c1f26); font-size: .92rem; }
         /* Pada RAB yang sudah jadi, jenisnya bukan lagi persimpangan: harga,
@@ -332,7 +340,11 @@
                                     <input id="rb-minimum" type="number" min="1" max="500" wire:model.live.debounce.400ms="isian.peserta_minimum"
                                         class="dsb-isian @error('isian.peserta_minimum') is-galat @enderror">
                                     @error('isian.peserta_minimum')<span class="dsb-galat">{{ $message }}</span>@enderror
-                                    <span class="dsb-kartu-sub">Harga dihitung dari angka ini, bukan dari target.</span>
+                                    <span class="dsb-kartu-sub">
+                                        {{ ($isian['harga_dasar'] ?? 'minimum') === 'minimum'
+                                            ? 'Harga dihitung dari angka ini, bukan dari target.'
+                                            : 'Dipakai untuk menghitung balik modal saja — harga dipatok dari target.' }}
+                                    </span>
                                 </div>
                             @endif
 
@@ -345,6 +357,49 @@
                                 @error('isian.berlaku_sampai')<span class="dsb-galat">{{ $message }}</span>@enderror
                                 <span class="dsb-kartu-sub">Lewat tanggal ini, RAB ditandai kedaluwarsa.</span>
                             </div>
+                            @endif
+
+                            {{-- ===== Harga dipatok dari jumlah berapa? =====
+
+                                 Biaya rombongan — satu HiAce Rp 8.500.000 — dibagi
+                                 ke JUMLAH INI, bukan ke jumlah peserta yang terlihat
+                                 di sebelah. Itulah sebabnya open trip 13 orang bisa
+                                 menampilkan untung 99%: harganya dipatok untuk 5,
+                                 lalu datang 13.
+
+                                 Keduanya benar, untuk maksud yang berbeda, dan
+                                 selama ini tidak pernah bisa dipilih — nilainya
+                                 dipaksa 'minimum' di kode. --}}
+                            @if ($this->openTrip())
+                                <div class="dsb-medan rb-medan-penuh">
+                                    <span class="dsb-label">Harga dipatok dari</span>
+                                    <div class="rb-jenis rb-dasar">
+                                        @foreach ([
+                                            'minimum' => ['Peserta minimum', 'Aman: berangkat dengan rombongan terkecil pun tidak rugi. Yang datang di atasnya jadi untung.', 'bi-shield-check'],
+                                            'peserta' => ['Target peserta', 'Harga paling bersaing, tetapi rugi kalau yang datang kurang dari target.', 'bi-bullseye'],
+                                        ] as $kunci => [$label, $ket, $ikon])
+                                            <button type="button"
+                                                wire:click="$set('isian.harga_dasar', '{{ $kunci }}')"
+                                                class="rb-jenis-pilih {{ ($isian['harga_dasar'] ?? 'minimum') === $kunci ? 'is-aktif' : '' }}">
+                                                <span class="dsb-ikon is-kecil" style="--c: {{ $kunci === 'minimum' ? 'var(--dsb-aman)' : 'var(--dsb-tunggu)' }}">
+                                                    <i class="bi {{ $ikon }}"></i>
+                                                </span>
+                                                <span class="rb-jenis-teks">
+                                                    <strong>{{ $label }}</strong>
+                                                    <span class="dsb-kartu-sub">{{ $ket }}</span>
+                                                </span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                    <span class="dsb-kartu-sub rb-dasar-ket">
+                                        Biaya rombongan (armada, pemandu, sewa) dibagi ke jumlah ini.
+                                        @if (($isian['harga_dasar'] ?? 'minimum') === 'minimum')
+                                            Sekarang: <strong>{{ (int) ($isian['peserta_minimum'] ?: 0) ?: '—' }} peserta minimum</strong>.
+                                        @else
+                                            Sekarang: <strong>{{ (int) ($isian['jumlah_peserta'] ?: 0) ?: '—' }} target peserta</strong>.
+                                        @endif
+                                    </span>
+                                </div>
                             @endif
 
                             <div class="dsb-medan {{ $this->openTrip() ? 'rb-medan-penuh' : 'rb-medan-lebar' }}">

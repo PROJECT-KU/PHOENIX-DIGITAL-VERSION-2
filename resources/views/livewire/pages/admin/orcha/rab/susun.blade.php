@@ -476,6 +476,10 @@ Susun RAB || lemon
 
            Melebarkannya aman karena .rb-biaya-isian memang membungkus:
            di layar sempit barisnya turun, tidak terpotong. */
+        .rb-kepala-jenis-ubah {
+            margin-left: 5px; font-weight: 700; color: #4f46e5; text-decoration: underline;
+            white-space: nowrap;
+        }
         .rb-biaya-medan.is-sempit .dsb-isian { width: 96px; }
         /* Petunjuknya lebih kecil daripada angkanya, dan itu bukan hiasan:
            "otomatis" di ukuran penuh terpotong jadi "otoma" di kotak
@@ -1581,8 +1585,21 @@ Susun RAB || lemon
                                 </span>
                                 <span class="rb-kepala-jenis-ket">
                                     @if ($openTrip)
-                                        Harga dihitung atas dasar {{ $pesertaDasar }} peserta —
-                                        jumlah paling rendah yang masih mau diberangkatkan.
+                                        {{-- Angka pembaginya disebut BERIKUT jalan mengubahnya.
+
+                                             Biaya rombongan — satu HiAce Rp 8.500.000 — dibagi ke
+                                             angka ini, dan itulah sebabnya open trip 13 orang bisa
+                                             menampilkan untung 99%: dipatok untuk 5, lalu datang 13.
+                                             Kalimat yang cuma menyebutkan angkanya membuat orang
+                                             mencari-cari di mana menggantinya. --}}
+                                        Biaya rombongan dibagi ke <strong>{{ $pesertaDasar }} peserta</strong>
+                                        @if (($rab['harga_dasar'] ?? 'minimum') === 'minimum')
+                                            — jumlah paling rendah yang masih mau diberangkatkan.
+                                        @else
+                                            — target pesertanya.
+                                        @endif
+                                        <a href="{{ route('admin.orcha.rab.ubah', $rabId) }}" wire:navigate
+                                            class="rb-kepala-jenis-ubah">Ubah dasarnya</a>
                                     @else
                                         Rombongannya sudah pasti, jadi harga dihitung atas
                                         {{ $rab['jumlah_peserta'] }} peserta.

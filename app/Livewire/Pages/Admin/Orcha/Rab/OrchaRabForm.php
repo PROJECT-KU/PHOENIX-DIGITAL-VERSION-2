@@ -125,6 +125,12 @@ class OrchaRabForm extends Component
         $this->isian['jumlah_peserta'] = (int) ($data['jumlah_peserta'] ?? 1);
         $this->isian['jenis'] = (string) ($data['jenis'] ?? 'private');
         $this->isian['peserta_minimum'] = $data['peserta_minimum'] ?? null;
+        /*
+         | harga_dasar SENGAJA tidak disalin lagi di sini: perulangan di atas
+         | sudah mengambilnya, karena ia memang salah satu kunci borang.
+         | Menyalinnya sekali lagi hanya membuat dua tempat mengerjakan hal
+         | yang sama — dan yang satu pasti tertinggal saat yang lain diubah.
+         */
     }
 
     /** Open trip menuntut isian yang tidak dipakai private trip. */
