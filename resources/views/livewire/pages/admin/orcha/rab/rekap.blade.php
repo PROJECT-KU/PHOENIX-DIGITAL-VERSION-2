@@ -6,29 +6,70 @@ Rekap Pengeluaran || lemon
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-    <div class="dsb">
+    {{-- Kerangkanya mengikuti layar Pesanan Toko (pt-detail): judul dsb-salam,
+         baris tanggal berikon, deret lencana keadaan, lalu tiap bagian dibuka
+         .dsb-kepala berwarna. Satu bahasa rupa untuk dua layar yang sama-sama
+         "satu catatan uang dibuka penuh". --}}
+    <div class="dsb rk-detail">
         {{-- ================== KEPALA ================== --}}
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
-                <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
-                <h1 class="dsb-judul">Rekap Pengeluaran</h1>
+                <h1 class="dsb-salam">{{ $rab['kode'] ?? 'Rekap Pengeluaran' }}</h1>
                 <p class="dsb-hero-ket">
-                    @if ($rab)
-                        <span class="d-block">
-                            <strong>{{ $rab['kode'] }}</strong> &middot; {{ $rab['judul'] }}
-                            @if ($rab['jumlah_peserta']) &middot; {{ $rab['jumlah_peserta'] }} peserta @endif
-                        </span>
-                    @endif
                     <span class="d-block">
-                        Isi <strong>tagihan yang benar-benar diminta vendor</strong>, lalu catat tiap
-                        pembayarannya. Selisihnya dihitung sendiri.
+                        <i class="bi bi-calendar3 me-1"></i>{{ $rab['judul'] ?? '' }}
+                        @if ($rab && $rab['tanggal_mulai'])
+                            &middot; berangkat
+                            {{ \Carbon\Carbon::parse($rab['tanggal_mulai'])->locale('id')->translatedFormat('l, d F Y') }}
+                        @endif
+                        @if ($rab && $rab['jumlah_peserta']) &middot; {{ $rab['jumlah_peserta'] }} peserta @endif
+                    </span>
+
+                    {{-- Deret lencana keadaan, seperti kepala detail pesanan:
+                         yang dicari mata saat layar dibuka adalah "sudah beres
+                         atau belum", bukan judulnya. --}}
+                    <span class="d-block rk-lencana-kepala">
+                        <span class="dsb-lencana {{ ($rab['status'] ?? '') === 'selesai' ? 'is-hijau' : 'is-kuning' }}">
+                            <i class="bi {{ ($rab['status'] ?? '') === 'selesai' ? 'bi-flag-fill' : 'bi-hourglass-split' }}"></i>
+                            {{ $rab['status_label'] ?? '—' }}
+                        </span>
+
+                        @if ($rekap['lengkap'] ?? false)
+                            <span class="dsb-lencana is-hijau"><i class="bi bi-check2-circle"></i>Rekap lengkap</span>
+                        @else
+                            <span class="dsb-lencana is-kuning">
+                                <i class="bi bi-list-check"></i>{{ count($rekap['belum_direkap'] ?? []) }} belum direkap
+                            </span>
+                        @endif
+
+                        @php($kurangKepala = (int) ($rekap['kurang_bayar'] ?? 0))
+                        @if ($kurangKepala > 0)
+                            <span class="dsb-lencana is-merah">
+                                <i class="bi bi-exclamation-octagon"></i>Kurang bayar
+                                Rp {{ number_format($kurangKepala, 0, ',', '.') }}
+                            </span>
+                        @elseif (($rekap['jumlah_baris'] ?? 0) > 0)
+                            <span class="dsb-lencana is-hijau"><i class="bi bi-check2"></i>Vendor lunas</span>
+                        @endif
+
+                        @if (($rekap['bayar_tanpa_bukti'] ?? 0) > 0)
+                            <span class="dsb-lencana is-kuning">
+                                <i class="bi bi-paperclip"></i>{{ $rekap['bayar_tanpa_bukti'] }} tanpa bukti
+                            </span>
+                        @endif
                     </span>
                 </p>
             </div>
 
             <div class="dsb-hero-aksi">
-                <a href="{{ route('admin.orcha.rab.susun', $rabId) }}" wire:navigate class="dsb-tombol is-lembut">
+                <a href="{{ route('admin.orcha.rab.susun', $rabId) }}" wire:navigate
+                    class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Kembali ke RAB</span>
+                </a>
+                <a href="{{ route('admin.orcha.rab.pdf', ['rab' => $rabId, 'jenis' => 'internal']) }}"
+                    class="dsb-tombol is-lembut" style="--ikon: #4f46e5"
+                    title="Berisi modal & margin — jangan dikirim ke pelanggan">
+                    <i class="bi bi-lock"></i><span>PDF Internal</span>
                 </a>
             </div>
         </header>
@@ -194,18 +235,19 @@ Rekap Pengeluaran || lemon
         {{-- ================== BARIS BIAYA ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
-                <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-kepala">
-                        <div class="dsb-kartu-kepala-kiri">
-                            <span class="dsb-ikon is-kecil" style="--c: var(--dsb-utama)"><i class="bi bi-receipt"></i></span>
-                            <div>
-                                <h3 class="dsb-kartu-judul">Rincian per biaya</h3>
-                                <span class="dsb-kartu-sub">
-                                    {{ $rekap['jumlah_baris'] ?? 0 }} baris dari RAB.
-                                </span>
-                            </div>
+                <div class="dsb-kepala rk-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-receipt"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Rincian</span>
+                        <h2 class="dsb-judul">Rincian per biaya</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-list-ul"></i>{{ $rekap['jumlah_baris'] ?? 0 }} baris dari RAB</span>
+                            <span class="dsb-chip is-samar">Isi tagihan vendor, lalu catat tiap pembayarannya</span>
                         </div>
                     </div>
+                </div>
+
+                <div class="dsb-kartu k-12">
 
                     @if (count($baris) === 0)
                         <div class="dsb-kartu-isi">
@@ -432,16 +474,18 @@ Rekap Pengeluaran || lemon
         @if (! empty($rekap['per_kategori']))
             <section class="dsb-bagian">
                 <div class="dsb-rak">
-                    <div class="dsb-kartu k-12">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: var(--dsb-telaah)"><i class="bi bi-diagram-3"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">Per kategori</h3>
-                                    <span class="dsb-kartu-sub">Dari mana hemat atau selisihnya datang.</span>
-                                </div>
+                    <div class="dsb-kepala rk-kepala" style="--c: #2563eb">
+                        <span class="dsb-kepala-ikon"><i class="bi bi-diagram-3"></i></span>
+                        <div class="dsb-kepala-teks">
+                            <span class="dsb-kicker">Rekap</span>
+                            <h2 class="dsb-judul">Per kategori</h2>
+                            <div class="dsb-chip-deret">
+                                <span class="dsb-chip is-samar">Dari mana hemat atau selisihnya datang</span>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="dsb-kartu k-12">
                         <div class="dsb-tabel-bungkus">
                             <table class="dsb-tabel">
                                 <thead>
@@ -492,6 +536,12 @@ Rekap Pengeluaran || lemon
     {{-- <style> telanjang: layout templateindex tidak punya stack, jadi gaya
          yang didorong ke sana tidak pernah tergambar. --}}
     <style>
+        /* Kepala bagian & deret lencana kepala: mengikuti layar Pesanan Toko,
+           supaya dua layar yang sama-sama membuka satu catatan uang tidak
+           perlu dipelajari dua kali. */
+        .rk-kepala { grid-column: 1 / -1; margin: 0 0 14px; }
+        .rk-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+
         .rk-guna { display: flex; align-items: flex-start; gap: 11px; flex-wrap: wrap; }
         .rk-guna-teks { flex: 1 1 280px; min-width: 0; font-size: .85rem; line-height: 1.55; }
         .rk-kartu-awas { border-color: #fcd9a4; background: #fffdf7; }
