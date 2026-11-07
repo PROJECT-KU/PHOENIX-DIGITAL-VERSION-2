@@ -169,6 +169,18 @@ class OrchaRabSusun extends Component
      */
     public array $unitBaris = [];
 
+    /**
+     * Berapa malam/hari tiap baris dipakai, bila admin menentukannya sendiri.
+     *
+     * Kosong berarti sepanjang perjalanan — perilaku lama. Diisi saat
+     * rombongannya PINDAH menginap: Homestay semalam lalu Sans Hotel dua
+     * malam. Tanpa ini keduanya tertagih tiga malam, dan tidak ada satu pun
+     * angka yang terlihat salah.
+     *
+     * @var array<int, string>
+     */
+    public array $malamBaris = [];
+
     public string $pilihMaster = '';
 
     public bool $bukaManual = false;
@@ -283,12 +295,23 @@ class OrchaRabSusun extends Component
         $this->hargaBaris = [];
         $this->jumlahBaris = [];
         $this->unitBaris = [];
+        $this->malamBaris = [];
         $this->catatanBaris = [];
         foreach ($data['ringkasan']['baris'] ?? [] as $b) {
             $this->hargaBaris[$b['id']] = $this->keRupiah($b['harga_satuan']) ?: '0';
             $this->jumlahBaris[$b['id']] = (string) $b['jumlah'];
             // Kosong berarti "hitung dari jumlah peserta", bukan nol kamar.
             $this->unitBaris[$b['id']] = (string) ($b['unit_manual'] ?? '');
+            /*
+             | Kosong berarti "sepanjang perjalanan", bukan nol malam.
+             |
+             | Dibaca dengan ?? '' dan BUKAN diisi angka perjalanan: kotak
+             | yang terisi "3" pada baris yang sebenarnya otomatis akan
+             | terkirim sebagai 3 pada suntingan berikutnya — lalu diam saat
+             | perjalanannya diperpanjang, dan penawarannya kurang semalam.
+             */
+            $this->malamBaris[$b['id']] = ($b['malam_manual'] ?? null) === null
+                ? '' : (string) $b['malam_manual'];
             $this->catatanBaris[$b['id']] = (string) ($b['catatan'] ?? '');
         }
 
@@ -1019,6 +1042,23 @@ class OrchaRabSusun extends Component
 
         $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
             'unit_manual' => $bersih === '' ? null : max(1, min(500, (int) $bersih)),
+        ]);
+    }
+
+    /**
+     * Berapa malam/hari baris ini dipakai.
+     *
+     * Kosong mengembalikannya ke panjang perjalanan. NOL tetap nol dan tidak
+     * dinaikkan jadi satu: "0 malam" adalah jawaban yang sah untuk baris
+     * yang batal dipakai tetapi sengaja ditahan di penawaran sebagai
+     * catatan. Karena itu min-nya 0 di sini, berbeda dari kotak unit.
+     */
+    public function updatedMalamBaris($nilai, $id): void
+    {
+        $bersih = trim((string) $nilai);
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
+            'malam_manual' => $bersih === '' ? null : max(0, min(365, (int) $bersih)),
         ]);
     }
 

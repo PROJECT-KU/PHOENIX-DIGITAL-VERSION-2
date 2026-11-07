@@ -121,6 +121,12 @@ Susun RAB || lemon
        dan salinannya di sini akan berselisih begitu salah satunya diubah. */
     $musimPerjalanan = $r['musim_perjalanan'] ?? null;
     $musimBelum = $r['musim_belum_diisi'] ?? [];
+
+    /* Akomodasi menutup berapa malam dari perjalanan ini. null berarti tidak
+       ada yang bisa dikatakan — belum ada baris menginap, atau perjalanannya
+       memang sehari. Dibaca dengan ?? supaya Orcha yang belum dideploy tidak
+       mematikan layarnya. */
+    $malamAkomodasi = $r['malam_akomodasi'] ?? null;
     /* Baris yang harganya masih Rp 0 — umumnya item wajib yang baru masuk
        sendiri (dokumentasi, P3K, banner, tour leader) dan belum diisi
        harganya di Master Harga. Nol bukan galat, jadi yang benar menyebut
@@ -462,7 +468,23 @@ Susun RAB || lemon
             text-transform: uppercase; color: var(--dsb-redup, #94a3b8);
         }
         .rb-biaya-medan .dsb-isian { width: 118px; text-align: right; }
-        .rb-biaya-medan.is-sempit .dsb-isian { width: 64px; }
+        /* 96px, bukan 64: petunjuk "otomatis" terpotong jadi "otor" di 64px
+           — dan kata yang terpenggal terbaca sebagai sampah, bukan sebagai
+           petunjuk. Sudah begitu sejak kotak Unit ada; kotak Malam di
+           sebelahnya membuat dua potongan bersebelahan, dan barulah
+           kelihatan.
+
+           Melebarkannya aman karena .rb-biaya-isian memang membungkus:
+           di layar sempit barisnya turun, tidak terpotong. */
+        .rb-biaya-medan.is-sempit .dsb-isian { width: 96px; }
+        /* Petunjuknya lebih kecil daripada angkanya, dan itu bukan hiasan:
+           "otomatis" di ukuran penuh terpotong jadi "otoma" di kotak
+           sesempit ini — dan kata yang terpenggal terbaca sebagai sampah,
+           bukan sebagai petunjuk. Angka yang diketik tetap seukuran
+           angka di kotak lain. */
+        .rb-biaya-medan.is-sempit .dsb-isian::placeholder {
+            font-size: .72rem; letter-spacing: -.01em;
+        }
         .rb-biaya-sub { display: flex; flex-direction: column; gap: 3px; min-width: 96px; text-align: right; }
         .rb-biaya-sub > span {
             font-size: .66rem; font-weight: 700; letter-spacing: .04em;
@@ -2453,6 +2475,30 @@ Susun RAB || lemon
                                 </div>
                             @endif
 
+                            {{-- Akomodasinya tidak menutup seluruh malam perjalanan.
+
+                                 Kesalahan yang BARU MUNGKIN sejak malam bisa
+                                 diisi tangan: sebelumnya tiap baris kamar_malam
+                                 otomatis sepanjang perjalanan, jadi selalu
+                                 tertutup. Sekarang perjalanan 3 malam dengan
+                                 Homestay 1 malam dan Sans Hotel 1 malam berarti
+                                 SATU MALAM rombongan tidak tidur di mana pun —
+                                 dan tidak ada satu pun angka yang salah, jadi
+                                 tidak ada yang berbunyi. Yang menemukannya
+                                 adalah tour leader pada pukul sembilan malam. --}}
+                            @if ($malamAkomodasi && ! $malamAkomodasi['cukup'])
+                                <div class="rb-beda-banner is-awas">
+                                    <i class="bi bi-moon-stars"></i>
+                                    <span>
+                                        Perjalanan ini <strong>{{ $malamAkomodasi['perjalanan'] }} malam</strong>,
+                                        tetapi akomodasinya baru menutup
+                                        <strong>{{ $malamAkomodasi['tertutup'] }} malam</strong>.
+                                        Periksa kotak <em>Malam</em> di baris akomodasi — kalau memang ada malam
+                                        yang tidak menginap, biarkan saja.
+                                    </span>
+                                </div>
+                            @endif
+
                             {{-- Perjalanannya jatuh di musim bertarif tinggi.
 
                                  Disebut WALAU semua tarifnya sudah terpasang:
@@ -2699,6 +2745,27 @@ Susun RAB || lemon
                                                         <span>{{ $b['satuan'] === 'kamar_malam' ? 'Kamar' : 'Unit' }}</span>
                                                         <input type="number" min="1" max="500" placeholder="otomatis"
                                                             wire:model.blur="unitBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                    </label>
+                                                @endif
+
+                                                {{-- Berapa malam/hari baris ini dipakai.
+
+                                                     Dikosongkan = sepanjang perjalanan, seperti
+                                                     sebelumnya. Diisi saat rombongannya PINDAH
+                                                     menginap: tanpa kotak ini, Homestay semalam
+                                                     dan Sans Hotel dua malam KEDUANYA tertagih
+                                                     tiga malam — enam malam dibayar untuk tiga
+                                                     malam menginap, dan tidak ada satu pun angka
+                                                     yang terlihat salah.
+
+                                                     Hanya untuk satuan yang memang dikali durasi;
+                                                     daftarnya dari peladen (pakai_durasi), bukan
+                                                     dirakit di sini. --}}
+                                                @if ($b['pakai_durasi'] ?? false)
+                                                    <label class="rb-biaya-medan is-sempit">
+                                                        <span>{{ ucfirst($b['durasi_sebutan'] ?? 'hari') }}</span>
+                                                        <input type="number" min="0" max="365" placeholder="otomatis"
+                                                            wire:model.blur="malamBaris.{{ $b['id'] }}" class="dsb-isian">
                                                     </label>
                                                 @endif
                                                 <label class="rb-biaya-medan is-sempit">
