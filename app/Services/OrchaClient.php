@@ -247,12 +247,24 @@ class OrchaClient
      * server Orcha, bukan di lemon, supaya website Orcha tetap bisa
      * menampilkannya tanpa bergantung aplikasi ini.
      *
+     * $namaBerkas menentukan NAMA MEDAN berkas tunggalnya di sisi Orcha.
+     * Bawaannya 'gambar' karena itu yang dipakai hampir seluruh layar; bukti
+     * transfer memakai 'bukti', dan mengirimnya lewat $berkasLain tidak bisa
+     * — jalur itu menambahkan '[]' sehingga sampai sebagai larik, lalu
+     * validasi `image` di Orcha menolaknya dengan alasan yang tidak
+     * menyebutkan sebabnya.
+     *
      * @param  \Illuminate\Http\UploadedFile|null  $gambar
      *
      * @throws OrchaTidakTerjangkau
      */
-    public function kirim(string $jalur, array $data = [], $gambar = null, array $berkasLain = []): array
-    {
+    public function kirim(
+        string $jalur,
+        array $data = [],
+        $gambar = null,
+        array $berkasLain = [],
+        string $namaBerkas = 'gambar',
+    ): array {
         if (! $this->siap()) {
             throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel.');
         }
@@ -262,7 +274,7 @@ class OrchaClient
 
             if ($gambar) {
                 $permintaan = $permintaan->attach(
-                    'gambar',
+                    $namaBerkas,
                     file_get_contents($gambar->getRealPath()),
                     $gambar->getClientOriginalName()
                 );

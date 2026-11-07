@@ -1729,6 +1729,17 @@ Susun RAB || lemon
                                     title="Berisi modal & margin — jangan dikirim ke pelanggan">
                                     <i class="bi bi-lock"></i> Internal
                                 </a>
+                                {{-- Rekap pengeluaran sesudah trip jalan.
+
+                                     Di sini, bersama PDF, karena ketiganya dibuka
+                                     pada saat yang berbeda dari menyusun biayanya:
+                                     penawaran saat menawar, internal saat
+                                     memeriksa, rekap saat trip sudah pulang. --}}
+                                <a href="{{ route('admin.orcha.rab.rekap', $rabId) }}" wire:navigate
+                                    class="dsb-tombol is-lembut" style="--ikon: #0f766e"
+                                    title="Tagihan vendor yang sebenarnya, pembayaran, dan untung nyata">
+                                    <i class="bi bi-receipt"></i> Rekap Pengeluaran
+                                </a>
 
                             </div>
                         </div>

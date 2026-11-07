@@ -619,6 +619,10 @@ Route::middleware('permission:akses_orcha')->group(function () {
         ->whereNumber('rab')->name('admin.orcha.rab.susun');
     Route::get('/admin/orcha/rab/{rab}/pdf', [OrchaEksporController::class, 'rab'])
         ->whereNumber('rab')->name('admin.orcha.rab.pdf');
+    // Rekap pengeluaran sesudah trip jalan: RAB vs tagihan vendor vs yang
+    // dibayar. Dua segmen, jadi tidak tertelan /rab/{rab}.
+    Route::get('/admin/orcha/rab/{rab}/rekap', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabRekap::class)
+        ->whereNumber('rab')->name('admin.orcha.rab.rekap');
     Route::get('/admin/orcha/master-harga', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList::class)->name('admin.orcha.master-harga');
     // Tanggal merah yang dihargai seperti akhir pekan — pasangan
     // kolom "harga akhir pekan" di master harga.
