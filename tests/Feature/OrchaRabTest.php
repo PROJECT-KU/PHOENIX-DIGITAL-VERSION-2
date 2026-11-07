@@ -1,6 +1,8 @@
 <?php
 
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList;
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaRiwayat;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabForm;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun;
@@ -29,6 +31,9 @@ function palsukanRab(): void
         $jalur = parse_url($r->url(), PHP_URL_PATH);
 
         return match (true) {
+            (bool) preg_match('#/master-harga/\d+$#', $jalur) && $r->method() === 'GET' => Http::response(
+                ['data' => rekamanRab('master')['data'][0]]
+            ),
             str_contains($jalur, '/rab/katalog') => Http::response(rekamanRab('katalog')),
             str_ends_with($jalur, '/rab/3/tarik-biaya') => Http::response(rekamanRab('tarik')),
             str_ends_with($jalur, '/rab/3/itinerary') => Http::response(
@@ -303,8 +308,7 @@ test('kategori mengisi satuannya sendiri', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->assertSet('isian.satuan', 'orang')            // bawaan: tiket
         ->set('isian.kategori', 'transportasi')
         ->assertSet('isian.satuan', 'unit_hari')
@@ -322,8 +326,7 @@ test('kapasitas tidak ditebak, tetapi dipilih dari daftar bernama', function () 
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi');
 
     // Transportasi bukan cuma Hiace — dari jeep sampai bus besar.
@@ -346,8 +349,7 @@ test('kamar hotel memakai sebutan & pilihannya sendiri', function () {
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'akomodasi')
         ->call('pakaiKapasitas', 2)
         ->html();
@@ -371,8 +373,7 @@ test('ganti satuan mengosongkan kapasitas satuan sebelumnya', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->call('pakaiKapasitas', 14)
         ->set('isian.satuan', 'kamar_malam')
@@ -384,8 +385,7 @@ test('satuan yang dipilih tangan tidak ditimpa kategori', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.satuan', 'rombongan')
         ->set('isian.kategori', 'transportasi')
         ->assertSet('isian.satuan', 'rombongan');
@@ -395,8 +395,7 @@ test('master harga per unit menuntut kapasitas sebelum dikirim', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->set('isian.nama', 'Sewa Hiace')
         ->set('isian.satuan', 'unit_hari')
@@ -424,8 +423,7 @@ test('kapasitas tidak ikut terkirim untuk satuan yang tidak menghitung unit', fu
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->call('pakaiKapasitas', 14)
         ->set('isian.satuan', 'orang')
@@ -445,8 +443,7 @@ test('memilih destinasi mengisi provinsi dan daerahnya dari katalog', function (
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->assertSet('isian.provinsi', 'DI Yogyakarta')
         ->assertSet('isian.daerah', 'Sleman');
@@ -1216,8 +1213,7 @@ test('destinasi di master harga DIPILIH dari katalog, bukan diketik', function (
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->html();
 
     expect($isi)->toContain('<select id="mh-destinasi"')
@@ -1236,8 +1232,7 @@ test('nilai lama yang tidak ada di katalog tetap ditawarkan dan ditandai', funct
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'prambanan')   // ada di data, tidak ada di katalog
         ->html();
 
@@ -1283,8 +1278,7 @@ test('destinasi di luar daftar bisa ditambahkan tanpa meninggalkan formulir', fu
     });
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.daerah', 'Sleman')
         ->set('destinasiBaru', true)
         //  Spasi berlebih sengaja: Orcha merapikannya, dan yang terpilih di
@@ -1313,8 +1307,7 @@ test('nama destinasi baru yang terlalu pendek tidak dikirim', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('destinasiBaru', true)
         ->set('namaDestinasiBaru', 'ab')
         ->call('tambahDestinasiKatalog')
@@ -1330,8 +1323,7 @@ test('jalan menambah destinasi terlihat di formulir master harga', function () {
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->html();
 
     expect($isi)->toContain('Destinasinya belum ada di daftar');
@@ -1351,8 +1343,7 @@ test('nama tiket dirakit dari destinasi yang dipilih', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.harga', '60000')
         // Terlihat di kotaknya lebih dulu, bukan cuma terkirim: nama yang baru
@@ -1372,8 +1363,7 @@ test('nama yang diketik tangan menang atas nama rakitan', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.nama', 'Tiket Prambanan (turis asing)')
         ->set('isian.harga', '375000')
@@ -1387,8 +1377,7 @@ test('nama rakitan diperlihatkan sebelum disimpan', function () {
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'akomodasi')
         ->set('isian.daerah', 'Sleman')
         ->html();
@@ -1403,8 +1392,7 @@ test('nama tetap wajib bila tak ada yang bisa dirakit', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'lainnya')
         ->set('isian.harga', '50000')
         ->call('simpan')
@@ -1418,7 +1406,7 @@ test('kotak destinasi & kapasitas hanya muncul saat memang dipakai', function ()
      | menghitung jumlah unit.
      */
     palsukanRab();
-    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->call('bukaTambah');
+    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)->call('bukaTambah');
 
     // Bawaannya tiket per orang: destinasi ada, kapasitas tidak.
     expect($layar->html())->toContain('id="mh-destinasi"')
@@ -1439,8 +1427,7 @@ test('destinasi yang sudah terisi tidak disembunyikan oleh ganti kategori', func
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.kategori', 'konsumsi')
         ->html();
@@ -1456,7 +1443,7 @@ test('tiket tanpa destinasi diberi tahu akibatnya', function () {
      | dan RAB-nya kekurangan modal tanpa satu pun tanda.
      */
     palsukanRab();
-    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->call('bukaTambah');
+    $layar = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)->call('bukaTambah');
 
     expect($layar->html())->toContain('tidak akan pernah ikut terbawa ke RAB');
 
@@ -1610,8 +1597,7 @@ test('vendor dipilih dari daftar, kontaknya terlihat di formulir', function () {
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah');
+        ->test(OrchaMasterHargaForm::class);
 
     expect($layar->html())->toContain('id="mh-vendor"')
         ->and($layar->html())->toContain('PO Sumber Jaya');
@@ -1627,8 +1613,7 @@ test('vendor tanpa nomor ditandai di formulir harga', function () {
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.vendor_id', '3')     // Vendor Tanpa Nomor
         ->html();
 
@@ -1642,8 +1627,7 @@ test('vendor terkirim sebagai id, kosong jadi null', function () {
     palsukanRab();
     $this->actingAs(adminRab());
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.vendor_id', '1')
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.harga', '60000')
@@ -1653,8 +1637,7 @@ test('vendor terkirim sebagai id, kosong jadi null', function () {
     Http::assertSent(fn (Request $r) => $r->method() === 'POST'
         && str_ends_with($r->url(), '/master-harga') && $r['vendor_id'] === 1);
 
-    Livewire::test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.harga', '60000')
         ->call('simpan');
@@ -1717,8 +1700,7 @@ test('vendor baru bisa ditambahkan tanpa meninggalkan formulir harga', function 
     });
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Sewa Bus Baru')      // isian yang TIDAK boleh hilang
         ->set('vendorBaru', true)
         ->set('namaVendorBaru', '  PO Baru   Jaya ')
@@ -1744,8 +1726,7 @@ test('nama vendor baru yang terlalu pendek tidak dikirim', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('vendorBaru', true)
         ->set('namaVendorBaru', 'P')
         ->call('tambahVendorKatalog')
@@ -1815,7 +1796,7 @@ test('vendor di master harga dan rincian biaya RAB membawa ke rinciannya', funct
     palsukanRab();
     $this->actingAs(adminRab());
 
-    $isi = Livewire::test(OrchaMasterHargaList::class)->call('bukaTambah')
+    $isi = Livewire::test(OrchaMasterHargaForm::class)->call('bukaTambah')
         ->set('isian.vendor_id', '1')->html();
 
     expect($isi)->toContain(route('admin.orcha.vendor.detail', 1));
@@ -1937,8 +1918,7 @@ test('penolakan harga kembar dari Orcha sampai apa adanya ke admin', function ()
     });
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Prambanan')
         ->set('isian.harga', '60000')
         ->call('simpan')
@@ -2124,20 +2104,34 @@ test('perintah massal mengosongkan centangnya setelah berhasil', function () {
         ->assertSet('aksiMassal', '');
 });
 
-test('menyalin membuka baris BARU, bukan menyunting yang disalin', function () {
+test('menyalin mengantar ke halaman tambah, membawa nomor barisnya', function () {
+    palsukanRab();
+
+    $baris = rekamanRab('master')['data'][0];
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaList::class)
+        ->call('salin', $baris['id'])
+        ->assertRedirect(route('admin.orcha.master-harga.tambah', ['salin' => $baris['id']]));
+});
+
+test('borang memuat salinannya sebagai baris BARU, bukan menyunting yang disalin', function () {
     /*
      | Kalau mode suntingnya ikut terbawa, "salin" diam-diam menimpa baris
      | aslinya — kerusakan yang baru ketahuan saat harga lamanya hilang.
+     |
+     | Barisnya dibaca ULANG dari Orcha, bukan dititipkan lewat alamat:
+     | sembilan kolom di query string bisa disunting siapa pun yang
+     | menempelkan tautannya.
      */
     palsukanRab();
 
     $baris = rekamanRab('master')['data'][0];
 
-    $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('salin', $baris);
-
-    $layar->assertSet('sunting', null)
+    Livewire::actingAs(adminRab())
+        ->withQueryParams(['salin' => $baris['id']])
+        ->test(OrchaMasterHargaForm::class)
+        ->assertSet('sunting', null)
         ->assertSet('tambah', true)
         ->assertSet('isian.nama', $baris['nama'].' (salinan)')
         // Sisanya memang ikut tersalin — itulah gunanya.
@@ -2145,25 +2139,38 @@ test('menyalin membuka baris BARU, bukan menyunting yang disalin', function () {
         ->assertSet('isian.destinasi', $baris['destinasi']);
 });
 
-test('riwayat perubahan dibaca dari Orcha dan ditutup tanpa meninggalkan sisa', function () {
+test('riwayat satu baris punya halamannya sendiri', function () {
+    /*
+     | "Riwayat harga" sudah tidak benar: yang dicatat kini seluruh perubahan
+     | barisnya — nama, vendor, destinasi — bukan angkanya saja. Judul yang
+     | menjanjikan lebih sempit daripada isinya membuat orang berhenti
+     | mencari di sini.
+     |
+     | Dan ia HALAMAN, bukan panel: riwayat dibaca lama, dibandingkan dengan
+     | penawaran lama, dibuka di tab kedua, dikirim ke rekan yang bertanya
+     | "kapan tiket ini naik?". Panel di dalam daftar tidak bisa satu pun
+     | dari itu.
+     */
     palsukanRab();
 
-    $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaRiwayat', 1);
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaRiwayat::class, ['harga' => 1])
+        ->assertSet('hargaId', 1)
+        ->html();
 
-    /*
-     | "Riwayat harga" sudah tidak benar: yang dicatat kini seluruh
-     | perubahan barisnya — nama, vendor, destinasi — bukan angkanya saja.
-     | Judul yang menjanjikan lebih sempit daripada isinya membuat orang
-     | berhenti mencari di sini.
-     */
-    expect($layar->html())->toContain('Riwayat perubahan')
-        ->and($layar->html())->toContain('+Rp 10.000');
+    expect($html)->toContain('Riwayat perubahan')
+        ->and($html)->toContain('+Rp 10.000')
+        ->and($html)->toContain('Kembali ke Master Harga');
+});
 
-    $layar->call('tutupRiwayat')
-        ->assertSet('riwayatUntuk', null)
-        ->assertSet('riwayat', []);
+test('daftar mengantar ke halaman riwayat, bukan membuka panel', function () {
+    palsukanRab();
+
+    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->html();
+
+    expect($html)->toContain(route('admin.orcha.master-harga.riwayat', 1))
+        ->and($html)->toContain(route('admin.orcha.master-harga.riwayat-semua'))
+        ->and($html)->not->toContain('wire:click="bukaRiwayat');
 });
 
 test('centang semua hanya menyentuh baris yang sedang terlihat', function () {
@@ -2189,8 +2196,7 @@ test('masa berlaku ikut terkirim saat menyimpan', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket uji')
         ->set('isian.harga', '50.000')
         ->set('isian.berlaku_sampai', '2027-03-01')
@@ -2230,8 +2236,7 @@ test('penolakan kembaran tinggal di formulir berikut jalan keluarnya', function 
     });
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket Candi Prambanan')
         ->set('isian.harga', '60.000')
         ->call('simpan');
@@ -2248,8 +2253,7 @@ test('tetap simpan menerobos penjaga lewat paksa=1', function () {
     palsukanRab();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket Candi Prambanan')
         ->set('isian.harga', '60.000')
         ->call('simpanPaksa');
@@ -2267,8 +2271,7 @@ test('tambah lagi mempertahankan yang khas sesinya, mengosongkan yang khas baris
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('lanjutTambah', true)
         ->set('isian.kategori', 'tiket')
         ->set('isian.provinsi', 'DI Yogyakarta')
@@ -2292,8 +2295,7 @@ test('tempelan spreadsheet dipecah apa adanya, tab maupun titik koma', function 
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('tempelIsi', "Tiket Borobudur\tRp 50.000\nTiket Dieng;30000;Dataran Tinggi Dieng\n\n   \nTanpa harga");
 
     $baris = $layar->instance()->barisTempel();
@@ -2311,8 +2313,7 @@ test('baris tempelan yang dilewati tetap terlihat setelah sisanya masuk', functi
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->call('bukaTempel')
         ->set('tempelIsi', "Tiket Borobudur\t50000\nTiket Dieng\t30000\nTiket Ketep\t15000")
         ->call('simpanTempel');
@@ -2363,17 +2364,30 @@ test('kolom Dipakai membuka daftar RAB berikut harga yang dibekukan di sana', fu
     $layar->call('tutupDipakai')->assertSet('dipakaiUntuk', null);
 });
 
-test('perubahan terakhir seluruh daftar terbaca dalam satu panel', function () {
+test('perubahan terakhir seluruh daftar punya halamannya sendiri', function () {
     palsukanRab();
 
-    $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaRiwayatSemua');
+    $html = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaRiwayat::class)
+        ->assertSet('hargaId', null)
+        ->html();
 
-    expect($layar->html())->toContain('Tiket Candi Prambanan')
-        ->and($layar->html())->toContain('+Rp 10.000');
+    expect($html)->toContain('Tiket Candi Prambanan')
+        ->and($html)->toContain('+Rp 10.000');
+});
 
-    $layar->call('tutupRiwayatSemua')->assertSet('riwayatSemua', []);
+test('rentang hari hanya berlaku pada riwayat seluruhnya', function () {
+    /*
+     | Pada riwayat SATU baris yang dicari justru perubahan yang paling lama,
+     | dan memotongnya di 30 hari menyembunyikan tepat yang dicari.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaRiwayat::class, ['harga' => 1])
+        ->set('hari', 7);
+
+    Http::assertNotSent(fn ($r) => str_contains((string) $r->url(), 'hari=7'));
 });
 
 test('kotak pilih menggambarkan nilai yang tersimpan, bukan pilihan pertama', function () {
@@ -2392,7 +2406,7 @@ test('kotak pilih menggambarkan nilai yang tersimpan, bukan pilihan pertama', fu
     $baris = collect(rekamanRab('master')['data'])->firstWhere('kategori', 'transportasi');
 
     $isi = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
+        ->test(OrchaMasterHargaForm::class)
         ->call('bukaSunting', $baris['id'], $baris)
         ->html();
 
@@ -2525,8 +2539,7 @@ test('tanggal berlaku yang sudah lewat diperingatkan, bukan ditolak', function (
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.berlaku_sampai', now()->subYear()->toDateString());
 
     expect($layar->instance()->berlakuSudahLewat())->toBeTrue()
@@ -4162,14 +4175,25 @@ test('daftar kapasitas urut dari muatan terkecil', function () {
     palsukanRab();
 
     $html = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->html();
 
+    /*
+     | Dicari DI DALAM pemilihnya, bukan di seluruh halaman: "Hiace" juga
+     | muncul di komentar CSS pada blok <style>, dan yang itu berdiri jauh
+     | sebelum daftarnya — uji yang mencari di seluruh halaman akan merah
+     | tanpa ada yang salah urut.
+     */
+    // class="..." , bukan nama kelasnya: nama itu juga muncul sebagai
+    // pemilih CSS di blok <style>, jauh sebelum markahnya.
+    $awal = strpos($html, 'class="mh-muat-pilih"');
+    expect($awal)->not->toBeFalse();
+    $pemilih = substr($html, $awal, 4000);
+
     $urut = [];
     foreach (['Jeep wisata', 'Mobil pribadi', 'Hiace', 'Elf long', 'Bus sedang', 'Bus besar'] as $nama) {
-        $urut[$nama] = strpos($html, $nama);
+        $urut[$nama] = strpos($pemilih, $nama);
         expect($urut[$nama])->not->toBeFalse();
     }
 
@@ -4757,7 +4781,7 @@ function palsukanMasterTerusan(?array &$dikirim = null): void
 test('destinasi lain hanya ditawarkan setelah destinasi utamanya dipilih', function () {
     palsukanMasterTerusan();
 
-    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)->call('bukaTambah');
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)->call('bukaTambah');
 
     expect($k->html())->not->toContain('Tempat lain yang pakai tiket yang sama');
 
@@ -4769,8 +4793,7 @@ test('tempat lain ditambahkan sebagai cip dan ikut terkirim ke Orcha', function 
     $dikirim = null;
     palsukanMasterTerusan($dikirim);
 
-    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'tiket')
         ->set('isian.nama', 'Tiket Terusan Dieng')
         ->set('isian.provinsi', 'Jawa Tengah')
@@ -4789,8 +4812,7 @@ test('tempat lain ditambahkan sebagai cip dan ikut terkirim ke Orcha', function 
 test('destinasi utama dan yang ganda tidak bisa masuk dua kali', function () {
     palsukanMasterTerusan();
 
-    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Arjuna')
         // Sama dengan destinasi utamanya.
         ->set('destinasiLainPilih', 'Candi Arjuna')
@@ -4807,8 +4829,7 @@ test('destinasi utama dan yang ganda tidak bisa masuk dua kali', function () {
 test('tempat lain bisa dikeluarkan lagi', function () {
     palsukanMasterTerusan();
 
-    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.destinasi', 'Candi Arjuna')
         ->set('destinasiLainPilih', 'Kawah Sikidang')
         ->call('tambahDestinasiLain')
@@ -4822,8 +4843,7 @@ test('tiket tanpa destinasi utama tidak pernah mengirim daftar tempat lain', fun
     $dikirim = null;
     palsukanMasterTerusan($dikirim);
 
-    Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'lainnya')
         ->set('isian.nama', 'Dana Tak Terduga')
         ->set('isian.satuan', 'rombongan')
@@ -4959,8 +4979,7 @@ test('tiket terusan menyebut dirinya walau destinasinya belum dipilih', function
     // diklik — dan menyerah mengira fiturnya tidak ada.
     palsukanMasterTerusan();
 
-    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'tiket')
         ->set('isian.destinasi', '');
 
@@ -4971,8 +4990,7 @@ test('tiket terusan menyebut dirinya walau destinasinya belum dipilih', function
 test('petunjuknya hilang begitu destinasinya dipilih, diganti isiannya', function () {
     palsukanMasterTerusan();
 
-    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'tiket')
         ->set('isian.destinasi', 'Candi Arjuna')
         ->html();
@@ -5007,8 +5025,7 @@ test('kotak tiket terusan berdiri selebar rak, bukan di dalam medan Destinasi', 
      */
     palsukanMasterTerusan();
 
-    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+    $html = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'tiket')
         ->set('isian.destinasi', 'Candi Arjuna')
         ->html();

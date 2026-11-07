@@ -1,7 +1,8 @@
 <?php
 
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaHariLiburList;
-use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList;
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm;
+use App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaRiwayat;
 use App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -179,8 +180,7 @@ test('saklar dua harga mengirim harga akhir pekan; mati mengirim null', function
     palsukanMaster();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket Baluran')
         ->set('isian.kategori', 'tiket')
         ->set('isian.satuan', 'orang')
@@ -204,8 +204,7 @@ test('mematikan saklar mengosongkan angkanya, bukan menyimpannya diam-diam', fun
      | selisih yang tidak bisa ditemukan karena kotaknya tidak ada di layar.
      */
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket Baluran')
         ->set('isian.harga', '21.000')
         ->set('duaHarga', true)
@@ -228,8 +227,7 @@ test('saklar hidup tanpa angka ditolak, tidak dikirim sebagai nol', function () 
      | mengirim 0 untuk "lupa diisi" akan menggratiskan tiketnya tiap Sabtu.
      */
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.nama', 'Tiket Baluran')
         ->set('isian.harga', '21.000')
         ->set('duaHarga', true)
@@ -272,8 +270,7 @@ test('kotak kapasitas tergambar dan tidak disembunyikan CSS', function () {
      | menyebut sebabnya.
      */
     $k = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->set('isian.satuan', 'unit');
 
@@ -292,8 +289,7 @@ test('tempelan massal menolak satuan berkapasitas sebelum menyentuh Orcha', func
     palsukanMaster();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->set('isian.satuan', 'unit')
         ->set('isian.kapasitas', '')
@@ -311,8 +307,7 @@ test('tempelan massal rute carter mengirim kapasitas bersama barisnya', function
     palsukanMaster();
 
     Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->set('isian.kategori', 'transportasi')
         ->set('isian.satuan', 'unit')
         ->set('isian.kapasitas', '14')
@@ -338,8 +333,7 @@ test('formulir harga terbagi bagian berjudul, bukan satu dinding kotak', functio
      | mana yang boleh dilewati. Bentuknya mengikuti borang Tambah Pesanan.
      */
     $html = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->html();
 
     foreach ([
@@ -374,8 +368,9 @@ test('ketiga sakelar nyala/mati memakai satu bentuk yang sama', function () {
      | ditambahkan ikut menyunting angka ini, dan suntingan itu yang membuat
      | perubahannya terlihat saat ditinjau.
      */
+    // Isiannya pindah ke halaman tersendiri; sakelarnya ikut.
     $isi = file_get_contents(
-        resource_path('views/livewire/pages/admin/orcha/rab/master-harga.blade.php')
+        resource_path('views/livewire/pages/admin/orcha/rab/partials/master-harga-borang.blade.php')
     );
 
     expect(substr_count($isi, 'class="orcha-sakelar-kartu'))->toBe(3)
@@ -392,13 +387,13 @@ test('kartu sakelar menyebut KEADAANNYA, bukan nama setelannya', function () {
      | tombolnya? Dua kartu lain sudah lama berubah kata; yang ini mengikut.
      */
     $mati = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)->call('bukaTambah')->html();
+        ->test(OrchaMasterHargaForm::class)->call('bukaTambah')->html();
 
     expect($mati)->toContain('Harga sama setiap hari')
         ->and($mati)->not->toContain('Akhir pekan &amp; hari libur lebih mahal');
 
     $nyala = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)->call('bukaTambah')->set('duaHarga', true)->html();
+        ->test(OrchaMasterHargaForm::class)->call('bukaTambah')->set('duaHarga', true)->html();
 
     expect($nyala)->toContain('Akhir pekan &amp; hari libur lebih mahal')
         ->and($nyala)->not->toContain('Harga sama setiap hari');
@@ -408,8 +403,7 @@ test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri',
     palsukanMaster();
 
     $html = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)
-        ->call('bukaTambah')
+        ->test(OrchaMasterHargaForm::class)
         ->html();
 
     // Berdiri sendiri, ia menyisakan hampir selebar kartu menganggur di
@@ -461,7 +455,7 @@ test('riwayat menampilkan perubahan selain harga, berikut siapa yang mengubahnya
      | muncul di mana pun — panelnya hanya mengenal angka.
      */
     $html = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)->call('bukaRiwayat', 1)->html();
+        ->test(OrchaMasterHargaRiwayat::class, ['harga' => 1])->html();
 
     expect($html)->toContain('Riwayat perubahan')
         ->and($html)->toContain('Destinasi')
@@ -482,14 +476,16 @@ test('tabel riwayat tinggal tiga kolom, tanpa Dari/Jadi/Selisih yang kosong', fu
     ]]);
 
     $html = Livewire::actingAs(adminRab())
-        ->test(OrchaMasterHargaList::class)->call('bukaRiwayat', 1)->html();
+        ->test(OrchaMasterHargaRiwayat::class, ['harga' => 1])->html();
 
     /*
      | Dari / Jadi / Selisih semuanya berporos harga, dan sejak perubahan
      | lain ikut dicatat ketiganya berdiri kosong justru pada baris yang
      | paling perlu dibaca.
      */
-    $kepala = substr($html, strpos($html, 'mh-riwayat'), 600);
+    // class="..." , bukan nama kelasnya: ia juga muncul sebagai pemilih CSS
+    // di blok <style>, jauh sebelum tabelnya.
+    $kepala = substr($html, strpos($html, 'class="dsb-tabel mh-riwayat"'), 600);
 
     expect($kepala)->toContain('Yang berubah')
         ->and($kepala)->not->toContain('>Selisih<')
@@ -509,7 +505,7 @@ test('tempelan terbaca walau dipisah koma atau spasi, bukan cuma TAB', function 
      | tempelan Excel, dan admin yang mengetik "Tiket Borobudur,100.000"
      | mendapat "belum ada baris yang terbaca" tanpa tahu apa yang kurang.
      */
-    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class);
 
     $baca = function (string $teks) use ($k) {
         $k->set('tempelIsi', $teks);
@@ -532,7 +528,7 @@ test('tempelan terbaca walau dipisah koma atau spasi, bukan cuma TAB', function 
 test('tempelan Excel tetap terbaca persis, termasuk nama bertanda koma', function () {
     palsukanMaster();
 
-    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class);
 
     /*
      | TAB & titik koma didahulukan. Kalau koma ikut dipakai memecah saat
@@ -552,7 +548,7 @@ test('tempelan Excel tetap terbaca persis, termasuk nama bertanda koma', functio
 test('baris tanpa angka tetap dilewati, bukan masuk berharga nol', function () {
     palsukanMaster();
 
-    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaList::class);
+    $k = Livewire::actingAs(adminRab())->test(OrchaMasterHargaForm::class);
     $k->set('tempelIsi', "Tiket Borobudur, 100.000\nbaris tanpa angka\n");
 
     // Harga nol adalah harga yang SAH; baris yang tidak terbaca tidak boleh

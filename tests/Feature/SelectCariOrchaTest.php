@@ -12,6 +12,17 @@ function sumberLayar(string $jalur): string
     return file_get_contents(resource_path("views/livewire/pages/admin/orcha/{$jalur}.blade.php"));
 }
 
+/**
+ * Layar master harga kini DUA berkas: daftarnya memegang saringan, halaman
+ * borangnya memegang isian. Keduanya dibaca bersama — kotak pilih yang
+ * dipasangi pencarian tersebar di dua-duanya, dan memeriksa satu saja
+ * membuat yang lain lolos tanpa penjaga.
+ */
+function sumberMasterHarga(): string
+{
+    return sumberLayar('rab/master-harga')."\n".sumberLayar('rab/partials/master-harga-borang');
+}
+
 test('partial select-cari memuat pustakanya langsung, bukan lewat stack', function () {
     /*
      | Layout templateindex — yang dipakai seluruh halaman Orcha — tidak
@@ -44,7 +55,7 @@ test('tiap pembungkus select-cari memakai wire:ignore dan wire:key', function ()
      | SERVER tidak akan tercermin — kecuali nodenya diganti utuh karena
      | kuncinya berbeda.
      */
-    $isi = sumberLayar('rab/master-harga');
+    $isi = sumberMasterHarga();
 
     preg_match_all('/<div[^>]*x-init="pasangSelectCari\(/', $isi, $cocok);
 
@@ -63,7 +74,7 @@ test('tidak ada wire:model di dalam pembungkus select-cari', function () {
      | galat apa pun yang mengatakannya. Nilai awalnya harus ditandai
      | @selected(), dan perubahannya didorong lewat $wire.set().
      */
-    $isi = sumberLayar('rab/master-harga');
+    $isi = sumberMasterHarga();
 
     // Potong tiap pembungkus select-cari sampai </div> penutupnya.
     preg_match_all(
@@ -87,7 +98,7 @@ test('kotak pilih berdaftar panjang memang dipasangi pencarian', function () {
      | kotak cari justru menambah satu benda yang harus diabaikan mata.
      | Yang dipasangi yang daftarnya memang bisa panjang.
      */
-    $isi = sumberLayar('rab/master-harga');
+    $isi = sumberMasterHarga();
 
     foreach ([
         "pasangSelectCari(\$el, 'isian.destinasi'",   // puluhan destinasi katalog

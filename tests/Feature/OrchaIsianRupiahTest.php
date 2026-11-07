@@ -186,9 +186,14 @@ class OrchaIsianRupiahTest extends TestCase
          | kontraknya: penandanya menunjuk id kotak Harga, dan penangannya
          | memang ada di halaman yang sama.
          */
-        $isi = file_get_contents(
-            resource_path('views/livewire/pages/admin/orcha/rab/master-harga.blade.php')
-        );
+        /*
+         | Dua berkas, karena halaman borang memuat keduanya: penandanya di
+         | isian, penangannya di partial cermin. Memeriksa satu saja berarti
+         | penanda tanpa penangan — atau sebaliknya — lolos tanpa tertangkap.
+         */
+        $dasar = 'views/livewire/pages/admin/orcha/rab/partials/';
+        $isi = file_get_contents(resource_path($dasar.'master-harga-borang.blade.php'))
+            .file_get_contents(resource_path($dasar.'master-harga-cermin.blade.php'));
 
         $this->assertStringContainsString('id="mh-harga"', $isi,
             'Kotak Harga kehilangan id-nya — cerminnya tidak punya yang ditunjuk.');

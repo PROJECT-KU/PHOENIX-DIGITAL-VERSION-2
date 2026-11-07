@@ -623,6 +623,16 @@ Route::middleware('permission:akses_orcha')->group(function () {
     // Tanggal merah yang dihargai seperti akhir pekan — pasangan
     // kolom "harga akhir pekan" di master harga.
     Route::get('/admin/orcha/hari-libur', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaHariLiburList::class)->name('admin.orcha.hari-libur');
+    /*
+     | Rute bertambah DI ATAS /master-harga-pdf dan di bawah /master-harga,
+     | keduanya tanpa parameter — jadi urutannya tidak menentukan apa pun di
+     | sini. Yang penting /master-harga/tambah mendahului /master-harga/{id}.
+     */
+    Route::get('/admin/orcha/master-harga/tambah', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm::class)->name('admin.orcha.master-harga.tambah');
+    Route::get('/admin/orcha/master-harga/{harga}/ubah', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm::class)->name('admin.orcha.master-harga.ubah');
+    Route::get('/admin/orcha/master-harga/{harga}/riwayat', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaRiwayat::class)->name('admin.orcha.master-harga.riwayat');
+    Route::get('/admin/orcha/master-harga-riwayat', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaRiwayat::class)->name('admin.orcha.master-harga.riwayat-semua');
+
     Route::get('/admin/orcha/master-harga-pdf', [OrchaEksporController::class, 'masterHarga'])->name('admin.orcha.master-harga.pdf');
     // Vendor bertetangga dengan Master Harga: nomor yang disimpan di sini
     // yang muncul di tiap baris harga, di rincian biaya RAB, dan di PDF
