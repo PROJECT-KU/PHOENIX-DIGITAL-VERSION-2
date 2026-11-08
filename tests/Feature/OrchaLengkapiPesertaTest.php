@@ -256,23 +256,30 @@ test('peserta yang riwayat kesehatannya sudah masuk ditandai', function () {
     // bukan setelahnya.
     expect($halaman->instance()->namaSudahIsi())->toBe(['suparjiman']);
 
-    $halaman->assertSee('Mengubah ejaan namanya memutus kaitan dengan riwayat itu')
-        ->assertSeeHtml('title="Riwayat kesehatannya sudah masuk. Mengubah ejaan namanya memutus kaitan itu."');
+    $halaman->assertSee('Mengubah ejaan namanya memutus kaitan dengan data itu')
+        ->assertSeeHtml('title="Data kesehatannya sudah masuk. Mengubah ejaan namanya memutus kaitan itu."');
 });
 
 test('kotak tempelan tidak ikut dipangkas tinggi isian sebaris', function () {
     palsukanDetail();
 
-    // Layout lemon memaksa height:48px pada setiap .form-control — masuk akal
-    // untuk isian sebaris, tetapi memangkas textarea jadi setinggi satu baris.
-    $halaman = Livewire::actingAs(adminPeserta())
-        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9]);
+    /*
+     | Layout lemon memaksa height:48px pada setiap .form-control — masuk akal
+     | untuk isian sebaris, tetapi memangkas textarea jadi setinggi satu baris.
+     |
+     | Sejak layar ini memakai bahasa rupa dasbor, kotaknya tidak lagi
+     | .form-control sama sekali, jadi aturan itu tidak menyentuhnya. Yang
+     | dijaga sekarang: kotaknya memang .dsb-isian, dan halaman ini memberinya
+     | tinggi minimum sendiri — tanpa itu .dsb-isian hanya 40px, sama
+     | sempitnya dengan yang dulu dikeluhkan.
+     */
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        ->assertSeeHtml('class="dsb-isian orcha-tempel"');
 
-    $halaman->assertSeeHtml('class="form-control orcha-tempel"');
-
-    expect(file_get_contents(resource_path('views/livewire/pages/admin/orcha/partials/gaya.blade.php')))
-        ->toContain('.orcha-tempel')
-        ->toContain('height: auto !important;');
+    expect(file_get_contents(resource_path('views/livewire/pages/admin/orcha/pendaftaran/peserta.blade.php')))
+        ->toContain('.ps-peserta textarea.dsb-isian')
+        ->toContain('min-height: 152px');
 });
 
 test('titik jemput dipilih dari daftar, bukan diketik bebas', function () {
@@ -1368,7 +1375,7 @@ test('cara mengganti peserta disebut di kedua halaman', function () {
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran/9/peserta')
         ->assertOk()
-        ->assertSee('Mengganti peserta?')
+        ->assertSee('Mau mengganti peserta?')
         // Petunjuknya menyebut tombolnya, bukan menyuruh mengetik di kotak yang
         // sama dengan nama lama.
         ->assertSee('di baris orang yang berhalangan')
@@ -1598,7 +1605,7 @@ test('kedua kartu unggahan menjelaskan titik jemput penggantinya', function () {
         ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
         ->assertSee('Haha > Wiam, Klaten')
         ->assertSee('naik di titik yang sama')
-        ->assertSee('mewarisi titik lamanya');
+        ->assertSee('ikut titik lamanya');
 });
 
 test('berkas boleh menyatakan penggantian lewat kolom ketiga', function () {
