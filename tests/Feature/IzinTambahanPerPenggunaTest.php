@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Pages\Admin\RoleUser\AksesAkun;
+use App\Livewire\Pages\Admin\RoleUser\RoleList;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -322,4 +323,23 @@ it('tidak menggambar centang untuk izin yang memang belum diberikan', function (
     Livewire::actingAs($admin)
         ->test(AksesAkun::class, ['user' => $target->id])
         ->assertDontSeeHtml('value="'.$izin->id.'" wire:model="izinTambahan" checked');
+});
+
+it('daftar pengguna menautkan ke halaman akses, bukan jendela sembul', function () {
+    /*
+     | Penjaga pemindahan: panel izin dulu jendela sembul di layar ini, dan
+     | jendela itulah yang menyimpan cacat `checked` yang tidak pernah
+     | tergambar. Kalau tombolnya kelak dikembalikan ke `showModalEdit`,
+     | cacat itu ikut kembali — tanpa satu pun uji lain yang merah.
+     */
+    $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
+    $target = penggunaUji(peranUji('karyawan'));
+
+    Livewire::actingAs($admin)
+        ->test(RoleList::class)
+        ->set('activeTab', 'tab-user')
+        ->assertSee('Atur akses akun ini')
+        ->assertSeeHtml(route('admin.account.role.akses', $target->id))
+        ->assertDontSee('Ubah Akses Akun')
+        ->assertDontSeeHtml('showModalEdit');
 });
