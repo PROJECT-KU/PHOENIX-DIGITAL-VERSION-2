@@ -1,7 +1,9 @@
 {{-- Kartu riwayat kesehatan satu peserta.
 
-     Dipakai bersama oleh popup di daftar pendaftaran dan halaman detail
-     pelanggan, supaya keduanya tidak lama-lama berbeda bentuk.
+     Kini hanya dipakai layar Data Kesehatan Peserta — baik untuk peserta yang
+     berangkat maupun arsip peserta yang sudah digantikan. Catatan lama di sini
+     menyebut popup daftar pendaftaran dan halaman detail pelanggan; keduanya
+     sudah tidak memakainya.
 
      Bacaan pertama yang harus langsung terlihat: SIAPA yang perlu perhatian
      khusus. Karena itu peserta bercatatan khusus diberi pita merah di sisi
@@ -29,10 +31,10 @@
     // Baris yang kosong tidak ditampilkan sama sekali: kartu penuh tulisan
     // "—" membuat yang benar-benar terisi jadi sulit ditemukan.
     $medis = array_filter([
-        'Riwayat penyakit' => $peserta['riwayat_penyakit'] ?? null,
+        'Punya penyakit' => $peserta['riwayat_penyakit'] ?? null,
         'Alergi' => $peserta['alergi'] ?? null,
         'Obat rutin' => $peserta['obat_rutin'] ?? null,
-        'Riwayat operasi' => $peserta['riwayat_operasi'] ?? null,
+        'Pernah dioperasi' => $peserta['riwayat_operasi'] ?? null,
         'Pantangan makanan' => $peserta['pantangan_makanan'] ?? null,
         'Pantangan kegiatan' => $peserta['pantangan_kegiatan'] ?? null,
     ]);
@@ -58,7 +60,7 @@
                             ($peserta['usia'] ?? null) ? $peserta['usia'] . ' tahun' : null,
                             $peserta['jenis_kelamin'] ?? null,
                             ($peserta['golongan_darah'] ?? null) ? 'Gol. darah ' . $peserta['golongan_darah'] : null,
-                        ])->filter()->implode(' · ') ?: 'Data dasar belum lengkap' }}
+                        ])->filter()->implode(' · ') ?: 'Umur & golongan darah belum diisi' }}
                     </div>
                 </div>
 
@@ -81,7 +83,7 @@
                  menebak-nebak bagian mana yang membuatnya ditandai merah. --}}
             @if ($alasanPerhatian)
                 <div class="orcha-alasan orcha-alasan-tinggi mt-2">
-                    <span class="orcha-label-kecil" style="color:#b91c1c">Menuntut kesiapan sebelum berangkat</span>
+                    <span class="orcha-label-kecil" style="color:#b91c1c">Harus disiapkan sebelum berangkat</span>
                     <ul class="mb-0 mt-1 ps-3">
                         @foreach ($alasanPerhatian as $alasan)
                             <li>{{ $alasan }}</li>

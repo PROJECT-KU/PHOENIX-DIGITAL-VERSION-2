@@ -1267,8 +1267,8 @@ test('arsip dipisah dari peserta yang berangkat, dan penggantinya disebut', func
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran/9/riwayat-kesehatan')
         ->assertOk()
-        ->assertSee('Rincian peserta yang berangkat')
-        ->assertSee('Arsip — sudah digantikan, tidak berangkat')
+        ->assertSee('Peserta yang Berangkat')
+        ->assertSee('Sudah Diganti — Tidak Ikut Berangkat')
         ->assertSeeHtml('<span class="orcha-ganti-lama">haha</span>')
         ->assertSeeHtml('<span class="orcha-ganti-baru">Wiam Ramadhani</span>');
 });
@@ -1287,7 +1287,7 @@ test('pengganti yang belum mengisi ditonjolkan sendiri', function () {
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran/9/riwayat-kesehatan')
         ->assertOk()
-        ->assertSee('Peserta pengganti belum mengisi riwayat kesehatan')
+        ->assertSee('Peserta Pengganti Belum Mengisi')
         ->assertSeeHtml('<span class="orcha-ganti-baru">Wiam Ramadhani</span>');
 });
 
@@ -1353,11 +1353,13 @@ test('riwayat kesehatan peserta yang diganti ditandai arsip, bukan dihilangkan',
     // di antara peserta yang berangkat, tempat tim lapangan membacanya sambil
     // berjalan tanpa cara membedakan siapa yang benar-benar ada di kendaraan.
     $halaman->assertSee('Haha')
-        ->assertSee('Arsip — sudah digantikan, tidak berangkat')
-        ->assertSee('tidak perlu disiapkan apa pun untuknya');
+        ->assertSee('Sudah Diganti — Tidak Ikut Berangkat')
+        ->assertSee('tidak perlu disiapkan apa pun');
 
     // Dan tidak ikut menuntut kesiapan tim: yang diganti tidak berangkat.
-    $halaman->assertDontSee('Perlu disiapkan sebelum berangkat');
+    // Diperiksa lewat judul kartunya — kartu itu hanya tergambar bila ada
+    // peserta AKTIF yang bertingkat 'tinggi'.
+    $halaman->assertDontSee('Perlu Disiapkan Sebelum Berangkat');
 });
 
 test('cara mengganti peserta disebut di kedua halaman', function () {

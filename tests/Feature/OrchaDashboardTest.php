@@ -221,10 +221,10 @@ test('riwayat kesehatan terbuka bagi yang punya permission', function () {
     $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran/1/riwayat-kesehatan')
         ->assertOk()
-        ->assertSee('Riwayat Kesehatan Peserta')
+        ->assertSee('Data Kesehatan Peserta')
         ->assertSee('Asma ringan')
         // Peringatan kerahasiaan berdiri di atas, bukan jadi catatan kaki.
-        ->assertSee('Data pribadi peserta');
+        ->assertSee('Ini data pribadi peserta');
 });
 
 /* --------------------------- UBAH STATUS --------------------------- */
@@ -2879,12 +2879,12 @@ test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
         ->get('/admin/orcha/pendaftaran/7/riwayat-kesehatan')
         ->assertOk()
         ->assertSee('Perlu perhatian')
-        ->assertSee('Menuntut kesiapan sebelum berangkat')
+        ->assertSee('Harus disiapkan sebelum berangkat')
         ->assertSee('Ada catatan')
         ->assertSee('Cukup diingat di lapangan')
         ->assertSee('Tanpa catatan')
         // Yang menuntut kesiapan dikumpulkan di depan, sebelum kartunya sendiri.
-        ->assertSee('Perlu disiapkan sebelum berangkat')
+        ->assertSee('Perlu Disiapkan Sebelum Berangkat')
         ->assertSee('Gangguan jantung');
 });
 
