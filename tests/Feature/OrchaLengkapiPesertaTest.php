@@ -82,8 +82,9 @@ test('rombongan tanpa nama peserta ditandai, bukan dibiarkan kosong', function (
         ->get('/admin/orcha/pendaftaran/9')
         ->assertOk()
         ->assertSee('Nama peserta belum didata')
-        ->assertSee('bisa masuk manifes panggil-nama')
-        ->assertSee('Lengkapi daftar peserta')
+        // "Manifes" kata kami, bukan kata admin yang membacanya.
+        ->assertSee('belum bisa masuk daftar absen keberangkatan')
+        ->assertSee('Isi nama peserta')
         // Tautan halaman, bukan wire:click: berpindah halaman selalu terlihat
         // sedang berjalan, sedangkan panggilan latar yang tertahan server sibuk
         // tampak seperti tombol yang mati.
@@ -496,7 +497,7 @@ test('riwayat perubahan nama tampil di halaman detail', function () {
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran/9')
         ->assertOk()
-        ->assertSee('Riwayat Perubahan Nama Peserta')
+        ->assertSee('Peserta yang Diganti Orang Lain')
         ->assertSee('Haha')
         ->assertSee('Wiam')
         ->assertSee('admin@lemon.test')
@@ -1144,10 +1145,23 @@ test('emoji dikirim sebagai penanda titik kode, bukan huruf emojinya', function 
      */
     expect($isi)
         ->toContain('data-wa-pesan=')
-        ->toContain('[[E:1F44B]]')
+        ->toContain('[[E:1F44B]]');
+
+    /*
+     | Yang diperiksa ISI PESANNYA, bukan seluruh halaman.
+     |
+     | Sejak layar ini memakai bahasa rupa dasbor, berkas gayanya ikut
+     | terkirim — dan salah satu komentar CSS di dalamnya memuat 👋. Memeriksa
+     | seluruh respons karena itu merah tanpa satu pun pesan yang rusak, dan
+     | yang dimaksud uji ini sejak awal memang cuma atribut data-wa-pesan.
+     */
+    preg_match_all('/data-wa-pesan="([^"]*)"/', $isi, $cocok);
+    expect($cocok[1])->not->toBeEmpty();
+
+    foreach ($cocok[1] as $pesan) {
         // Emoji mentah tidak boleh ada di dalam pesannya sama sekali.
-        ->not->toContain('👋')
-        ->not->toContain('🩺');
+        expect($pesan)->not->toContain('👋')->not->toContain('🩺');
+    }
 });
 
 test('href memuat pesan polos, cadangan bila skrip perakitnya tidak jalan', function () {
@@ -1348,7 +1362,7 @@ test('cara mengganti peserta disebut di kedua halaman', function () {
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran/9')
         ->assertOk()
-        ->assertSee('Peserta berhalangan dan digantikan orang lain?')
+        ->assertSee('Ada yang berhalangan dan diganti orang lain?')
         ->assertSee('surat pernyataannya muncul di halaman ini');
 
     $this->actingAs(adminPeserta())

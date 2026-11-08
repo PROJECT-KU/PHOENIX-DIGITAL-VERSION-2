@@ -2706,8 +2706,8 @@ test('riwayat kesehatan di detail hanya untuk akun berizin', function () {
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7')
         ->assertOk()
-        ->assertSee('Riwayat kesehatan terkunci')
-        ->assertDontSee('Lihat Riwayat Kesehatan');
+        ->assertSee('Data kesehatan terkunci')
+        ->assertDontSee('Lihat data kesehatan');
 
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7/riwayat-kesehatan')
@@ -2735,7 +2735,7 @@ test('akun berizin bisa membuka riwayat kesehatan dari halaman detail', function
     $this->actingAs($admin)
         ->get('/admin/orcha/pendaftaran/7')
         ->assertOk()
-        ->assertSee('Lihat Riwayat Kesehatan')
+        ->assertSee('Lihat data kesehatan')
         ->assertSee(route('admin.orcha.pendaftaran.kesehatan', 7), false);
 
     $this->actingAs($admin)
@@ -2848,13 +2848,15 @@ test('ekspor ditolak untuk akun tanpa izin data kesehatan', function () {
 test('tombol unduh hanya tampil untuk akun berizin', function () {
     Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
 
+    // Tombolnya menyebut APA yang didapat, bukan nama berkasnya: "manifes"
+    // kata kami, dan admin yang awam mencari "daftar peserta".
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7')
-        ->assertDontSee('Manifes PDF');
+        ->assertDontSee('Daftar Peserta (PDF)');
 
     $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran/7')
-        ->assertSee('Manifes PDF');
+        ->assertSee('Daftar Peserta (PDF)');
 });
 
 test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
@@ -4576,20 +4578,31 @@ test('bilah perkakas detail pendaftaran seukuran pemilih statusnya', function ()
     ]);
 
     /*
-     | Terukur di peramban: keempat tombol dan pemilih statusnya kini 34px.
-     | Satu bilah perkakas yang tombolnya berbeda-beda tinggi terbaca seperti
-     | kumpulan tombol yang kebetulan bersebelahan.
+     | Satu bentuk tombol untuk seluruh bilah.
+     |
+     | Sejak layar ini memakai bahasa rupa dasbor, tinggi tombolnya ditentukan
+     | .dsb-tombol — satu definisi, bukan satu ukuran yang disamakan manual di
+     | tiap tombol. Yang dijaga di sini tinggal satu hal: tidak ada tombol di
+     | bilah ini yang memakai bentuk lain, karena bilah yang tombolnya
+     | berbeda-beda tinggi terbaca seperti kumpulan tombol yang kebetulan
+     | bersebelahan.
      */
-    // Manifes PDF dan Excel memuat data kesehatan, jadi keduanya hanya tergambar
-    // untuk akun yang berizin — dan itulah tampilan yang dilihat admin Orcha.
+    // Daftar peserta (PDF) dan Excel memuat data kesehatan, jadi keduanya hanya
+    // tergambar untuk akun berizin — dan itulah tampilan yang dilihat admin Orcha.
     $isi = tanpaGaya($this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran/8')->assertOk()->getContent());
 
-    // Empat tombol: WA, Kwitansi, Manifes PDF, Excel
-    expect(substr_count($isi, 'orcha-aksi-sewa'))->toBeGreaterThanOrEqual(4);
+    // Empat berkas/tindakan di bilahnya: Bukti Pembayaran, Daftar Peserta (PDF),
+    // Data Lengkap (Excel), Riwayat Perubahan.
+    expect(substr_count($isi, 'dsb-tombol'))->toBeGreaterThanOrEqual(4);
+    expect($isi)
+        ->toContain('Bukti Pembayaran')
+        ->toContain('Daftar Peserta (PDF)')
+        ->toContain('Data Lengkap (Excel)')
+        ->toContain('Riwayat Perubahan');
 
-    // Pemilih statusnya memakai ukuran ringkas yang sama dengan sewa kendaraan
-    expect($isi)->toContain('form-select-sm orcha-pilih-status');
+    // Pemilih statusnya memakai isian dasbor yang sama dengan isian lain di layar ini.
+    expect($isi)->toContain('dsb-isian pd-pilih-status');
 });
 
 test('status tetap terbaca walau daftar pilihannya belum sampai dari orcha', function () {
@@ -5259,7 +5272,7 @@ test('tombol kwitansi tersedia tanpa izin data kesehatan', function () {
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7')
         ->assertOk()
-        ->assertSee('Kwitansi');
+        ->assertSee('Bukti Pembayaran');
 });
 
 test('detail penyewaan menampilkan jadwal, kerusakan, dan tombol nota', function () {

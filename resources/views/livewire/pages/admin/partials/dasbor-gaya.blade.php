@@ -276,7 +276,9 @@
     }
     .dsb-hero-ket { color: var(--dsb-redup); font-size: .9rem; margin: 0; line-height: 1.55; }
 
-    /* Nama + 👋 tidak pernah dipisah baris (lihat catatan di dasbor). */
+    /* Nama + lambaian tangan tidak pernah dipisah baris (lihat catatan di dasbor).
+       Emojinya sengaja TIDAK ditulis di sini: komentar ini ikut terkirim ke
+       setiap halaman yang memuat berkas gaya ini. */
     .dsb-salam-nama { white-space: nowrap; }
 
     /* Penanda "Data per" + tombol "Muat ulang" berpindah baris BERSAMA. */

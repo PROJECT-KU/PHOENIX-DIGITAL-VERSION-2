@@ -98,7 +98,7 @@ test('tombolnya ada di bilah perkakas selama belum lunas', function () {
      */
     Livewire::actingAs(adminBayar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->assertSeeInOrder(['Excel', 'Catat Pembayaran', 'Total tagihan']);
+        ->assertSeeInOrder(['Excel', 'Catat Uang Masuk', 'Total tagihan']);
 });
 
 test('tombolnya hilang begitu lunas', function () {
@@ -109,9 +109,13 @@ test('tombolnya hilang begitu lunas', function () {
      */
     config()->set('uji.lunas', true);
 
+    // Diperiksa lewat pemanggil formulirnya, bukan lewat tulisan tombolnya:
+    // keadaan kosong daftar pembayaran menyebut nama tombol itu di kalimatnya
+    // ("barisnya muncul setelah Anda catat lewat Catat Uang Masuk"), jadi
+    // memeriksa tulisannya bisa merah walau tombolnya memang sudah hilang.
     Livewire::actingAs(adminBayar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->assertDontSee('Catat Pembayaran');
+        ->assertDontSee('bukaFormulirBayar');
 });
 
 test('atas nama pengirim terisi si pemesan lebih dulu', function () {
