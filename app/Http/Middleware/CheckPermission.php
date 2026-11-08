@@ -31,14 +31,22 @@ class CheckPermission
 
         $user = auth()->user();
 
-        // Check if user has a role assigned
-        if (! $user->role) {
-            abort(403, 'No role assigned to user.');
-        }
-
-        // Check if user has any of the required permissions
+        /*
+         | Peran diperiksa SESUDAH izinnya, bukan sebelum.
+         |
+         | Sejak izin bisa diberikan per orang (tabel permission_user),
+         | "tidak punya peran" bukan lagi jawaban akhir — orangnya mungkin
+         | memang diberi izin itu secara pribadi. Menolak lebih dulu berarti
+         | menutup pintu tanpa pernah memeriksa kuncinya.
+         |
+         | Pesannya tetap dibedakan: "belum punya peran" dan "perannya tidak
+         | mencakup izin ini" adalah dua keadaan berbeda, dan yang membaca
+         | log perlu tahu yang mana.
+         */
         if (! $user->hasAnyPermission($permissions)) {
-            abort(403, 'Unauthorized access. Required permission: '.implode(', ', $permissions));
+            abort(403, $user->role
+                ? 'Unauthorized access. Required permission: '.implode(', ', $permissions)
+                : 'No role assigned to user.');
         }
 
         return $next($request);

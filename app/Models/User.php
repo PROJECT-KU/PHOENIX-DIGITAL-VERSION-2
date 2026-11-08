@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -108,19 +109,48 @@ class User extends Authenticatable
             ->get();
     }
 
-    // Check permission
+    /**
+     * Izin TAMBAHAN milik orang ini sendiri, di atas izin perannya.
+     *
+     * Peran tetap jadi dasar; ini pengecualiannya. Dipakai saat sebagian
+     * orang dalam satu peran boleh sesuatu dan sebagian tidak — "Hanifah
+     * dan Wiam boleh masuk Orcha, karyawan lain tidak" — yang tanpa ini
+     * hanya bisa diselesaikan dengan menyalin seluruh perannya.
+     */
+    public function izinTambahan(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'permission_user')
+            ->withPivot(['diberi_oleh', 'alasan'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Punya izin ini — dari perannya ATAU diberikan kepadanya sendiri.
+     *
+     * Urutannya disengaja: peran diperiksa dulu karena itu jalur yang
+     * dilalui hampir semua pemeriksaan, dan relasi izin tambahan tidak
+     * perlu disentuh sama sekali untuk pengguna yang tidak punya satu pun.
+     */
     public function hasPermission(string $permission): bool
     {
-        return $this->role && $this->role->hasPermission($permission);
+        if ($this->role && $this->role->hasPermission($permission)) {
+            return true;
+        }
+
+        return $this->izinTambahan->contains('name', $permission);
     }
 
     // Check any permission
     public function hasAnyPermission(array $permissions): bool
     {
-        if (! $this->role) {
-            return false;
-        }
-
+        /*
+         | TIDAK lagi menyerah saat perannya kosong.
+         |
+         | Sejak izin bisa diberikan per orang, pengguna tanpa peran pun
+         | mungkin berhak — dan jalan pintas lama akan menolaknya tanpa
+         | pernah memeriksa izin pribadinya. Hal yang sama berlaku di
+         | hasAllPermissions() di bawah.
+         */
         foreach ($permissions as $permission) {
             if ($this->hasPermission($permission)) {
                 return true;
@@ -133,10 +163,6 @@ class User extends Authenticatable
     // Check all permissions
     public function hasAllPermissions(array $permissions): bool
     {
-        if (! $this->role) {
-            return false;
-        }
-
         foreach ($permissions as $permission) {
             if (! $this->hasPermission($permission)) {
                 return false;

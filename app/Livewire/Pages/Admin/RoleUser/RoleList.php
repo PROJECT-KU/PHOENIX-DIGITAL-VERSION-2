@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\RoleUser;
 
+use App\Models\Permission;
 use App\Models\Role as ModelsRole;
 use App\Models\User;
 use Exception;
@@ -43,6 +44,27 @@ class RoleList extends Component
 
     public $selectedUser = null;
 
+    /**
+     * Izin TAMBAHAN yang sedang dicentang untuk pengguna yang dibuka.
+     *
+     * Peran tetap jadi dasar; ini pengecualian per orang. Dipakai saat
+     * sebagian orang dalam satu peran boleh sesuatu dan sebagian tidak —
+     * yang tanpa ini hanya bisa diselesaikan dengan menyalin perannya.
+     *
+     * @var array<int, int>
+     */
+    public array $izinTambahan = [];
+
+    /**
+     * Saringan daftar izin di modal.
+     *
+     * Ada 121 izin di aplikasi ini. Tanpa saringan, memberi satu izin Orcha
+     * berarti menggulir melewati seluruh izin ebook, task, dan gaji dulu —
+     * dan panel yang menuntut itu akan dilewati, lalu izinnya diberikan
+     * lewat peran lagi seperti semula.
+     */
+    public string $cariIzin = '';
+
     public function setTab(string $tab): void
     {
         $this->activeTab = $tab;
@@ -59,6 +81,8 @@ class RoleList extends Component
     {
         $this->showEditModalStatus = false;
         $this->selectedUser = null;
+        $this->izinTambahan = [];
+        $this->cariIzin = '';
         $this->showCreateRoleModalStatus = false;
         $this->roleIdBeingEdited = null;
     }
@@ -68,10 +92,13 @@ class RoleList extends Component
         $this->showEditModalStatus = true;
         $this->selectedUser = $id;
 
-        $user = User::with('role')->findOrFail($id);
+        $user = User::with('role', 'izinTambahan')->findOrFail($id);
         $this->username = $user->name;
         $this->userEmail = $user->email;
-        $this->userRole = $user->role->id;
+        // Pengguna tanpa peran tidak boleh merobohkan modalnya — sejak izin
+        // bisa diberikan per orang, keadaan itu masuk akal.
+        $this->userRole = $user->role?->id;
+        $this->izinTambahan = $user->izinTambahan->pluck('id')->map(fn ($i) => (int) $i)->all();
     }
 
     public function showModalFormRole($id = null)
@@ -101,6 +128,32 @@ class RoleList extends Component
         $user->update([
             'role_id' => $this->userRole,
         ]);
+
+        /*
+         | Izin yang SUDAH datang dari perannya tidak ikut disimpan.
+         |
+         | Mencentangnya tidak salah, tetapi menyimpannya membuat baris
+         | pribadi yang tidak mengubah apa pun — lalu saat izin itu dicabut
+         | dari perannya kelak, orang ini diam-diam TETAP memilikinya, dan
+         | tidak ada yang mengira harus memeriksa daftar pribadinya.
+         */
+        $dariPeran = $user->role
+            ? $user->role->permissions->pluck('id')->map(fn ($i) => (int) $i)->all()
+            : [];
+
+        $pilihan = collect($this->izinTambahan)
+            ->map(fn ($i) => (int) $i)
+            ->reject(fn ($i) => in_array($i, $dariPeran, true))
+            ->unique()
+            ->values();
+
+        $user->izinTambahan()->sync(
+            $pilihan->mapWithKeys(fn ($id) => [$id => [
+                // Siapa yang memberi — pertanyaan yang selalu muncul
+                // belakangan, dan tidak bisa dijawab tabel berisi dua kunci.
+                'diberi_oleh' => auth()->user()?->name,
+            ]])->all()
+        );
 
         $this->cancelModal();
         $this->dispatch('swal-alert', [
@@ -216,16 +269,47 @@ class RoleList extends Component
             })
             ->paginate(10, ['*'], 'rolePage');
 
-        $users = User::with('role')
+        // izinTambahan ikut dimuat: daftar pengguna menandai siapa yang
+        // punya izin pribadi, dan tanpa ini jadi satu kueri per baris.
+        $users = User::with('role', 'izinTambahan')
             ->where(function ($q) {
                 $q->where('name', 'like', "%{$this->searchUser}%")
                     ->orWhere('email', 'like', "%{$this->searchUser}%");
             })
             ->paginate(10, ['*'], 'userPage');
 
+        /*
+         | Izin yang bisa diberikan per orang, berikut yang SUDAH datang
+         | dari perannya.
+         |
+         | Yang dari peran ditampilkan tercentang dan terkunci: tanpa itu,
+         | daftar centang yang kosong terbaca sebagai "dia belum punya apa
+         | pun" padahal perannya sudah memberinya sebelas izin.
+         */
+        $dariPeran = [];
+
+        if ($this->selectedUser) {
+            $dipilih = User::with('role.permissions')->find($this->selectedUser);
+            $dariPeran = $dipilih?->role
+                ? $dipilih->role->permissions->pluck('id')->map(fn ($i) => (int) $i)->all()
+                : [];
+        }
+
         return view('livewire.pages.admin.role-user.role-list', [
             'roles' => $roles,
             'users' => $users,
+            'semuaIzin' => Permission::query()
+                ->when(trim($this->cariIzin) !== '', function ($q) {
+                    $kata = '%'.trim($this->cariIzin).'%';
+                    // Nama teknis ikut dicari: yang mencari "akses_orcha"
+                    // biasanya menyalinnya dari dokumentasi atau dari kode.
+                    $q->where(fn ($w) => $w->where('name', 'like', $kata)
+                        ->orWhere('display_name', 'like', $kata)
+                        ->orWhere('group', 'like', $kata)
+                        ->orWhere('description', 'like', $kata));
+                })
+                ->orderBy('group')->orderBy('name')->get()->groupBy('group'),
+            'izinDariPeran' => $dariPeran,
         ]);
     }
 }
