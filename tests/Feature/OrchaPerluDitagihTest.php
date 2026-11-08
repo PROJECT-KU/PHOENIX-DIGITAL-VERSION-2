@@ -100,9 +100,12 @@ test('bersihkan saringan ikut mematikannya', function () {
     Livewire::actingAs(adminTagihan())
         ->test(OrchaPendaftaranList::class)
         ->set('perluDitagih', true)
-        ->assertSee('Bersihkan')
+        ->assertSee('Tampilkan semua lagi')
         ->call('bersihkanSaringan')
-        ->assertSet('perluDitagih', false);
+        ->assertSet('perluDitagih', false)
+        // Tabnya ikut pulang: tab yang tetap menyala membuat daftarnya
+        // terlihat masih tersaring padahal tidak.
+        ->assertSet('tabAktif', 'semua');
 });
 
 test('menyalakannya mengembalikan daftar ke halaman satu', function () {
@@ -123,7 +126,7 @@ test('keadaan pengingat terlihat hanya saat daftar tagihan menyala', function ()
      */
     Livewire::actingAs(adminTagihan())
         ->test(OrchaPendaftaranList::class)
-        ->assertDontSee('belum diingatkan')
+        ->assertDontSee('belum pernah diingatkan')
         ->set('perluDitagih', true)
-        ->assertSee('belum diingatkan');
+        ->assertSee('belum pernah diingatkan');
 });

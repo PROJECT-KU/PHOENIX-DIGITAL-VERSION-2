@@ -1757,11 +1757,13 @@ test('daftar pendaftaran mengelompokkan peserta per titik jemput', function () {
         // dicetak seluruhnya di sel paket, dan satu pesanan bisa memenuhi
         // setengah layar; sekarang ia ada di tooltip baris, halaman detail, dan
         // manifes tour leader — tempat yang memang dibaca sopir.
-        ->assertSee('2 titik jemput')
+        ->assertSee('dijemput di 2 tempat')
         ->assertSee('Surakarta: Siti Aminah, Rina Wijaya', false)
         ->assertSee('Jogja: Budi Santoso', false)
-        // Kelengkapan kesehatan ikut terlihat tanpa membuka apa pun
-        ->assertSee('1/3');
+        // Kelengkapan kesehatan ikut terlihat tanpa membuka apa pun.
+        // Ditulis penuh, bukan "1/3": pecahan menuntut ditafsirkan dulu,
+        // dan layar ini dikerjakan admin yang tidak selalu terbiasa.
+        ->assertSee('1 dari 3 orang');
 });
 
 /* --------------------- DETAIL PELANGGAN --------------------- */
@@ -4484,29 +4486,25 @@ test('kolom aksi tetap sejajar walau riwayat kesehatannya belum ada', function (
     $isi = tanpaGaya($this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran')->assertOk()->getContent());
 
-    expect($isi)->toContain('orcha-aksi-mati')
-        ->toContain('Belum ada riwayat')
-        // Bukan lagi tulisan telanjang
-        ->not->toContain('<span class="text-muted" style="font-size:.76rem">Belum ada riwayat</span>')
-        // Dan bukan tautan yang membuka halaman kosong
-        ->not->toMatch('/<a[^>]*orcha-aksi-mati/');
-
     /*
-     | Keduanya selebar sama.
+     | Dijawab berbeda sejak layar ini memakai bahasa rupa dasbor: tombolnya
+     | berbentuk ikon berukuran tetap di dalam .dsb-tabel-aksi yang dirapatkan
+     | ke kanan, jadi baris dengan satu tombol tetap sejajar dengan baris
+     | bertombol dua. Tombol mati selebar 148px tidak lagi diperlukan untuk
+     | menahan barisnya.
      |
-     | Terukur di peramban sebelum diperbaiki: "Belum ada riwayat" 147px,
-     | "Riwayat (2)" 106px. Karena keduanya berdampingan dengan tombol Detail
-     | dan dirapatkan ke kanan, selisih 41px itu MENGGESER seluruh pasangannya
-     | — barisnya tidak lagi sejajar dengan baris di atas dan di bawahnya.
-     | Sesudah: keduanya 148px, mulai di titik yang sama.
+     | Yang TETAP dijaga adalah sebabnya: tidak boleh ada tulisan telanjang
+     | di kolom aksi. Sel yang berisi teks polos di antara tombol membuat
+     | kolomnya terlihat bolong.
      */
-    expect($isi)->toContain('orcha-aksi-riwayat');
+    expect($isi)->toContain('dsb-tabel-aksi')
+        // Tulisan pengganti tombol sudah tidak ada lagi dalam bentuk apa pun.
+        ->not->toContain('Belum ada riwayat')
+        ->not->toContain('orcha-aksi-mati');
 
-    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/partials/gaya.blade.php'));
-
-    preg_match('/\.orcha-aksi-riwayat\s*\{([^}]*)\}/', $gaya, $aturan);
-
-    expect($aturan[1] ?? '')->toContain('min-width: 9.25rem');
+    // Dan barisnya memang cuma berisi tombol: satu tautan detail, tanpa
+    // tombol kesehatan karena riwayatnya nol.
+    expect(substr_count($isi, 'dsb-tabel-btn'))->toBe(1);
 });
 
 test('kartu pembatalan tidak menyodorkan rekening saat tidak ada yang dikembalikan', function () {
@@ -4624,11 +4622,12 @@ test('status tetap terbaca walau daftar pilihannya belum sampai dari orcha', fun
     $isi = tanpaGaya($this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran')->assertOk()->getContent());
 
-    expect($isi)->toContain('orcha-status-diam')
+    // Lencananya kini memakai bahasa rupa dasbor; yang dijaga tetap sama:
+    // statusnya TETAP terbaca, dan kotak pilih kosongnya tidak digambar.
+    expect($isi)->toContain('bi-wifi-off')
         ->toContain('Baru')
         ->toContain('belum bisa diubah dari sini')
-        // Kotak pilih kosongnya tidak digambar sama sekali
-        ->not->toContain('orcha-pilih-status');
+        ->not->toContain('pd-pilih-status');
 });
 
 test('ukuran pemilih status pendaftaran disamakan dengan sewa kendaraan', function () {

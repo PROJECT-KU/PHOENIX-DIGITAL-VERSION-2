@@ -70,7 +70,10 @@ test('pemilih paket tampil beserta tanggal keberangkatannya', function () {
     $this->actingAs(adminManifes())
         ->get('/admin/orcha/pendaftaran')
         ->assertOk()
-        ->assertSee('Semua paket')
+        // "Keberangkatan", bukan "paket": yang dipilih admin adalah
+        // rombongan yang berangkat tanggal berapa, dan kata "paket" di sini
+        // dulu tertukar dengan menu Paket Wisata.
+        ->assertSee('Semua keberangkatan')
         ->assertSee('Open Trip Banyuwangi')
         // Tanggalnya ikut: dua rombongan paket yang sama di bulan berbeda
         // hanya bisa dibedakan dari tanggalnya.

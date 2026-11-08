@@ -3,468 +3,464 @@ Pendaftaran Trip || lemon
 @stop
 
 <div>
+    {{-- Kerangka mengikuti Pesanan Toko (bahasa rupa dsb-*), supaya dua
+         daftar yang dikerjakan orang yang sama tidak perlu dipelajari dua
+         kali. Kartu tab dipakai bersama lewat partial — satu rupa, satu
+         definisi. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.partials.kartu-tab-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-    <div class="container-fluid">
-        @include('livewire.pages.admin.orcha.partials.kepala', [
-            'judul' => 'Pendaftaran Trip',
-            // Keterangannya ikut dibetulkan: rombongan private trip dan study
-            // tour TIDAK datang lewat website — admin yang memasukkannya lewat
-            // Daftarkan Rombongan, dan keduanya tampil di daftar yang sama.
-            'keterangan' => 'Open trip, private trip, dan study tour — dari website maupun yang didaftarkan admin.',
-        ])
+    @php
+        $bolehKesehatan = auth()->user()->hasPermission('view_orcha_kesehatan');
+        $adaSaringan = $this->adaSaringan();
+        $warnaTab = $tabs[$tabAktif][2] ?? '#7c3aed';
+        $targetMuat = 'cari,filterPaket,setTab,bersihkanSaringan,keHalaman';
+    @endphp
 
-        {{-- Pencarian & saringan --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-3 p-lg-4">
-                {{-- Bilah saringan memakai FLEX, bukan grid dua belas kolom.
+    <div class="dsb pd-daftar">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Pendaftaran Trip</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">
+                        <i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}
+                    </span>
+                    <span class="d-block">
+                        Semua orang yang mendaftar trip — dari website maupun yang Anda masukkan sendiri.
+                    </span>
+                </p>
+            </div>
 
-                     Grid-nya sudah dua kali menjatuhkan tombol terakhir ke baris
-                     kedua, dan dua kali sebabnya berbeda: sekali karena jumlah
-                     kolomnya lewat, sekali karena ms-auto menyerap sisa ruang jadi
-                     margin. Keduanya lolos dari penjaga yang menghitung kolom, dan
-                     keduanya baru ketahuan lewat potret layar.
+            <div class="dsb-hero-aksi">
+                <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
+                    class="dsb-tombol is-lembut" style="--ikon: #16a34a"
+                    title="Masukkan rombongan yang sudah sepakat lewat WhatsApp">
+                    <i class="bi bi-person-plus"></i><span>Daftarkan Rombongan</span>
+                </a>
 
-                     Dengan flex, tiap benda menyebut lebar dasarnya sendiri dan
-                     boleh menyusut — tidak ada jatah dua belas yang harus dijaga
-                     tiap kali satu tombol ditambahkan. Pola ini sudah dipakai kartu
-                     sakelar di bawahnya. --}}
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <div style="flex:1 1 170px">
-                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode, nama...'])
+                @if ($bolehKesehatan)
+                    <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
+                        class="dsb-tombol is-utama"
+                        title="Unduh daftar peserta untuk tour leader — isinya mengikuti yang sedang tampil">
+                        <i class="bi bi-filetype-pdf"></i><span>Unduh Daftar Peserta</span>
+                    </a>
+                @endif
+            </div>
+        </header>
+
+        @include('livewire.pages.admin.orcha.partials.galat-dsb')
+
+        {{-- ================== TAB ==================
+
+             Dua kelompok, dan pemisahannya disengaja: yang atas cara MELIHAT
+             daftar, yang bawah DAFTAR PEKERJAAN. Digabung, "Perlu ditelepon"
+             tenggelam jadi salah satu pilihan menonton — padahal ia
+             satu-satunya yang uangnya bisa hangus kalau didiamkan. --}}
+        <div class="dsb-rak">
+            <div class="k-12">
+                <div class="pt-grup-deret">
+                    @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
+                        <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                            <div class="pt-grup-kepala">
+                                <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                            </div>
+                            <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}">
+                                @foreach ($kunciGrup as $kunci)
+                                    @php
+                                        [$label, $ikon, $warna] = $tabs[$kunci];
+                                        $angka = $jumlahTab[$kunci] ?? null;
+                                        $iniAktif = $tabAktif === $kunci;
+                                    @endphp
+                                    <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
+                                        class="pt-kartu-tab {{ $iniAktif ? 'is-aktif' : '' }} {{ $angka === 0 ? 'is-nol' : '' }}"
+                                        aria-pressed="{{ $iniAktif ? 'true' : 'false' }}">
+                                        <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                        <span class="pt-kartu-teks">
+                                            {{-- Angkanya hilang, bukan jadi "0", bila Orcha belum
+                                                 mengirimnya: nol yang keliru lebih buruk daripada
+                                                 tidak ada angka sama sekali. --}}
+                                            <span class="pt-kartu-angka">
+                                                {{ $angka === null ? '–' : (999 < $angka ? '999+' : number_format($angka, 0, ',', '.')) }}
+                                            </span>
+                                            <span class="pt-kartu-label">{{ $label }}</span>
+                                        </span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </nav>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- ================== SARINGAN ================== --}}
+            <div class="dsb-kartu k-12">
+                <div class="dsb-kartu-isi">
+                    <div class="pd-saring">
+                        <div class="dsb-medan">
+                            <label class="dsb-label">Cari orangnya</label>
+                            @include('livewire.pages.admin.orcha.partials.cari', [
+                                'petunjuk' => 'Nama, nomor WhatsApp, atau kode pendaftaran',
+                                'rupa' => 'dsb',
+                            ])
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="pd-paket">Keberangkatan</label>
+                            <select id="pd-paket" wire:model.live="filterPaket" class="dsb-isian">
+                                <option value="" @selected((string) $this->filterPaket === '')>Semua keberangkatan</option>
+                                @foreach ($pilihanPaket as $paket)
+                                    <option value="{{ $paket['id'] }}" @selected((string) $this->filterPaket === (string) $paket['id'])>
+                                        {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
+                                            · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="dsb-medan pd-medan-aksi">
+                            @if ($adaSaringan)
+                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
+                                    <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua lagi</span>
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
-                    {{-- Saringan paket berdiri sendiri, tidak menumpang kotak cari.
-                         Manifes tour leader dibentuk dari daftar yang sedang tampil,
-                         dan mengetik "Banyuwangi" bisa ikut menyeret paket lain yang
-                         namanya mirip — kelebihan satu rombongan di manifes baru
-                         ketahuan saat rombongannya sudah berkumpul. --}}
-                    <div style="flex:2 1 220px">
-                        <select wire:model.live="filterPaket" class="form-select">
-                            <option value="" @selected((string) $this->filterPaket === '')>Semua paket</option>
-                            {{-- @selected ditulis meski nilainya diikat wire:model.
-
-                                 Tanpa itu, markup dari server tidak pernah menandai pilihan yang
-                                 sedang aktif, dan setelah "Bersihkan saringan" kotak ini tetap
-                                 memajang paket lama sementara daftarnya sudah tidak disaring —
-                                 layar yang berbohong tentang keadaannya sendiri. --}}
-                            @foreach ($pilihanPaket as $paket)
-                                <option value="{{ $paket['id'] }}" @selected((string) $this->filterPaket === (string) $paket['id'])>
-                                    {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
-                                        · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div style="flex:1 1 160px">
-                        <select wire:model.live="filterStatus" class="form-select">
-                            <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
-                            @foreach ($pilihanStatus as $kunci => $label)
-                                <option value="{{ $kunci }}" @selected($filterStatus === $kunci)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Pengosong saringan DUDUK DI BARIS YANG SAMA dengan yang
-                         dibersihkannya.
-
-                         Sebelumnya ia berbaris sendiri di bawah, terpisah dari tiga
-                         kotak yang justru jadi urusannya — dan tombol yang jauh dari
-                         benda yang diubahnya menuntut mata berpindah dua kali untuk
-                         mengerti hubungannya.
-
-                         Lebarnya mengikuti isi: ia cuma muncul kadang-kadang, dan
-                         jatah tetap yang kosong separuh waktu menggeser tombol lain
-                         bolak-balik setiap kali saringannya dinyalakan. --}}
-                    @if ($this->adaSaringan())
-                        <button type="button" wire:click="bersihkanSaringan"
-                            class="orcha-btn orcha-btn-lembut orcha-btn-seragam"
-                            title="Kosongkan pencarian, paket, status, dan saringan tagihan sekaligus">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                            <span>Bersihkan</span>
-                        </button>
+                    @if ($adaSaringan && $bolehKesehatan)
+                        {{-- Akibat yang tidak terlihat dari layar: berkas yang
+                             diunduh mengikuti saringan yang sedang hidup. Tour
+                             leader yang membawa daftar hasil saringan lupa akan
+                             berdiri di parkiran dengan daftar yang kurang satu
+                             rombongan. --}}
+                        <div class="pd-catatan">
+                            <i class="bi bi-funnel-fill"></i>
+                            <span>
+                                Daftar sedang disaring. <strong>Unduh Daftar Peserta</strong> ikut tersaring juga —
+                                kosongkan dulu kalau tour leader butuh daftar lengkapnya.
+                            </span>
+                        </div>
                     @endif
-
                 </div>
+            </div>
+        </div>
 
-                {{-- Saringan tagihan berdiri sendiri di barisnya, bukan jadi
-                     pilihan keempat di dalam kotak status.
-
-                     Yang ini bukan cara MELIHAT daftar, melainkan daftar
-                     pekerjaan: siapa yang harus ditelepon hari ini. Menaruhnya
-                     sejajar dengan "Semua status" membuatnya tenggelam jadi
-                     salah satu dari sekian pilihan, dan pekerjaan yang tidak
-                     terlihat tidak pernah dikerjakan.
-
-                     Pengingat pelunasan sudah dikirim sistem tiap pagi. Yang
-                     tersisa di daftar ini justru yang sudah dikirimi dan tetap
-                     diam — dan itu cuma bisa diselesaikan lewat telepon. --}}
-                {{-- Sakelar dan tindakan SEBARIS.
-
-                     Baris pertama sudah penuh oleh empat saringan, dan memaksa
-                     Daftarkan serta Manifes ikut di sana membuat salah satunya
-                     terlempar sendirian ke baris kedua — bergesernya terjadi persis
-                     saat saringan dinyalakan, yaitu saat admin sedang menekan
-                     tombol.
-
-                     Turun ke sini, keduanya sejajar dengan sakelar dan barisnya
-                     tetap satu. Sakelarnya menyusut mengikuti ruang yang tersisa;
-                     lebar dasarnya 260px, cukup untuk judul dan keterangannya
-                     sebelum ia mulai membungkus. --}}
-                <div class="d-flex flex-wrap align-items-stretch gap-2 mt-3">
-                    <label class="orcha-sakelar-kartu {{ $perluDitagih ? 'nyala' : '' }} mb-0" style="flex:1 1 260px">
-                        <span class="rupa">
-                            <i class="bi {{ $perluDitagih ? 'bi-telephone-outbound' : 'bi-cash-coin' }}"></i>
+        {{-- ================== DAFTARNYA ================== --}}
+        <div class="dsb-rak">
+            <div class="dsb-kartu k-12" wire:loading.class="dsb-sedang-muat" wire:target="{{ $targetMuat }}">
+                <div class="pt-daftar-kepala" style="--c: {{ $warnaTab }}">
+                    <div class="pt-daftar-judul">
+                        <b>{{ $tabs[$tabAktif][0] ?? 'Semua' }}</b>
+                        <span>
+                            @if (($meta['total'] ?? 0) > 0)
+                                {{ number_format($meta['total'], 0, ',', '.') }} pendaftaran
+                                @if ($tabAktif === 'perlu_ditagih')
+                                    — sudah bayar DP, belum lunas, dan tanggalnya sudah dekat. Yang paling mepet di atas.
+                                @endif
+                            @else
+                                Belum ada isinya
+                            @endif
                         </span>
-                        <span class="isi">
-                            <span class="judul">
-                                {{ $perluDitagih ? 'Sedang melihat yang perlu ditagih' : 'Perlu ditagih' }}
-                            </span>
-                            <span class="ket">
-                                {{ $perluDitagih
-                                    ? ($meta['total'] ?? 0) . ' pendaftaran sudah bayar DP tetapi belum lunas, dan tanggalnya sudah dekat. Yang paling mepet di atas.'
-                                    : 'Sudah bayar DP, belum lunas, dan tanggalnya sudah dekat.' }}
-                            </span>
-                        </span>
-                        <span class="form-check form-switch mb-0">
-                            <input class="form-check-input" type="checkbox" role="switch" wire:model.live="perluDitagih">
-                        </span>
-                    </label>
-
-                    {{-- Daftarkan dan Manifes bukan cara MELIHAT daftar melainkan hal
-                         yang dikerjakan terhadapnya — karena itu terpisah dari
-                         saringan di atas, dan didorong ke ujung kanan.
-
-                         Pada layar sempit ms-auto tidak berlaku dan keduanya turun
-                         mengikuti sakelar; itu memang yang diinginkan. --}}
-                    {{-- align-items-stretch, bukan center.
-
-                         Dipusatkan, tombolnya berhenti di tinggi alaminya (39px)
-                         sementara kartu sakelar di sebelahnya 70px — dua benda
-                         sebaris dengan tinggi yang jauh berbeda terbaca seperti yang
-                         satu menempel belakangan.
-
-                         Diregangkan, keduanya setinggi baris yang sama. --}}
-                    <div class="d-flex gap-2 ms-lg-auto align-items-stretch" style="flex:0 1 auto">
-                        <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
-                            class="orcha-btn orcha-btn-lembut orcha-btn-seragam"
-                            title="Masukkan rombongan yang disepakati lewat WhatsApp">
-                            <i class="bi bi-person-plus"></i>
-                            <span>Daftarkan</span>
-                        </a>
-
-                        @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
-                            <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
-                                class="orcha-btn orcha-btn-utama orcha-btn-seragam"
-                                title="Manifes tour leader untuk daftar yang sedang tampil">
-                                <i class="bi bi-filetype-pdf"></i>
-                                <span>Manifes</span>
-                            </a>
-                        @endif
                     </div>
                 </div>
 
-                {{-- Keterangannya tinggal di bawah; tombolnya sudah naik ke baris
-                     saringan.
+                @if (count($daftar) === 0)
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon">
+                                <i class="bi {{ $adaSaringan ? 'bi-funnel' : 'bi-inbox' }}"></i>
+                            </span>
+                            <p class="dsb-kosong-judul">
+                                {{ $adaSaringan ? 'Tidak ada yang cocok' : 'Belum ada pendaftaran di sini' }}
+                            </p>
+                            <p class="dsb-kosong-ket">
+                                {{ $adaSaringan
+                                    ? 'Coba ganti kata pencarian atau pilih keberangkatan lain.'
+                                    : 'Pendaftaran yang masuk lewat website akan muncul di sini sendiri.' }}
+                            </p>
+                        </div>
+                    </div>
+                @else
+                    <div class="dsb-tabel-bungkus">
+                        <table class="dsb-tabel pd-tabel">
+                            <thead>
+                                <tr>
+                                    <th>Yang mendaftar</th>
+                                    <th>Ikut trip</th>
+                                    <th>Berangkat</th>
+                                    <th>Data kesehatan</th>
+                                    <th>Keadaan</th>
+                                    <th class="text-end">Buka</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($daftar as $baris)
+                                    @php
+                                        $berangkat = $baris['tanggal_berangkat']
+                                            ? \Carbon\Carbon::parse($baris['tanggal_berangkat'])->startOfDay()
+                                            : null;
+                                        $selisihHari = $berangkat ? now()->startOfDay()->diffInDays($berangkat, false) : null;
+                                        $terisi = (int) ($baris['kesehatan_terisi'] ?? 0);
+                                        $totalPeserta = max(1, (int) $baris['jumlah_peserta']);
+                                        $lengkap = $baris['kesehatan_lengkap'] ?? false;
+                                        $titikJemput = $baris['jemput_per_titik'] ?? [];
+                                        $angsuran = $baris['angsuran'] ?? null;
+                                        $temponBerikutnya = ! empty($angsuran['berikutnya'])
+                                            ? \Carbon\Carbon::parse($angsuran['berikutnya'])->locale('id')->translatedFormat('d M')
+                                            : null;
+                                        $urlDetail = route('admin.orcha.pendaftaran.detail', $baris['id']);
+                                    @endphp
+                                    <tr wire:key="pendaftaran-{{ $baris['id'] }}">
+                                        {{-- ===== Yang mendaftar ===== --}}
+                                        <td data-judul="Yang mendaftar">
+                                            <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-utama pd-tautan">
+                                                <span class="dsb-tabel-teks">
+                                                    <span class="dsb-tabel-judul">{{ $baris['nama'] }}</span>
+                                                    <span class="dsb-tabel-meta">
+                                                        <span class="orcha-kode">{{ $baris['kode'] }}</span>
+                                                        <span><i class="bi bi-whatsapp"></i>{{ $baris['whatsapp'] }}</span>
+                                                    </span>
+                                                    <span class="dsb-tabel-samar">
+                                                        <i class="bi bi-clock"></i>daftar
+                                                        {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
+                                                    </span>
+                                                </span>
+                                            </a>
 
-                     Yang disebut di sini akibat yang tidak terlihat dari layar:
-                     manifes yang diunduh mengikuti saringan yang sedang hidup.
-                     Tour leader yang membawa manifes hasil saringan lupa akan
-                     berdiri di parkiran dengan daftar yang kurang satu rombongan. --}}
-                @if ($this->adaSaringan())
-                    <div class="text-muted mt-3" style="font-size:.78rem">
-                        <i class="bi bi-funnel"></i>
-                        Daftar sedang disaring — manifes yang diunduh mengikuti saringan ini.
+                                            <span class="pd-cip-deret">
+                                                <span class="dsb-lencana is-abu">
+                                                    <i class="bi bi-people-fill"></i>{{ $baris['jumlah_peserta'] }} orang
+                                                </span>
+
+                                                {{-- Rombongan tanpa nama peserta tidak masuk daftar
+                                                     panggil-nama. Ditandai di sini supaya ketemu
+                                                     sebelum hari berangkat, bukan di lapangan.
+                                                     Cipnya sekaligus jalan keluarnya. --}}
+                                                @if (empty($baris['peserta']))
+                                                    <a href="{{ route('admin.orcha.pendaftaran.peserta', $baris['id']) }}"
+                                                        wire:navigate class="dsb-lencana is-kuning text-decoration-none"
+                                                        title="Nama pesertanya belum ditulis — klik untuk mengisinya">
+                                                        <i class="bi bi-person-dash"></i>nama belum ditulis
+                                                    </a>
+                                                @endif
+
+                                                {{-- Hanya di daftar telepon: yang mengangkat gagang
+                                                     perlu tahu mana yang sudah dikirimi pengingat dan
+                                                     tetap diam, dan mana yang memang belum pernah
+                                                     dihubungi. Dua keadaan itu menuntut kalimat
+                                                     pembuka yang berbeda. --}}
+                                                @if ($perluDitagih)
+                                                    @if (! empty($baris['pengingat_pelunasan_pada']))
+                                                        <span class="dsb-lencana is-biru">
+                                                            <i class="bi bi-envelope-check"></i>sudah diingatkan
+                                                            {{ \Carbon\Carbon::parse($baris['pengingat_pelunasan_pada'])->locale('id')->diffForHumans() }}
+                                                        </span>
+                                                    @else
+                                                        <span class="dsb-lencana is-abu">
+                                                            <i class="bi bi-envelope"></i>belum pernah diingatkan
+                                                        </span>
+                                                    @endif
+                                                @endif
+                                            </span>
+                                        </td>
+
+                                        {{-- ===== Ikut trip ===== --}}
+                                        <td data-judul="Ikut trip">
+                                            <span class="dsb-tabel-teks">
+                                                <span class="dsb-tabel-judul">{{ $baris['paket']['nama'] }}</span>
+                                                @if (! empty($titikJemput))
+                                                    <span class="dsb-tabel-meta"
+                                                        title="@foreach ($titikJemput as $titik => $orang){{ $titik }}: {{ implode(', ', $orang) }}&#10;@endforeach">
+                                                        <i class="bi bi-geo-alt-fill"></i>dijemput di {{ count($titikJemput) }} tempat
+                                                    </span>
+                                                @elseif ($baris['titik_jemput'])
+                                                    <span class="dsb-tabel-meta">
+                                                        <i class="bi bi-geo-alt-fill"></i>{{ $baris['titik_jemput'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="dsb-tabel-samar">tempat jemput belum diisi</span>
+                                                @endif
+                                            </span>
+                                        </td>
+
+                                        {{-- ===== Berangkat ===== --}}
+                                        <td data-judul="Berangkat">
+                                            @if ($berangkat)
+                                                <span class="dsb-tabel-teks">
+                                                    <span class="dsb-tabel-angka">{{ $berangkat->locale('id')->translatedFormat('d M Y') }}</span>
+                                                    {{-- Hitungan mundur, bukan tanggal saja: yang
+                                                         menentukan tindakan hari ini adalah jarak ke
+                                                         keberangkatan, dan menghitungnya sendiri dari
+                                                         kalender itu pekerjaan yang berulang belasan
+                                                         kali sehari. --}}
+                                                    @if ($selisihHari > 0)
+                                                        <span class="dsb-lencana {{ $selisihHari <= 5 ? 'is-merah' : 'is-abu' }}">
+                                                            {{ $selisihHari <= 5 ? 'tinggal' : '' }} {{ $selisihHari }} hari lagi
+                                                        </span>
+                                                    @elseif ($selisihHari === 0)
+                                                        <span class="dsb-lencana is-merah"><i class="bi bi-airplane"></i>berangkat hari ini</span>
+                                                    @else
+                                                        <span class="dsb-lencana is-abu">sudah berangkat</span>
+                                                    @endif
+                                                </span>
+                                            @else
+                                                <span class="dsb-tabel-samar">tanggalnya belum ditentukan</span>
+                                            @endif
+                                        </td>
+
+                                        {{-- ===== Data kesehatan ===== --}}
+                                        <td data-judul="Data kesehatan">
+                                            {{-- Harus terlihat jauh sebelum hari berangkat, bukan
+                                                 saat rombongan sudah berkumpul. --}}
+                                            <span class="dsb-tabel-teks">
+                                                <span class="dsb-lencana {{ $lengkap ? 'is-hijau' : ($terisi === 0 ? 'is-merah' : 'is-kuning') }}"
+                                                    @if (! empty($baris['peserta_belum_isi']))
+                                                        title="Belum mengisi: {{ implode(', ', $baris['peserta_belum_isi']) }}"
+                                                    @endif>
+                                                    <i class="bi {{ $lengkap ? 'bi-heart-pulse-fill' : 'bi-heart-pulse' }}"></i>
+                                                    {{ $terisi }} dari {{ $baris['jumlah_peserta'] }} orang
+                                                </span>
+                                                <span class="pd-batang {{ $lengkap ? 'is-lengkap' : '' }}">
+                                                    <span style="width: {{ min(100, $terisi / $totalPeserta * 100) }}%"></span>
+                                                </span>
+                                            </span>
+                                        </td>
+
+                                        {{-- ===== Keadaan ===== --}}
+                                        <td data-judul="Keadaan">
+                                            <span class="dsb-tabel-teks">
+                                                {{-- Bila daftar statusnya TIDAK sampai, yang digambar
+                                                     tulisannya — bukan kotak pilih kosong. Daftar itu
+                                                     datang dari Orcha, dan saat Orcha sedang tidak
+                                                     bisa dihubungi kotak pilih tanpa satu pun pilihan
+                                                     tergambar benar-benar kosong: statusnya lenyap
+                                                     tanpa satu pun kalimat yang menjelaskan sebabnya.
+                                                     Statusnya sendiri selalu ada — ia datang bersama
+                                                     barisnya. --}}
+                                                @if ($pilihanStatus === [])
+                                                    <span class="dsb-lencana is-abu"
+                                                        title="Daftar pilihan belum bisa diambil dari Orcha, jadi keadaannya belum bisa diubah dari sini.">
+                                                        <i class="bi bi-wifi-off"></i>{{ $baris['status_label'] ?? $baris['status'] }}
+                                                    </span>
+                                                @else
+                                                    <select class="dsb-isian pd-pilih-status status-{{ $baris['status'] }}"
+                                                        wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)"
+                                                        title="Ubah keadaan pendaftaran ini">
+                                                        @foreach ($pilihanStatus as $kunci => $label)
+                                                            <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                @endif
+
+                                                {{-- Pesanan yang belum lunas menjelang berangkat berarti
+                                                     dua hal yang sangat berbeda: ia menunggak, atau ia
+                                                     sedang menjalani jadwal yang kita sendiri berikan.
+                                                     Menelepon orang yang membayar tepat waktu dengan
+                                                     nada penagihan merusak kesepakatan yang baru
+                                                     dibuat. Tiga keadaan, tiga kalimat. --}}
+                                                @if ($angsuran)
+                                                    @if ($angsuran['telat'] > 0)
+                                                        <span class="dsb-lencana is-merah"
+                                                            title="Dicicil {{ $angsuran['jumlah_termin'] }} kali. {{ $angsuran['telat'] }} cicilan sudah lewat tanggalnya dan belum dibayar.">
+                                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                                            telat bayar cicilan {{ $angsuran['telat'] }}×
+                                                        </span>
+                                                    @elseif ($angsuran['selesai'])
+                                                        <span class="dsb-lencana is-hijau" title="Semua cicilan sudah dibayar.">
+                                                            <i class="bi bi-calendar2-check-fill"></i>cicilan lunas
+                                                        </span>
+                                                    @else
+                                                        <span class="dsb-lencana is-biru"
+                                                            title="Dicicil {{ $angsuran['jumlah_termin'] }} kali. Cicilan berikutnya jatuh tempo {{ $temponBerikutnya }}.">
+                                                            <i class="bi bi-calendar2-range-fill"></i>
+                                                            cicilan {{ $angsuran['lunas'] }} dari {{ $angsuran['jumlah_termin'] }}
+                                                            @if ($temponBerikutnya) · berikutnya {{ $temponBerikutnya }} @endif
+                                                        </span>
+                                                    @endif
+                                                @endif
+                                            </span>
+                                        </td>
+
+                                        {{-- ===== Buka ===== --}}
+                                        <td data-judul="Buka" class="text-end">
+                                            <span class="dsb-tabel-aksi">
+                                                <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-btn"
+                                                    title="Lihat semuanya: pembayaran, peserta, pembatalan">
+                                                    <i class="bi bi-person-lines-fill"></i>
+                                                </a>
+
+                                                @if ($bolehKesehatan && ($baris['jumlah_riwayat_kesehatan'] ?? 0) > 0)
+                                                    <a wire:navigate href="{{ route('admin.orcha.pendaftaran.kesehatan', $baris['id']) }}"
+                                                        class="dsb-tabel-btn pd-btn-sehat"
+                                                        title="Lihat data kesehatan {{ $baris['jumlah_riwayat_kesehatan'] }} peserta">
+                                                        <i class="bi bi-heart-pulse"></i>
+                                                    </a>
+                                                @endif
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="dsb-kartu-isi pd-kaki">
+                        @include('livewire.pages.admin.orcha.partials.paginasi')
                     </div>
                 @endif
             </div>
         </div>
-
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-3 p-lg-4">
-                <div class="orcha-gulung">
-                    <table class="table table-hover align-middle orcha-tabel orcha-tabel-judul-tengah mb-0">
-                        <thead>
-                            <tr>
-                                {{-- Kode dan nama disatukan: keduanya menjawab pertanyaan yang
-                                     sama — pesanan siapa ini — dan tujuh kolom membuat tabelnya
-                                     lebih lebar daripada kartunya, sehingga kolom aksi terpotong
-                                     di tepi kanan. --}}
-                                <th>Pemesan</th>
-                                <th>Paket</th>
-                                <th>Berangkat</th>
-                                <th>Riwayat kesehatan</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($daftar as $baris)
-                                @php
-                                    $berangkat = $baris['tanggal_berangkat']
-                                        ? \Carbon\Carbon::parse($baris['tanggal_berangkat'])->startOfDay()
-                                        : null;
-                                    $selisihHari = $berangkat ? now()->startOfDay()->diffInDays($berangkat, false) : null;
-
-                                    $terisi = (int) ($baris['kesehatan_terisi'] ?? 0);
-                                    $totalPeserta = max(1, (int) $baris['jumlah_peserta']);
-                                    $lengkap = $baris['kesehatan_lengkap'] ?? false;
-                                    $titikJemput = $baris['jemput_per_titik'] ?? [];
-
-                                    // Penanda angsuran. Kunci 'angsuran' hanya dikirim Orcha
-                                    // saat relasinya sengaja dimuat — barisnya harus tetap
-                                    // tergambar kalau suatu saat ia tidak ikut.
-                                    $angsuran = $baris['angsuran'] ?? null;
-                                    $temponBerikutnya = ! empty($angsuran['berikutnya'])
-                                        ? \Carbon\Carbon::parse($angsuran['berikutnya'])->locale('id')->translatedFormat('d M')
-                                        : null;
-                                @endphp
-                                <tr wire:key="pendaftaran-{{ $baris['id'] }}">
-                                    <td>
-                                        <span class="orcha-kode">{{ $baris['kode'] }}</span>
-                                        <div class="fw-semibold">{{ $baris['nama'] }}</div>
-                                        <div class="text-muted" style="font-size:.76rem">
-                                            {{ $baris['whatsapp'] }} · masuk
-                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
-                                        </div>
-                                        <span class="orcha-cip-peserta mt-1">
-                                            <i class="bi bi-people-fill"></i>
-                                            {{ $baris['jumlah_peserta'] }} peserta
-                                        </span>
-                                        {{-- Rombongan tanpa nama peserta tidak masuk manifes
-                                             panggil-nama. Ditandai di sini supaya bisa dicari
-                                             sebelum hari berangkat, bukan ditemukan di lapangan. --}}
-                                        {{-- Hanya saat daftar tagihan menyala.
-
-                                             Yang mengangkat telepon perlu tahu mana yang sudah
-                                             menerima surat pengingat dan tetap diam, dan mana
-                                             yang memang belum pernah dihubungi sama sekali. Dua
-                                             keadaan itu menuntut kalimat pembuka yang berbeda —
-                                             menanyakan "sudah terima email kami?" kepada orang
-                                             yang belum dikirimi membuat kita terdengar seperti
-                                             sedang mengarang. --}}
-                                        @if ($perluDitagih)
-                                            @if (! empty($baris['pengingat_pelunasan_pada']))
-                                                <div class="text-muted mt-1" style="font-size:.72rem">
-                                                    <i class="bi bi-envelope-check"></i>
-                                                    diingatkan
-                                                    {{ \Carbon\Carbon::parse($baris['pengingat_pelunasan_pada'])->locale('id')->diffForHumans() }}
-                                                </div>
-                                            @else
-                                                <div class="text-muted mt-1" style="font-size:.72rem">
-                                                    <i class="bi bi-envelope"></i> belum diingatkan
-                                                </div>
-                                            @endif
-                                        @endif
-
-                                        @if (empty($baris['peserta']))
-                                            {{-- Cipnya sekaligus jalan keluarnya: sekali klik
-                                                 langsung ke halaman pengisian nama, tanpa mampir
-                                                 ke detail dulu. --}}
-                                            <a href="{{ route('admin.orcha.pendaftaran.peserta', $baris['id']) }}"
-                                                wire:navigate class="orcha-cip-awas mt-1 text-decoration-none"
-                                                title="Nama peserta belum didata — klik untuk melengkapinya">
-                                                <i class="bi bi-person-dash"></i> nama belum didata
-                                            </a>
-                                        @endif
-                                    </td>
-
-                                    <td>
-                                        <div class="small fw-semibold">{{ $baris['paket']['nama'] }}</div>
-                                        {{-- Nama peserta per titik jemput dulu dicetak seluruhnya di sel
-                                             ini, dan satu baris pesanan bisa memenuhi setengah layar.
-                                             Yang perlu terlihat di daftar cuma berapa titiknya; nama
-                                             per titik dibaca sopir dari halaman detail dan manifes. --}}
-                                        @if (! empty($titikJemput))
-                                            <span class="orcha-cip-jemput"
-                                                title="@foreach ($titikJemput as $titik => $orang){{ $titik }}: {{ implode(', ', $orang) }}&#10;@endforeach">
-                                                <i class="bi bi-geo-alt-fill"></i>
-                                                {{ count($titikJemput) }} titik jemput
-                                            </span>
-                                        @elseif ($baris['titik_jemput'])
-                                            <span class="orcha-cip-jemput">
-                                                <i class="bi bi-geo-alt-fill"></i>
-                                                {{ $baris['titik_jemput'] }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted" style="font-size:.76rem">Titik jemput belum diisi</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="text-center text-nowrap">
-                                        @if ($berangkat)
-                                            <div class="small fw-semibold">{{ $berangkat->locale('id')->translatedFormat('d M Y') }}</div>
-                                            {{-- Hitungan mundur, bukan tanggal saja: yang menentukan
-                                                 tindakan admin hari ini adalah jarak ke keberangkatan,
-                                                 dan menghitungnya sendiri dari kalender itu pekerjaan
-                                                 yang berulang belasan kali sehari. --}}
-                                            @if ($selisihHari > 0)
-                                                <span class="orcha-cip-hari {{ $selisihHari <= 5 ? 'dekat' : '' }}">
-                                                    H-{{ $selisihHari }}
-                                                </span>
-                                            @elseif ($selisihHari === 0)
-                                                <span class="orcha-cip-hari dekat">Berangkat hari ini</span>
-                                            @else
-                                                <span class="orcha-cip-hari lewat">Sudah lewat</span>
-                                            @endif
-                                        @else
-                                            <span class="text-muted small">Belum dijadwalkan</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{-- Kelengkapan riwayat kesehatan harus terlihat jauh sebelum
-                                             hari berangkat, bukan saat rombongan sudah berkumpul. --}}
-                                        <span class="orcha-cip-sehat {{ $lengkap ? 'lengkap' : ($terisi === 0 ? 'kosong' : '') }}"
-                                            @if (! empty($baris['peserta_belum_isi']))
-                                                title="Belum mengisi: {{ implode(', ', $baris['peserta_belum_isi']) }}"
-                                            @endif>
-                                            <i class="bi {{ $lengkap ? 'bi-heart-pulse-fill' : 'bi-heart-pulse' }}"></i>
-                                            {{ $terisi }}/{{ $baris['jumlah_peserta'] }}
-                                        </span>
-                                        <div class="orcha-sehat-batang mt-1 {{ $lengkap ? 'lengkap' : '' }}">
-                                            <span style="width: {{ min(100, $terisi / $totalPeserta * 100) }}%"></span>
-                                        </div>
-                                    </td>
-
-                                    <td class="text-center">
-                                        {{-- Tetap bisa diubah langsung dari daftar, tapi warnanya
-                                             mengikuti keadaan: lima kotak putih berjajar tidak
-                                             memberi tahu apa pun sampai tulisannya dibaca satu per
-                                             satu. --}}
-                                        {{-- Bila daftar statusnya TIDAK sampai, yang digambar
-                                             tulisannya — bukan kotak pilih kosong.
-
-                                             Daftar itu datang dari /rujukan milik Orcha, dan
-                                             saat Orcha sedang tidak bisa dihubungi
-                                             rujukan() mengembalikan senarai kosong. Kotak
-                                             pilih tanpa satu pun pilihan tergambar sebagai
-                                             pil berwarna yang benar-benar kosong: statusnya
-                                             lenyap dari layar tanpa satu pun kalimat yang
-                                             menjelaskan sebabnya, dan admin membacanya
-                                             sebagai data yang hilang.
-
-                                             Statusnya sendiri selalu ada — ia datang bersama
-                                             barisnya, bukan dari rujukan. Jadi yang benar:
-                                             tetap tunjukkan statusnya, dan katakan bahwa yang
-                                             belum bisa dilakukan hanya mengubahnya. --}}
-                                        @if ($pilihanStatus === [])
-                                            <span class="orcha-status-diam status-{{ $baris['status'] }}"
-                                                title="Daftar status belum bisa diambil dari Orcha, jadi statusnya belum bisa diubah dari sini.">
-                                                <i class="bi bi-wifi-off"></i>
-                                                {{ $baris['status_label'] ?? $baris['status'] }}
-                                            </span>
-                                        @else
-                                            <select class="form-select form-select-sm orcha-pilih-status status-{{ $baris['status'] }}"
-                                                wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)">
-                                                @foreach ($pilihanStatus as $kunci => $label)
-                                                    <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        @endif
-
-                                        {{-- Penanda angsuran.
-
-                                             Tanpa ini, pesanan yang belum lunas menjelang berangkat
-                                             tergambar persis sama entah ia menunggak atau sedang
-                                             menjalani jadwal yang kita sendiri berikan. Yang membaca
-                                             daftar sedang memilih siapa yang ditelepon hari ini, dan
-                                             menelepon orang yang membayar tepat waktu dengan nada
-                                             penagihan merusak kesepakatan yang baru dibuat.
-
-                                             Tiga keadaan, tiga kalimat berbeda — bukan satu cip yang
-                                             cuma bilang "diangsur" lalu memaksa admin membuka
-                                             detailnya untuk tahu apakah ada yang perlu dikerjakan. --}}
-                                        @if ($angsuran)
-                                            @if ($angsuran['telat'] > 0)
-                                                <span class="orcha-cip-angsuran telat"
-                                                    title="Rencana angsuran {{ $angsuran['jumlah_termin'] }} termin. {{ $angsuran['telat'] }} termin sudah lewat jatuh tempo dan belum tertutup pembayaran.">
-                                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                                    Angsuran telat {{ $angsuran['telat'] }} termin
-                                                </span>
-                                            @elseif ($angsuran['selesai'])
-                                                <span class="orcha-cip-angsuran selesai"
-                                                    title="Seluruh termin sudah tertutup pembayaran.">
-                                                    <i class="bi bi-calendar2-check-fill"></i>
-                                                    Angsuran selesai
-                                                </span>
-                                            @else
-                                                <span class="orcha-cip-angsuran"
-                                                    title="Rencana angsuran {{ $angsuran['jumlah_termin'] }} termin. Termin berikutnya jatuh tempo {{ $temponBerikutnya }}.">
-                                                    <i class="bi bi-calendar2-range-fill"></i>
-                                                    Angsuran {{ $angsuran['lunas'] }}/{{ $angsuran['jumlah_termin'] }}
-                                                    @if ($temponBerikutnya)
-                                                        · {{ $temponBerikutnya }}
-                                                    @endif
-                                                </span>
-                                            @endif
-                                        @endif
-                                    </td>
-
-                                    <td class="text-center text-nowrap">
-                                        {{-- Data pelanggan selengkapnya — pembayaran, peserta, dan
-                                             pengajuan pembatalan — ada di halamannya sendiri. --}}
-                                        <a href="{{ route('admin.orcha.pendaftaran.detail', $baris['id']) }}"
-                                            class="btn btn-sm orcha-aksi orcha-aksi-lihat orcha-aksi-berlabel"
-                                            title="Lihat detail pelanggan">
-                                            <i class="bi bi-person-lines-fill"></i>
-                                            <span>Detail</span>
-                                        </a>
-
-                                        @if (! auth()->user()->hasPermission('view_orcha_kesehatan'))
-                                            <span class="text-muted small">—</span>
-                                        @elseif (($baris['jumlah_riwayat_kesehatan'] ?? 0) > 0)
-                                            {{-- Menuju halamannya sendiri, sama seperti tombol di
-                                                 halaman detail. Warnanya dilembutkan dari merah
-                                                 menyala: merah di aplikasi ini berarti hapus atau
-                                                 rugi, dan membuka riwayat kesehatan bukan keduanya. --}}
-                                            <a href="{{ route('admin.orcha.pendaftaran.kesehatan', $baris['id']) }}"
-                                                wire:navigate
-                                                class="btn btn-sm orcha-aksi orcha-aksi-sehat orcha-aksi-berlabel orcha-aksi-riwayat"
-                                                title="Lihat riwayat kesehatan peserta">
-                                                <i class="bi bi-heart-pulse"></i>
-                                                <span>Riwayat ({{ $baris['jumlah_riwayat_kesehatan'] }})</span>
-                                            </a>
-                                        @else
-                                            {{-- Berbentuk tombol yang sengaja mati, bukan tulisan
-                                                 telanjang: sebaris tombol yang salah satu selnya
-                                                 berisi teks polos membuat kolom Aksi terlihat
-                                                 bolong dan barisnya tidak lagi sejajar.
-
-                                                 Sengaja tidak dibuat bisa ditekan — halamannya
-                                                 memang tidak punya apa-apa untuk ditampilkan, dan
-                                                 tombol yang membuka halaman kosong lebih
-                                                 mengecewakan daripada tombol yang jelas mati. --}}
-                                            <span class="btn btn-sm orcha-aksi orcha-aksi-mati orcha-aksi-berlabel orcha-aksi-riwayat"
-                                                title="Belum ada peserta yang mengisi riwayat kesehatannya">
-                                                <i class="bi bi-heart-pulse"></i>
-                                                <span>Belum ada riwayat</span>
-                                            </span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="empty-state-icon-wrapper mx-auto mb-2">
-                                            <i class="bi bi-clipboard-x"></i>
-                                        </div>
-                                        <p class="text-muted mb-0">Belum ada pendaftaran yang cocok.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                @include('livewire.pages.admin.orcha.partials.paginasi')
-            </div>
-        </div>
     </div>
 
+    {{-- <style> telanjang: layout templateindex tidak punya satu pun stack,
+         jadi gaya yang didorong ke sana tidak pernah ikut tergambar. --}}
+    <style>
+        /* Saringan: pencarian melebar, keberangkatan tetap, tombol di ujung.
+           Grid, bukan flex bebas — dengan flex tombolnya sempat terlempar ke
+           baris kedua persis saat saringan dinyalakan, yaitu saat tangan
+           sedang di sana. */
+        .pd-saring {
+            display: grid; gap: 12px; align-items: end;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+        }
+        @media (max-width: 767.98px) {
+            .pd-saring { grid-template-columns: 1fr; }
+        }
+        .pd-medan-aksi { display: flex; align-items: flex-end; }
+        .pd-medan-aksi:empty { display: none; }
+
+        .pd-catatan {
+            display: flex; align-items: flex-start; gap: 8px; margin-top: 12px;
+            padding: 9px 11px; border-radius: 10px; font-size: .8rem; line-height: 1.5;
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+        }
+
+        /* Baris tabel: nama di atas, keterangan menumpuk di bawahnya. */
+        .pd-tautan { text-decoration: none; color: inherit; display: block; }
+        .pd-tautan:hover .dsb-tabel-judul { color: #4f46e5; }
+        .pd-cip-deret { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+
+        /* Batang kemajuan data kesehatan. Angka saja ("7 dari 11") menuntut
+           pembagian di kepala untuk tahu seberapa jauh; batangnya menjawab
+           itu sebelum angkanya dibaca. */
+        .pd-batang {
+            display: block; height: 4px; border-radius: 999px;
+            background: #eef2f7; overflow: hidden; margin-top: 5px; max-width: 150px;
+        }
+        .pd-batang > span { display: block; height: 100%; background: #f59e0b; border-radius: 999px; }
+        .pd-batang.is-lengkap > span { background: #16a34a; }
+
+        /* Kotak pilih keadaan: selebar isinya, bukan selebar sel — kotak
+           sepanjang kolom membuat lencana di bawahnya terlihat menggantung. */
+        .pd-pilih-status { max-width: 170px; font-size: .8rem; padding-top: 5px; padding-bottom: 5px; }
+        .pd-btn-sehat { color: #be123c; }
+
+        /* Kaki kartu: penomoran halaman menempel ke tepi bawah tanpa ini,
+           dan kartunya terbaca seperti terpotong. */
+        .pd-kaki { padding-top: 4px; }
+    </style>
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

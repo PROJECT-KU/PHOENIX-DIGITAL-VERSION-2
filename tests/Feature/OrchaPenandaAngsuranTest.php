@@ -92,7 +92,7 @@ test('pesanan yang diangsur ditandai berikut kemajuannya', function () {
         ->test(OrchaPendaftaranList::class)
         // Angka kemajuannya ikut. "Diangsur" saja tidak menjawab pertanyaan
         // yang sedang dipikirkan admin, yaitu apakah orang ini bergerak.
-        ->assertSee('Angsuran 1/3')
+        ->assertSee('cicilan 1 dari 3')
         ->assertDontSee('Angsuran telat');
 });
 
@@ -108,8 +108,11 @@ test('termin yang lewat jatuh tempo diteriakkan, bukan disamarkan', function () 
 
     Livewire::actingAs(adminPendaftaran())
         ->test(OrchaPendaftaranList::class)
-        ->assertSee('Angsuran telat 1 termin')
-        ->assertSee('orcha-cip-angsuran telat', escape: false);
+        ->assertSee('telat bayar cicilan 1×')
+        // MERAH, bukan sekadar bertulisan. Satu-satunya keadaan di daftar ini
+        // yang menuntut tindakan hari ini, dan ia harus terbaca sebelum
+        // kalimatnya dibaca.
+        ->assertSee('dsb-lencana is-merah', escape: false);
 });
 
 test('pesanan tanpa rencana tidak diberi penanda', function () {
@@ -166,7 +169,7 @@ test('daftar ini menyebut dirinya Pendaftaran Trip, bukan Open Trip saja', funct
         ->assertSee('Pendaftaran Trip')
         ->assertDontSee('Pendaftaran Open Trip')
         // Keterangannya ikut jujur: tidak semuanya datang lewat website.
-        ->assertSee('didaftarkan admin');
+        ->assertSee('yang Anda masukkan sendiri');
 });
 
 test('tombol halaman tidak menunjuk /livewire/update sesudah admin mencari', function () {

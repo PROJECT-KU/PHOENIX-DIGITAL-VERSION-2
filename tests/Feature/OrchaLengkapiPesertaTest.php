@@ -233,7 +233,9 @@ test('daftar menandai rombongan yang namanya belum didata', function () {
     $this->actingAs(adminPeserta())
         ->get('/admin/orcha/pendaftaran')
         ->assertOk()
-        ->assertSee('nama belum didata');
+        // "Ditulis", bukan "didata": kata kedua adalah istilah kami, dan
+        // layar ini dikerjakan admin yang tidak selalu terbiasa dengannya.
+        ->assertSee('nama belum ditulis');
 });
 
 test('peserta yang riwayat kesehatannya sudah masuk ditandai', function () {

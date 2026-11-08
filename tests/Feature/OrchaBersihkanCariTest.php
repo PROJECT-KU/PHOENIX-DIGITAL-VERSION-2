@@ -13,11 +13,19 @@ function adminCari(): User
 {
     $role = Role::create(['name' => 'uji-cari-'.uniqid(), 'description' => 'Peran untuk uji cari']);
 
-    $permission = Permission::firstOrCreate(
-        ['name' => 'akses_orcha'],
-        ['display_name' => 'akses_orcha', 'group' => 'orcha', 'description' => 'uji']
-    );
-    $role->permissions()->attach($permission->id);
+    /*
+     | Dua izin, bukan satu. Catatan "daftar sedang disaring" menyangkut
+     | tombol Unduh Daftar Peserta, dan tombol itu hanya ada bagi pemegang
+     | view_orcha_kesehatan — catatan tentang tombol yang tidak terlihat
+     | hanya menambah kalimat yang tidak bisa ditindaklanjuti.
+     */
+    foreach (['akses_orcha', 'view_orcha_kesehatan'] as $nama) {
+        $permission = Permission::firstOrCreate(
+            ['name' => $nama],
+            ['display_name' => $nama, 'group' => 'orcha', 'description' => 'uji']
+        );
+        $role->permissions()->attach($permission->id);
+    }
 
     $user = User::factory()->create(['role_id' => $role->id]);
 
@@ -73,16 +81,18 @@ test('bersihkan saringan mengosongkan ketiganya sekaligus', function () {
         ->set('cari', 'budi')
         ->set('filterStatus', 'lunas')
         ->set('filterPaket', '1')
-        // Tombolnya duduk di baris saringan, bukan di bawahnya — judulnya
-        // pendek supaya muat di sebelah kotak status.
-        ->assertSee('Bersihkan')
+        // Tombolnya duduk di baris saringan, bukan di bawahnya. Kalimatnya
+        // menyebut AKIBATNYA ("Tampilkan semua lagi"), bukan tindakannya
+        // ("Bersihkan") — admin yang awam membaca yang akan terjadi, bukan
+        // nama operasinya.
+        ->assertSee('Tampilkan semua lagi')
         ->call('bersihkanSaringan')
         ->assertSet('cari', '')
         ->assertSet('filterStatus', '')
         // Saringan ketiga milik halaman ini ikut — tombol yang menyisakan satu
         // saringan hidup justru membingungkan.
         ->assertSet('filterPaket', '')
-        ->assertDontSee('Bersihkan');
+        ->assertDontSee('Tampilkan semua lagi');
 });
 
 test('kotak cari yang sama tersedia di daftar orcha lainnya', function () {
@@ -101,14 +111,17 @@ test('pemilih saringan menandai pilihannya di markup, bukan hanya di ingatan kom
         ->set('filterPaket', '1')
         ->set('filterStatus', 'lunas');
 
-    // Tanpa penanda ini, "Bersihkan saringan" mengosongkan keadaan komponen
-    // tetapi kotak pilihannya tetap memajang paket lama — layar yang berbohong
-    // tentang keadaannya sendiri.
+    /*
+     | Tanpa penanda ini, "Tampilkan semua lagi" mengosongkan keadaan komponen
+     | tetapi kotak pilihannya tetap memajang paket lama — layar yang berbohong
+     | tentang keadaannya sendiri.
+     |
+     | Status TIDAK lagi berupa kotak pilih: ia pindah ke tab. Penanda yang
+     | setara di sana aria-pressed, dan itu diuji di berkas tab-nya sendiri.
+     */
     $halaman->assertSeeHtml('value="1" selected')
-        ->assertSeeHtml('value="lunas" selected')
         ->call('bersihkanSaringan')
-        ->assertDontSeeHtml('value="1" selected')
-        ->assertDontSeeHtml('value="lunas" selected');
+        ->assertDontSeeHtml('value="1" selected');
 });
 
 test('pengosong duduk di baris saringan, bukan di bawahnya', function () {
@@ -124,7 +137,8 @@ test('pengosong duduk di baris saringan, bukan di bawahnya', function () {
     Livewire::actingAs(adminCari())
         ->test(OrchaPendaftaranList::class)
         ->set('filterStatus', 'lunas')
-        ->assertSeeInOrder(['Semua status', 'Bersihkan', 'Daftarkan']);
+        // Sesudah kotak keberangkatan, di dalam kartu saringan yang sama.
+        ->assertSeeInOrder(['Semua keberangkatan', 'Tampilkan semua lagi']);
 });
 
 test('keterangan saringan tetap disebut walau tombolnya sudah naik', function () {
@@ -137,7 +151,9 @@ test('keterangan saringan tetap disebut walau tombolnya sudah naik', function ()
     Livewire::actingAs(adminCari())
         ->test(OrchaPendaftaranList::class)
         ->set('filterStatus', 'lunas')
-        ->assertSee('manifes yang diunduh mengikuti saringan ini');
+        // Kalimatnya dibuat lebih terang: menyebut NAMA tombolnya dan apa
+        // yang harus dilakukan, bukan sekadar "mengikuti saringan ini".
+        ->assertSee('ikut tersaring juga');
 });
 
 test('bilah saringan tidak kembali ke grid dua belas kolom', function () {
@@ -162,7 +178,9 @@ test('bilah saringan tidak kembali ke grid dua belas kolom', function () {
     );
 
     // Hanya bilah saringan — berhenti sebelum kartu tabelnya.
-    $bilah = substr($isi, 0, strpos($isi, 'orcha-gulung'));
+    // Penandanya ikut berubah saat layar ini pindah ke bahasa rupa dasbor:
+    // tabelnya kini dibungkus .dsb-tabel-bungkus, bukan .orcha-gulung.
+    $bilah = substr($isi, 0, strpos($isi, 'dsb-tabel-bungkus'));
 
     $this->assertStringNotContainsString('col-lg-', $bilah, implode("\n", [
         'Bilah saringan kembali memakai grid dua belas kolom.',
@@ -170,7 +188,7 @@ test('bilah saringan tidak kembali ke grid dua belas kolom', function () {
         'Grid-nya sudah dua kali menjatuhkan tombol terakhir ke baris kedua,',
         'dengan dua sebab berbeda yang sama-sama lolos dari uji.',
         '',
-        'Pakai flex: <div style="flex:1 1 170px"> dan seterusnya.',
+        'Pakai grid .pd-saring yang kolomnya disebut sendiri, atau flex.',
     ]));
 });
 
@@ -206,26 +224,28 @@ test('tombol di bilah saringan sama lebarnya', function () {
     )));
 });
 
-test('tombol tindakan setinggi kartu sakelar di sebelahnya', function () {
+test('tombol tindakan duduk di kepala halaman, bukan di antara saringan', function () {
     /*
-     | Dipusatkan, tombolnya berhenti di tinggi alaminya (39px) sementara
-     | kartu sakelar di sebelahnya 70px — dua benda sebaris dengan tinggi yang
-     | jauh berbeda terbaca seperti yang satu menempel belakangan.
+     | Dulu Daftarkan & Unduh berbaris bersama kartu sakelar "Perlu ditagih",
+     | dan tingginya harus disamakan tangan supaya tidak terbaca seperti
+     | menempel belakangan (39px vs 70px).
      |
-     | Yang dijaga pembungkusnya: align-items-center yang menyelinap masuk
-     | mengembalikan cacatnya tanpa satu pun galat. Tingginya sendiri diukur
-     | di peramban — 140x70 untuk keduanya — bukan dari berkas ini.
+     | Sejak layar ini memakai bahasa rupa dasbor, keduanya pindah ke
+     | .dsb-hero-aksi — tempat yang sama dengan seluruh layar lain, dengan
+     | tinggi yang sudah seragam dari sananya. Sakelarnya sendiri jadi tab.
+     |
+     | Yang dijaga sekarang LETAKNYA: keduanya harus di kepala, bukan
+     | tercecer kembali ke bilah saringan di mana tingginya harus diurus
+     | sendiri lagi.
      */
     $isi = file_get_contents(
         resource_path('views/livewire/pages/admin/orcha/pendaftaran/index.blade.php')
     );
 
-    $bilah = substr($isi, 0, strpos($isi, 'orcha-gulung'));
+    $kepala = substr($isi, 0, strpos($isi, 'pt-grup-deret'));
 
-    $this->assertStringContainsString('ms-lg-auto align-items-stretch', $bilah,
-        'Pembungkus tombol tindakan tidak lagi meregangkan isinya — tombolnya akan '
-        .'berhenti di 39px sementara kartu sakelar di sebelahnya 70px.');
-
-    $this->assertStringNotContainsString('ms-lg-auto align-items-center', $bilah,
-        'Pembungkus tombol tindakan memusatkan isinya; pakai align-items-stretch.');
+    $this->assertStringContainsString('dsb-hero-aksi', $kepala,
+        'Tombol tindakan tidak lagi di kepala halaman.');
+    $this->assertStringContainsString('Daftarkan Rombongan', $kepala);
+    $this->assertStringContainsString('Unduh Daftar Peserta', $kepala);
 });

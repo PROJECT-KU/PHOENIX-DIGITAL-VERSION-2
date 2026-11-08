@@ -45,6 +45,69 @@ class OrchaPendaftaranList extends Component
     }
 
     /**
+     * Tab yang sedang dibuka.
+     *
+     * Status dan "perlu ditagih" tetap jadi keadaan sebenarnya di balik
+     * layar — tab hanya cara memilihnya. Disimpan terpisah supaya tab yang
+     * sedang menyala tetap terlihat menyala walau keadaannya sama
+     * ("Semua" dan status kosong adalah hal yang sama bagi peladen, tetapi
+     * bukan bagi mata).
+     */
+    public string $tabAktif = 'semua';
+
+    /**
+     | Tab yang tersedia: label, ikon, warna.
+     |
+     | Dikelompokkan dua: yang pertama CARA MELIHAT daftar, yang kedua
+     | DAFTAR PEKERJAAN. Keduanya tidak boleh berjajar begitu saja —
+     | "Perlu ditagih" yang duduk di antara status tenggelam jadi salah satu
+     | pilihan menonton, padahal ia satu-satunya yang menuntut tindakan hari
+     | ini.
+     */
+    public const TAB = [
+        'semua' => ['Semua', 'bi-grid-fill', '#7c3aed'],
+        'baru' => ['Baru masuk', 'bi-bell-fill', '#16a34a'],
+        'dihubungi' => ['Sudah dihubungi', 'bi-chat-dots-fill', '#0284c7'],
+        'dp_masuk' => ['Baru bayar DP', 'bi-cash-coin', '#d97706'],
+        'lunas' => ['Sudah lunas', 'bi-check-circle-fill', '#4f46e5'],
+        'batal' => ['Batal', 'bi-x-circle-fill', '#e11d48'],
+        'perlu_ditagih' => ['Perlu ditelepon', 'bi-telephone-outbound-fill', '#ea580c'],
+    ];
+
+    public const GRUP_TAB = [
+        ['Keadaan pendaftaran', 'Sudah sampai mana orangnya',
+            ['semua', 'baru', 'dihubungi', 'dp_masuk', 'lunas', 'batal']],
+        /*
+         | Keterangannya SENGAJA pendek.
+         |
+         | .pt-grup-ket milik partial bersama memotongnya dengan elipsis bila
+         | kepanjangan, dan kolom kedua ini hanya 3fr. Kalimat yang terpotong
+         | jadi "Yang uangnya bisa …" tidak memberi tahu apa pun — lebih buruk
+         | daripada tidak ada keterangan sama sekali.
+         */
+        ['Perlu dikerjakan hari ini', 'Jangan didiamkan', ['perlu_ditagih']],
+    ];
+
+    /**
+     * Pindah tab.
+     *
+     * Menerjemahkan satu pilihan jadi dua keadaan di balik layar. Admin
+     * tidak perlu tahu bahwa "Perlu ditelepon" sebenarnya saringan lain
+     * jenisnya daripada "Sudah lunas".
+     */
+    public function setTab(string $tab): void
+    {
+        $this->tabAktif = array_key_exists($tab, self::TAB) ? $tab : 'semua';
+
+        $this->perluDitagih = $this->tabAktif === 'perlu_ditagih';
+        $this->filterStatus = in_array($this->tabAktif, ['semua', 'perlu_ditagih'], true)
+            ? ''
+            : $this->tabAktif;
+
+        $this->halaman = 1;
+    }
+
+    /**
      * Saringan paket ikut dikosongkan.
      *
      * Menimpa milik trait: halaman ini punya saringan ketiga, dan tombol yang
@@ -54,6 +117,10 @@ class OrchaPendaftaranList extends Component
     public function bersihkanSaringan(): void
     {
         $this->reset(['cari', 'filterStatus', 'filterPaket', 'perluDitagih']);
+        // Tab ikut pulang ke "Semua": tombolnya menjanjikan membersihkan
+        // semuanya, dan tab yang tetap menyala membuat daftarnya terlihat
+        // masih tersaring padahal tidak.
+        $this->tabAktif = 'semua';
         $this->halaman = 1;
     }
 
@@ -88,11 +155,21 @@ class OrchaPendaftaranList extends Component
             'perlu_ditagih' => $this->perluDitagih ? 1 : null,
         ], fn ($nilai) => $nilai !== null && $nilai !== '')));
 
+        $meta = $hasil['meta'] ?? [];
+
         return view('livewire.pages.admin.orcha.pendaftaran.index', [
             'daftar' => $hasil['data'] ?? [],
-            'meta' => $hasil['meta'] ?? [],
+            'meta' => $meta,
             'pilihanStatus' => $this->rujukan('status_pendaftaran'),
             'pilihanPaket' => $this->rujukan('paket_wisata'),
+            'tabs' => self::TAB,
+            'grupTab' => self::GRUP_TAB,
+            /*
+             | Angka di tab. Dibaca dengan ?? : Orcha yang belum dideploy
+             | tidak mengirim kunci ini sama sekali, dan tab tanpa angka
+             | masih berguna — sedangkan halaman yang mati karenanya tidak.
+             */
+            'jumlahTab' => $meta['jumlah_tab'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }
