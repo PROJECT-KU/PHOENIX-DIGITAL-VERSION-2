@@ -24,9 +24,11 @@
         position: relative; height: 132px; display: grid; place-items: center;
         background: linear-gradient(135deg, #f1f5ff, #eef7fb); border-bottom: 1px solid var(--dsb-tepi);
     }
-    .ast-kartu-rupa img { max-width: 100%; max-height: 100%; object-fit: cover; }
-    .ast-kartu-rupa.is-logo img { object-fit: contain; max-width: 70%; max-height: 70%; }
-    .ast-kartu-rupa.is-foto img { width: 100%; height: 100%; }
+    /* Ukuran dipatok piksel: batas persen tidak berlaku pada gambar di dalam
+       kisi ini, dan logo persegi meluber menimpa nama di bawahnya. */
+    .ast-kartu-rupa { overflow: hidden; }
+    .ast-kartu-rupa.is-logo img { object-fit: contain; max-width: 75%; max-height: 92px; }
+    .ast-kartu-rupa.is-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .ast-kartu-rupa .ast-kosong { color: #a9b8cc; font-size: 1.8rem; }
     .ast-kartu-rupa .ast-angka { font-size: 2.2rem; font-weight: 800; color: var(--c, #2455e6); letter-spacing: -.03em; }
     .ast-kartu-rupa .ast-angka-ikon { position: absolute; left: 14px; top: 12px; color: var(--c, #2455e6); font-size: 1.1rem; }
