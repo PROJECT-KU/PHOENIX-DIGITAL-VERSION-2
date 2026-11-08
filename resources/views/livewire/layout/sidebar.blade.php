@@ -1191,6 +1191,38 @@ new class extends Component
                 </li>
                 @endif
 
+                {{-- Isi situs profil PT. Asthana Cipta Mandiri. Izinnya dihitung dulu
+                     jadi boolean supaya kondisi blok di bawah tidak berkurung bersarang. --}}
+                @php
+                    $bolehSitusAsthana = auth()->user()->hasPermission('kelola_situs_asthana');
+                    $aktifSitusAsthana = request()->routeIs('admin.asthana.*');
+                    $jenisSitusAsthana = (string) request()->route('jenis');
+                    $menuSitusAsthana = [
+                        ['admin.asthana.portofolio', [], 'portofolio', 'Portofolio'],
+                        ['admin.asthana.berita', [], 'berita', 'Berita'],
+                        ['admin.asthana.daftar', ['klien'], 'klien', 'Klien & Mitra'],
+                        ['admin.asthana.daftar', ['testimoni'], 'testimoni', 'Testimoni'],
+                        ['admin.asthana.daftar', ['tim'], 'tim', 'Tim Manajemen'],
+                        ['admin.asthana.daftar', ['angka'], 'angka', 'Angka Pencapaian'],
+                    ];
+                @endphp
+                @if ($bolehSitusAsthana)
+                <li class="mt-4 sidebar-title">Situs Perusahaan</li>
+                <li class="sidebar-item has-sub {{ $aktifSitusAsthana ? 'active' : '' }}">
+                    <a href="#" class="sidebar-link {{ $aktifSitusAsthana ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-globe2 {{ $aktifSitusAsthana ? 'text-primary' : '' }}"></i>
+                        <span class="{{ $aktifSitusAsthana ? 'text-primary' : '' }}">Situs Asthana</span>
+                    </a>
+                    <ul class="submenu">
+                        @foreach ($menuSitusAsthana as $butirSitus)
+                        <li class="submenu-item {{ $aktifSitusAsthana && $jenisSitusAsthana === $butirSitus[2] ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route($butirSitus[0], $butirSitus[1]) }}" class="submenu-link">{{ $butirSitus[3] }}</a>
+                        </li>
+                        @endforeach
+                    </ul>
+                </li>
+                @endif
+
                 {{-- Pindah ke Orcha Journey. Hanya tampil bagi yang punya
                      permission — tapi penjaga sebenarnya ada di middleware
                      'permission:akses_orcha' pada rutenya. --}}

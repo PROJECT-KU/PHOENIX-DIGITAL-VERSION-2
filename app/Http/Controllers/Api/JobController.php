@@ -13,7 +13,11 @@ class JobController extends Controller
     public function index()
     {
         $jobs = Lowongan::query()
-            ->where('is_active', true)
+            // 'active', bukan true: kolomnya ENUM('active','non-active').
+            // true kebetulan cocok karena MySQL membandingkannya dengan nomor
+            // urut enum (1 = 'active') — urutan enum berubah, semua lowongan
+            // lenyap dari situs tanpa galat.
+            ->active()
             ->orderBy('title')
             ->get(['id', 'title', 'slug', 'created_at']);
 

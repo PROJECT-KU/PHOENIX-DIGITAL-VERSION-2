@@ -48,6 +48,16 @@ Route::middleware(['throttle:20,1'])->group(function () {
 
     Route::post('/message', [MessageController::class, 'store'])
         ->middleware('throttle:10,60');
+
+    // Isi situs profil Asthana (baca saja): beranda, tim, portofolio, berita.
+    Route::prefix('situs')->controller(\App\Http\Controllers\Api\SitusAsthanaController::class)->group(function () {
+        Route::get('/beranda', 'beranda');
+        Route::get('/tim', 'tim');
+        Route::get('/portofolio', 'portofolio');
+        Route::get('/portofolio/{slug}', 'portofolioDetail');
+        Route::get('/berita', 'berita');
+        Route::get('/berita/{slug}', 'beritaDetail');
+    });
 });
 
 /*

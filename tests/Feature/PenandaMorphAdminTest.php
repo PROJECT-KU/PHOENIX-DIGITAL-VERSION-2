@@ -34,6 +34,8 @@ function berkasPenandaAdmin(): array
         'blog/*.blade.php',
         'blog/partials/*.blade.php',
         'message/*.blade.php',
+        'asthana/*.blade.php',
+        'asthana/partials/*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
 }
 

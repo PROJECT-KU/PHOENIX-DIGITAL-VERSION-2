@@ -523,6 +523,27 @@ Route::middleware('permission:view_message')->group(function () {
 });
 
 /*
+ | Isi situs profil PT. Asthana Cipta Mandiri (portofolio, berita, klien,
+ | testimoni, tim, angka). Situsnya statis dan membaca isi ini lewat
+ | /api/situs/*. Rute tulis didaftarkan SEBELUM {id} supaya "tulis" tidak
+ | terbaca sebagai nomor.
+ */
+Route::middleware('permission:kelola_situs_asthana')->prefix('admin/asthana')->name('admin.asthana.')->group(function () {
+    $tulisan = \App\Livewire\Pages\Admin\Asthana\AsthanaTulisanList::class;
+    $form = \App\Livewire\Pages\Admin\Asthana\AsthanaTulisanForm::class;
+
+    foreach (['portofolio', 'berita'] as $jenis) {
+        Route::get("/{$jenis}", $tulisan)->defaults('jenis', $jenis)->name($jenis);
+        Route::get("/{$jenis}/tulis", $form)->defaults('jenis', $jenis)->name("{$jenis}.tulis");
+        Route::get("/{$jenis}/{id}/ubah", $form)->defaults('jenis', $jenis)->whereNumber('id')->name("{$jenis}.ubah");
+    }
+
+    Route::get('/{jenis}', \App\Livewire\Pages\Admin\Asthana\AsthanaDaftarList::class)
+        ->whereIn('jenis', ['klien', 'testimoni', 'tim', 'angka'])
+        ->name('daftar');
+});
+
+/*
 |--------------------------------------------------------------------------
 | Orcha Journey
 |--------------------------------------------------------------------------

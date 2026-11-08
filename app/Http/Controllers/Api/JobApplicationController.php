@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJobApplicationRequest;
 use App\Models\JobApplication;
+use App\Support\Asthana\KabarSitus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -22,8 +23,13 @@ class JobApplicationController extends Controller
             // Generate unique subdirectory
             $subdir = now()->format('Y/m').'/'.Str::uuid()->toString();
 
+            // Diisi DI DALAM transaksi, tapi harus terbaca di catch untuk
+            // dibersihkan — jadi dideklarasikan di sini dan diikat by-reference.
+            $cvPath = null;
+            $clPath = null;
+
             // Atomic transaction
-            $app = DB::transaction(function () use ($request, $cv, $cl, $subdir) {
+            $app = DB::transaction(function () use ($request, $cv, $cl, $subdir, &$cvPath, &$clPath) {
                 $cvOriginalName = pathinfo($cv->getClientOriginalName(), PATHINFO_FILENAME);
                 $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
                 $cvFileName = Str::slug($cvOriginalName).'_'.Str::random(8).'.pdf';
@@ -45,9 +51,14 @@ class JobApplicationController extends Controller
                 ]);
             });
 
+            // Lonceng/push admin + surel tanda terima ke pelamar. Keduanya
+            // dibungkus sendiri: kegagalannya tidak boleh membatalkan lamaran
+            // yang sudah tersimpan.
+            KabarSitus::lamaranMasuk($app);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Application submitted successfully',
+                'message' => 'Lamaran berhasil dikirim',
                 'data' => [
                     'id' => $app->id,
                     'application_number' => str_pad($app->id, 6, '0', STR_PAD_LEFT),
@@ -61,17 +72,19 @@ class JobApplicationController extends Controller
                 'request' => $request->except(['cv', 'cover_letter']), // jangan log file
             ]);
 
-            // Cleanup uploaded files jika ada error
-            if (isset($cvPath) && Storage::disk('public')->exists($cvPath)) {
-                Storage::disk('public')->delete($cvPath);
-            }
-            if (isset($clPath) && Storage::disk('public')->exists($clPath)) {
-                Storage::disk('public')->delete($clPath);
+            // Bersihkan berkas yang sempat tersimpan. Disk 'local', SAMA dengan
+            // tempat storeAs() menaruhnya — dulu yang dibersihkan disk 'public',
+            // dan $cvPath tidak pernah terisi di luar closure, sehingga PDF
+            // lamaran yang gagal tertinggal selamanya.
+            foreach ([$cvPath ?? null, $clPath ?? null] as $jalur) {
+                if ($jalur && Storage::disk('local')->exists($jalur)) {
+                    Storage::disk('local')->delete($jalur);
+                }
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit application. Please try again.',
+                'message' => 'Lamaran gagal dikirim. Silakan coba lagi.',
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }

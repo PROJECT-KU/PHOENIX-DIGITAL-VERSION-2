@@ -6,6 +6,7 @@ use App\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Message;
+use App\Support\Asthana\KabarSitus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -24,8 +25,9 @@ class MessageController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
-            // Optional: Send notification email
-            // Mail::to(config('mail.admin_email'))->send(new ContactReceived($contact));
+            // Lonceng/push admin + surel tanda terima ke pengirim. Gagal kirim
+            // tidak boleh membatalkan pesan yang sudah tersimpan.
+            KabarSitus::pesanMasuk($contact);
 
             Log::info('Contact form submitted', [
                 'contact_id' => $contact->id,
