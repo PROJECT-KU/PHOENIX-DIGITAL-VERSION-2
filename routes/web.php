@@ -99,6 +99,7 @@ use App\Livewire\Pages\Admin\Promo\PromoCreate;
 use App\Livewire\Pages\Admin\Promo\PromoEdit;
 // Data Product Bundling
 use App\Livewire\Pages\Admin\Promo\PromoList;
+use App\Livewire\Pages\Admin\RoleUser\AksesAkun;
 use App\Livewire\Pages\Admin\RoleUser\RoleList;
 use App\Livewire\Pages\Admin\RoleUser\RolePermissionEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
@@ -320,6 +321,10 @@ Route::middleware('permission:view_customer_message')->group(function () {
 Route::middleware('permission:view_roles')->group(function () {
     Route::get('/admin/role', RoleList::class)->name('admin.account.role');
     Route::get('/admin/role/{role}/edit', RolePermissionEdit::class)->middleware('permission:edit_roles')->name('admin.account.role.permission');
+    // Akses SATU orang — perannya plus izin khusus dirinya. Dulu jendela
+    // sembul di layar Pengaturan Role; isinya sepanjang halaman, jadi diberi
+    // halamannya sendiri.
+    Route::get('/admin/role/akun/{user}/akses', AksesAkun::class)->middleware('permission:view_roles')->name('admin.account.role.akses');
 });
 
 // Permission

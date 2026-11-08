@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\Pages\Admin\RoleUser\RoleList;
+use App\Livewire\Pages\Admin\RoleUser\AksesAkun;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -159,10 +159,9 @@ it('menyimpan izin tambahan dari layar pengguna', function () {
     $izin = izinUji('akses_orcha');
 
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('izinTambahan', [$izin->id])
-        ->call('updateRoleUser');
+        ->call('simpan');
 
     expect($target->fresh()->hasPermission('akses_orcha'))->toBeTrue();
 });
@@ -174,10 +173,9 @@ it('tidak menyimpan izin yang sudah datang dari perannya', function () {
     $izin = izinUji('akses_orcha');
 
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('izinTambahan', [$izin->id])
-        ->call('updateRoleUser');
+        ->call('simpan');
 
     /*
      | Baris pribadi yang menduplikasi izin peran tidak mengubah apa pun
@@ -193,25 +191,23 @@ it('mencatat siapa yang memberi izinnya', function () {
     $target = User::factory()->create(['role_id' => peranUji('karyawan')->id]);
 
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('izinTambahan', [izinUji('akses_orcha')->id])
-        ->call('updateRoleUser');
+        ->call('simpan');
 
     // "Sejak kapan dia bisa membuka ini, dan siapa yang memberi?" tidak bisa
     // dijawab tabel yang cuma berisi dua kunci asing.
     expect($target->fresh()->izinTambahan->first()->pivot->diberi_oleh)->toBe($admin->name);
 });
 
-it('membuka modal memuat izin pribadi yang sudah ada', function () {
+it('membuka halaman akses memuat izin pribadi yang sudah ada', function () {
     $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
     $target = User::factory()->create(['role_id' => peranUji('karyawan')->id]);
     $izin = izinUji('akses_orcha');
     $target->izinTambahan()->attach($izin->id);
 
     $komponen = Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id);
+        ->test(AksesAkun::class, ['user' => $target->id]);
 
     expect($komponen->get('izinTambahan'))->toBe([$izin->id]);
 });
@@ -222,10 +218,9 @@ it('menghapus centang mencabut izinnya', function () {
     $target->izinTambahan()->attach(izinUji('akses_orcha')->id);
 
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('izinTambahan', [])
-        ->call('updateRoleUser');
+        ->call('simpan');
 
     expect($target->fresh()->hasPermission('akses_orcha'))->toBeFalse();
 });
@@ -243,8 +238,7 @@ it('saringan izin mempersempit daftarnya', function () {
      | peran lagi seperti semula — persis keadaan yang hendak diperbaiki.
      */
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('cariIzin', 'orcha')
         ->assertSee('akses_orcha')
         ->assertDontSee('Lihat Gaji');
@@ -256,20 +250,76 @@ it('saringan yang tidak menemukan apa pun mengatakannya', function () {
 
     // Daftar kosong tanpa kalimat terbaca sebagai panel yang rusak.
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
+        ->test(AksesAkun::class, ['user' => $target->id])
         ->set('cariIzin', 'zzzzz-tidak-ada')
         ->assertSee('Tidak ada izin yang cocok');
 });
 
-it('tombol simpan menyebut izinnya juga', function () {
+it('menyebut apa yang disimpan, bukan cuma "simpan"', function () {
     $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
-    $target = User::factory()->create(['role_id' => peranUji('karyawan')->id]);
+    $target = penggunaUji(peranUji('karyawan'));
 
-    // "Update Role User" di bawah panel izin membuat orang mengira
-    // centangnya tidak ikut tersimpan.
+    // Tombol bernama "Update Role User" di bawah panel izin membuat orang
+    // mengira centangnya tidak ikut tersimpan, lalu mencarinya di tempat lain.
     Livewire::actingAs($admin)
-        ->test(RoleList::class)
-        ->call('showModalEdit', $target->id)
-        ->assertSee('Simpan Role & Izin');
+        ->test(AksesAkun::class, ['user' => $target->id])
+        ->assertSee('Simpan akses');
+});
+
+it('menyebut berapa izin yang datang dari peran, bukan cuma yang khusus', function () {
+    /*
+     | Daftar centang yang kosong terbaca sebagai "dia belum punya apa pun"
+     | padahal perannya sudah memberi beberapa izin. Angkanya disebut di
+     | kepala halaman supaya tidak ada yang menyimpulkan itu dari daftar
+     | centang yang memang sengaja terkunci.
+     */
+    $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
+    $target = penggunaUji(peranUji('karyawan', ['akses_orcha', 'view_orcha_kesehatan']));
+
+    Livewire::actingAs($admin)
+        ->test(AksesAkun::class, ['user' => $target->id])
+        ->assertSee('2 izin dari peran');
+});
+
+/* ============== CENTANGNYA HARUS TERGAMBAR DI HTML ============== */
+
+it('menggambar centang untuk izin pribadi yang sudah dimiliki', function () {
+    /*
+     | Bug 8 Nov 2026: layar berkata "tidak punya", padahal punya.
+     |
+     | Kotak centangnya hanya menulis atribut `checked` untuk izin yang datang
+     | dari PERAN. Untuk izin pribadi — yang justru jadi alasan layar ini ada —
+     | tidak pernah ada `checked` di HTML-nya, jadi tiap kali dibuka ulang
+     | semuanya tampil kosong. Livewire tidak mengisinya sendiri: `wire:model`
+     | pada kotak centang hanya menyalin DOM → properti saat orangnya menekan,
+     | bukan sebaliknya.
+     |
+     | Akibatnya berbahaya, bukan sekadar jelek: admin membaca layar itu
+     | sebagai "dia belum diberi akses apa-apa" lalu menyimpulkan ada lubang
+     | di tempat lain — padahal aksesnya memang sudah diberikan dari sini.
+     |
+     | Diperiksa dari HTML-nya, BUKAN dari propertinya. Uji lama memeriksa
+     | `get('izinTambahan')`, dan properti itu memang selalu benar — hijau
+     | untuk alasan yang salah.
+     */
+    $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
+    $target = penggunaUji(peranUji('karyawan'));
+    $izin = izinUji('akses_orcha');
+    $target->izinTambahan()->attach($izin->id);
+
+    Livewire::actingAs($admin)
+        ->test(AksesAkun::class, ['user' => $target->id])
+        ->assertSeeHtml('value="'.$izin->id.'" wire:model="izinTambahan" checked');
+});
+
+it('tidak menggambar centang untuk izin yang memang belum diberikan', function () {
+    // Penjaga arah sebaliknya: kalau `checked` ditulis untuk semua baris,
+    // uji di atas tetap hijau sementara layarnya berbohong ke arah lain.
+    $admin = adminRab(['akses_orcha', 'view_roles', 'edit_roles']);
+    $target = penggunaUji(peranUji('karyawan'));
+    $izin = izinUji('akses_orcha');
+
+    Livewire::actingAs($admin)
+        ->test(AksesAkun::class, ['user' => $target->id])
+        ->assertDontSeeHtml('value="'.$izin->id.'" wire:model="izinTambahan" checked');
 });

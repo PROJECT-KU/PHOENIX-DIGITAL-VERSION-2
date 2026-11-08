@@ -5,36 +5,6 @@ Data Role || lemon
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>
-        /* ===== Daftar izin tambahan per orang =====
-           Tinggi dibatasi supaya modalnya tidak tumbuh melewati layar saat
-           izinnya bertambah banyak — 121 izin di peran Admin sudah cukup
-           untuk membuat tombol Simpan terdorong keluar jangkauan. */
-        .ru-izin-rak {
-            max-height: 320px; overflow-y: auto; padding-right: 4px;
-            display: flex; flex-direction: column; gap: 14px;
-        }
-        .ru-izin-grup { display: flex; flex-direction: column; gap: 5px; }
-        .ru-izin-judul {
-            font-size: .68rem; font-weight: 800; letter-spacing: .09em;
-            text-transform: uppercase; color: #94a3b8;
-        }
-        .ru-izin-baris {
-            display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
-            padding: 8px 10px; border-radius: 10px; border: 1px solid #eef2f7;
-            background: #fff;
-        }
-        .ru-izin-baris:hover { border-color: #c7d2fe; }
-        /* Yang sudah dari peran dibedakan DAN dikunci: kotak centang yang
-           bisa ditekan tapi tidak mengubah apa pun membuat orang mengira
-           simpannya gagal. */
-        .ru-izin-baris.is-peran { background: #f8fafc; cursor: default; opacity: .75; }
-        .ru-izin-teks { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: .82rem; }
-        .ru-izin-cap {
-            align-self: flex-start; font-size: .66rem; font-weight: 700;
-            background: #f1f5f9; color: #475569; padding: 1px 7px; border-radius: 999px;
-        }
-        .ru-izin-ket { font-size: .74rem; color: #94a3b8; line-height: 1.4; }
-
         .role-tabs {
             display: flex;
             flex-wrap: wrap;
@@ -269,10 +239,14 @@ Data Role || lemon
                                 @if (auth()->user()->hasAnyPermission(['edit_roles', 'delete_roles']))
                                 <td class="text-center text-nowrap">
                                     @if (auth()->user()->hasPermission('edit_roles'))
-                                    <button type="button" wire:click="showModalEdit({{ $user->id }})"
-                                        class="btn btn-warning btn-sm text-white p-2" title="Ubah Role">
+                                    {{-- Ke halamannya sendiri, bukan jendela sembul: isinya 121
+                                         izin berkelompok berikut kotak carinya, dan jendela sembul
+                                         memaksa semuanya masuk kotak setinggi setengah layar yang
+                                         digulir sendiri di dalam halaman yang juga digulir. --}}
+                                    <a href="{{ route('admin.account.role.akses', $user->id) }}" wire:navigate
+                                        class="btn btn-warning btn-sm text-white p-2" title="Atur akses akun ini">
                                         <i class="bi bi-pencil-square"></i>
-                                    </button>
+                                    </a>
                                     @endif
                                     @if (auth()->user()->hasPermission('delete_roles'))
                                     <button type="button" class="btn btn-danger btn-sm p-2 delete-user-btn"
@@ -349,118 +323,14 @@ Data Role || lemon
     </div>
     @endif
 
-    <!--================== MODAL EDIT USER ==================-->
-    @if ($this->showEditModalStatus && $this->selectedUser)
-    <div class="modal d-block" style="background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(3px);" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content border-0 rounded-4 shadow-lg">
-                <div class="modal-body p-4">
-                    <div class="d-flex align-items-center gap-2 mb-4">
-                        <span class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"
-                            style="width: 42px; height: 42px; font-size: 1.15rem; border-radius: 13px;">
-                            <i class="bi bi-person-badge-fill"></i>
-                        </span>
-                        <h5 class="fw-bold mb-0">Ubah Akses Akun</h5>
-                    </div>
-                    <form wire:submit.prevent="updateRoleUser">
-                        <div class="mb-3">
-                            <label for="username" class="form-label fw-semibold">Nama</label>
-                            <input type="text" disabled id="username" class="form-control bg-light" wire:model="username">
-                        </div>
-                        <div class="mb-3">
-                            <label for="userEmail" class="form-label fw-semibold">Email</label>
-                            <input type="text" disabled id="userEmail" class="form-control bg-light" wire:model="userEmail">
-                        </div>
-                        <div class="mb-2">
-                            <label for="userRole" class="form-label fw-semibold">Role User</label>
-                            <select id="userRole" wire:model="userRole" class="form-select @error('userRole') is-invalid @enderror">
-                                @foreach ($roles as $role)
-                                <option value="{{ $role->id }}">{{ ucfirst($role->name) }}</option>
-                                @endforeach
-                            </select>
-                            @error('userRole') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+    {{-- Jendela sembul "Ubah Akses Akun" sudah DIBUANG dari sini.
 
-                        {{-- ===== IZIN TAMBAHAN UNTUK ORANG INI =====
-
-                             Peran tetap jadi dasar; ini pengecualiannya.
-                             Dipakai saat sebagian orang dalam satu peran boleh
-                             sesuatu dan sebagian tidak — "Hanifah dan Wiam boleh
-                             masuk Orcha, karyawan lain tidak" — yang tanpa ini
-                             hanya bisa diselesaikan dengan menyalin perannya,
-                             lalu dua daftar izin harus terus disamakan.
-
-                             Izin yang SUDAH datang dari peran ditampilkan
-                             tercentang dan dikunci. Tanpa itu, daftar yang kosong
-                             terbaca sebagai "dia belum punya apa pun" padahal
-                             perannya sudah memberi sebelas izin. --}}
-                        <div class="mt-4 pt-3 border-top">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <i class="bi bi-key-fill text-warning"></i>
-                                <span class="fw-semibold">Izin tambahan khusus orang ini</span>
-                            </div>
-                            <p class="text-muted small mb-3">
-                                Di luar izin yang sudah didapat dari perannya. Yang tercentang abu-abu
-                                berarti sudah dari peran — tidak perlu, dan tidak bisa, dicentang di sini.
-                            </p>
-
-                            {{-- Saringan: 121 izin terlalu panjang untuk digulir
-                                 setiap kali memberi satu izin. --}}
-                            <div class="input-group input-group-sm mb-2">
-                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                                <input type="search" class="form-control"
-                                    wire:model.live.debounce.300ms="cariIzin"
-                                    placeholder="Cari izin — mis. orcha, kesehatan, gaji">
-                            </div>
-
-                            <div class="ru-izin-rak">
-                                @foreach ($semuaIzin as $grup => $daftar)
-                                    <div class="ru-izin-grup">
-                                        <span class="ru-izin-judul">{{ ucfirst($grup ?: 'lainnya') }}</span>
-                                        @foreach ($daftar as $izin)
-                                            @php($dariPeran = in_array((int) $izin->id, $izinDariPeran, true))
-                                            <label class="ru-izin-baris {{ $dariPeran ? 'is-peran' : '' }}">
-                                                <input type="checkbox" value="{{ $izin->id }}"
-                                                    wire:model="izinTambahan"
-                                                    @checked($dariPeran) @disabled($dariPeran)>
-                                                <span class="ru-izin-teks">
-                                                    <strong>{{ $izin->display_name ?: $izin->name }}</strong>
-                                                    @if ($dariPeran)
-                                                        <span class="ru-izin-cap">dari peran</span>
-                                                    @endif
-                                                    @if ($izin->description)
-                                                        <span class="ru-izin-ket">{{ $izin->description }}</span>
-                                                    @endif
-                                                </span>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                @endforeach
-
-                                @if ($semuaIzin->isEmpty())
-                                    <p class="text-muted small mb-0 py-3 text-center">
-                                        Tidak ada izin yang cocok dengan "{{ $cariIzin }}".
-                                    </p>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" wire:click="cancelModal" class="btn btn-danger rounded-pill px-3">Batal</button>
-                    {{-- Menyebut KEDUANYA: tombol bernama "Update Role User" di
-                         bawah panel izin membuat orang mengira centangnya tidak
-                         ikut tersimpan, lalu mencarinya lagi di tempat lain. --}}
-                    <button type="button" wire:click="updateRoleUser"
-                        class="btn btn-primary rounded-pill px-3 d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-check2-circle"></i>
-                        Simpan Role &amp; Izin
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
+         Ia dipindah jadi halaman sendiri (admin.account.role.akses). Selain
+         karena isinya sepanjang halaman, jendela itu menyimpan satu cacat
+         yang baru terlihat 8 Nov 2026: kotak centangnya tidak pernah
+         menggambar atribut `checked` untuk izin PRIBADI, hanya untuk izin
+         yang datang dari peran. Tiap kali dibuka ulang, orang yang sudah
+         diberi akses tampil seolah belum diberi apa-apa. --}}
 
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
