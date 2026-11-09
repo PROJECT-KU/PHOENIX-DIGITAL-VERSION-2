@@ -12,7 +12,7 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
                     style="max-width:560px; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 12px 30px rgba(15,27,61,.12);">
                     <tr>
-                        <td align="center" style="background:linear-gradient(120deg,#2455e6,#7b5cff,#0ea5c6); padding:30px 24px;">
+                        <td align="center" style="background:linear-gradient(120deg,#2455e6,#0ea5c6,#17a974); padding:30px 24px;">
                             <div style="font-size:12px; font-weight:700; letter-spacing:2px; color:#dbe4ff;">PT.</div>
                             <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.2;">Asthana Cipta Mandiri</div>
                         </td>
