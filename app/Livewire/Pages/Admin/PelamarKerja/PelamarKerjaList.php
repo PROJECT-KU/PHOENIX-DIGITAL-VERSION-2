@@ -43,7 +43,10 @@ class PelamarKerjaList extends Component
         }
 
         // Filter berdasarkan posisi lowongan
-        if ($this->filterJob) {
+        // 'umum' = lamaran umum (talent pool) tanpa posisi.
+        if ($this->filterJob === 'umum') {
+            $query->whereNull('job_id');
+        } elseif ($this->filterJob) {
             $query->where('job_id', $this->filterJob);
         }
 
@@ -86,17 +89,25 @@ class PelamarKerjaList extends Component
             $cvPath = $application->cv_path;
             $clPath = $application->cover_letter_path;
 
-            if ($cvPath && Storage::disk('public')->exists($cvPath)) {
-                Storage::disk('public')->delete($cvPath);
-            }
+            // Lamaran baru disimpan di disk PRIVAT 'local'; yang lama mungkin
+            // masih di 'public'. Dulu hanya 'public' yang dibersihkan, jadi CV
+            // pelamar yang dihapus tetap tertinggal di server.
+            foreach (['local', 'public'] as $disk) {
+                foreach ([$cvPath, $clPath] as $jalur) {
+                    if ($jalur && Storage::disk($disk)->exists($jalur)) {
+                        Storage::disk($disk)->delete($jalur);
+                    }
+                }
 
-            if ($clPath && Storage::disk('public')->exists($clPath)) {
-                Storage::disk('public')->delete($clPath);
-            }
-
-            $folder = dirname($cvPath ?? $clPath ?? '');
-            if ($folder && Storage::disk('public')->exists($folder)) {
-                Storage::disk('public')->deleteDirectory($folder);
+                // Folder per lamaran: applications/{tahun}/{bulan}/{uuid}.
+                // Dijaga ketat supaya dirname() dari jalur aneh ('.' atau
+                // 'applications') tidak pernah menghapus folder bersama.
+                $folder = dirname($cvPath ?? $clPath ?? '');
+                if (preg_match('#^applications/\d{4}/\d{2}/[0-9a-f-]{36}$#', $folder)
+                    && Storage::disk($disk)->exists($folder)
+                    && Storage::disk($disk)->files($folder) === []) {
+                    Storage::disk($disk)->deleteDirectory($folder);
+                }
             }
 
             $application->delete();

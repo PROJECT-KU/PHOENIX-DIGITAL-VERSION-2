@@ -13,13 +13,16 @@ class JobController extends Controller
     public function index()
     {
         $jobs = Lowongan::query()
-            // 'active', bukan true: kolomnya ENUM('active','non-active').
-            // true kebetulan cocok karena MySQL membandingkannya dengan nomor
-            // urut enum (1 = 'active') — urutan enum berubah, semua lowongan
-            // lenyap dari situs tanpa galat.
-            ->active()
+            // terbuka() = is_active 'active' (bukan true: kolomnya ENUM, dan
+            // true kebetulan cocok lewat nomor urut enum) DAN batas lamaran
+            // belum lewat.
+            ->terbuka()
+            // Yang segera ditutup lebih dulu; tanpa batas waktu di belakang.
+            ->orderByRaw('batas_lamaran IS NULL')
+            ->orderBy('batas_lamaran')
             ->orderBy('title')
-            ->get(['id', 'title', 'slug', 'created_at']);
+            ->get()
+            ->map(fn (Lowongan $l) => $l->untukSitus());
 
         return $this->ok($jobs, 'Jobs retrieved successfully', ['count' => $jobs->count()]);
     }
@@ -29,9 +32,7 @@ class JobController extends Controller
      */
     public function show($slug)
     {
-        $job = Lowongan::where('slug', $slug)
-            ->where('is_active', 'active')
-            ->first();
+        $job = Lowongan::where('slug', $slug)->terbuka()->first();
 
         if (! $job) {
             return response()->json([
@@ -40,14 +41,6 @@ class JobController extends Controller
             ], 404);
         }
 
-        return $this->ok([
-            'id' => $job->id,
-            'title' => $job->title,
-            'slug' => $job->slug,
-            'requirements' => $job->requirements,
-            'descriptions' => $job->descriptions,
-            'posted_at' => $job->created_at->format('Y-m-d'),
-            'is_active' => $job->is_active,
-        ], 'Job detail retrieved successfully');
+        return $this->ok($job->untukSitus(lengkap: true), 'Job detail retrieved successfully');
     }
 }

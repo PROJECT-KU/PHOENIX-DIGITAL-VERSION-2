@@ -85,9 +85,10 @@ Data Pelamar Kerja || lemon
                             @endforeach
                         </select>
                         <select wire:model.live="filterJob" class="form-select rounded-3 text-capitalize" style="min-width: 180px;">
-                            <option value="">Semua Posisi</option>
+                            <option value="" @selected((string) $this->filterJob === '')>Semua Posisi</option>
+                            <option value="umum" @selected((string) $this->filterJob === 'umum')>Lamaran umum</option>
                             @foreach ($jobList as $job)
-                            <option value="{{ $job->id }}">{{ $job->title }}</option>
+                            <option value="{{ $job->id }}" @selected((string) $this->filterJob === (string) $job->id)>{{ $job->title }}</option>
                             @endforeach
                         </select>
                         @if ($search || $filterMonth || $filterJob)
@@ -132,7 +133,7 @@ Data Pelamar Kerja || lemon
                                 </td>
                                 <td>
                                     <span class="badge bg-gradient-blue rounded-pill px-3 py-2 text-capitalize">
-                                        {{ $item->job->title ?? '-' }}
+                                        {{ $item->posisi_label }}
                                     </span>
                                 </td>
                                 <td class="text-muted">{{ $item->created_at->locale('id')->isoFormat('D MMMM YYYY') }}</td>

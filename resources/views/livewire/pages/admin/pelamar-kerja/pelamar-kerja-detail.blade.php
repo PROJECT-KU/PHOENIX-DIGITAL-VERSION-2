@@ -39,7 +39,7 @@ Detail Pelamar Kerja || lemon
                 </span>
                 <div>
                     <h5 class="fw-bold mb-0 text-dark text-capitalize">{{ $pelamar->name }}</h5>
-                    <span class="badge bg-gradient-blue rounded-pill px-3 py-1 mt-1 text-capitalize">{{ $pelamar->job->title ?? '-' }}</span>
+                    <span class="badge bg-gradient-blue rounded-pill px-3 py-1 mt-1 text-capitalize">{{ $pelamar->posisi_label }}</span>
                 </div>
             </div>
 
@@ -62,6 +62,22 @@ Detail Pelamar Kerja || lemon
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted"><i class="bi bi-pc-display me-2"></i>IP Address</span>
                         <span class="fw-semibold text-dark">{{ $pelamar->ip_address ?? '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom">
+                        <span class="text-muted text-nowrap"><i class="bi bi-link-45deg me-2"></i>Portofolio</span>
+                        @if ($pelamar->portofolio_url)
+                            <a href="{{ $pelamar->portofolio_url }}" target="_blank" rel="noopener noreferrer" class="fw-semibold text-truncate">{{ $pelamar->portofolio_url }}</a>
+                        @else
+                            <span class="fw-semibold text-dark">-</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted"><i class="bi bi-megaphone me-2"></i>Tahu Lowongan dari</span>
+                        <span class="fw-semibold text-dark">{{ $pelamar->sumber_info_label ?? '-' }}</span>
                     </div>
                 </div>
             </div>

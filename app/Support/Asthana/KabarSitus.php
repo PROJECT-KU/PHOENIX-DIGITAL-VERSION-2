@@ -36,12 +36,13 @@ class KabarSitus
 
     public static function lamaranMasuk(JobApplication $lamaran): void
     {
-        $posisi = $lamaran->job?->title ?? 'posisi yang dibuka';
+        // Lamaran umum (talent pool) tidak terikat ke lowongan: posisi null.
+        $posisi = $lamaran->job?->title;
         $nomor = str_pad((string) $lamaran->id, 6, '0', STR_PAD_LEFT);
 
         self::beriTahuAdmin('view_pelamar', new KabarSitusAsthana(
             judul: 'Lamaran baru 📄',
-            isi: "{$lamaran->name} melamar {$posisi}.",
+            isi: $posisi ? "{$lamaran->name} melamar {$posisi}." : "{$lamaran->name} mengirim lamaran umum.",
             url: self::rute('admin.pelamar.detail', $lamaran->id),
             ikon: 'bi-person-badge',
             warna: 'success',

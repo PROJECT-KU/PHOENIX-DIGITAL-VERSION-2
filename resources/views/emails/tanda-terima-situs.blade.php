@@ -22,8 +22,13 @@
                             <p style="margin:0 0 14px; font-size:16px; color:#0f1b3d;">Halo {{ $nama }},</p>
                             @if ($jenis === 'lamaran')
                                 <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#4a5578;">
-                                    Terima kasih telah melamar posisi <strong style="color:#0f1b3d;">{{ $posisi }}</strong>.
-                                    Lamaran Anda sudah kami terima dan akan ditinjau oleh tim kami.
+                                    @if ($posisi)
+                                        Terima kasih telah melamar posisi <strong style="color:#0f1b3d;">{{ $posisi }}</strong>.
+                                        Lamaran Anda sudah kami terima dan akan ditinjau oleh tim kami.
+                                    @else
+                                        Terima kasih telah mengirim <strong style="color:#0f1b3d;">lamaran umum</strong>.
+                                        CV Anda kami simpan dan akan kami tinjau setiap ada posisi yang cocok.
+                                    @endif
                                 </p>
                                 @if ($nomor)
                                     <p style="margin:0 0 14px; font-size:15px; color:#4a5578;">

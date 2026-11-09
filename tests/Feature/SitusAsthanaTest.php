@@ -172,6 +172,137 @@ it('lamaran masuk memberi tahu admin dan mengirim tanda terima', function () {
     Mail::assertSent(TandaTerimaSitusMail::class, fn ($m) => $m->hasTo('sari@gmail.com') && $m->jenis === 'lamaran');
 });
 
+it('daftar lowongan memuat rincian dan menyembunyikan yang lewat batas', function () {
+    $nanti = lowonganUji();
+    $nanti->update([
+        'unit' => 'reka', 'jenis' => 'magang', 'lokasi' => 'Yogyakarta', 'pola_kerja' => 'hybrid',
+        'batas_lamaran' => now()->addDays(10)->toDateString(), 'ringkasan' => 'Bantu tim desain.',
+    ]);
+    $hariIni = lowonganUji();
+    $hariIni->update(['batas_lamaran' => now()->toDateString()]);
+    $lewat = lowonganUji();
+    $lewat->update(['batas_lamaran' => now()->subDay()->toDateString()]);
+    $tanpaBatas = lowonganUji();
+
+    $data = $this->getJson('/api/jobs')->assertOk()->json('data');
+
+    // Yang paling cepat ditutup lebih dulu; tanpa batas di belakang.
+    expect(array_column($data, 'id'))->toBe([$hariIni->id, $nanti->id, $tanpaBatas->id]);
+
+    $reka = collect($data)->firstWhere('id', $nanti->id);
+    expect($reka)->toMatchArray([
+        'unit' => 'reka', 'unit_label' => 'Reka Technology', 'jenis_label' => 'Magang',
+        'lokasi' => 'Yogyakarta', 'pola_kerja_label' => 'Hybrid', 'ringkasan' => 'Bantu tim desain.',
+    ]);
+    // Daftar tidak membawa isi panjang; detail yang membawanya.
+    expect($reka)->not->toHaveKey('descriptions');
+
+    $this->getJson("/api/jobs/{$lewat->slug}")->assertNotFound();
+    $this->getJson("/api/jobs/{$nanti->slug}")->assertOk()
+        ->assertJsonPath('data.descriptions', '<p>Deskripsi</p>')
+        ->assertJsonPath('data.unit_label', 'Reka Technology');
+});
+
+it('lowongan lama tanpa rincian tetap tampil sebagai Asthana', function () {
+    $lama = lowonganUji();
+
+    $baris = collect($this->getJson('/api/jobs')->json('data'))->firstWhere('id', $lama->id);
+
+    expect($baris['unit'])->toBe('asthana')
+        ->and($baris['jenis_label'])->toBeNull()
+        ->and($baris['batas_lamaran'])->toBeNull();
+});
+
+it('lamaran ke lowongan yang batasnya sudah lewat ditolak', function () {
+    $lewat = lowonganUji();
+    $lewat->update(['batas_lamaran' => now()->subDay()->toDateString()]);
+
+    $this->postJson('/api/applications', ['job_id' => $lewat->id])
+        ->assertJsonPath('errors.job_id.0', 'Posisi ini sudah tidak dibuka');
+});
+
+it('lamaran umum tanpa posisi & tanpa surat lamaran diterima', function () {
+    Storage::fake('local');
+    Mail::fake();
+    Notification::fake();
+    $admin = penggunaSitus(['view_pelamar']);
+
+    $this->postJson('/api/applications', [
+        'name' => 'Budi Umum',
+        'email' => 'budi@gmail.com',
+        'phone' => '0812-1111-2222',
+        'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        'portofolio_url' => 'https://behance.net/budi',
+        'sumber_info' => 'instagram',
+    ])->assertCreated();
+
+    $lamaran = \App\Models\JobApplication::where('email', 'budi@gmail.com')->firstOrFail();
+    expect($lamaran->job_id)->toBeNull()
+        ->and($lamaran->cover_letter_path)->toBeNull()
+        ->and($lamaran->posisi_label)->toBe('Lamaran umum')
+        ->and($lamaran->portofolio_url)->toBe('https://behance.net/budi')
+        ->and($lamaran->sumber_info_label)->toBe('Instagram');
+
+    Notification::assertSentTo($admin, KabarSitusAsthana::class, fn ($n) => str_contains($n->isi, 'lamaran umum'));
+    Mail::assertSent(TandaTerimaSitusMail::class, fn ($m) => $m->hasTo('budi@gmail.com') && $m->posisi === null);
+});
+
+it('tautan portofolio harus http(s) dan sumber info harus dikenal', function () {
+    $galat = $this->postJson('/api/applications', [
+        'portofolio_url' => 'javascript:alert(1)',
+        'sumber_info' => 'koran',
+    ])->assertUnprocessable()->json('errors');
+
+    expect($galat['portofolio_url'][0])->toBe('Tautan portofolio harus diawali http:// atau https://')
+        ->and($galat['sumber_info'][0])->toBe('Pilihan sumber informasi tidak dikenal')
+        ->and($galat)->not->toHaveKey('cover_letter')
+        ->and($galat)->not->toHaveKey('job_id');
+});
+
+it('formulir admin lowongan menyimpan rincian situs', function () {
+    $admin = penggunaSitus(['create_lowongan', 'edit_lowongan']);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class)
+        ->set('title', 'Desainer UI Uji')
+        ->set('slug', 'desainer-ui-uji')
+        ->set('isActive', 'active')
+        ->set('descriptions', '<p>Desain</p>')
+        ->set('requirements', '<ul><li>Figma</li></ul>')
+        ->set('unit', 'reka')
+        ->set('jenis', 'kontrak')
+        ->set('polaKerja', 'remote')
+        ->set('lokasi', ' Yogyakarta ')
+        ->set('batasLamaran', '2030-01-31')
+        ->set('ringkasan', 'Merancang antarmuka klien Reka.')
+        ->set('gaji', '')
+        ->set('jumlahPosisi', 2)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $l = Lowongan::where('slug', 'desainer-ui-uji')->firstOrFail();
+    expect($l->only(['unit', 'jenis', 'pola_kerja', 'lokasi', 'ringkasan', 'gaji', 'jumlah_posisi']))->toBe([
+        'unit' => 'reka', 'jenis' => 'kontrak', 'pola_kerja' => 'remote', 'lokasi' => 'Yogyakarta',
+        'ringkasan' => 'Merancang antarmuka klien Reka.', 'gaji' => null, 'jumlah_posisi' => 2,
+    ])->and($l->batas_lamaran->toDateString())->toBe('2030-01-31');
+
+    // Mode ubah memuat ulang isian yang sama.
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class, ['lowongan' => $l])
+        ->assertSet('unit', 'reka')
+        ->assertSet('polaKerja', 'remote')
+        ->assertSet('batasLamaran', '2030-01-31');
+});
+
+it('pilihan unit, jenis & pola kerja ditandai @selected di formulir admin', function () {
+    $sumber = file_get_contents(resource_path('views/livewire/pages/admin/lowongan-pekerjaan/lowongan-pekerjaan-form.blade.php'));
+
+    preg_match_all('/<option\b[^>]*>/', $sumber, $opsi);
+    foreach ($opsi[0] as $tag) {
+        expect($tag)->toContain('@selected((string) $this->');
+    }
+});
+
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {
     Mail::fake();
     Notification::fake();

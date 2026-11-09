@@ -31,22 +31,28 @@ class JobApplicationController extends Controller
             // Atomic transaction
             $app = DB::transaction(function () use ($request, $cv, $cl, $subdir, &$cvPath, &$clPath) {
                 $cvOriginalName = pathinfo($cv->getClientOriginalName(), PATHINFO_FILENAME);
-                $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
                 $cvFileName = Str::slug($cvOriginalName).'_'.Str::random(8).'.pdf';
-                $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
 
                 // Disk PRIVAT: CV & surat lamaran memuat data pribadi pelamar.
                 $cvPath = $cv->storeAs("applications/{$subdir}", $cvFileName, 'local');
-                $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'local');
+
+                // Surat lamaran opsional sejak 10 Nov 2026.
+                if ($cl) {
+                    $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
+                    $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
+                    $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'local');
+                }
 
                 // Create application record
                 return JobApplication::create([
-                    'job_id' => $request->input('job_id'),
+                    'job_id' => $request->input('job_id') ?: null,
                     'name' => $request->input('name'),
                     'email' => $request->input('email'),
                     'phone' => $request->input('phone'),
                     'cv_path' => $cvPath,
                     'cover_letter_path' => $clPath,
+                    'portofolio_url' => $request->input('portofolio_url') ?: null,
+                    'sumber_info' => $request->input('sumber_info') ?: null,
                     'ip_address' => $request->ip(),
                 ]);
             });

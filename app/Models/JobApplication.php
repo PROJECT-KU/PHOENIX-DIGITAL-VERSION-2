@@ -13,11 +13,34 @@ class JobApplication extends Model
 
     protected $table = 'tbl_job_applications';
 
-    protected $fillable = ['job_id', 'name', 'email', 'phone', 'cv_path', 'cover_letter_path', 'ip_address'];
+    protected $fillable = ['job_id', 'name', 'email', 'phone', 'cv_path', 'cover_letter_path', 'portofolio_url', 'sumber_info', 'ip_address'];
+
+    /** Dari mana pelamar tahu lowongan ini (isian opsional formulir situs). */
+    public const SUMBER_INFO = [
+        'situs' => 'Situs web Asthana',
+        'instagram' => 'Instagram',
+        'tiktok' => 'TikTok',
+        'linkedin' => 'LinkedIn',
+        'jobstreet' => 'Portal lowongan (JobStreet, Glints, dll.)',
+        'kampus' => 'Kampus / sekolah',
+        'teman' => 'Teman / kenalan',
+        'lainnya' => 'Lainnya',
+    ];
+
+    /** Lamaran umum (talent pool) tidak terikat ke satu lowongan. */
+    public function getPosisiLabelAttribute(): string
+    {
+        return $this->job?->title ?? 'Lamaran umum';
+    }
+
+    public function getSumberInfoLabelAttribute(): ?string
+    {
+        return self::SUMBER_INFO[$this->sumber_info] ?? null;
+    }
 
     public function job(): BelongsTo
     {
-        return $this->belongsTo(Lowongan::class);
+        return $this->belongsTo(Lowongan::class, 'job_id');
     }
 
     public function getCvUrlAttribute()

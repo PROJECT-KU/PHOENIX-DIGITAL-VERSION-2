@@ -36,6 +36,8 @@ function berkasPenandaAdmin(): array
         'message/*.blade.php',
         'asthana/*.blade.php',
         'asthana/partials/*.blade.php',
+        'lowongan-pekerjaan/*.blade.php',
+        'pelamar-kerja/*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
 }
 

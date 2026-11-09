@@ -20,12 +20,20 @@ class StoreJobApplicationRequest extends FormRequest
         return [
             // Hanya lowongan yang masih dibuka: lowongan yang sudah ditutup tetap
             // ada di tabel, dan tanpa syarat ini lamarannya tetap diterima.
-            'job_id' => ['required', 'integer', \Illuminate\Validation\Rule::exists('lowongans', 'id')->where('is_active', 'active')],
+            // Batas lamaran yang sudah lewat juga ditolak (sama dengan yang
+            // tampil di situs: Lowongan::terbuka()). Kosong = lamaran umum.
+            'job_id' => ['nullable', 'integer', function (string $atribut, $nilai, \Closure $gagal) {
+                if (! \App\Models\Lowongan::terbuka()->whereKey($nilai)->exists()) {
+                    $gagal('Posisi ini sudah tidak dibuka');
+                }
+            }],
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc,dns', 'max:150'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\-\(\)]+$/'],
             'cv' => ['required', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
-            'cover_letter' => ['required', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
+            'cover_letter' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
+            'portofolio_url' => ['nullable', 'url:http,https', 'max:255'],
+            'sumber_info' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\JobApplication::SUMBER_INFO))],
 
             // Optional CAPTCHA
             'cf_turnstile_response' => ['nullable', 'string'],
@@ -40,8 +48,7 @@ class StoreJobApplicationRequest extends FormRequest
         return [
             // Ditampilkan apa adanya di bawah kolom formulir situs, jadi harus
             // berbahasa Indonesia seperti situsnya.
-            'job_id.required' => 'Pilih posisi yang dilamar',
-            'job_id.exists' => 'Posisi ini sudah tidak dibuka',
+            'job_id.integer' => 'Pilih posisi yang dilamar',
 
             'name.required' => 'Nama lengkap wajib diisi',
             'name.max' => 'Nama maksimal 120 karakter',
@@ -59,9 +66,12 @@ class StoreJobApplicationRequest extends FormRequest
             // Dulu tertulis {$maxKB}MB → "2048MB". Satuannya MB, angkanya $max.
             'cv.max' => "Ukuran CV maksimal {$max} MB",
 
-            'cover_letter.required' => 'Surat lamaran wajib diunggah',
             'cover_letter.mimetypes' => 'Surat lamaran harus berformat PDF',
             'cover_letter.max' => "Ukuran surat lamaran maksimal {$max} MB",
+
+            'portofolio_url.url' => 'Tautan portofolio harus diawali http:// atau https://',
+            'portofolio_url.max' => 'Tautan portofolio maksimal 255 karakter',
+            'sumber_info.in' => 'Pilihan sumber informasi tidak dikenal',
         ];
     }
 

@@ -3,6 +3,14 @@
 Data Lowongan Pekerjaan || lemon
 @stop
 <div>
+    @php
+        // Dirakit sekali di sini: kondisi auth()->user()->… yang berulang di
+        // direktif membuat penanda morph Livewire timpang (PenandaMorphAdminTest).
+        $bisaTambah = auth()->user()->hasPermission('create_lowongan');
+        $bisaUbah = auth()->user()->hasPermission('edit_lowongan');
+        $bisaHapus = auth()->user()->hasPermission('delete_lowongan');
+        $bisaAksi = $bisaUbah || $bisaHapus;
+    @endphp
     <div class="container-fluid">
         <!--================== HEADER + TOOLBAR (SATU CARD) ==================-->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -33,7 +41,7 @@ Data Lowongan Pekerjaan || lemon
                             </span>
                             @endif
                         </div>
-                        @if (auth()->user()->hasPermission('create_lowongan'))
+                        @if ($bisaTambah)
                         <a wire:navigate href="{{ route('admin.lowongan.create') }}"
                             class="btn btn-primary d-flex align-items-center justify-content-center px-4 flex-shrink-0">
                             <i class="bi bi-plus-lg"></i>
@@ -54,7 +62,7 @@ Data Lowongan Pekerjaan || lemon
                             <tr style="text-align: center;">
                                 <th>Nama Lowongan</th>
                                 <th class="text-center">Status</th>
-                                @if (auth()->user()->hasAnyPermission(['edit_lowongan', 'delete_lowongan']))
+                                @if ($bisaAksi)
                                 <th class="text-center" width="120">Aksi</th>
                                 @endif
                             </tr>
@@ -62,9 +70,24 @@ Data Lowongan Pekerjaan || lemon
                         <tbody>
                             @forelse ($dataLowongan as $lowongan)
                             <tr style="text-align: center;">
-                                <td class="fw-semibold text-capitalize">{{ $lowongan->title }}</td>
+                                <td>
+                                    <div class="fw-semibold text-capitalize">{{ $lowongan->title }}</div>
+                                    <div class="small text-muted">
+                                        {{ $lowongan->unit_label }}
+                                        @if ($lowongan->jenis_label)
+                                            · {{ $lowongan->jenis_label }}
+                                        @endif
+                                        @if ($lowongan->batas_lamaran)
+                                            · s.d. {{ $lowongan->batas_lamaran->locale('id')->translatedFormat('j M Y') }}
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="text-center">
-                                    @if ($lowongan->is_active === 'active')
+                                    @if ($lowongan->lewat_batas)
+                                    <span class="badge rounded-pill px-3 py-2" style="background:#fff4e5; color:#b45309;" title="Masih aktif, tapi batas lamarannya sudah lewat: tidak tampil di situs">
+                                        <i class="bi bi-hourglass-bottom me-1"></i>Lewat batas
+                                    </span>
+                                    @elseif ($lowongan->is_active === 'active')
                                     <span class="badge bg-gradient-green rounded-pill px-3 py-2">
                                         <i class="bi bi-check-circle me-1"></i>Aktif
                                     </span>
@@ -74,15 +97,15 @@ Data Lowongan Pekerjaan || lemon
                                     </span>
                                     @endif
                                 </td>
-                                @if (auth()->user()->hasAnyPermission(['edit_lowongan', 'delete_lowongan']))
+                                @if ($bisaAksi)
                                 <td class="text-center text-nowrap">
-                                    @if (auth()->user()->hasPermission('edit_lowongan'))
+                                    @if ($bisaUbah)
                                     <a href="{{ route('admin.lowongan.edit', $lowongan->id) }}" wire:navigate
                                         class="btn btn-warning btn-sm text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     @endif
-                                    @if (auth()->user()->hasPermission('delete_lowongan'))
+                                    @if ($bisaHapus)
                                     <button type="button" class="btn btn-danger btn-sm p-2 delete-lowongan-btn"
                                         data-id="{{ $lowongan->id }}" data-name="{{ $lowongan->title }}"
                                         title="Hapus">

@@ -7,6 +7,34 @@
             transition: 0.18s;
         }
 
+        .lwg-rincian {
+            padding: 18px;
+            border-radius: 16px;
+            background: #f8f9fd;
+            border: 1px solid #eceef6;
+        }
+
+        .lwg-rincian-judul {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .lwg-rincian-judul i {
+            font-size: 1.4rem;
+            color: #4e46e5;
+        }
+
+        .lwg-rincian-judul strong {
+            display: block;
+            color: #1f2340;
+        }
+
+        .lwg-rincian-judul small {
+            color: #6b7193;
+        }
+
         .lwg-input:focus {
             border-color: #7c3aed;
             box-shadow: 0 0 0 0.18rem rgba(124, 58, 237, 0.12);
@@ -23,11 +51,80 @@
             <div class="form-group col-md-6">
                 <label for="isActive" class="form-label fw-semibold text-dark">Status Lowongan <span class="text-danger">*</span></label>
                 <select class="form-select lwg-input @error('isActive') is-invalid @enderror" wire:model.defer='isActive'>
-                    <option value="">Pilih Status</option>
-                    <option value="active">Aktif</option>
-                    <option value="non-active">Tidak Aktif</option>
+                    <option value="" @selected((string) $this->isActive === '')>Pilih Status</option>
+                    <option value="active" @selected((string) $this->isActive === 'active')>Aktif</option>
+                    <option value="non-active" @selected((string) $this->isActive === 'non-active')>Tidak Aktif</option>
                 </select>
                 @error('isActive') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+            </div>
+        </div>
+
+        {{-- Rincian yang tampil di kartu & halaman detail situs Asthana --}}
+        <div class="lwg-rincian mt-4">
+            <div class="lwg-rincian-judul">
+                <i class="bi bi-card-checklist"></i>
+                <div>
+                    <strong>Rincian untuk situs</strong>
+                    <small>Tampil di kartu lowongan & halaman detail. Yang kosong tidak ditampilkan.</small>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Perusahaan <span class="text-danger">*</span></label>
+                    <select class="form-select lwg-input @error('unit') is-invalid @enderror" wire:model="unit">
+                        @foreach (\App\Models\Lowongan::UNIT as $kunci => $label)
+                            <option value="{{ $kunci }}" @selected((string) $this->unit === $kunci)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('unit') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Jenis Pekerjaan</label>
+                    <select class="form-select lwg-input @error('jenis') is-invalid @enderror" wire:model="jenis">
+                        <option value="" @selected((string) $this->jenis === '')>— Tidak disebut —</option>
+                        @foreach (\App\Models\Lowongan::JENIS as $kunci => $label)
+                            <option value="{{ $kunci }}" @selected((string) $this->jenis === $kunci)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('jenis') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Pola Kerja</label>
+                    <select class="form-select lwg-input @error('polaKerja') is-invalid @enderror" wire:model="polaKerja">
+                        <option value="" @selected((string) $this->polaKerja === '')>— Tidak disebut —</option>
+                        @foreach (\App\Models\Lowongan::POLA_KERJA as $kunci => $label)
+                            <option value="{{ $kunci }}" @selected((string) $this->polaKerja === $kunci)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('polaKerja') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Lokasi</label>
+                    <input class="form-control lwg-input @error('lokasi') is-invalid @enderror" type="text" wire:model="lokasi" maxlength="100" placeholder="mis. Yogyakarta">
+                    @error('lokasi') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Batas Lamaran</label>
+                    <input class="form-control lwg-input @error('batasLamaran') is-invalid @enderror" type="date" wire:model="batasLamaran">
+                    <small class="text-muted">Lewat dari tanggal ini, lowongan otomatis hilang dari situs.</small>
+                    @error('batasLamaran') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Jumlah Posisi</label>
+                    <input class="form-control lwg-input @error('jumlahPosisi') is-invalid @enderror" type="number" min="1" max="999" wire:model="jumlahPosisi" placeholder="mis. 2">
+                    @error('jumlahPosisi') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="form-label fw-semibold text-dark">Kisaran Gaji</label>
+                    <input class="form-control lwg-input @error('gaji') is-invalid @enderror" type="text" wire:model="gaji" maxlength="100" placeholder="mis. Rp 4–6 juta / bulan">
+                    <small class="text-muted">Kosongkan bila tidak ingin ditampilkan.</small>
+                    @error('gaji') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+                <div class="form-group col-md-8">
+                    <label class="form-label fw-semibold text-dark">Ringkasan Singkat</label>
+                    <textarea class="form-control lwg-input @error('ringkasan') is-invalid @enderror" rows="2" wire:model="ringkasan" maxlength="255" placeholder="1–2 kalimat yang tampil di kartu lowongan">{{ $ringkasan }}</textarea>
+                    @error('ringkasan') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
             </div>
         </div>
 
@@ -60,9 +157,16 @@
                 class="btn flex-grow-1 d-inline-flex align-items-center justify-content-center text-white rounded-pill shadow-lg"
                 style="height: 55px; background: linear-gradient(135deg, #6c63ff, #4e46e5); font-weight: 600; font-size: 1.1rem; border: none;"
                 wire:loading.attr="disabled" wire:target="save">
-                <span wire:loading.remove wire:target="save" class="d-inline-flex align-items-center">
-                    <i class="bi bi-check2-circle me-2 fs-4"></i>
-                    <span>{{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}</span>
+                {{-- Kelas display di dalam, bukan pada elemen wire:loading: d-* !important
+                     mengalahkan cara Livewire menyembunyikannya. --}}
+                <span wire:loading.remove wire:target="save">
+                    <span class="d-inline-flex align-items-center">
+                        <i class="bi bi-check2-circle me-2 fs-4"></i>
+                        <span>{{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}</span>
+                    </span>
+                </span>
+                <span wire:loading wire:target="save">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan…
                 </span>
             </button>
         </div>
