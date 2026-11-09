@@ -9,6 +9,7 @@ use App\Models\Asthana\Klien;
 use App\Models\Asthana\Portofolio;
 use App\Models\Asthana\Testimoni;
 use App\Models\Asthana\Tim;
+use App\Support\Asthana\BeritaOrcha;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -49,8 +50,8 @@ class SitusAsthanaController extends Controller
             ]),
             'portofolio' => Portofolio::terbit()->where('unggulan', true)->urutSitus()->limit(3)->get()
                 ->map(fn (Portofolio $p) => $p->keKartu()),
-            'berita' => Berita::terbit()->orderByDesc('terbit_at')->limit(3)->get()
-                ->map(fn (Berita $b) => $b->keKartu()),
+            // Berita Asthana + artikel blog Orcha yang sudah tayang.
+            'berita' => BeritaOrcha::gabungan()->take(3)->map(fn ($b) => self::tanpaInternal($b))->values(),
         ]);
     }
 
@@ -62,7 +63,7 @@ class SitusAsthanaController extends Controller
     {
         return $this->ok([
             'portofolio' => Portofolio::terbit()->count(),
-            'berita' => Berita::terbit()->count(),
+            'berita' => BeritaOrcha::gabungan()->count(),
         ]);
     }
 
@@ -120,31 +121,46 @@ class SitusAsthanaController extends Controller
 
     public function berita(Request $request): JsonResponse
     {
-        $halaman = Berita::terbit()
-            ->orderByDesc('terbit_at')
-            ->paginate(self::PER_HALAMAN_BERITA, ['*'], 'halaman', max(1, (int) $request->query('halaman', 1)));
+        // Berita Asthana + artikel blog Orcha (lihat BeritaOrcha), dipaginasi
+        // di sini karena sumbernya dua.
+        $semua = BeritaOrcha::gabungan();
+        $terakhir = max(1, (int) ceil($semua->count() / self::PER_HALAMAN_BERITA));
+        $halaman = min($terakhir, max(1, (int) $request->query('halaman', 1)));
 
         return $this->ok(
-            collect($halaman->items())->map(fn (Berita $b) => $b->keKartu()),
+            $semua->forPage($halaman, self::PER_HALAMAN_BERITA)->map(fn ($b) => self::tanpaInternal($b))->values(),
             meta: [
-                'halaman' => $halaman->currentPage(),
-                'halaman_terakhir' => $halaman->lastPage(),
-                'total' => $halaman->total(),
+                'halaman' => $halaman,
+                'halaman_terakhir' => $terakhir,
+                'total' => $semua->count(),
             ],
         );
     }
 
+    /** Buang kunci internal (id_orcha) sebelum dikirim ke situs. */
+    private static function tanpaInternal(array $b): array
+    {
+        unset($b['id_orcha']);
+
+        return $b;
+    }
+
     public function beritaDetail(string $slug): JsonResponse
     {
-        $b = Berita::terbit()->where('slug', $slug)->first();
+        if (BeritaOrcha::milikOrcha($slug)) {
+            $detail = BeritaOrcha::detail($slug);
+        } else {
+            $b = Berita::terbit()->where('slug', $slug)->first();
+            $detail = $b ? $b->keDetail() + ['sumber' => 'asthana'] : null;
+        }
 
-        if (! $b) {
+        if (! $detail) {
             return $this->fail('Berita tidak ditemukan.', status: 404);
         }
 
-        $lainnya = Berita::terbit()->whereKeyNot($b->id)->orderByDesc('terbit_at')->limit(3)->get()
-            ->map(fn (Berita $x) => $x->keKartu());
+        $lainnya = BeritaOrcha::gabungan()->where('slug', '!=', $slug)->take(3)
+            ->map(fn ($x) => self::tanpaInternal($x))->values();
 
-        return $this->ok($b->keDetail() + ['lainnya' => $lainnya]);
+        return $this->ok(self::tanpaInternal($detail) + ['lainnya' => $lainnya]);
     }
 }

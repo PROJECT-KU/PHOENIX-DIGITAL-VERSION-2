@@ -52,6 +52,7 @@ class OrchaBlogList extends Component
             // Halaman terakhir bisa jadi kosong setelah barisnya habis dihapus;
             // tanpa ini admin melihat daftar kosong dan mengira semuanya hilang.
             $this->halaman = max(1, $this->halaman);
+            \App\Support\Asthana\BeritaOrcha::lupakan();
         }
     }
 

@@ -26,6 +26,25 @@ use Livewire\Livewire;
  * Situs profil Asthana: API publik, lowongan & lamaran, kabar ke admin, dan
  * layar pengelola isinya di lemon.
  */
+// Uji tidak boleh memanggil Orcha sungguhan (ORCHA_API_URL di .env lokal):
+// uji berita Orcha memasang alamat palsu + Http::fake sendiri.
+beforeEach(fn () => config(['orcha.url' => '', 'orcha.kunci' => '']));
+
+function orchaPalsu(array $artikel, array $detail = []): void
+{
+    config(['orcha.url' => 'https://orcha.test/api/v1', 'orcha.kunci' => 'kunci-uji']);
+    \Illuminate\Support\Facades\Http::fake(array_merge(
+        collect($detail)->mapWithKeys(fn ($isi, $id) => ["orcha.test/api/v1/artikel/{$id}" => \Illuminate\Support\Facades\Http::response(['data' => ['id' => $id, 'isi' => $isi]])])->all(),
+        ['orcha.test/api/v1/artikel*' => \Illuminate\Support\Facades\Http::response(['data' => $artikel, 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1]])],
+    ));
+}
+
+function artikelOrcha(int $id, string $slug, string $terbit, ?string $sampul = '/storage/blog/a.webp'): array
+{
+    return ['id' => $id, 'judul' => 'Artikel '.$slug, 'slug' => $slug, 'ringkasan_tampil' => 'Ringkas '.$slug,
+        'sampul' => $sampul, 'terbit_pada' => $terbit, 'tautan' => "https://orcha.test/blog/{$slug}", 'status' => 'tayang'];
+}
+
 function penggunaSitus(array $izin = ['kelola_situs_asthana']): User
 {
     $peran = Role::create(['name' => 'uji-ast-'.Str::random(5), 'description' => 'uji']);
@@ -532,6 +551,51 @@ it('pesan dari bot (kolom jebakan terisi) tidak disimpan', function () {
 
     expect(Message::count())->toBe($sebelum);
     Mail::assertNothingSent();
+});
+
+it('artikel blog Orcha yang tayang ikut menjadi berita situs Asthana', function () {
+    Berita::create(['judul' => 'Berita Asthana', 'slug' => 'asthana-1', 'terbit_at' => now()->subDays(2)]);
+    orchaPalsu([
+        artikelOrcha(5, 'tips-bromo', now()->subDay()->toIso8601String()),
+        artikelOrcha(6, 'terjadwal', now()->addDay()->toIso8601String()),
+    ], [5 => '<p>Isi <img src="/storage/blog/isi.webp"></p>']);
+
+    $daftar = $this->getJson('/api/situs/berita')->assertOk();
+    expect($daftar->json('data.*.slug'))->toBe(['orcha-tips-bromo', 'asthana-1'])
+        ->and($daftar->json('data.0.kategori'))->toBe('Orcha Journey')
+        ->and($daftar->json('data.0.sampul_url'))->toBe('https://orcha.test/storage/blog/a.webp')
+        ->and($daftar->json('data.0'))->not->toHaveKey('id_orcha')
+        ->and($daftar->json('meta.total'))->toBe(2);
+
+    $this->getJson('/api/situs/berita/orcha-tips-bromo')->assertOk()
+        ->assertJsonPath('data.sumber', 'orcha')
+        ->assertJsonPath('data.isi', '<p>Isi <img src="https://orcha.test/storage/blog/isi.webp"></p>')
+        ->assertJsonPath('data.lainnya.0.slug', 'asthana-1');
+
+    // Terjadwal belum boleh terbaca; berita Asthana biasa tetap jalan.
+    $this->getJson('/api/situs/berita/orcha-terjadwal')->assertNotFound();
+    $this->getJson('/api/situs/berita/asthana-1')->assertOk()->assertJsonPath('data.sumber', 'asthana');
+
+    expect($this->getJson('/api/situs/ringkas')->json('data.berita'))->toBe(2)
+        ->and($this->getJson('/api/situs/beranda')->json('data.berita.0.slug'))->toBe('orcha-tips-bromo');
+});
+
+it('Orcha tidak terjangkau: berita Asthana tetap tampil', function () {
+    Berita::create(['judul' => 'Berita Asthana', 'slug' => 'asthana-2', 'terbit_at' => now()->subDay()]);
+    config(['orcha.url' => 'https://orcha.test/api/v1', 'orcha.kunci' => 'kunci-uji']);
+    \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('mati', 500)]);
+
+    expect($this->getJson('/api/situs/berita')->assertOk()->json('data.*.slug'))->toBe(['asthana-2']);
+});
+
+it('tautan bagikan artikel Orcha memakai judul & sampulnya', function () {
+    config(['asthana.situs_url' => 'https://asthana.test']);
+    orchaPalsu([artikelOrcha(7, 'pantai', now()->subHour()->toIso8601String())], [7 => '<p>x</p>']);
+
+    $this->get('/situs/berita/orcha-pantai')->assertOk()
+        ->assertSee('Artikel pantai — Orcha Journey', false)
+        ->assertSee('https://orcha.test/storage/blog/a.webp', false)
+        ->assertSee('https://asthana.test/berita/baca.html?slug=orcha-pantai', false);
 });
 
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {

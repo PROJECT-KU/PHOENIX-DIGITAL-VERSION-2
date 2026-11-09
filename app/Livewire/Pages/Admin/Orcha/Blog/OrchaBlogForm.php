@@ -256,6 +256,8 @@ class OrchaBlogForm extends Component
 
         if ($berhasil) {
             $this->hapusSampul = false;
+            // Artikel Orcha ikut tampil di berita situs Asthana: segarkan seketika.
+            \App\Support\Asthana\BeritaOrcha::lupakan();
         }
     }
 

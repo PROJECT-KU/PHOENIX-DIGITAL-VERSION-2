@@ -70,6 +70,22 @@ class SitusLowonganController extends Controller
     public function berita(string $slug)
     {
         $situs = config('asthana.situs_url') ?: abort(404);
+
+        if (\App\Support\Asthana\BeritaOrcha::milikOrcha($slug)) {
+            $o = \App\Support\Asthana\BeritaOrcha::detail($slug);
+            if (! $o) {
+                return redirect()->away($situs.'/berita/');
+            }
+
+            return $this->halamanBagikan(
+                $o['judul'],
+                "{$o['judul']} — Orcha Journey",
+                (string) ($o['ringkasan'] ?? $o['judul']),
+                $o['sampul_url'] ?: $situs.'/og-image.png',
+                $situs.'/berita/baca.html?slug='.rawurlencode($slug),
+            );
+        }
+
         $b = Berita::terbit()->where('slug', $slug)->first();
         if (! $b) {
             return redirect()->away($situs.'/berita/');
