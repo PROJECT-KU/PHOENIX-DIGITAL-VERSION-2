@@ -494,6 +494,46 @@ it('suara karyawan dikelola di lemon dan tampil di API karir', function () {
     expect($this->getJson('/api/situs/beranda')->json('data.testimoni'))->toBe([]);
 });
 
+it('ringkas menghitung hanya portofolio & berita yang terbit', function () {
+    expect($this->getJson('/api/situs/ringkas')->assertOk()->json('data'))->toBe(['portofolio' => 0, 'berita' => 0]);
+
+    Portofolio::create(['judul' => 'Terbit', 'slug' => 'terbit', 'kategori' => 'teknologi', 'terbit' => true]);
+    Portofolio::create(['judul' => 'Draf', 'slug' => 'draf', 'kategori' => 'teknologi']);
+    Berita::create(['judul' => 'Nanti', 'slug' => 'nanti', 'terbit_at' => now()->addDay()]);
+
+    expect($this->getJson('/api/situs/ringkas')->json('data'))->toBe(['portofolio' => 1, 'berita' => 0]);
+});
+
+it('tautan bagikan portofolio & berita memberi meta OG per isi', function () {
+    config(['asthana.situs_url' => 'https://asthana.test']);
+    Portofolio::create(['judul' => 'Aplikasi Kasir', 'slug' => 'aplikasi-kasir', 'kategori' => 'teknologi', 'terbit' => true, 'ringkasan' => 'Kasir untuk UMKM.']);
+    Berita::create(['judul' => 'Kantor Baru', 'slug' => 'kantor-baru', 'terbit_at' => now()->subDay(), 'ringkasan' => 'Kami pindah.']);
+    Berita::create(['judul' => 'Rahasia', 'slug' => 'rahasia', 'terbit_at' => now()->addDay()]);
+
+    $this->get('/situs/portofolio/aplikasi-kasir')->assertOk()
+        ->assertSee('Aplikasi Kasir — Portofolio PT. Asthana Cipta Mandiri', false)
+        ->assertSee('Kasir untuk UMKM.', false)
+        ->assertSee('https://asthana.test/portofolio/detail.html?slug=aplikasi-kasir', false);
+
+    $this->get('/situs/berita/kantor-baru')->assertOk()
+        ->assertSee('"@type":"NewsArticle"', false)
+        ->assertSee('https://asthana.test/berita/baca.html?slug=kantor-baru', false);
+
+    // Berita terjadwal belum boleh bocor lewat pratinjau.
+    $this->get('/situs/berita/rahasia')->assertRedirect('https://asthana.test/berita/');
+});
+
+it('pesan dari bot (kolom jebakan terisi) tidak disimpan', function () {
+    Mail::fake();
+    $sebelum = Message::count();
+
+    $this->postJson('/api/message', ['name' => 'Bot', 'email' => 'bot@gmail.com', 'message' => 'Beli obat murah di sini sekarang', 'situs_web' => 'http://spam.test'])
+        ->assertCreated();
+
+    expect(Message::count())->toBe($sebelum);
+    Mail::assertNothingSent();
+});
+
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {
     Mail::fake();
     Notification::fake();

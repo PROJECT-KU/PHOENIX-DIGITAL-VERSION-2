@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asthana\Berita;
+use App\Models\Asthana\Portofolio;
 use App\Models\Lowongan;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -36,14 +38,66 @@ class SitusLowonganController extends Controller
         $deskripsi = $lowongan->ringkasan
             ?: Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $lowongan->descriptions))), 180);
 
-        return response()->view('situs.lowongan-bagikan', [
-            'lowongan' => $lowongan,
+        return response()->view('situs.bagikan', [
+            'nama' => $lowongan->title,
             'tujuan' => $tujuan,
             'judul' => "Lowongan {$lowongan->title} — {$lowongan->unit_label}",
             'deskripsi' => $deskripsi ?: "Lowongan {$lowongan->title} di {$lowongan->unit_label}.",
             'gambar' => $situs.'/og-image.png',
             'jsonLd' => $lowongan->jobPosting($tujuan),
         ]);
+    }
+
+    /** /situs/portofolio/{slug} — tautan bagikan proyek portofolio. */
+    public function portofolio(string $slug)
+    {
+        $situs = config('asthana.situs_url') ?: abort(404);
+        $p = Portofolio::terbit()->where('slug', $slug)->first();
+        if (! $p) {
+            return redirect()->away($situs.'/portofolio/');
+        }
+
+        return $this->halamanBagikan(
+            $p->judul,
+            "{$p->judul} — Portofolio PT. Asthana Cipta Mandiri",
+            $p->ringkasan ?: Str::limit(trim(strip_tags((string) $p->isi)), 180),
+            Portofolio::urlGambar($p->sampul) ?: $situs.'/og-image.png',
+            $situs.'/portofolio/detail.html?slug='.rawurlencode($p->slug),
+        );
+    }
+
+    /** /situs/berita/{slug} — tautan bagikan berita. */
+    public function berita(string $slug)
+    {
+        $situs = config('asthana.situs_url') ?: abort(404);
+        $b = Berita::terbit()->where('slug', $slug)->first();
+        if (! $b) {
+            return redirect()->away($situs.'/berita/');
+        }
+
+        $tujuan = $situs.'/berita/baca.html?slug='.rawurlencode($b->slug);
+
+        return $this->halamanBagikan(
+            $b->judul,
+            "{$b->judul} — Berita PT. Asthana Cipta Mandiri",
+            $b->ringkasan ?: Str::limit(trim(strip_tags((string) $b->isi)), 180),
+            Berita::urlGambar($b->sampul) ?: $situs.'/og-image.png',
+            $tujuan,
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'NewsArticle',
+                'headline' => $b->judul,
+                'datePublished' => $b->terbit_at?->toIso8601String(),
+                'image' => Berita::urlGambar($b->sampul) ?: $situs.'/og-image.png',
+                'mainEntityOfPage' => $tujuan,
+                'publisher' => ['@type' => 'Organization', 'name' => 'PT. Asthana Cipta Mandiri'],
+            ],
+        );
+    }
+
+    private function halamanBagikan(string $nama, string $judul, string $deskripsi, string $gambar, string $tujuan, ?array $jsonLd = null)
+    {
+        return response()->view('situs.bagikan', compact('nama', 'judul', 'deskripsi', 'gambar', 'tujuan', 'jsonLd'));
     }
 
     public function sitemap(): Response

@@ -1,3 +1,5 @@
+{{-- Halaman perantara tautan bagikan (lowongan, portofolio, berita): meta OG
+     untuk perayap WhatsApp/LinkedIn/Google, lalu manusia dialihkan ke situs. --}}
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -16,12 +18,14 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="robots" content="noindex, follow">
-    <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
+    @if ($jsonLd)
+        <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
+    @endif
     <meta http-equiv="refresh" content="0; url={{ $tujuan }}">
     <script>location.replace(@json($tujuan));</script>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 40px; text-align: center; color: #0f1b3d;">
-    <p>Membuka lowongan <strong>{{ $lowongan->title }}</strong>…</p>
-    <p><a href="{{ $tujuan }}">Lanjut ke halaman lowongan</a></p>
+    <p>Membuka <strong>{{ $nama }}</strong>…</p>
+    <p><a href="{{ $tujuan }}">Lanjut ke halamannya</a></p>
 </body>
 </html>

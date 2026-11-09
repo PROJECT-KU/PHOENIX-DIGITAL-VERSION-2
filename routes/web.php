@@ -763,5 +763,13 @@ Route::get('/lowongan/{slug}', [\App\Http\Controllers\SitusLowonganController::c
     ->where('slug', '[A-Za-z0-9\-]+')
     ->middleware('throttle:60,1,bagikan-lowongan')
     ->name('situs.lowongan');
+Route::get('/situs/portofolio/{slug}', [\App\Http\Controllers\SitusLowonganController::class, 'portofolio'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->middleware('throttle:60,1,bagikan-situs')
+    ->name('situs.portofolio');
+Route::get('/situs/berita/{slug}', [\App\Http\Controllers\SitusLowonganController::class, 'berita'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->middleware('throttle:60,1,bagikan-situs')
+    ->name('situs.berita');
 
 require __DIR__.'/auth.php';

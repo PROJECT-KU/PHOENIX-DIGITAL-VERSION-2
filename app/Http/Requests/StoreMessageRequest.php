@@ -25,6 +25,8 @@ class StoreMessageRequest extends FormRequest
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'email:rfc,dns', 'max:255'],
             'message' => ['required', 'string', 'min:10', 'max:5000'],
+            // Jebakan bot: kolom tersembunyi di formulir kontak.
+            'situs_web' => ['nullable', 'string', 'max:255'],
         ];
     }
 

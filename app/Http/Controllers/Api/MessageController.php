@@ -16,6 +16,13 @@ class MessageController extends Controller
 
     public function store(StoreMessageRequest $request): JsonResponse
     {
+        // Kolom jebakan terisi = bot: jawab seolah berhasil, tidak disimpan.
+        if ($request->filled('situs_web')) {
+            Log::info('Pesan bot ditolak diam-diam (honeypot)', ['ip' => $request->ip()]);
+
+            return $this->created(null, 'Pesan Anda berhasil dikirim. Kami akan menghubungi Anda segera.');
+        }
+
         try {
             $contact = Message::create([
                 'name' => $request->name,

@@ -54,6 +54,18 @@ class SitusAsthanaController extends Controller
         ]);
     }
 
+    /**
+     * Jumlah isi terbit per bagian — situs menyembunyikan menu Portofolio &
+     * Berita sampai isinya minimal satu.
+     */
+    public function ringkas(): JsonResponse
+    {
+        return $this->ok([
+            'portofolio' => Portofolio::terbit()->count(),
+            'berita' => Berita::terbit()->count(),
+        ]);
+    }
+
     /** Isi tambahan halaman Karir: kutipan karyawan. */
     public function karir(): JsonResponse
     {

@@ -63,6 +63,7 @@ Route::middleware(['throttle:20,1'])->group(function () {
     Route::prefix('situs')->controller(\App\Http\Controllers\Api\SitusAsthanaController::class)->group(function () {
         Route::get('/beranda', 'beranda');
         Route::get('/karir', 'karir');
+        Route::get('/ringkas', 'ringkas');
         Route::get('/sitemap-lowongan.xml', [\App\Http\Controllers\SitusLowonganController::class, 'sitemap']);
         Route::get('/tim', 'tim');
         Route::get('/portofolio', 'portofolio');
