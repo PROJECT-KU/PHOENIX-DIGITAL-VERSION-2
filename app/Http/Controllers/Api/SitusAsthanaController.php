@@ -54,6 +54,20 @@ class SitusAsthanaController extends Controller
         ]);
     }
 
+    /** Isi tambahan halaman Karir: kutipan karyawan. */
+    public function karir(): JsonResponse
+    {
+        return $this->ok([
+            'suara_karyawan' => \App\Models\Asthana\SuaraKaryawan::tampil()->get()->map(fn ($s) => [
+                'nama' => $s->nama,
+                'jabatan' => $s->jabatan,
+                'perusahaan' => $s->perusahaan,
+                'isi' => $s->isi,
+                'foto_url' => \App\Models\Asthana\SuaraKaryawan::urlGambar($s->foto),
+            ]),
+        ]);
+    }
+
     public function tim(): JsonResponse
     {
         return $this->ok(Tim::tampil()->get()->map(fn (Tim $t) => [

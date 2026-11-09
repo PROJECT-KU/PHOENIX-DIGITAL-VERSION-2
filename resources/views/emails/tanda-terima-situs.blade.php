@@ -1,68 +1,70 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tanda terima — PT. Asthana Cipta Mandiri</title>
-</head>
-<body style="margin:0; padding:0; background:#f6f8fc; font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fc; padding:32px 12px;">
-        <tr>
-            <td align="center">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                    style="max-width:560px; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 12px 30px rgba(15,27,61,.12);">
-                    <tr>
-                        <td align="center" style="background:linear-gradient(120deg,#2455e6,#0ea5c6,#17a974); padding:30px 24px;">
-                            <div style="font-size:12px; font-weight:700; letter-spacing:2px; color:#dbe4ff;">PT.</div>
-                            <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.2;">Asthana Cipta Mandiri</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding:28px 28px 8px;">
-                            <p style="margin:0 0 14px; font-size:16px; color:#0f1b3d;">Halo {{ $nama }},</p>
-                            @if ($jenis === 'lamaran')
-                                <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#4a5578;">
-                                    @if ($posisi)
-                                        Terima kasih telah melamar posisi <strong style="color:#0f1b3d;">{{ $posisi }}</strong>.
-                                        Lamaran Anda sudah kami terima dan akan ditinjau oleh tim kami.
-                                    @else
-                                        Terima kasih telah mengirim <strong style="color:#0f1b3d;">lamaran umum</strong>.
-                                        CV Anda kami simpan dan akan kami tinjau setiap ada posisi yang cocok.
-                                    @endif
-                                </p>
-                                @if ($nomor)
-                                    <p style="margin:0 0 14px; font-size:15px; color:#4a5578;">
-                                        Nomor lamaran: <strong style="color:#2455e6;">{{ $nomor }}</strong>
-                                    </p>
-                                @endif
-                                <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#4a5578;">
-                                    Bila profil Anda sesuai, kami akan menghubungi Anda melalui email atau telepon
-                                    untuk tahap berikutnya.
-                                </p>
-                            @else
-                                <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#4a5578;">
-                                    Terima kasih telah menghubungi kami. Pesan Anda sudah kami terima, dan tim kami
-                                    akan segera membalasnya.
-                                </p>
-                            @endif
-                            <p style="margin:0 0 14px; font-size:13px; line-height:1.6; color:#7c86a3;">
-                                Surel ini dikirim otomatis. Anda tidak perlu membalasnya.
-                            </p>
-                        </td>
-                    </tr>
-                    @if ($situs)
-                        <tr>
-                            <td align="center" style="padding:6px 28px 30px;">
-                                <a href="{{ $situs }}" style="display:inline-block; padding:12px 26px; border-radius:999px; background:#2455e6; color:#ffffff; font-weight:700; font-size:14px; text-decoration:none;">
-                                    Kunjungi situs kami
-                                </a>
-                            </td>
-                        </tr>
-                    @endif
-                </table>
-                <p style="font-size:12px; color:#9aa3bd; margin:18px 0 0;">&copy; {{ date('Y') }} PT. Asthana Cipta Mandiri</p>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
+@extends('emails.asthana.bingkai')
+
+@section('judul', $jenis === 'lamaran' ? 'Lamaran diterima' : 'Pesan diterima')
+@section('pratinjau', $jenis === 'lamaran' ? 'Nomor lamaran Anda: '.$nomor : 'Pesan Anda sudah kami terima.')
+
+@section('isi')
+    @php
+        $urlStatus = ($situs && $nomor) ? $situs.'/karir/status.html?nomor='.urlencode($nomor) : null;
+        $langkah = [
+            ['Ditinjau', 'Tim kami meninjau CV, surat lamaran, dan berkas Anda.'],
+            ['Dihubungi', 'Bila profil Anda sesuai, kami menghubungi lewat email atau telepon.'],
+            ['Wawancara', 'Kami atur jadwal wawancara untuk saling mengenal lebih jauh.'],
+        ];
+    @endphp
+
+    <p style="margin:0 0 6px; font-size:12px; font-weight:800; letter-spacing:1.5px; color:#17a974; text-transform:uppercase;">
+        {{ $jenis === 'lamaran' ? '✓ Lamaran diterima' : '✓ Pesan diterima' }}
+    </p>
+    <p style="margin:0 0 14px; font-size:20px; font-weight:800; color:#0f1b3d;">Halo {{ $nama }},</p>
+
+    @if ($jenis === 'lamaran')
+        <p style="margin:0 0 20px; font-size:15px; line-height:1.75; color:#4a5578;">
+            @if ($posisi)
+                Terima kasih telah melamar posisi <strong style="color:#0f1b3d;">{{ $posisi }}</strong>.
+                Lamaran Anda sudah kami terima dan akan ditinjau oleh tim kami.
+            @else
+                Terima kasih telah mengirim <strong style="color:#0f1b3d;">lamaran umum</strong>.
+                CV Anda kami simpan dan kami tinjau setiap ada posisi yang cocok.
+            @endif
+        </p>
+
+        @if ($nomor)
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px; background:#f3f6ff; border:1px solid #dbe4ff; border-radius:16px;">
+                <tr>
+                    <td align="center" style="padding:18px 16px;">
+                        <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#6b7aa6;">NOMOR LAMARAN</div>
+                        <div style="font-family:'SFMono-Regular',Menlo,Consolas,monospace; font-size:24px; font-weight:800; letter-spacing:2px; color:#2455e6; margin:6px 0 4px;">{{ $nomor }}</div>
+                        <div style="font-size:12px; color:#6b7aa6;">Simpan nomor ini untuk mengecek status lamaran Anda.</div>
+                    </td>
+                </tr>
+            </table>
+        @endif
+
+        <p style="margin:0 0 12px; font-size:14px; font-weight:800; color:#0f1b3d;">Apa selanjutnya?</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+            @foreach ($langkah as $i => [$judulLangkah, $isiLangkah])
+                <tr>
+                    <td width="40" valign="top" style="padding:0 12px 14px 0;">
+                        <div style="width:28px; height:28px; line-height:28px; text-align:center; border-radius:9px; background:#eaf0ff; color:#2455e6; font-size:13px; font-weight:800;">{{ $i + 1 }}</div>
+                    </td>
+                    <td valign="top" style="padding:0 0 14px; font-size:14px; line-height:1.6; color:#4a5578;">
+                        <strong style="color:#0f1b3d;">{{ $judulLangkah }}</strong><br>{{ $isiLangkah }}
+                    </td>
+                </tr>
+            @endforeach
+        </table>
+
+        @if ($urlStatus)
+            @include('emails.asthana.tombol', ['url' => $urlStatus, 'label' => 'Cek status lamaran'])
+        @endif
+    @else
+        <p style="margin:0 0 20px; font-size:15px; line-height:1.75; color:#4a5578;">
+            Terima kasih telah menghubungi kami. Pesan Anda sudah kami terima, dan tim kami
+            akan segera membalasnya melalui email atau WhatsApp.
+        </p>
+        @if ($situs)
+            @include('emails.asthana.tombol', ['url' => $situs, 'label' => 'Kunjungi situs kami'])
+        @endif
+    @endif
+@endsection

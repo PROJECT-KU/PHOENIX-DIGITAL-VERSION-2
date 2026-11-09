@@ -314,6 +314,186 @@ it('pilihan unit, jenis & pola kerja ditandai @selected di formulir admin', func
     }
 });
 
+function kirimLamaranUji(array $ubah = [])
+{
+    return test()->postJson('/api/applications', $ubah + [
+        'name' => 'Rina Uji',
+        'email' => 'rina@gmail.com',
+        'phone' => '0812-9999-0000',
+        'cv' => UploadedFile::fake()->create('cv.pdf', 50, 'application/pdf'),
+        'cover_letter' => UploadedFile::fake()->create('surat.pdf', 50, 'application/pdf'),
+    ]);
+}
+
+it('nomor lamaran berkode unit, tanggal, dan acak', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $reka = lowonganUji();
+    $reka->update(['unit' => 'reka']);
+
+    $nomor = kirimLamaranUji(['job_id' => $reka->id])->assertCreated()->json('data.application_number');
+    expect($nomor)->toMatch('/^RKA-'.now()->format('dmy').'-[A-HJ-NP-Z2-9]{5}$/');
+
+    $umum = kirimLamaranUji(['email' => 'lain@gmail.com'])->json('data.application_number');
+    expect($umum)->toStartWith('AST-');
+
+    Mail::assertSent(TandaTerimaSitusMail::class, fn ($m) => $m->nomor === $nomor);
+});
+
+it('cek status butuh nomor DAN email yang cocok', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $nomor = kirimLamaranUji()->json('data.application_number');
+
+    $this->postJson('/api/applications/status', ['nomor' => strtolower($nomor), 'email' => 'RINA@gmail.com'])
+        ->assertOk()
+        ->assertJsonPath('data.status', 'baru')
+        ->assertJsonPath('data.tahap', 0)
+        ->assertJsonPath('data.posisi', null);
+
+    $this->postJson('/api/applications/status', ['nomor' => $nomor, 'email' => 'orang@lain.com'])->assertNotFound();
+    $this->postJson('/api/applications/status', ['nomor' => 'AST-010101-AAAAA', 'email' => 'rina@gmail.com'])->assertNotFound();
+});
+
+it('lamaran ganda dalam 30 hari ditolak dengan menyebut nomor lamanya', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $lowongan = lowonganUji();
+    $nomor = kirimLamaranUji(['job_id' => $lowongan->id])->assertCreated()->json('data.application_number');
+
+    $galat = kirimLamaranUji(['job_id' => $lowongan->id, 'email' => 'Rina@Gmail.com'])->assertUnprocessable()->json('errors.email.0');
+    expect($galat)->toContain($nomor);
+
+    // Posisi lain tetap boleh.
+    kirimLamaranUji(['job_id' => lowonganUji()->id])->assertCreated();
+});
+
+it('isian jebakan bot dijawab sukses tetapi tidak disimpan', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $sebelum = \App\Models\JobApplication::count();
+
+    kirimLamaranUji(['situs_web' => 'http://spam.example'])->assertCreated();
+
+    expect(\App\Models\JobApplication::count())->toBe($sebelum);
+    Mail::assertNothingSent();
+});
+
+it('membuka lowongan beberapa kali tidak menghabiskan jatah kirim lamaran', function () {
+    Storage::fake('local');
+    Mail::fake();
+    \Illuminate\Support\Facades\RateLimiter::clear('lamaran'.sha1('|127.0.0.1'));
+    $lowongan = lowonganUji();
+
+    // Pelamar: daftar, detail, daftar (formulir), lalu kirim — dulu 429.
+    foreach (range(1, 6) as $_) {
+        $this->getJson('/api/jobs')->assertOk();
+    }
+    kirimLamaranUji(['job_id' => $lowongan->id])->assertCreated();
+});
+
+it('admin mengubah tahap: tersimpan dan pelamar mendapat surel berisi pesan', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $admin = penggunaSitus(['view_pelamar']);
+    kirimLamaranUji();
+    $lamaran = \App\Models\JobApplication::where('email', 'rina@gmail.com')->firstOrFail();
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail::class, ['id' => $lamaran->id])
+        ->set('statusBaru', 'wawancara')
+        ->set('pesanPelamar', 'Senin pukul 10.00 lewat Google Meet.')
+        ->call('simpanStatus')
+        ->assertHasNoErrors()
+        ->set('catatanInternal', 'Komunikatif.')
+        ->call('simpanCatatan');
+
+    $lamaran->refresh();
+    expect($lamaran->status)->toBe('wawancara')
+        ->and($lamaran->status_diubah_at)->not->toBeNull()
+        ->and($lamaran->catatan_internal)->toBe('Komunikatif.');
+
+    Mail::assertSent(\App\Mail\StatusLamaranMail::class, fn ($m) => $m->hasTo('rina@gmail.com') && $m->pesan === 'Senin pukul 10.00 lewat Google Meet.');
+
+    $this->postJson('/api/applications/status', ['nomor' => $lamaran->nomor_lamaran, 'email' => 'rina@gmail.com'])
+        ->assertJsonPath('data.status_label', 'Wawancara');
+});
+
+it('surel status dan tanda terima menyisipkan logo sebagai lampiran sebaris', function () {
+    $l = new \App\Models\JobApplication(['name' => 'Rina', 'nomor_lamaran' => 'AST-010126-ABCDE', 'status' => 'diterima']);
+    $html = (new \App\Mail\StatusLamaranMail($l))->render();
+    expect($html)->toContain('src="cid:')->toContain('AST-010126-ABCDE')->toContain('Selamat');
+
+    $html = (new TandaTerimaSitusMail('lamaran', 'Rina', null, 'AST-010126-ABCDE'))->render();
+    expect($html)->toContain('src="cid:')->toContain('lamaran umum');
+});
+
+it('ekspor pelamar mengikuti saringan tahap', function () {
+    Storage::fake('local');
+    Mail::fake();
+    \Maatwebsite\Excel\Facades\Excel::fake();
+    $admin = penggunaSitus(['view_pelamar']);
+    kirimLamaranUji();
+    kirimLamaranUji(['email' => 'budi@gmail.com']);
+    \App\Models\JobApplication::where('email', 'budi@gmail.com')->update(['status' => 'diterima']);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList::class)
+        ->set('filterStatus', 'diterima')
+        ->call('ekspor');
+
+    \Maatwebsite\Excel\Facades\Excel::assertDownloaded('pelamar-kerja-'.now()->format('Ymd-His').'.xlsx', function ($ekspor) {
+        $view = $ekspor->view();
+
+        return $view->getData()['pelamar']->pluck('email')->all() === ['budi@gmail.com'];
+    });
+});
+
+it('tautan bagikan lowongan memberi meta OG lalu mengalihkan ke situs', function () {
+    config(['asthana.situs_url' => 'https://asthana.test']);
+    $l = lowonganUji();
+    $l->update(['ringkasan' => 'Bantu tim desain.', 'unit' => 'orcha']);
+
+    $this->get("/lowongan/{$l->slug}")
+        ->assertOk()
+        ->assertSee('og:title', false)
+        ->assertSee("Lowongan {$l->title} — Orcha Journey", false)
+        ->assertSee('Bantu tim desain.', false)
+        ->assertSee('"@type":"JobPosting"', false)
+        ->assertSee("https://asthana.test/karir/detail.html?slug={$l->slug}", false);
+
+    $tutup = lowonganUji('non-active');
+    $this->get("/lowongan/{$tutup->slug}")->assertRedirect('https://asthana.test/karir/');
+
+    $this->get('/api/situs/sitemap-lowongan.xml')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
+        ->assertSee("https://asthana.test/karir/detail.html?slug={$l->slug}", false)
+        ->assertDontSee($tutup->slug, false);
+});
+
+it('suara karyawan dikelola di lemon dan tampil di API karir', function () {
+    Storage::fake('public');
+    $admin = penggunaSitus();
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\Asthana\AsthanaDaftarList::class, ['jenis' => 'karyawan'])
+        ->call('tambah')
+        ->set('nama', 'Dewi')
+        ->set('jabatan', 'Tour Leader')
+        ->set('perusahaan', 'Orcha Journey')
+        ->set('isi', 'Setiap trip adalah pengalaman baru.')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    $this->getJson('/api/situs/karir')->assertOk()
+        ->assertJsonPath('data.suara_karyawan.0.nama', 'Dewi')
+        ->assertJsonPath('data.suara_karyawan.0.perusahaan', 'Orcha Journey');
+
+    // Testimoni klien di beranda tidak tercampur.
+    expect($this->getJson('/api/situs/beranda')->json('data.testimoni'))->toBe([]);
+});
+
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {
     Mail::fake();
     Notification::fake();

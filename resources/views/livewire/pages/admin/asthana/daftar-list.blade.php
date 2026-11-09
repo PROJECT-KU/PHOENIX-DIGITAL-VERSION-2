@@ -8,6 +8,7 @@
     $isKlien = $jenis === 'klien';
     $isTesti = $jenis === 'testimoni';
     $isTim = $jenis === 'tim';
+    $isKaryawan = $jenis === 'karyawan';
     $kosong = $daftar->isEmpty();
     $jumlahBaris = $daftar->count();
     $labelGambar = $isKlien ? 'Logo' : 'Foto';
@@ -73,7 +74,7 @@
                                     $namaBaris = $baris->nama;
                                     $ketBaris = match ($jenis) {
                                         'klien' => $baris->tautan ?: 'Tanpa tautan',
-                                        'testimoni' => '“'.$baris->isi.'”',
+                                        'testimoni', 'karyawan' => '“'.$baris->isi.'”',
                                         default => $baris->jabatan,
                                     };
                                     $subTesti = collect([$baris->jabatan ?? null, $baris->perusahaan ?? null])->filter()->implode(' · ');
@@ -93,6 +94,9 @@
                                         <p class="ast-kartu-nama">{{ $namaBaris }}</p>
                                         @if ($isTesti)
                                             <span class="dsb-kartu-sub">{{ str_repeat('★', (int) $baris->bintang) }} {{ $subTesti }}</span>
+                                        @endif
+                                        @if ($isKaryawan)
+                                            <span class="dsb-kartu-sub">{{ $subTesti }}</span>
                                         @endif
                                         <p class="ast-kartu-ket">{{ $ketBaris }}</p>
 
@@ -179,6 +183,25 @@
                                         <option value="{{ $nBintang }}" @selected((int) $this->bintang === $nBintang)>{{ str_repeat('★', $nBintang) }} ({{ $nBintang }})</option>
                                     @endforeach
                                 </select>
+                            </div>
+                        @endif
+
+                        @if ($isKaryawan)
+                            <div class="ast-isian-deret">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="ast-jabatan">Jabatan <span class="dsb-wajib">*</span></label>
+                                    <input id="ast-jabatan" type="text" class="dsb-isian @error('jabatan') is-galat @enderror" wire:model="jabatan" placeholder="UI/UX Designer">
+                                    @error('jabatan') <span class="dsb-galat">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="ast-perusahaan">Perusahaan <span class="dsb-label-ket">opsional</span></label>
+                                    <input id="ast-perusahaan" type="text" class="dsb-isian" wire:model="perusahaan" placeholder="Reka Technology">
+                                </div>
+                            </div>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="ast-isi">Kutipan <span class="dsb-wajib">*</span> <span class="dsb-label-ket">1–3 kalimat, kenapa betah bekerja di sini</span></label>
+                                <textarea id="ast-isi" rows="4" class="dsb-isian @error('isi') is-galat @enderror" wire:model="isi" maxlength="600">{{ $isi }}</textarea>
+                                @error('isi') <span class="dsb-galat">{{ $message }}</span> @enderror
                             </div>
                         @endif
 

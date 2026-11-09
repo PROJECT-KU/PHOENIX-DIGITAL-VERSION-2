@@ -99,6 +99,36 @@ class Lowongan extends Model
         return self::POLA_KERJA[$this->pola_kerja] ?? null;
     }
 
+    /** schema.org JobPosting — untuk Google for Jobs. */
+    public function jobPosting(string $url): array
+    {
+        $jenis = ['penuh_waktu' => 'FULL_TIME', 'kontrak' => 'CONTRACTOR', 'magang' => 'INTERN', 'freelance' => 'TEMPORARY'];
+        $data = [
+            '@context' => 'https://schema.org/',
+            '@type' => 'JobPosting',
+            'title' => $this->title,
+            'description' => (string) $this->descriptions.(string) $this->requirements ?: ($this->ringkasan ?? $this->title),
+            'datePosted' => $this->created_at?->toDateString(),
+            'url' => $url,
+            'hiringOrganization' => ['@type' => 'Organization', 'name' => $this->unit_label],
+            'directApply' => true,
+        ];
+        if ($this->batas_lamaran) {
+            $data['validThrough'] = $this->batas_lamaran->format('Y-m-d').'T23:59:59+07:00';
+        }
+        if (isset($jenis[$this->jenis])) {
+            $data['employmentType'] = $jenis[$this->jenis];
+        }
+        if ($this->pola_kerja === 'remote') {
+            $data['jobLocationType'] = 'TELECOMMUTE';
+            $data['applicantLocationRequirements'] = ['@type' => 'Country', 'name' => 'Indonesia'];
+        } elseif ($this->lokasi) {
+            $data['jobLocation'] = ['@type' => 'Place', 'address' => ['@type' => 'PostalAddress', 'addressLocality' => $this->lokasi, 'addressCountry' => 'ID']];
+        }
+
+        return $data;
+    }
+
     /** Data publik untuk situs (daftar & detail memakai bentuk yang sama). */
     public function untukSitus(bool $lengkap = false): array
     {

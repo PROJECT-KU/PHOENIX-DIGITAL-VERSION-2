@@ -79,9 +79,9 @@ Data Pelamar Kerja || lemon
 
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
                         <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
-                            <option value="">Semua Bulan</option>
+                            <option value="" @selected((string) $this->filterMonth === '')>Semua Bulan</option>
                             @foreach ($months as $month)
-                            <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
+                            <option value="{{ $month['value'] }}" @selected((string) $this->filterMonth === (string) $month['value'])>{{ $month['label'] }}</option>
                             @endforeach
                         </select>
                         <select wire:model.live="filterJob" class="form-select rounded-3 text-capitalize" style="min-width: 180px;">
@@ -91,7 +91,16 @@ Data Pelamar Kerja || lemon
                             <option value="{{ $job->id }}" @selected((string) $this->filterJob === (string) $job->id)>{{ $job->title }}</option>
                             @endforeach
                         </select>
-                        @if ($search || $filterMonth || $filterJob)
+                        <select wire:model.live="filterStatus" class="form-select rounded-3" style="min-width: 160px;" aria-label="Tahap seleksi">
+                            <option value="" @selected((string) $this->filterStatus === '')>Semua Tahap</option>
+                            @foreach (\App\Models\JobApplication::STATUS as $kunciStatus => $infoStatus)
+                            <option value="{{ $kunciStatus }}" @selected((string) $this->filterStatus === $kunciStatus)>{{ $infoStatus[0] }}</option>
+                            @endforeach
+                        </select>
+                        <button wire:click="ekspor" type="button" class="btn btn-success rounded-3 text-nowrap" title="Unduh Excel sesuai saringan" wire:loading.attr="disabled" wire:target="ekspor">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                        </button>
+                        @if ($search || $filterMonth || $filterJob || $filterStatus)
                         <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3" title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
@@ -110,6 +119,7 @@ Data Pelamar Kerja || lemon
                             <tr>
                                 <th>Pelamar</th>
                                 <th>Posisi</th>
+                                <th>Tahap</th>
                                 <th>Tanggal Melamar</th>
                                 <th class="text-center" width="120">Aksi</th>
                             </tr>
@@ -136,7 +146,13 @@ Data Pelamar Kerja || lemon
                                         {{ $item->posisi_label }}
                                     </span>
                                 </td>
-                                <td class="text-muted">{{ $item->created_at->locale('id')->isoFormat('D MMMM YYYY') }}</td>
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2 bg-{{ $item->status_warna }}">{{ $item->status_label }}</span>
+                                </td>
+                                <td class="text-muted">
+                                    {{ $item->created_at->locale('id')->isoFormat('D MMMM YYYY') }}
+                                    <div class="small font-monospace">{{ $item->nomor_lamaran }}</div>
+                                </td>
                                 <td class="text-center text-nowrap">
                                     <a wire:navigate href="{{ route('admin.pelamar.detail', $item->id) }}"
                                         class="btn btn-warning btn-sm text-white p-2" title="Detail">
@@ -152,7 +168,7 @@ Data Pelamar Kerja || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="text-center py-5">
+                                <td colspan="5" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-person-lines-fill"></i>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJobApplicationRequest;
 use App\Models\JobApplication;
 use App\Support\Asthana\KabarSitus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,18 @@ class JobApplicationController extends Controller
 {
     public function store(StoreJobApplicationRequest $request)
     {
+        // Kolom jebakan terisi = bot. Jawab seolah berhasil (supaya bot tidak
+        // belajar), tetapi tidak menyimpan apa pun.
+        if ($request->filled('situs_web')) {
+            Log::info('Lamaran bot ditolak diam-diam (honeypot)', ['ip' => $request->ip()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lamaran berhasil dikirim',
+                'data' => ['application_number' => JobApplication::buatNomor(null)],
+            ], 201);
+        }
+
         try {
             // Validasi sudah dilakukan di FormRequest
             $cv = $request->file('cv');
@@ -77,7 +90,7 @@ class JobApplicationController extends Controller
                 'message' => 'Lamaran berhasil dikirim',
                 'data' => [
                     'id' => $app->id,
-                    'application_number' => str_pad($app->id, 6, '0', STR_PAD_LEFT),
+                    'application_number' => $app->nomor_lamaran,
                     'submitted_at' => $app->created_at->format('Y-m-d H:i:s'),
                 ],
             ], 201);
@@ -85,7 +98,7 @@ class JobApplicationController extends Controller
             Log::error('Job Application Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->except(['cv', 'cover_letter', 'lampiran']), // jangan log file
+                'request' => $request->except(['cv', 'cover_letter', 'lampiran', 'email', 'phone']), // jangan log file & kontak
             ]);
 
             // Bersihkan berkas yang sempat tersimpan. Disk 'local', SAMA dengan
@@ -104,5 +117,51 @@ class JobApplicationController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    /**
+     * Cek status lamaran dari situs: nomor lamaran + email harus cocok.
+     * Jawaban "tidak ditemukan" sama untuk nomor salah maupun email salah,
+     * supaya nomor orang lain tidak bisa ditebak-tebak.
+     */
+    public function status(Request $request)
+    {
+        $data = $request->validate([
+            'nomor' => ['required', 'string', 'max:30'],
+            'email' => ['required', 'string', 'max:150'],
+        ], [
+            'nomor.required' => 'Nomor lamaran wajib diisi',
+            'email.required' => 'Email wajib diisi',
+        ]);
+
+        $lamaran = JobApplication::with('job')
+            ->where('nomor_lamaran', mb_strtoupper(trim($data['nomor'])))
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($data['email']))])
+            ->first();
+
+        if (! $lamaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lamaran tidak ditemukan. Periksa kembali nomor lamaran dan email yang Anda pakai saat melamar.',
+            ], 404);
+        }
+
+        $urutan = array_keys(JobApplication::STATUS);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'nomor' => $lamaran->nomor_lamaran,
+                'nama' => $lamaran->name,
+                'posisi' => $lamaran->job?->title,
+                'unit' => $lamaran->job?->unit ?? 'asthana',
+                'status' => $lamaran->status,
+                'status_label' => $lamaran->status_label,
+                'keterangan' => JobApplication::STATUS[$lamaran->status][2] ?? '',
+                'tahap' => array_search($lamaran->status, $urutan, true),
+                'dikirim_at' => $lamaran->created_at?->toISOString(),
+                'diubah_at' => $lamaran->status_diubah_at?->toISOString(),
+            ],
+        ]);
     }
 }

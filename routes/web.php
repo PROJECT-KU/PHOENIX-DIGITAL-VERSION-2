@@ -541,7 +541,7 @@ Route::middleware('permission:kelola_situs_asthana')->prefix('admin/asthana')->n
     }
 
     Route::get('/{jenis}', \App\Livewire\Pages\Admin\Asthana\AsthanaDaftarList::class)
-        ->whereIn('jenis', ['klien', 'testimoni', 'tim'])
+        ->whereIn('jenis', ['klien', 'testimoni', 'tim', 'karyawan'])
         ->name('daftar');
 });
 
@@ -756,5 +756,12 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/blog/create', \App\Livewire\Pages\Admin\Orcha\Blog\OrchaBlogForm::class)->name('admin.orcha.blog.create');
     Route::get('/admin/orcha/blog/{artikel}/edit', \App\Livewire\Pages\Admin\Orcha\Blog\OrchaBlogForm::class)->name('admin.orcha.blog.edit');
 });
+
+// Tautan lowongan yang dibagikan dari situs Asthana: meta OG per posisi untuk
+// WhatsApp/LinkedIn/Google, lalu manusia dialihkan ke halaman detail situs.
+Route::get('/lowongan/{slug}', [\App\Http\Controllers\SitusLowonganController::class, 'bagikan'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->middleware('throttle:60,1,bagikan-lowongan')
+    ->name('situs.lowongan');
 
 require __DIR__.'/auth.php';

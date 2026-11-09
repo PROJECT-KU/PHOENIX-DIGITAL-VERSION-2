@@ -38,7 +38,7 @@ class KabarSitus
     {
         // Lamaran umum (talent pool) tidak terikat ke lowongan: posisi null.
         $posisi = $lamaran->job?->title;
-        $nomor = str_pad((string) $lamaran->id, 6, '0', STR_PAD_LEFT);
+        $nomor = $lamaran->nomor_lamaran ?? str_pad((string) $lamaran->id, 6, '0', STR_PAD_LEFT);
 
         self::beriTahuAdmin('view_pelamar', new KabarSitusAsthana(
             judul: 'Lamaran baru 📄',

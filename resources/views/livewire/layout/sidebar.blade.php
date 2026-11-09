@@ -1203,6 +1203,7 @@ new class extends Component
                         ['admin.asthana.daftar', ['klien'], 'klien', 'Klien & Mitra'],
                         ['admin.asthana.daftar', ['testimoni'], 'testimoni', 'Testimoni'],
                         ['admin.asthana.daftar', ['tim'], 'tim', 'Tim Manajemen'],
+                        ['admin.asthana.daftar', ['karyawan'], 'karyawan', 'Suara Karyawan'],
                     ];
                 @endphp
                 @if ($bolehSitusAsthana)

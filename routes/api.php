@@ -42,16 +42,28 @@ Route::middleware(['throttle:20,1'])->group(function () {
     Route::get('/jobs', [JobController::class, 'index']);
     Route::get('/jobs/{slug}', [JobController::class, 'show']);
 
-    // Unggah 2 PDF — paling mahal, jadi dibatasi paling ketat.
+    // Argumen ketiga throttle = AWALAN kunci. Tanpa awalan, semua throttle di
+    // grup ini memakai SATU penghitung per IP (kuncinya hanya domain|IP):
+    // membuka daftar lowongan, detail, lalu formulir sudah menghabiskan jatah
+    // "5 lamaran" sehingga pelamar kena 429 — dan batas per jamnya tidak
+    // pernah berlaku karena penghitungnya ikut kedaluwarsa tiap menit.
+
+    // Unggah PDF — paling mahal, jadi dibatasi paling ketat.
     Route::post('/applications', [JobApplicationController::class, 'store'])
-        ->middleware('throttle:5,60');
+        ->middleware('throttle:5,60,lamaran');
+    // Cek status lamaran (nomor + email). Dibatasi supaya nomor tidak bisa
+    // ditebak beruntun.
+    Route::post('/applications/status', [JobApplicationController::class, 'status'])
+        ->middleware('throttle:10,10,cek-lamaran');
 
     Route::post('/message', [MessageController::class, 'store'])
-        ->middleware('throttle:10,60');
+        ->middleware('throttle:10,60,pesan');
 
     // Isi situs profil Asthana (baca saja): beranda, tim, portofolio, berita.
     Route::prefix('situs')->controller(\App\Http\Controllers\Api\SitusAsthanaController::class)->group(function () {
         Route::get('/beranda', 'beranda');
+        Route::get('/karir', 'karir');
+        Route::get('/sitemap-lowongan.xml', [\App\Http\Controllers\SitusLowonganController::class, 'sitemap']);
         Route::get('/tim', 'tim');
         Route::get('/portofolio', 'portofolio');
         Route::get('/portofolio/{slug}', 'portofolioDetail');

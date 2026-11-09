@@ -31,6 +31,7 @@ class AsthanaDaftarList extends Component
         'klien' => ['Klien & Mitra', 'bi-buildings', '#2455e6', Klien::class, 'logo', 'Logo yang berjalan di beranda situs.'],
         'testimoni' => ['Testimoni', 'bi-chat-quote', '#7b5cff', Testimoni::class, 'foto', 'Kutipan klien di beranda situs.'],
         'tim' => ['Tim Manajemen', 'bi-people', '#0ea5c6', Tim::class, 'foto', 'Pimpinan di halaman Tentang Kami.'],
+        'karyawan' => ['Suara Karyawan', 'bi-person-heart', '#17a974', \App\Models\Asthana\SuaraKaryawan::class, 'foto', 'Kutipan karyawan di halaman Karir.'],
     ];
 
     public string $jenis = 'klien';
@@ -92,6 +93,12 @@ class AsthanaDaftarList extends Component
                 'jabatan' => 'required|string|max:191',
                 'tautan' => 'nullable|url|max:255',
             ] + $gambar,
+            'karyawan' => [
+                'nama' => 'required|string|max:191',
+                'jabatan' => 'required|string|max:191',
+                'perusahaan' => 'nullable|string|max:191',
+                'isi' => 'required|string|max:600',
+            ] + $gambar,
         };
     }
 
@@ -140,6 +147,10 @@ class AsthanaDaftarList extends Component
                 'perusahaan' => $this->perusahaan ?: null, 'isi' => $this->isi, 'bintang' => $this->bintang,
             ],
             'tim' => ['nama' => $this->nama, 'jabatan' => $this->jabatan, 'linkedin' => $this->tautan ?: null],
+            'karyawan' => [
+                'nama' => $this->nama, 'jabatan' => $this->jabatan,
+                'perusahaan' => $this->perusahaan ?: null, 'isi' => $this->isi,
+            ],
         };
         $data['tampil'] = $this->tampil;
 

@@ -22,17 +22,23 @@ class PelamarKerjaList extends Component
 
     public $filterJob = '';
 
-    #[Layout('livewire.layout.templateindex')]
-    public function render()
+    public $filterStatus = '';
+
+    /**
+     * Kueri bersama layar & ekspor: berkas Excel berisi persis yang sedang
+     * disaring di layar.
+     */
+    private function kueri()
     {
         $query = JobApplication::with('job')->latest();
 
-        // Pencarian: nama, email, telepon, atau posisi lowongan
+        // Pencarian: nama, email, telepon, nomor lamaran, atau posisi lowongan
         if ($this->search) {
             $query->where(function ($q) {
                 $q->where('name', 'like', "%{$this->search}%")
                     ->orWhere('email', 'like', "%{$this->search}%")
                     ->orWhere('phone', 'like', "%{$this->search}%")
+                    ->orWhere('nomor_lamaran', 'like', "%{$this->search}%")
                     ->orWhereHas('job', fn ($j) => $j->where('title', 'like', "%{$this->search}%"));
             });
         }
@@ -49,6 +55,26 @@ class PelamarKerjaList extends Component
         } elseif ($this->filterJob) {
             $query->where('job_id', $this->filterJob);
         }
+
+        if ($this->filterStatus) {
+            $query->where('status', $this->filterStatus);
+        }
+
+        return $query;
+    }
+
+    public function ekspor()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\PelamarKerjaExport($this->kueri()->get()),
+            'pelamar-kerja-'.now()->format('Ymd-His').'.xlsx'
+        );
+    }
+
+    #[Layout('livewire.layout.templateindex')]
+    public function render()
+    {
+        $query = $this->kueri();
 
         $dataPelamar = $query->paginate($this->perPage);
 
@@ -134,9 +160,14 @@ class PelamarKerjaList extends Component
         $this->resetPage();
     }
 
+    public function updatingFilterStatus()
+    {
+        $this->resetPage();
+    }
+
     public function resetFilters()
     {
-        $this->reset(['search', 'filterMonth', 'filterJob']);
+        $this->reset(['search', 'filterMonth', 'filterJob', 'filterStatus']);
         $this->resetPage();
     }
 }

@@ -37,6 +37,9 @@ class StoreJobApplicationRequest extends FormRequest
             'portofolio_url' => ['nullable', 'url:http,https', 'max:255'],
             'sumber_info' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\JobApplication::SUMBER_INFO))],
 
+            // Jebakan bot: kolom tersembunyi di formulir, manusia tidak mengisinya.
+            'situs_web' => ['nullable', 'string', 'max:255'],
+
             // Optional CAPTCHA
             'cf_turnstile_response' => ['nullable', 'string'],
             'g_recaptcha_response' => ['nullable', 'string'],
@@ -79,6 +82,39 @@ class StoreJobApplicationRequest extends FormRequest
             'portofolio_url.max' => 'Tautan portofolio maksimal 255 karakter',
             'sumber_info.in' => 'Pilihan sumber informasi tidak dikenal',
         ];
+    }
+
+    /**
+     * Lamaran ganda: email yang sama untuk posisi yang sama (atau lamaran umum)
+     * dalam 30 hari terakhir ditolak, dengan menyebut nomor lamaran lamanya
+     * supaya pelamar bisa mengecek statusnya.
+     */
+    public function after(): array
+    {
+        return [function (\Illuminate\Validation\Validator $validator) {
+            if ($validator->errors()->hasAny(['email', 'job_id']) || ! $this->filled('email')) {
+                return;
+            }
+
+            $lama = \App\Models\JobApplication::query()
+                ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim((string) $this->input('email')))])
+                ->where('created_at', '>=', now()->subDays(30))
+                ->when(
+                    $this->filled('job_id'),
+                    fn ($q) => $q->where('job_id', $this->input('job_id')),
+                    fn ($q) => $q->whereNull('job_id'),
+                )
+                ->latest()
+                ->first();
+
+            if ($lama) {
+                $validator->errors()->add(
+                    'email',
+                    "Anda sudah mengirim lamaran ini pada {$lama->created_at->locale('id')->translatedFormat('j F Y')} "
+                    ."(nomor {$lama->nomor_lamaran}). Cek statusnya di halaman Cek Status Lamaran."
+                );
+            }
+        }];
     }
 
     /**
