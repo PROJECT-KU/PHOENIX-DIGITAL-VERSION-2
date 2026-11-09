@@ -6,7 +6,6 @@
         'klien' => ['Klien', 'bi-buildings', '#4f46e5', route('admin.asthana.daftar', 'klien')],
         'testimoni' => ['Testimoni', 'bi-chat-quote', '#7b5cff', route('admin.asthana.daftar', 'testimoni')],
         'tim' => ['Tim', 'bi-people', '#0ea5c6', route('admin.asthana.daftar', 'tim')],
-        'angka' => ['Angka', 'bi-bar-chart', '#ff8a3d', route('admin.asthana.daftar', 'angka')],
     ];
 @endphp
 <nav class="ast-nav" aria-label="Bagian isi situs Asthana">

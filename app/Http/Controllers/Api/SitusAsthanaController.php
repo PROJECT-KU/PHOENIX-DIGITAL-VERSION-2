@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Models\Asthana\Angka;
 use App\Models\Asthana\Berita;
 use App\Models\Asthana\Klien;
 use App\Models\Asthana\Portofolio;
@@ -35,12 +34,6 @@ class SitusAsthanaController extends Controller
     public function beranda(): JsonResponse
     {
         return $this->ok([
-            'angka' => Angka::tampil()->get()->map(fn (Angka $a) => [
-                'label' => $a->label,
-                'nilai' => $a->nilai,
-                'akhiran' => $a->akhiran,
-                'ikon' => $a->ikon,
-            ]),
             'klien' => Klien::tampil()->get()->map(fn (Klien $k) => [
                 'nama' => $k->nama,
                 'logo_url' => Klien::urlGambar($k->logo),

@@ -8,7 +8,6 @@
     $isKlien = $jenis === 'klien';
     $isTesti = $jenis === 'testimoni';
     $isTim = $jenis === 'tim';
-    $isAngka = $jenis === 'angka';
     $kosong = $daftar->isEmpty();
     $jumlahBaris = $daftar->count();
     $labelGambar = $isKlien ? 'Logo' : 'Foto';
@@ -71,24 +70,17 @@
                                     $punyaRupa = (bool) $urlBaris;
                                     $pertama = $loop->first;
                                     $terakhir = $loop->last;
-                                    $namaBaris = $isAngka ? $baris->label : $baris->nama;
+                                    $namaBaris = $baris->nama;
                                     $ketBaris = match ($jenis) {
                                         'klien' => $baris->tautan ?: 'Tanpa tautan',
                                         'testimoni' => '“'.$baris->isi.'”',
-                                        'tim' => $baris->jabatan,
-                                        default => $baris->ikon ? 'Ikon: '.$baris->ikon : 'Tanpa ikon',
+                                        default => $baris->jabatan,
                                     };
                                     $subTesti = collect([$baris->jabatan ?? null, $baris->perusahaan ?? null])->filter()->implode(' · ');
-                                    $angkaTampil = $isAngka ? number_format((int) $baris->nilai, 0, ',', '.').($baris->akhiran ?? '') : '';
                                 @endphp
                                 <article class="dsb-kartu ast-kartu {{ $baris->tampil ? '' : 'is-sembunyi' }}" wire:key="ast-{{ $jenis }}-{{ $baris->id }}" style="--c: {{ $warna }}">
                                     <div class="ast-kartu-rupa {{ $isKlien ? 'is-logo' : 'is-foto' }}">
-                                        @if ($isAngka)
-                                            @if ($baris->ikon)
-                                                <i class="bi {{ $baris->ikon }} ast-angka-ikon"></i>
-                                            @endif
-                                            <span class="ast-angka">{{ $angkaTampil }}</span>
-                                        @elseif ($punyaRupa)
+                                        @if ($punyaRupa)
                                             <img src="{{ $urlBaris }}" alt="{{ $namaBaris }}" loading="lazy">
                                         @else
                                             <span class="ast-kosong"><i class="bi bi-image"></i></span>
@@ -150,31 +142,6 @@
                 </div>
 
                 <div class="dsb-jendela-isi ast-tumpuk">
-                    @if ($isAngka)
-                        <div class="ast-isian-deret">
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ast-nilai">Angka <span class="dsb-wajib">*</span></label>
-                                <input id="ast-nilai" type="number" min="0" class="dsb-isian @error('nilai') is-galat @enderror" wire:model="nilai" placeholder="120">
-                                @error('nilai') <span class="dsb-galat">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="ast-akhiran">Akhiran <span class="dsb-label-ket">opsional</span></label>
-                                <input id="ast-akhiran" type="text" class="dsb-isian @error('akhiran') is-galat @enderror" wire:model="akhiran" placeholder="+  atau  %">
-                                @error('akhiran') <span class="dsb-galat">{{ $message }}</span> @enderror
-                            </div>
-                        </div>
-                        <div class="dsb-medan">
-                            <label class="dsb-label" for="ast-label">Keterangan <span class="dsb-wajib">*</span></label>
-                            <input id="ast-label" type="text" class="dsb-isian @error('label') is-galat @enderror" wire:model="label" placeholder="Proyek selesai">
-                            @error('label') <span class="dsb-galat">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="dsb-medan">
-                            <label class="dsb-label" for="ast-ikon">Ikon <span class="dsb-label-ket">nama Bootstrap Icons, mis. bi-trophy</span></label>
-                            <input id="ast-ikon" type="text" class="dsb-isian @error('ikon') is-galat @enderror" wire:model="ikon" placeholder="bi-trophy">
-                            @error('ikon') <span class="dsb-galat">{{ $message }}</span> @enderror
-                        </div>
-                        <p class="ast-catatan mb-0"><i class="bi bi-info-circle"></i> Tulis angka yang benar-benar bisa dibuktikan. Pengunjung yang jeli mudah curiga pada angka bulat yang terlalu besar.</p>
-                    @else
                         <div class="dsb-medan">
                             <label class="dsb-label" for="ast-nama">{{ $isKlien ? 'Nama klien / mitra' : 'Nama' }} <span class="dsb-wajib">*</span></label>
                             <input id="ast-nama" type="text" class="dsb-isian @error('nama') is-galat @enderror" wire:model="nama">
@@ -251,7 +218,6 @@
                                 </div>
                             </div>
                         </div>
-                    @endif
 
                     <label class="ast-saklar">
                         <input type="checkbox" wire:model="tampil" @checked($this->tampil)>

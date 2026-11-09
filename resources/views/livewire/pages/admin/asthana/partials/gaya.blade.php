@@ -30,8 +30,6 @@
     .ast-kartu-rupa.is-logo img { object-fit: contain; max-width: 75%; max-height: 92px; }
     .ast-kartu-rupa.is-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .ast-kartu-rupa .ast-kosong { color: #a9b8cc; font-size: 1.8rem; }
-    .ast-kartu-rupa .ast-angka { font-size: 2.2rem; font-weight: 800; color: var(--c, #2455e6); letter-spacing: -.03em; }
-    .ast-kartu-rupa .ast-angka-ikon { position: absolute; left: 14px; top: 12px; color: var(--c, #2455e6); font-size: 1.1rem; }
     .ast-kartu-tanda { position: absolute; top: 10px; right: 10px; }
     .ast-kartu-badan { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; }
     .ast-kartu-nama { font-weight: 800; color: var(--dsb-tinta); font-size: .95rem; margin: 0; }

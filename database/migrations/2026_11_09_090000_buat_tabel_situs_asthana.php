@@ -52,7 +52,7 @@ return new class extends Migration
             $t->timestamps();
         });
 
-        // Empat daftar pendek: isiannya sedikit, diurus lewat jendela.
+        // Tiga daftar pendek: isiannya sedikit, diurus lewat jendela.
         Schema::create('asthana_klien', function (Blueprint $t) {
             $t->id();
             $t->string('nama');
@@ -87,21 +87,11 @@ return new class extends Migration
             $t->timestamps();
         });
 
-        Schema::create('asthana_angka', function (Blueprint $t) {
-            $t->id();
-            $t->string('label');                             // "Proyek selesai"
-            $t->unsignedInteger('nilai');                    // 120
-            $t->string('akhiran', 10)->nullable();           // "+", "%", "rb"
-            $t->string('ikon', 40)->nullable();              // nama Bootstrap Icons, mis. "bi-trophy"
-            $t->boolean('tampil')->default(true);
-            $t->unsignedInteger('urutan')->default(0);
-            $t->timestamps();
-        });
     }
 
     public function down(): void
     {
-        foreach (['asthana_angka', 'asthana_tim', 'asthana_testimoni', 'asthana_klien', 'asthana_berita', 'asthana_portofolio'] as $tabel) {
+        foreach (['asthana_tim', 'asthana_testimoni', 'asthana_klien', 'asthana_berita', 'asthana_portofolio'] as $tabel) {
             Schema::dropIfExists($tabel);
         }
     }

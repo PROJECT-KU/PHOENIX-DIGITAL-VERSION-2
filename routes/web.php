@@ -524,7 +524,7 @@ Route::middleware('permission:view_message')->group(function () {
 
 /*
  | Isi situs profil PT. Asthana Cipta Mandiri (portofolio, berita, klien,
- | testimoni, tim, angka). Situsnya statis dan membaca isi ini lewat
+ | testimoni, tim). Situsnya statis dan membaca isi ini lewat
  | /api/situs/*. Rute tulis didaftarkan SEBELUM {id} supaya "tulis" tidak
  | terbaca sebagai nomor.
  */
@@ -539,7 +539,7 @@ Route::middleware('permission:kelola_situs_asthana')->prefix('admin/asthana')->n
     }
 
     Route::get('/{jenis}', \App\Livewire\Pages\Admin\Asthana\AsthanaDaftarList::class)
-        ->whereIn('jenis', ['klien', 'testimoni', 'tim', 'angka'])
+        ->whereIn('jenis', ['klien', 'testimoni', 'tim'])
         ->name('daftar');
 });
 

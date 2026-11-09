@@ -4,7 +4,6 @@ use App\Livewire\Pages\Admin\Asthana\AsthanaDaftarList;
 use App\Livewire\Pages\Admin\Asthana\AsthanaTulisanForm;
 use App\Livewire\Pages\Admin\Asthana\AsthanaTulisanList;
 use App\Mail\TandaTerimaSitusMail;
-use App\Models\Asthana\Angka;
 use App\Models\Asthana\Berita;
 use App\Models\Asthana\Klien;
 use App\Models\Asthana\Portofolio;
@@ -60,8 +59,6 @@ function lowonganUji(string $status = 'active'): Lowongan
 // ---------------------------------------------------------------- API publik
 
 it('beranda hanya mengirim isi yang tampil dan terbit', function () {
-    Angka::create(['label' => 'Proyek', 'nilai' => 40, 'akhiran' => '+', 'tampil' => true]);
-    Angka::create(['label' => 'Rahasia', 'nilai' => 1, 'tampil' => false]);
     Klien::create(['nama' => 'Klien Tampil', 'tampil' => true]);
     Klien::create(['nama' => 'Klien Sembunyi', 'tampil' => false]);
     Testimoni::create(['nama' => 'Budi', 'isi' => 'Bagus', 'tampil' => true]);
@@ -74,7 +71,8 @@ it('beranda hanya mengirim isi yang tampil dan terbit', function () {
 
     $data = $this->getJson('/api/situs/beranda')->assertOk()->json('data');
 
-    expect(collect($data['angka'])->pluck('label')->all())->toBe(['Proyek'])
+    // Angka pencapaian sudah dibuang dari situs (9 Nov 2026).
+    expect($data)->not->toHaveKey('angka')
         ->and(collect($data['klien'])->pluck('nama')->all())->toBe(['Klien Tampil'])
         ->and(collect($data['testimoni'])->pluck('nama')->all())->toBe(['Budi'])
         ->and(collect($data['portofolio'])->pluck('judul')->all())->toBe(['Unggulan'])
@@ -211,10 +209,11 @@ it('semua layar isi situs terbuka bagi yang berizin', function () {
     $this->actingAs(penggunaSitus());
 
     foreach (['/admin/asthana/portofolio', '/admin/asthana/portofolio/tulis', '/admin/asthana/berita', '/admin/asthana/berita/tulis',
-        '/admin/asthana/klien', '/admin/asthana/testimoni', '/admin/asthana/tim', '/admin/asthana/angka'] as $alamat) {
+        '/admin/asthana/klien', '/admin/asthana/testimoni', '/admin/asthana/tim'] as $alamat) {
         $this->get($alamat)->assertOk();
     }
     $this->get('/admin/asthana/ngawur')->assertNotFound();
+    $this->get('/admin/asthana/angka')->assertNotFound();
 });
 
 it('daftar pendek: tambah dengan logo, urutkan, sembunyikan, hapus', function () {
@@ -248,12 +247,8 @@ it('daftar pendek: tambah dengan logo, urutkan, sembunyikan, hapus', function ()
     Storage::disk('public')->assertMissing($a->logo);
 });
 
-it('daftar pendek: angka & testimoni divalidasi sesuai jenisnya', function () {
+it('daftar pendek: testimoni & tim divalidasi sesuai jenisnya', function () {
     $this->actingAs(penggunaSitus());
-
-    Livewire::test(AsthanaDaftarList::class, ['jenis' => 'angka'])
-        ->call('tambah')->set('label', 'Klien')->set('nilai', 'banyak')->set('ikon', 'trophy')
-        ->call('simpan')->assertHasErrors(['nilai', 'ikon']);
 
     Livewire::test(AsthanaDaftarList::class, ['jenis' => 'testimoni'])
         ->call('tambah')->set('nama', 'Rina')->call('simpan')->assertHasErrors(['isi']);

@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages\Admin\Asthana;
 
-use App\Models\Asthana\Angka;
 use App\Models\Asthana\Klien;
 use App\Models\Asthana\Testimoni;
 use App\Models\Asthana\Tim;
@@ -14,7 +13,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 /**
- * Empat daftar pendek situs Asthana: klien, testimoni, tim, dan angka.
+ * Tiga daftar pendek situs Asthana: klien, testimoni, dan tim.
  *
  * Isiannya sedikit, jadi tambah/ubahnya lewat jendela di halaman yang sama
  * (pola OrchaEtalaseList). Urutan tampil di situs diatur dengan tombol naik
@@ -32,7 +31,6 @@ class AsthanaDaftarList extends Component
         'klien' => ['Klien & Mitra', 'bi-buildings', '#2455e6', Klien::class, 'logo', 'Logo yang berjalan di beranda situs.'],
         'testimoni' => ['Testimoni', 'bi-chat-quote', '#7b5cff', Testimoni::class, 'foto', 'Kutipan klien di beranda situs.'],
         'tim' => ['Tim Manajemen', 'bi-people', '#0ea5c6', Tim::class, 'foto', 'Pimpinan di halaman Tentang Kami.'],
-        'angka' => ['Angka Pencapaian', 'bi-bar-chart', '#ff8a3d', Angka::class, null, 'Pita angka di bawah hero beranda.'],
     ];
 
     public string $jenis = 'klien';
@@ -53,14 +51,6 @@ class AsthanaDaftarList extends Component
     public int $bintang = 5;
 
     public string $tautan = '';
-
-    public string $label = '';
-
-    public $nilai = '';
-
-    public string $akhiran = '';
-
-    public string $ikon = '';
 
     public bool $tampil = true;
 
@@ -102,12 +92,6 @@ class AsthanaDaftarList extends Component
                 'jabatan' => 'required|string|max:191',
                 'tautan' => 'nullable|url|max:255',
             ] + $gambar,
-            'angka' => [
-                'label' => 'required|string|max:60',
-                'nilai' => 'required|integer|min:0|max:100000000',
-                'akhiran' => 'nullable|string|max:10',
-                'ikon' => ['nullable', 'string', 'max:40', 'regex:/^bi-[a-z0-9-]+$/'],
-            ],
         };
     }
 
@@ -118,8 +102,6 @@ class AsthanaDaftarList extends Component
             'url' => 'Tulis alamat lengkap, diawali https://',
             'image' => 'Berkasnya harus gambar.',
             'gambar.max' => 'Gambar maksimal 4 MB.',
-            'nilai.integer' => 'Isi dengan angka bulat, tanpa titik.',
-            'ikon.regex' => 'Nama ikon diawali "bi-", mis. bi-trophy.',
         ];
     }
 
@@ -141,10 +123,6 @@ class AsthanaDaftarList extends Component
         $this->isi = (string) ($baris->isi ?? '');
         $this->bintang = (int) ($baris->bintang ?? 5);
         $this->tautan = (string) ($this->jenis === 'tim' ? ($baris->linkedin ?? '') : ($baris->tautan ?? ''));
-        $this->label = (string) ($baris->label ?? '');
-        $this->nilai = $baris->nilai ?? '';
-        $this->akhiran = (string) ($baris->akhiran ?? '');
-        $this->ikon = (string) ($baris->ikon ?? '');
         $this->tampil = (bool) $baris->tampil;
         $this->gambarLama = $this->kolomGambar() ? $baris->{$this->kolomGambar()} : null;
 
@@ -162,10 +140,6 @@ class AsthanaDaftarList extends Component
                 'perusahaan' => $this->perusahaan ?: null, 'isi' => $this->isi, 'bintang' => $this->bintang,
             ],
             'tim' => ['nama' => $this->nama, 'jabatan' => $this->jabatan, 'linkedin' => $this->tautan ?: null],
-            'angka' => [
-                'label' => $this->label, 'nilai' => (int) $this->nilai,
-                'akhiran' => $this->akhiran ?: null, 'ikon' => $this->ikon ?: null,
-            ],
         };
         $data['tampil'] = $this->tampil;
 
@@ -247,7 +221,7 @@ class AsthanaDaftarList extends Component
     {
         $this->reset([
             'sedangDiubah', 'nama', 'jabatan', 'perusahaan', 'isi', 'tautan',
-            'label', 'nilai', 'akhiran', 'ikon', 'gambar', 'gambarLama',
+            'gambar', 'gambarLama',
         ]);
         $this->bintang = 5;
         $this->tampil = true;
