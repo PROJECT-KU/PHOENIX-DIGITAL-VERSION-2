@@ -31,7 +31,9 @@ class StoreJobApplicationRequest extends FormRequest
             'email' => ['required', 'email:rfc,dns', 'max:150'],
             'phone' => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\-\(\)]+$/'],
             'cv' => ['required', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
-            'cover_letter' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
+            'cover_letter' => ['required', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
+            // Berkas pendukung opsional: portofolio, sertifikat, transkrip, dsb.
+            'lampiran' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:'.$maxKB],
             'portofolio_url' => ['nullable', 'url:http,https', 'max:255'],
             'sumber_info' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\JobApplication::SUMBER_INFO))],
 
@@ -66,8 +68,12 @@ class StoreJobApplicationRequest extends FormRequest
             // Dulu tertulis {$maxKB}MB → "2048MB". Satuannya MB, angkanya $max.
             'cv.max' => "Ukuran CV maksimal {$max} MB",
 
+            'cover_letter.required' => 'Surat lamaran wajib diunggah',
             'cover_letter.mimetypes' => 'Surat lamaran harus berformat PDF',
             'cover_letter.max' => "Ukuran surat lamaran maksimal {$max} MB",
+
+            'lampiran.mimetypes' => 'Berkas pendukung harus berformat PDF',
+            'lampiran.max' => "Ukuran berkas pendukung maksimal {$max} MB",
 
             'portofolio_url.url' => 'Tautan portofolio harus diawali http:// atau https://',
             'portofolio_url.max' => 'Tautan portofolio maksimal 255 karakter',

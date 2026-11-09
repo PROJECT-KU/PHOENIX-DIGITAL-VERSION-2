@@ -147,4 +147,37 @@ Detail Pelamar Kerja || lemon
             @endif
         </div>
     </div>
+
+    <!--================== BERKAS PENDUKUNG (opsional) ==================-->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="stat-icon-wrapper" style="width: 38px; height: 38px; font-size: 1rem; border-radius: 11px; background: linear-gradient(135deg,#17a974,#0ea5c6); color:#fff; display:inline-flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-paperclip"></i>
+                    </span>
+                    <h5 class="fw-bold mb-0 text-dark">Berkas Pendukung</h5>
+                    <span class="badge rounded-pill px-2 py-1" style="background:#f1f5f9; color:#64748b;">opsional</span>
+                </div>
+                @if ($pelamar->lampiran_path)
+                <a href="{{ route('admin.pelamar.lampiran', $pelamar) }}" download
+                    class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center gap-1 px-3">
+                    <i class="bi bi-download"></i> <span>Download</span>
+                </a>
+                @endif
+            </div>
+            @if ($pelamar->lampiran_path)
+            <div class="ratio rounded-3 overflow-hidden" style="--bs-aspect-ratio: 141.42%;">
+                <iframe src="{{ route('admin.pelamar.lampiran', $pelamar) }}" type="application/pdf" class="border-0" style="width: 100%; height: 100%;">
+                    <p>Browser Anda tidak mendukung preview PDF. <a href="{{ route('admin.pelamar.lampiran', $pelamar) }}" download>Download berkas pendukung</a></p>
+                </iframe>
+            </div>
+            @else
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-paperclip fs-1 d-block mb-2"></i>
+                <p class="mb-0">Pelamar tidak melampirkan berkas pendukung.</p>
+            </div>
+            @endif
+        </div>
+    </div>
 </div>

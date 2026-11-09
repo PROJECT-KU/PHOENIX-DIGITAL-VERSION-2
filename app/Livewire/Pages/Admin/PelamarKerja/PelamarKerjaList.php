@@ -88,12 +88,13 @@ class PelamarKerjaList extends Component
 
             $cvPath = $application->cv_path;
             $clPath = $application->cover_letter_path;
+            $lampiranPath = $application->lampiran_path;
 
             // Lamaran baru disimpan di disk PRIVAT 'local'; yang lama mungkin
             // masih di 'public'. Dulu hanya 'public' yang dibersihkan, jadi CV
             // pelamar yang dihapus tetap tertinggal di server.
             foreach (['local', 'public'] as $disk) {
-                foreach ([$cvPath, $clPath] as $jalur) {
+                foreach ([$cvPath, $clPath, $lampiranPath] as $jalur) {
                     if ($jalur && Storage::disk($disk)->exists($jalur)) {
                         Storage::disk($disk)->delete($jalur);
                     }

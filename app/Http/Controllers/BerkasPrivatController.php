@@ -33,6 +33,12 @@ class BerkasPrivatController extends Controller
         return $this->sajikan($pelamar->cover_letter_path, 'surat-lamaran-'.$pelamar->name.'.pdf');
     }
 
+    /** Berkas pendukung pelamar kerja (opsional). */
+    public function lampiranPelamar(JobApplication $pelamar)
+    {
+        return $this->sajikan($pelamar->lampiran_path, 'berkas-pendukung-'.$pelamar->name.'.pdf');
+    }
+
     /** Lampiran tiket helpdesk (kiriman pelanggan maupun tambahan admin). */
     public function lampiranTiket(CustomerMessageAttachment $lampiran)
     {

@@ -13,7 +13,7 @@ class JobApplication extends Model
 
     protected $table = 'tbl_job_applications';
 
-    protected $fillable = ['job_id', 'name', 'email', 'phone', 'cv_path', 'cover_letter_path', 'portofolio_url', 'sumber_info', 'ip_address'];
+    protected $fillable = ['job_id', 'name', 'email', 'phone', 'cv_path', 'cover_letter_path', 'lampiran_path', 'portofolio_url', 'sumber_info', 'ip_address'];
 
     /** Dari mana pelamar tahu lowongan ini (isian opsional formulir situs). */
     public const SUMBER_INFO = [

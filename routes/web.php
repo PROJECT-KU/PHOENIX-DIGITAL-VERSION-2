@@ -507,6 +507,8 @@ Route::middleware('permission:view_pelamar')->group(function () {
         ->name('admin.pelamar.cv');
     Route::get('/admin/pelamar/{pelamar}/surat', [\App\Http\Controllers\BerkasPrivatController::class, 'suratPelamar'])
         ->name('admin.pelamar.surat');
+    Route::get('/admin/pelamar/{pelamar}/lampiran', [\App\Http\Controllers\BerkasPrivatController::class, 'lampiranPelamar'])
+        ->name('admin.pelamar.lampiran');
 });
 
 // Promo

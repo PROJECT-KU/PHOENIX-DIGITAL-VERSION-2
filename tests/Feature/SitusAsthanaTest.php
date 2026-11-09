@@ -221,7 +221,7 @@ it('lamaran ke lowongan yang batasnya sudah lewat ditolak', function () {
         ->assertJsonPath('errors.job_id.0', 'Posisi ini sudah tidak dibuka');
 });
 
-it('lamaran umum tanpa posisi & tanpa surat lamaran diterima', function () {
+it('lamaran umum tanpa posisi diterima, berkas pendukung opsional tersimpan privat', function () {
     Storage::fake('local');
     Mail::fake();
     Notification::fake();
@@ -232,16 +232,21 @@ it('lamaran umum tanpa posisi & tanpa surat lamaran diterima', function () {
         'email' => 'budi@gmail.com',
         'phone' => '0812-1111-2222',
         'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        'cover_letter' => UploadedFile::fake()->create('surat.pdf', 100, 'application/pdf'),
+        'lampiran' => UploadedFile::fake()->create('sertifikat.pdf', 100, 'application/pdf'),
         'portofolio_url' => 'https://behance.net/budi',
         'sumber_info' => 'instagram',
     ])->assertCreated();
 
     $lamaran = \App\Models\JobApplication::where('email', 'budi@gmail.com')->firstOrFail();
     expect($lamaran->job_id)->toBeNull()
-        ->and($lamaran->cover_letter_path)->toBeNull()
+        ->and($lamaran->cover_letter_path)->not->toBeNull()
+        ->and($lamaran->lampiran_path)->toContain('pendukung-sertifikat')
         ->and($lamaran->posisi_label)->toBe('Lamaran umum')
         ->and($lamaran->portofolio_url)->toBe('https://behance.net/budi')
         ->and($lamaran->sumber_info_label)->toBe('Instagram');
+
+    Storage::disk('local')->assertExists($lamaran->lampiran_path);
 
     Notification::assertSentTo($admin, KabarSitusAsthana::class, fn ($n) => str_contains($n->isi, 'lamaran umum'));
     Mail::assertSent(TandaTerimaSitusMail::class, fn ($m) => $m->hasTo('budi@gmail.com') && $m->posisi === null);
@@ -255,8 +260,14 @@ it('tautan portofolio harus http(s) dan sumber info harus dikenal', function () 
 
     expect($galat['portofolio_url'][0])->toBe('Tautan portofolio harus diawali http:// atau https://')
         ->and($galat['sumber_info'][0])->toBe('Pilihan sumber informasi tidak dikenal')
-        ->and($galat)->not->toHaveKey('cover_letter')
+        ->and($galat['cover_letter'][0])->toBe('Surat lamaran wajib diunggah')
+        ->and($galat)->not->toHaveKey('lampiran')
         ->and($galat)->not->toHaveKey('job_id');
+
+    $galat = $this->postJson('/api/applications', [
+        'lampiran' => UploadedFile::fake()->create('foto.png', 10, 'image/png'),
+    ])->json('errors');
+    expect($galat['lampiran'][0])->toBe('Berkas pendukung harus berformat PDF');
 });
 
 it('formulir admin lowongan menyimpan rincian situs', function () {

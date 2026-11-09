@@ -19,6 +19,7 @@ class JobApplicationController extends Controller
             // Validasi sudah dilakukan di FormRequest
             $cv = $request->file('cv');
             $cl = $request->file('cover_letter');
+            $lampiran = $request->file('lampiran');
 
             // Generate unique subdirectory
             $subdir = now()->format('Y/m').'/'.Str::uuid()->toString();
@@ -27,20 +28,28 @@ class JobApplicationController extends Controller
             // dibersihkan — jadi dideklarasikan di sini dan diikat by-reference.
             $cvPath = null;
             $clPath = null;
+            $lampiranPath = null;
 
             // Atomic transaction
-            $app = DB::transaction(function () use ($request, $cv, $cl, $subdir, &$cvPath, &$clPath) {
+            $app = DB::transaction(function () use ($request, $cv, $cl, $lampiran, $subdir, &$cvPath, &$clPath, &$lampiranPath) {
                 $cvOriginalName = pathinfo($cv->getClientOriginalName(), PATHINFO_FILENAME);
                 $cvFileName = Str::slug($cvOriginalName).'_'.Str::random(8).'.pdf';
 
                 // Disk PRIVAT: CV & surat lamaran memuat data pribadi pelamar.
                 $cvPath = $cv->storeAs("applications/{$subdir}", $cvFileName, 'local');
 
-                // Surat lamaran opsional sejak 10 Nov 2026.
-                if ($cl) {
-                    $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
-                    $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
-                    $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'local');
+                $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
+                $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
+                $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'local');
+
+                // Berkas pendukung opsional.
+                if ($lampiran) {
+                    $lampiranNama = pathinfo($lampiran->getClientOriginalName(), PATHINFO_FILENAME);
+                    $lampiranPath = $lampiran->storeAs(
+                        "applications/{$subdir}",
+                        'pendukung-'.Str::slug($lampiranNama).'_'.Str::random(8).'.pdf',
+                        'local'
+                    );
                 }
 
                 // Create application record
@@ -51,6 +60,7 @@ class JobApplicationController extends Controller
                     'phone' => $request->input('phone'),
                     'cv_path' => $cvPath,
                     'cover_letter_path' => $clPath,
+                    'lampiran_path' => $lampiranPath,
                     'portofolio_url' => $request->input('portofolio_url') ?: null,
                     'sumber_info' => $request->input('sumber_info') ?: null,
                     'ip_address' => $request->ip(),
@@ -75,14 +85,14 @@ class JobApplicationController extends Controller
             Log::error('Job Application Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'request' => $request->except(['cv', 'cover_letter']), // jangan log file
+                'request' => $request->except(['cv', 'cover_letter', 'lampiran']), // jangan log file
             ]);
 
             // Bersihkan berkas yang sempat tersimpan. Disk 'local', SAMA dengan
             // tempat storeAs() menaruhnya — dulu yang dibersihkan disk 'public',
             // dan $cvPath tidak pernah terisi di luar closure, sehingga PDF
             // lamaran yang gagal tertinggal selamanya.
-            foreach ([$cvPath ?? null, $clPath ?? null] as $jalur) {
+            foreach ([$cvPath ?? null, $clPath ?? null, $lampiranPath ?? null] as $jalur) {
                 if ($jalur && Storage::disk('local')->exists($jalur)) {
                     Storage::disk('local')->delete($jalur);
                 }
