@@ -691,6 +691,34 @@ it('seeder akses Asthana: buat izin gerbang, kelompokkan, dan bagikan ke pemegan
         ->and(Permission::where('name', 'akses_asthana')->count())->toBe(1);
 });
 
+it('struktur organisasi: atasan tersimpan, tidak boleh berputar, dan dikirim ke situs', function () {
+    Storage::fake('public');
+    $this->actingAs(penggunaSitus());
+    $komisaris = Tim::create(['nama' => 'Komisaris', 'jabatan' => 'Komisaris Utama', 'urutan' => 1]);
+    $direktur = Tim::create(['nama' => 'Direktur', 'jabatan' => 'Direktur Utama', 'urutan' => 2, 'atasan_id' => $komisaris->id]);
+
+    Livewire::test(AsthanaDaftarList::class, ['jenis' => 'tim'])
+        ->call('tambah')
+        ->set('nama', 'Manajer')->set('jabatan', 'Manajer Operasional')->set('atasanId', (string) $direktur->id)
+        ->call('simpan')->assertHasNoErrors();
+    $manajer = Tim::where('nama', 'Manajer')->firstOrFail();
+    expect($manajer->atasan_id)->toBe($direktur->id);
+
+    // Komisaris tidak boleh berada di bawah bawahannya sendiri (berputar).
+    Livewire::test(AsthanaDaftarList::class, ['jenis' => 'tim'])
+        ->call('ubah', $komisaris->id)
+        ->set('atasanId', (string) $manajer->id)
+        ->call('simpan')->assertHasErrors(['atasanId']);
+
+    $tim = collect($this->getJson('/api/situs/tim')->json('data'))->keyBy('nama');
+    expect($tim['Direktur']['atasan_id'])->toBe($komisaris->id)
+        ->and($tim['Komisaris']['atasan_id'])->toBeNull();
+
+    // Atasan dihapus → bawahannya naik ke puncak, bukan ikut terhapus.
+    Livewire::test(AsthanaDaftarList::class, ['jenis' => 'tim'])->call('hapus', $direktur->id);
+    expect($manajer->fresh()->atasan_id)->toBeNull();
+});
+
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {
     Mail::fake();
     Notification::fake();

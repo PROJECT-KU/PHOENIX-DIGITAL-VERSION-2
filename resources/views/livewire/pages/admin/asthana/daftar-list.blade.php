@@ -20,6 +20,8 @@
     $urlPratinjau = $adaGambarBaru ? \App\Support\PratinjauUnggahan::url($gambar) : $urlGambarLama;
     $adaPratinjau = (bool) $urlPratinjau;
     $judulJendela = ($sedangDiubah ? 'Ubah ' : 'Tambah ').strtolower($judul);
+    // Tim: nama atasan per id, untuk keterangan di kartu daftar.
+    $namaAtasan = $isTim ? $daftar->mapWithKeys(fn ($b) => [$b->id => 'Di bawah '.$b->nama])->all() : [];
 @endphp
 
 <div>
@@ -97,6 +99,9 @@
                                         @endif
                                         @if ($isKaryawan)
                                             <span class="dsb-kartu-sub">{{ $subTesti }}</span>
+                                        @endif
+                                        @if ($isTim)
+                                            <span class="dsb-kartu-sub"><i class="bi bi-diagram-3 me-1"></i>{{ $namaAtasan[$baris->atasan_id] ?? 'Puncak bagan' }}</span>
                                         @endif
                                         <p class="ast-kartu-ket">{{ $ketBaris }}</p>
 
@@ -218,6 +223,18 @@
                                 <label class="dsb-label" for="ast-tautan">LinkedIn <span class="dsb-label-ket">opsional</span></label>
                                 <input id="ast-tautan" type="url" class="dsb-isian @error('tautan') is-galat @enderror" wire:model="tautan" placeholder="https://www.linkedin.com/in/...">
                                 @error('tautan') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
+                        @if ($isTim)
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="ast-atasan">Atasan langsung <span class="dsb-label-ket">untuk bagan struktur organisasi — kosongkan bila berada di puncak</span></label>
+                                <select id="ast-atasan" class="dsb-isian @error('atasanId') is-galat @enderror" wire:model="atasanId">
+                                    <option value="" @selected((string) $this->atasanId === '')>— Tidak ada (puncak bagan) —</option>
+                                    @foreach ($pilihanAtasan as $calonAtasan)
+                                        <option value="{{ $calonAtasan->id }}" @selected((string) $this->atasanId === (string) $calonAtasan->id)>{{ $calonAtasan->nama }} — {{ $calonAtasan->jabatan }}</option>
+                                    @endforeach
+                                </select>
+                                @error('atasanId') <span class="dsb-galat">{{ $message }}</span> @enderror
                             </div>
                         @endif
 

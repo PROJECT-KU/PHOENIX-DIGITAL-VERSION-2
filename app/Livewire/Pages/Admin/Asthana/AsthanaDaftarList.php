@@ -53,6 +53,9 @@ class AsthanaDaftarList extends Component
 
     public string $tautan = '';
 
+    /** Tim: atasan langsung untuk bagan struktur organisasi ('' = puncak). */
+    public $atasanId = '';
+
     public bool $tampil = true;
 
     public $gambar;
@@ -92,6 +95,15 @@ class AsthanaDaftarList extends Component
                 'nama' => 'required|string|max:191',
                 'jabatan' => 'required|string|max:191',
                 'tautan' => 'nullable|url|max:255',
+                'atasanId' => ['nullable', 'integer', 'exists:asthana_tim,id', function ($atribut, $nilai, $gagal) {
+                    if (! $nilai || ! $this->sedangDiubah) {
+                        return;
+                    }
+                    $diri = Tim::find($this->sedangDiubah);
+                    if ((int) $nilai === (int) $this->sedangDiubah || in_array((int) $nilai, $diri?->idBawahan() ?? [], true)) {
+                        $gagal('Tidak bisa: orang ini atau bawahannya tidak boleh menjadi atasannya sendiri.');
+                    }
+                }],
             ] + $gambar,
             'karyawan' => [
                 'nama' => 'required|string|max:191',
@@ -130,6 +142,7 @@ class AsthanaDaftarList extends Component
         $this->isi = (string) ($baris->isi ?? '');
         $this->bintang = (int) ($baris->bintang ?? 5);
         $this->tautan = (string) ($this->jenis === 'tim' ? ($baris->linkedin ?? '') : ($baris->tautan ?? ''));
+        $this->atasanId = $this->jenis === 'tim' ? (string) ($baris->atasan_id ?? '') : '';
         $this->tampil = (bool) $baris->tampil;
         $this->gambarLama = $this->kolomGambar() ? $baris->{$this->kolomGambar()} : null;
 
@@ -146,7 +159,10 @@ class AsthanaDaftarList extends Component
                 'nama' => $this->nama, 'jabatan' => $this->jabatan ?: null,
                 'perusahaan' => $this->perusahaan ?: null, 'isi' => $this->isi, 'bintang' => $this->bintang,
             ],
-            'tim' => ['nama' => $this->nama, 'jabatan' => $this->jabatan, 'linkedin' => $this->tautan ?: null],
+            'tim' => [
+                'nama' => $this->nama, 'jabatan' => $this->jabatan, 'linkedin' => $this->tautan ?: null,
+                'atasan_id' => $this->atasanId === '' || $this->atasanId === null ? null : (int) $this->atasanId,
+            ],
             'karyawan' => [
                 'nama' => $this->nama, 'jabatan' => $this->jabatan,
                 'perusahaan' => $this->perusahaan ?: null, 'isi' => $this->isi,
@@ -232,7 +248,7 @@ class AsthanaDaftarList extends Component
     {
         $this->reset([
             'sedangDiubah', 'nama', 'jabatan', 'perusahaan', 'isi', 'tautan',
-            'gambar', 'gambarLama',
+            'gambar', 'gambarLama', 'atasanId',
         ]);
         $this->bintang = 5;
         $this->tampil = true;
@@ -243,6 +259,12 @@ class AsthanaDaftarList extends Component
     {
         return view('livewire.pages.admin.asthana.daftar-list', [
             'daftar' => $this->model()::query()->orderBy('urutan')->orderBy('id')->get(),
+            // Pilihan atasan (tim): selain diri sendiri & bawahannya.
+            'pilihanAtasan' => $this->jenis === 'tim'
+                ? Tim::query()->whereNotIn('id', $this->sedangDiubah
+                    ? [$this->sedangDiubah, ...Tim::find($this->sedangDiubah)?->idBawahan() ?? []]
+                    : [])->orderBy('urutan')->orderBy('id')->get(['id', 'nama', 'jabatan'])
+                : collect(),
             'info' => self::JENIS[$this->jenis],
             'jumlahPerJenis' => collect(self::JENIS)->map(fn ($j) => $j[3]::count()),
         ]);

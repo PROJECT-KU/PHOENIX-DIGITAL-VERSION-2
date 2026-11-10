@@ -76,7 +76,10 @@ class SitusAsthanaController extends Controller
 
     public function tim(): JsonResponse
     {
+        // id & atasan_id: situs menggambar bagan struktur organisasi darinya.
         return $this->ok(Tim::tampil()->get()->map(fn (Tim $t) => [
+            'id' => $t->id,
+            'atasan_id' => $t->atasan_id,
             'nama' => $t->nama,
             'jabatan' => $t->jabatan,
             'foto_url' => Tim::urlGambar($t->foto),
