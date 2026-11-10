@@ -7,7 +7,19 @@
     {{-- Gaya khusus layar ini, ditulis INLINE: public/build di-gitignore,
          jadi berkas hasil build tidak pernah sampai ke server. --}}
     <style>
-    .lwg-rak { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    /* TIGA kolom, bukan auto-fit.
+
+       Dengan auto-fit, layar lebar memuat empat kolom — dan enam isian
+       "boleh dikosongkan" jatuh jadi 4 + 2, menyisakan dua sel kosong
+       selebar setengah kartu di baris kedua. Dipatok tiga, enam isian itu
+       menjadi dua baris penuh. */
+    .lwg-rak { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    /* Bagian "wajib diisi" hanya punya DUA isian sesudah nama posisi yang
+       melebar penuh. Pada kisi tiga kolom, sel ketiganya kosong — petak
+       putih selebar sepertiga kartu tepat di bagian yang paling dibaca. */
+    .lwg-rak.is-dua { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 991.98px) { .lwg-rak { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 575.98px) { .lwg-rak, .lwg-rak.is-dua { grid-template-columns: minmax(0, 1fr); } }
     .lwg-rak .is-lebar { grid-column: 1 / -1; }
 
     .lwg-bagian { margin-bottom: 22px; }
@@ -60,7 +72,14 @@
     }
     </style>
 
-    <form wire:submit.prevent="save" class="dsb lwg-borang">
+    {{-- TANPA kelas .dsb di sini.
+
+         Borang ini selalu dipasang di dalam halaman yang pembungkusnya sudah
+         ber-.dsb (create/edit), dan .dsb membawa padding samping. Dipasang
+         dua kali, paddingnya ikut dua kali — kartu borang menjorok ~18px
+         lebih sempit daripada kartu di layar daftar, dan dua layar yang
+         seharusnya sebaris jadi tidak pernah segaris. --}}
+    <form wire:submit.prevent="save" class="lwg-borang">
         <div class="dsb-rak dsb-bagian">
             <div class="dsb-kartu k-12">
                 <div class="dsb-kartu-kepala">
@@ -88,7 +107,7 @@
                     {{-- ===== Yang wajib ===== --}}
                     <div class="lwg-bagian">
                         <div class="lwg-bagian-judul"><i class="bi bi-asterisk"></i> Wajib diisi</div>
-                        <div class="lwg-rak">
+                        <div class="lwg-rak is-dua">
                             <div class="dsb-medan is-lebar">
                                 <label class="dsb-label" for="lwg-title">
                                     Nama posisi <span class="dsb-wajib">*</span>

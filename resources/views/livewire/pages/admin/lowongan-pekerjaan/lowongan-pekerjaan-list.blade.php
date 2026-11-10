@@ -85,7 +85,7 @@ Data Lowongan Pekerjaan || lemon
              batas lamaran" tenggelam jadi salah satu pilihan menonton —
              padahal ia satu-satunya yang diam-diam berhenti menarik
              pelamar. --}}
-        <div class="dsb-rak">
+        <div class="dsb-rak dsb-bagian">
             <div class="k-12">
                 <div class="pt-grup-deret">
                     @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])

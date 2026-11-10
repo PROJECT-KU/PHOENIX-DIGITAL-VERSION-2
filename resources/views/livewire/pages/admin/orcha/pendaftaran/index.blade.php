@@ -58,7 +58,7 @@ Pendaftaran Trip || lemon
              daftar, yang bawah DAFTAR PEKERJAAN. Digabung, "Perlu ditelepon"
              tenggelam jadi salah satu pilihan menonton — padahal ia
              satu-satunya yang uangnya bisa hangus kalau didiamkan. --}}
-        <div class="dsb-rak">
+        <div class="dsb-rak dsb-bagian">
             <div class="k-12">
                 <div class="pt-grup-deret">
                     @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])

@@ -85,7 +85,7 @@ Data Pelamar Kerja || lemon
              diurut mengikuti perjalanan lamaran. "Belum dibuka" sengaja
              paling kiri sesudah Semua — itu satu-satunya tumpukan yang
              menunggu dikerjakan orang. --}}
-        <div class="dsb-rak">
+        <div class="dsb-rak dsb-bagian">
             <div class="k-12">
                 <div class="pt-grup-deret">
                     <nav class="pt-grup" aria-label="Tahap seleksi">

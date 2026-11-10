@@ -313,3 +313,42 @@ it('borang ubah menggambar nilai yang tersimpan', function () {
         // Kotak pilih memakai @selected, bukan value=.
         ->toContain('value="reka" selected');
 });
+
+it('borang tidak membungkus dirinya dengan .dsb lagi', function () {
+    /*
+     | .dsb BERSARANG menggandakan padding sampingnya.
+     |
+     | Borang ini selalu dipasang di dalam halaman create/edit yang
+     | pembungkusnya sudah ber-.dsb. Dipasang dua kali, kartu borang menjorok
+     | ~18px lebih sempit daripada kartu di layar daftar — dan dua layar yang
+     | seharusnya sebaris tidak pernah segaris. Tidak ada galat apa pun;
+     | ketahuan hanya kalau ditempelkan berdampingan.
+     */
+    $lowongan = lowonganDaftarUji();
+
+    $html = Livewire::actingAs(adminDaftarLowongan())
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class, ['lowongan' => $lowongan])
+        ->html();
+
+    expect($html)->not->toContain('class="dsb lwg-borang"');
+});
+
+it('tiap rak di layar daftar punya jarak ke rak berikutnya', function () {
+    /*
+     | .dsb-rak sendiri tidak punya margin bawah — jaraknya datang dari
+     | .dsb-bagian. Rak pertama yang kehilangan kelas itu membuat kartu
+     | saringan dan kartu daftar BERSENTUHAN: diukur di peramban, 553px dan
+     | 553px. Halaman tetap 200, jadi tidak ada satu pun tanda.
+     */
+    $berkas = file_get_contents(resource_path(
+        'views/livewire/pages/admin/lowongan-pekerjaan/lowongan-pekerjaan-list.blade.php'
+    ));
+
+    preg_match_all('/<div class="dsb-rak([^"]*)"/', $berkas, $cocok);
+
+    expect($cocok[1])->not->toBeEmpty();
+
+    foreach ($cocok[1] as $sisa) {
+        expect($sisa)->toContain('dsb-bagian');
+    }
+});
