@@ -88,7 +88,13 @@ Data Pelamar Kerja || lemon
              menunggu dikerjakan orang. --}}
         <div class="dsb-rak dsb-bagian">
             <div class="k-12">
-                <div class="pt-grup-deret">
+                {{-- Satu kelompok, jadi lebarnya penuh: bawaan .pt-grup-deret
+                     dua kolom (7fr + 3fr) untuk layar Pesanan Toko yang
+                     memang punya dua kelompok. Ditulis di sini DAN dijaga
+                     aturan :has() di partialnya — :has() belum ada di
+                     peramban lama, dan petak kosongnya kembali tanpa satu
+                     pun tanda bahwa sebabnya dukungan CSS. --}}
+                <div class="pt-grup-deret" style="--grup-kolom: minmax(0, 1fr)">
                     <nav class="pt-grup" aria-label="Tahap seleksi">
                         <div class="pt-grup-kepala">
                             <span class="pt-grup-judul">Tahap seleksi</span>

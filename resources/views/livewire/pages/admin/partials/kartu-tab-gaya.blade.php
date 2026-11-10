@@ -41,6 +41,16 @@
         display: grid; gap: 12px;
         grid-template-columns: var(--grup-kolom, minmax(0, 7fr) minmax(0, 3fr));
     }
+    /* SATU kelompok mengisi lebar penuh.
+
+       Bawaannya dua kolom (7fr + 3fr) karena layar Pesanan Toko memang punya
+       dua kelompok. Layar yang cuma punya satu — Pelamar — meninggalkan
+       kolom kedua menganggur: petak putih selebar sepertiga kartu di sebelah
+       kanan deret tabnya, tanpa galat apa pun.
+
+       Dipasang di sini supaya layar berikutnya tidak perlu mengingat
+       menimpa --grup-kolom sendiri. */
+    .pt-grup-deret:has(> .pt-grup:only-child) { grid-template-columns: minmax(0, 1fr); }
     @media (max-width: 1199.98px) { .pt-grup-deret { grid-template-columns: minmax(0, 1fr); } }
     .pt-grup {
         min-width: 0; padding: 12px; background: #fff;
