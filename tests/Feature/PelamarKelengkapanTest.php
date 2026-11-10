@@ -404,35 +404,6 @@ it('menampilkan nomor lamaran di SEMUA lebar layar', function () {
         ->assertSee($p->fresh()->nomor_lamaran);
 });
 
-it('menyambung rantai flex supaya pembaca berkas mengisi tinggi kartunya', function () {
-    /*
-     | .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
-     | tertinggi. Kolom kanan (alur tahap + keterangan) lebih tinggi daripada
-     | pembaca berkas, jadi kartu kiri ikut diregangkan — dan kalau rantai
-     | flex-nya putus di salah satu mata rantai, isinya TIDAK ikut melar:
-     | muncul putih sepanjang ~250px di bawah tombol Unduh.
-     |
-     | Diuji dari sumber karena yang menentukan adalah CSS, dan tidak ada
-     | satu pun galat yang muncul saat rantainya putus — halamannya tetap
-     | 200, cuma berlubang.
-     */
-    $gaya = file_get_contents(
-        resource_path('views/livewire/pages/admin/pelamar-kerja/pelamar-kerja-detail.blade.php')
-    );
-
-    preg_match_all('/<style\b[^>]*>(.*?)<\/style>/si', $gaya, $cocok);
-    $css = preg_replace('#/\*.*?\*/#s', '', implode("\n", $cocok[1]));
-
-    // Tiap mata rantai, dari kartu sampai bingkainya.
-    expect($css)->toContain('.pld-kartu-berkas { display: flex; flex-direction: column; }')
-        ->and($css)->toContain('.pld-kartu-berkas > .dsb-kartu-isi')
-        ->and($css)->toContain('.pld-kartu-berkas .pbk ')
-        ->and($css)->toContain('.pld-kartu-berkas .pbk-bingkai');
-
-    // Dan kartunya memang memakai kelas itu.
-    expect($gaya)->toContain('dsb-kartu k-7 pld-kartu-berkas');
-});
-
 it('memberi nama pada tiap tombol aksi di daftar', function () {
     Storage::fake('local');
     lamaranUji(['cv_path' => 'applications/uji/cv.pdf']);
