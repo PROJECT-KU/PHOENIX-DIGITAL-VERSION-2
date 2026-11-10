@@ -404,6 +404,28 @@ it('menampilkan nomor lamaran di SEMUA lebar layar', function () {
         ->assertSee($p->fresh()->nomor_lamaran);
 });
 
+it('membuat kartu berkas setinggi isinya, bukan setinggi kolom sebelah', function () {
+    /*
+     | .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
+     | tertinggi. Tinggi pembaca berkas dipatok dengan vh, jadi ia MENGECIL
+     | di jendela pendek sementara kolom kanan — yang tingginya ditentukan
+     | tulisan — tidak. Selisihnya jadi putih di dalam kartu, di bawah tombol
+     | Unduh: diukur 1px di jendela 1500px, tetapi 228px di jendela 900px.
+     |
+     | Tanpa penjaga ini, cacatnya tidak akan terlihat oleh siapa pun yang
+     | mengembangkan di layar tinggi — dan justru paling parah di laptop.
+     */
+    $gaya = file_get_contents(
+        resource_path('views/livewire/pages/admin/pelamar-kerja/pelamar-kerja-detail.blade.php')
+    );
+
+    preg_match_all('/<style\b[^>]*>(.*?)<\/style>/si', $gaya, $cocok);
+    $css = preg_replace('#/\*.*?\*/#s', '', implode("\n", $cocok[1]));
+
+    expect($css)->toContain('.pld-kartu-berkas { align-self: start; }')
+        ->and($gaya)->toContain('dsb-kartu k-7 pld-kartu-berkas');
+});
+
 it('memberi nama pada tiap tombol aksi di daftar', function () {
     Storage::fake('local');
     lamaranUji(['cv_path' => 'applications/uji/cv.pdf']);

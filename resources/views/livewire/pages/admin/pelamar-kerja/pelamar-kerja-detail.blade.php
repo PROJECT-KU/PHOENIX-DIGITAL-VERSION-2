@@ -13,6 +13,24 @@ Detail Pelamar Kerja || lemon
     .pld-lencana-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 7px; }
     .pld-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+    /* ===== Kartu berkas setinggi isinya, bukan setinggi kolom sebelah =====
+
+       .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
+       tertinggi (align-items: stretch). Tinggi pembaca berkas dipatok dengan
+       vh, jadi ia MENGECIL di jendela pendek — sementara kolom kanan tingginya
+       ditentukan tulisan dan tidak ikut mengecil. Selisihnya jadi putih di
+       dalam kartu, di bawah tombol Unduh: 1px di jendela 1500px, tapi 228px
+       di jendela 900px. Makin pendek layarnya, makin besar lubangnya.
+
+       align-self: start membuat kartunya berhenti tepat sesudah tombolnya.
+       Sisa tinggi barisnya jadi latar halaman — ruang antar-kartu biasa,
+       bukan lubang di dalam kartu.
+
+       Catatan: ini BUKAN memanjangkan pembacanya (cara itu sudah dicoba di
+       537e2774 dan dibatalkan atas permintaan pemilik). Tinggi bingkainya
+       tidak disentuh sama sekali. */
+    .pld-kartu-berkas { align-self: start; }
+
     /* ===== Keterangan pelamar =====
        Baris yang isinya kosong TETAP tergambar supaya tiap keterangan selalu
        di tempat yang sama — mata mencari "telepon" di posisi, bukan dengan
@@ -259,7 +277,7 @@ Detail Pelamar Kerja || lemon
              berarti menggulung ke bawah membaca CV, lalu menggulung ke atas
              lagi untuk menekan tahapnya — bolak-balik untuk tiap pelamar. --}}
         <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-7">
+            <div class="dsb-kartu k-7 pld-kartu-berkas">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
