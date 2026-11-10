@@ -404,26 +404,35 @@ it('menampilkan nomor lamaran di SEMUA lebar layar', function () {
         ->assertSee($p->fresh()->nomor_lamaran);
 });
 
-it('membuat kartu berkas setinggi isinya, bukan setinggi kolom sebelah', function () {
+it('menyusun halaman detail jadi dua kolom yang sama-sama terisi', function () {
     /*
-     | .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
-     | tertinggi. Tinggi pembaca berkas dipatok dengan vh, jadi ia MENGECIL
-     | di jendela pendek sementara kolom kanan — yang tingginya ditentukan
-     | tulisan — tidak. Selisihnya jadi putih di dalam kartu, di bawah tombol
-     | Unduh: diukur 1px di jendela 1500px, tetapi 228px di jendela 900px.
+     | Riwayat SENGAJA berada di kolom kiri, bukan selebar penuh di bawah.
      |
-     | Tanpa penjaga ini, cacatnya tidak akan terlihat oleh siapa pun yang
-     | mengembangkan di layar tinggi — dan justru paling parah di laptop.
+     | Dulu kartu Berkas berdiri sendiri di kiri sementara kolom kanan memuat
+     | dua kartu: kolom kiri kehabisan isi lebih dulu dan meninggalkan lubang
+     | abu-abu di ANTARA kartu — 227px di jendela 900px, karena tinggi
+     | pembaca berkas dipatok dengan vh sehingga mengecil di layar pendek
+     | sementara kolom kanan tidak.
+     |
+     | Cacat seperti ini tidak pernah terlihat oleh yang mengembangkan di
+     | monitor tinggi, dan justru paling parah di laptop. Tidak ada galat
+     | yang menyertainya: halamannya tetap 200, cuma berlubang.
      */
     $gaya = file_get_contents(
         resource_path('views/livewire/pages/admin/pelamar-kerja/pelamar-kerja-detail.blade.php')
     );
 
-    preg_match_all('/<style\b[^>]*>(.*?)<\/style>/si', $gaya, $cocok);
-    $css = preg_replace('#/\*.*?\*/#s', '', implode("\n", $cocok[1]));
+    $tanpaKomentar = preg_replace('/\{\{--.*?--\}\}/s', '', $gaya);
 
-    expect($css)->toContain('.pld-kartu-berkas { align-self: start; }')
-        ->and($gaya)->toContain('dsb-kartu k-7 pld-kartu-berkas');
+    // Dua kolom, masing-masing menumpuk kartunya sendiri.
+    expect($tanpaKomentar)->toContain('class="k-7 pld-kolom"')
+        ->and($tanpaKomentar)->toContain('class="k-5 pld-kolom"')
+        // Dan TIDAK ada lagi kartu selebar penuh yang menggantung di bawah:
+        // kartu itulah yang membuat selisih tinggi kolom jadi lubang, bukan
+        // sekadar ujung halaman.
+        ->and($tanpaKomentar)->not->toContain('dsb-kartu k-12')
+        // Satu baris saja — dua baris mengembalikan masalah yang sama.
+        ->and(substr_count($tanpaKomentar, 'dsb-rak dsb-bagian'))->toBe(1);
 });
 
 it('memberi nama pada tiap tombol aksi di daftar', function () {

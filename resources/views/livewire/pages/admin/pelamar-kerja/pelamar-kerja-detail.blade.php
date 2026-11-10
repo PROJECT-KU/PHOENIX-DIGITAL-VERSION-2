@@ -13,23 +13,22 @@ Detail Pelamar Kerja || lemon
     .pld-lencana-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 7px; }
     .pld-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-    /* ===== Kartu berkas setinggi isinya, bukan setinggi kolom sebelah =====
+    /* ===== Dua kolom yang sama-sama terisi =====
 
-       .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
-       tertinggi (align-items: stretch). Tinggi pembaca berkas dipatok dengan
-       vh, jadi ia MENGECIL di jendela pendek — sementara kolom kanan tingginya
-       ditentukan tulisan dan tidak ikut mengecil. Selisihnya jadi putih di
-       dalam kartu, di bawah tombol Unduh: 1px di jendela 1500px, tapi 228px
-       di jendela 900px. Makin pendek layarnya, makin besar lubangnya.
+       Sebelumnya kartu Berkas berdiri sendiri di kiri sementara kolom kanan
+       memuat dua kartu, dan Riwayat ditaruh selebar penuh di bawah keduanya.
+       Akibatnya kolom kiri kehabisan isi lebih dulu dan meninggalkan lubang
+       abu-abu di antara kartu — 227px di jendela 900px. Diregangkan pun tidak
+       menolong: yang melar kartunya, isinya tidak.
 
-       align-self: start membuat kartunya berhenti tepat sesudah tombolnya.
-       Sisa tinggi barisnya jadi latar halaman — ruang antar-kartu biasa,
-       bukan lubang di dalam kartu.
+       Riwayat dipindahkan ke kolom kiri, di bawah Berkas, jadi kedua kolom
+       sama-sama menumpuk dua kartu. Tidak ada lagi kartu selebar penuh yang
+       menggantung di bawah, jadi tidak ada lagi lubang di ANTARA kartu;
+       selisih tinggi kedua kolom kini jatuh di ujung halaman, tempat ia
+       terbaca sebagai akhir halaman, bukan sebagai ruang yang terlewat.
 
-       Catatan: ini BUKAN memanjangkan pembacanya (cara itu sudah dicoba di
-       537e2774 dan dibatalkan atas permintaan pemilik). Tinggi bingkainya
-       tidak disentuh sama sekali. */
-    .pld-kartu-berkas { align-self: start; }
+       Kartu di dalam .pld-kolom otomatis setinggi isinya (sumbu utama flex
+       column), jadi align-self: start tidak lagi diperlukan. */
 
     /* ===== Keterangan pelamar =====
        Baris yang isinya kosong TETAP tergambar supaya tiap keterangan selalu
@@ -277,7 +276,8 @@ Detail Pelamar Kerja || lemon
              berarti menggulung ke bawah membaca CV, lalu menggulung ke atas
              lagi untuk menekan tahapnya — bolak-balik untuk tiap pelamar. --}}
         <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-7 pld-kartu-berkas">
+            <div class="k-7 pld-kolom">
+            <div class="dsb-kartu">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
@@ -297,6 +297,91 @@ Detail Pelamar Kerja || lemon
                         'aksi' => 'bukaBerkas',
                     ])
                 </div>
+            </div>
+
+            {{-- ================== RIWAYAT & CATATAN ==================
+
+                 Satu kartu, bukan dua: catatan tim DAN perubahan tahap adalah
+                 jawaban untuk pertanyaan yang sama — "apa yang sudah terjadi
+                 pada lamaran ini, oleh siapa". Dipisah, keduanya harus dibaca
+                 bergantian sambil mencocokkan tanggal sendiri. --}}
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala-kiri">
+                        <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-journal-text"></i></span>
+                        <span>
+                            <h2 class="dsb-kartu-judul">Riwayat &amp; Catatan Tim</h2>
+                            <span class="dsb-kartu-sub">Hanya terlihat di lemon — tidak pernah dikirim ke pelamar</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu-isi">
+                    @if ($bisaUbah)
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="catatanBaru">Tambah catatan</label>
+                            <textarea id="catatanBaru" rows="3" wire:model="catatanBaru" maxlength="5000"
+                                class="dsb-isian @error('catatanBaru') is-galat @enderror"
+                                placeholder="Kesan wawancara, nilai tes, rekomendasi…">{{ $catatanBaru }}</textarea>
+                            @error('catatanBaru') <span class="dsb-galat">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="pld-kaki" style="margin-top: 10px">
+                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #d97706"
+                                wire:click="simpanCatatan" wire:loading.attr="disabled" wire:target="simpanCatatan">
+                                <span wire:loading.remove wire:target="simpanCatatan" class="pld-tombol-isi">
+                                    <i class="bi bi-plus-lg"></i> Simpan catatan
+                                </span>
+                                <span wire:loading wire:target="simpanCatatan" class="pld-tombol-isi">
+                                    <span class="dsb-putar is-kecil"></span> Menyimpan…
+                                </span>
+                            </button>
+                            <span class="pld-bantu" style="align-self: center; margin: 0">
+                                Catatan lama tidak tertimpa — tiap catatan berdiri sendiri.
+                            </span>
+                        </div>
+                    @endif
+
+                    @if ($jejak->isEmpty())
+                        <div class="dsb-kosong" style="padding: 22px 0 6px">
+                            <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
+                            <p class="dsb-kosong-judul">Belum ada riwayat</p>
+                            <p class="dsb-kosong-ket">
+                                Perubahan tahap, catatan tim, dan hasil pengiriman surel akan tercatat di sini.
+                            </p>
+                        </div>
+                    @else
+                        <ul class="pld-jejak" style="margin-top: {{ $bisaUbah ? '20px' : '4px' }}">
+                            @foreach ($jejak as $baris)
+                                @php
+                                    [$ikonJejak, $judulJejak] = $jenisJejak[$baris->jenis] ?? ['bi-dot', 'Catatan'];
+                                    $warnaJejak = $baris->ke_status
+                                        ? ($warnaBs[$daftarStatus[$baris->ke_status][1] ?? 'secondary'] ?? '#94a3b8')
+                                        : '#94a3b8';
+                                @endphp
+                                <li class="pld-jejak-baris" wire:key="jejak-{{ $baris->id }}" style="--c: {{ $warnaJejak }}">
+                                    <div class="pld-jejak-judul">
+                                        <i class="bi {{ $ikonJejak }}"></i>
+                                        @if ($baris->jenis === 'tahap')
+                                            {{ $daftarStatus[$baris->dari_status][0] ?? $baris->dari_status ?? '—' }}
+                                            →
+                                            {{ $daftarStatus[$baris->ke_status][0] ?? $baris->ke_status }}
+                                        @else
+                                            {{ $judulJejak }}
+                                        @endif
+                                    </div>
+                                    <div class="pld-jejak-meta">
+                                        {{ $baris->penulis_label }} · {{ $baris->waktu_label }} WIB
+                                    </div>
+                                    @if ($baris->isi)
+                                        <div class="pld-jejak-isi">{{ $baris->isi }}</div>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
             </div>
 
             <div class="k-5 pld-kolom">
@@ -505,91 +590,5 @@ Detail Pelamar Kerja || lemon
             </div>
         </div>
 
-        {{-- ================== RIWAYAT ================== --}}
-        <div class="dsb-rak dsb-bagian">
-            {{-- ================== RIWAYAT & CATATAN ==================
-
-                 Satu kartu, bukan dua: catatan tim DAN perubahan tahap adalah
-                 jawaban untuk pertanyaan yang sama — "apa yang sudah terjadi
-                 pada lamaran ini, oleh siapa". Dipisah, keduanya harus dibaca
-                 bergantian sambil mencocokkan tanggal sendiri. --}}
-            <div class="dsb-kartu k-12">
-                <div class="dsb-kartu-kepala">
-                    <div class="dsb-kartu-kepala-kiri">
-                        <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-journal-text"></i></span>
-                        <span>
-                            <h2 class="dsb-kartu-judul">Riwayat &amp; Catatan Tim</h2>
-                            <span class="dsb-kartu-sub">Hanya terlihat di lemon — tidak pernah dikirim ke pelamar</span>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="dsb-kartu-isi">
-                    @if ($bisaUbah)
-                        <div class="dsb-medan">
-                            <label class="dsb-label" for="catatanBaru">Tambah catatan</label>
-                            <textarea id="catatanBaru" rows="3" wire:model="catatanBaru" maxlength="5000"
-                                class="dsb-isian @error('catatanBaru') is-galat @enderror"
-                                placeholder="Kesan wawancara, nilai tes, rekomendasi…">{{ $catatanBaru }}</textarea>
-                            @error('catatanBaru') <span class="dsb-galat">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div class="pld-kaki" style="margin-top: 10px">
-                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #d97706"
-                                wire:click="simpanCatatan" wire:loading.attr="disabled" wire:target="simpanCatatan">
-                                <span wire:loading.remove wire:target="simpanCatatan" class="pld-tombol-isi">
-                                    <i class="bi bi-plus-lg"></i> Simpan catatan
-                                </span>
-                                <span wire:loading wire:target="simpanCatatan" class="pld-tombol-isi">
-                                    <span class="dsb-putar is-kecil"></span> Menyimpan…
-                                </span>
-                            </button>
-                            <span class="pld-bantu" style="align-self: center; margin: 0">
-                                Catatan lama tidak tertimpa — tiap catatan berdiri sendiri.
-                            </span>
-                        </div>
-                    @endif
-
-                    @if ($jejak->isEmpty())
-                        <div class="dsb-kosong" style="padding: 22px 0 6px">
-                            <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
-                            <p class="dsb-kosong-judul">Belum ada riwayat</p>
-                            <p class="dsb-kosong-ket">
-                                Perubahan tahap, catatan tim, dan hasil pengiriman surel akan tercatat di sini.
-                            </p>
-                        </div>
-                    @else
-                        <ul class="pld-jejak" style="margin-top: {{ $bisaUbah ? '20px' : '4px' }}">
-                            @foreach ($jejak as $baris)
-                                @php
-                                    [$ikonJejak, $judulJejak] = $jenisJejak[$baris->jenis] ?? ['bi-dot', 'Catatan'];
-                                    $warnaJejak = $baris->ke_status
-                                        ? ($warnaBs[$daftarStatus[$baris->ke_status][1] ?? 'secondary'] ?? '#94a3b8')
-                                        : '#94a3b8';
-                                @endphp
-                                <li class="pld-jejak-baris" wire:key="jejak-{{ $baris->id }}" style="--c: {{ $warnaJejak }}">
-                                    <div class="pld-jejak-judul">
-                                        <i class="bi {{ $ikonJejak }}"></i>
-                                        @if ($baris->jenis === 'tahap')
-                                            {{ $daftarStatus[$baris->dari_status][0] ?? $baris->dari_status ?? '—' }}
-                                            →
-                                            {{ $daftarStatus[$baris->ke_status][0] ?? $baris->ke_status }}
-                                        @else
-                                            {{ $judulJejak }}
-                                        @endif
-                                    </div>
-                                    <div class="pld-jejak-meta">
-                                        {{ $baris->penulis_label }} · {{ $baris->waktu_label }} WIB
-                                    </div>
-                                    @if ($baris->isi)
-                                        <div class="pld-jejak-isi">{{ $baris->isi }}</div>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-            </div>
-        </div>
     </div>
 </div>
