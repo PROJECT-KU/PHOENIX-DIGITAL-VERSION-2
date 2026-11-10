@@ -416,7 +416,10 @@ it('membuka lowongan beberapa kali tidak menghabiskan jatah kirim lamaran', func
 it('admin mengubah tahap: tersimpan dan pelamar mendapat surel berisi pesan', function () {
     Storage::fake('local');
     Mail::fake();
-    $admin = penggunaSitus(['view_pelamar']);
+    // 'edit_pelamar' dipisah dari 'view_pelamar' sejak 10 Nov 2026: mengubah
+    // tahap ikut mengirim surel ke pelamar, jadi hak membaca tidak lagi
+    // sekaligus berarti hak memutuskan.
+    $admin = penggunaSitus(['view_pelamar', 'edit_pelamar']);
     kirimLamaranUji();
     $lamaran = \App\Models\JobApplication::where('email', 'rina@gmail.com')->firstOrFail();
 
@@ -426,13 +429,16 @@ it('admin mengubah tahap: tersimpan dan pelamar mendapat surel berisi pesan', fu
         ->set('pesanPelamar', 'Senin pukul 10.00 lewat Google Meet.')
         ->call('simpanStatus')
         ->assertHasNoErrors()
-        ->set('catatanInternal', 'Komunikatif.')
+        ->set('catatanBaru', 'Komunikatif.')
         ->call('simpanCatatan');
 
     $lamaran->refresh();
     expect($lamaran->status)->toBe('wawancara')
         ->and($lamaran->status_diubah_at)->not->toBeNull()
-        ->and($lamaran->catatan_internal)->toBe('Komunikatif.');
+        // Catatan tim kini baris riwayat bertanda penulis & waktu, bukan satu
+        // kotak teks yang ditimpa penulis berikutnya.
+        ->and(\App\Models\JejakLamaran::where('job_application_id', $lamaran->id)
+            ->where('jenis', 'catatan')->value('isi'))->toBe('Komunikatif.');
 
     Mail::assertSent(\App\Mail\StatusLamaranMail::class, fn ($m) => $m->hasTo('rina@gmail.com') && $m->pesan === 'Senin pukul 10.00 lewat Google Meet.');
 

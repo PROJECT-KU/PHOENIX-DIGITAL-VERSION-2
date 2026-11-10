@@ -31,7 +31,11 @@ class PermissionAccessSeeder extends Seeder
         'gajikaryawan' => ['Gaji Karyawan', ['view', 'create', 'edit', 'delete']],
         'karyawan' => ['Karyawan', ['view', 'create', 'edit', 'delete']],
         'lowongan' => ['Lowongan Kerja', ['view', 'create', 'edit', 'delete']],
-        'pelamar' => ['Pelamar', ['view', 'delete']],
+        // 'edit' = mengubah tahap seleksi, menulis catatan tim, dan karena
+        // itu memicu surel ke pelamar. Dipisah dari 'view' sejak 10 Nov 2026:
+        // surel yang sudah keluar tidak bisa ditarik, jadi hak membacanya
+        // tidak boleh sekaligus berarti hak memutuskan.
+        'pelamar' => ['Pelamar', ['view', 'edit', 'delete']],
         'message' => ['Pesan Masuk', ['view', 'delete']],
         'roles' => ['Role', ['view', 'create', 'edit', 'delete']],
         'permission' => ['Permission', ['view', 'create', 'edit', 'delete']],

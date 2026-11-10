@@ -94,6 +94,23 @@
         }
         .pt-kartu-deret::-webkit-scrollbar { display: none; }
         .pt-kartu-tab { flex: 0 0 104px; min-height: 96px; scroll-snap-align: start; }
+
+        /* Tanda bahwa deretnya masih berlanjut ke kanan.
+
+           Bilah gulungnya sengaja disembunyikan, dan tanpa penggantinya kartu
+           terakhir terpotong rata di tepi layar — terbaca sebagai "memang
+           cuma segitu", bukan sebagai "masih ada lagi, geser". Kabut tipis
+           ini satu-satunya petunjuknya. Dipasang di sistem desain, bukan di
+           satu layar: tiap layar yang memakai deret ini punya cacat yang sama.
+
+           pointer-events: none — kalau tidak, kabutnya menelan sentuhan pada
+           kartu di bawahnya dan tab paling kanan tidak bisa ditekan. */
+        .pt-grup { position: relative; }
+        .pt-grup::after {
+            content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 26px;
+            pointer-events: none; border-radius: 0 18px 18px 0;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff 78%);
+        }
     }
 </style>
 @endonce

@@ -23,9 +23,95 @@ Data Pelamar Kerja || lemon
     }
     .plm-tautan { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 11px; min-width: 0; }
     .plm-tautan:hover .dsb-tabel-judul { color: #6d28d9; text-decoration: underline; }
-    .plm-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; }
-    .plm-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; }
+    .plm-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
     .plm-samar { color: var(--dsb-redup); }
+
+    /* Nomor lamaran SELALU terlihat.
+
+       Dulu memakai .dsb-tabel-samar, yang di sistem desain berarti "salinan
+       kolom yang hilang di layar sempit": ia disembunyikan di layar lebar DAN
+       di ponsel, jadi nomornya cuma muncul di rentang tablet. Padahal nomor
+       inilah kunci pelamar mengecek statusnya sendiri, dan satu-satunya yang
+       dicari admin saat pelamar menyebutkannya lewat telepon. */
+    .plm-nomor {
+        display: block; margin-top: 2px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: .72rem; color: var(--dsb-redup, #6b7280); letter-spacing: .02em;
+    }
+
+    /* Keterangan kecil di bawah tanggal (mis. "berkas sudah dihapus").
+
+       Sebelumnya ditulis "dsb-tabel-samar d-block" — dan .d-block Bootstrap
+       ber-!important, jadi ia justru selalu tampil sementara nomor lamaran di
+       baris sebelahnya selalu hilang. Dua kelas yang sama, dua hasil
+       berlawanan, dua-duanya tidak disengaja. */
+    .plm-catatan-sel { display: block; margin-top: 2px; font-size: .74rem; color: var(--dsb-redup, #6b7280); }
+
+    /* Email panjang di ponsel.
+
+       Alamat seperti bertojunikrisnanto@gmail.com lebih lebar dari kartu
+       390px: tanpa ini ikon amplopnya terlempar ke barisnya sendiri dan
+       alamatnya menabrak tepi kartu. */
+    .plm-tabel .dsb-tabel-meta > span { min-width: 0; }
+    .plm-tabel .dsb-tabel-meta { overflow-wrap: anywhere; }
+
+    /* Tanda bahwa lamaran ini belum pernah dibuka siapa pun. */
+    .plm-baru {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+        color: #b45309;
+    }
+    .plm-baru .plm-titik { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; }
+
+    /* ===== Aksi massal ===== */
+    .plm-massal {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        padding: 11px 13px; margin: 0 0 2px; border-radius: 12px;
+        background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; font-size: .83rem;
+    }
+    .plm-massal-isi { flex: 1 1 200px; min-width: 0; }
+    .plm-massal select { max-width: 220px; }
+    .plm-cek { width: 16px; height: 16px; accent-color: #7c3aed; cursor: pointer; vertical-align: middle; }
+    .plm-kolom-cek { width: 38px; }
+
+    /* Nama tombol aksi: tersembunyi dari mata di layar lebar, tetap terbaca
+       pembaca layar. Bukan display:none — yang itu ikut menghilangkannya dari
+       pembaca layar juga. */
+    .plm-aksi-teks {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    @media (max-width: 767.98px) {
+        .plm-aksi-teks {
+            position: static; width: auto; height: auto; margin: 0;
+            overflow: visible; clip: auto; white-space: normal;
+        }
+    }
+    @media (max-width: 767.98px) {
+        /* Di kartu ponsel, centangnya ikut baris "Pilih" biasa. */
+        .plm-kolom-cek { width: auto; }
+
+        /* Tiga sel yang isinya PANJANG memakai lebar penuh kartu.
+
+           Bawaan kartu ponsel menaruh label di kiri dan nilainya di kanan
+           pada baris yang sama — bagus untuk "Tahap: Wawancara", tetapi
+           menyisakan sekitar 230px untuk alamat email, dan alamat seperti
+           bertojunikrisnanto@gmail.com lalu patah di tengah kata. Hal yang
+           sama memotong tulisan "berkas belum dibuka" di tepi kartu dan
+           menumpuk tombol aksi jadi tiga baris. */
+        .plm-tabel tbody td[data-judul="Pelamar"],
+        .plm-tabel tbody td[data-judul="Melamar"],
+        .plm-tabel tbody td[data-judul="Aksi"] { display: block; }
+        .plm-tabel tbody td[data-judul="Pelamar"]::before,
+        .plm-tabel tbody td[data-judul="Melamar"]::before,
+        .plm-tabel tbody td[data-judul="Aksi"]::before { display: block; margin-bottom: 6px; }
+        /* !important di sini melawan !important yang lain: selnya memakai
+           .text-end Bootstrap (text-align: right !important) supaya tombolnya
+           rata kanan di tabel layar lebar. Di kartu ponsel label "AKSI"
+           ikut terlempar ke kanan sementara tombolnya di kiri. */
+        .plm-tabel tbody td[data-judul="Aksi"] { text-align: left !important; }
+        .plm-aksi { justify-content: flex-start; }
+    }
 
     /* Keterangan "sedang membaca pelamar posisi X", saat layar ini dibuka
        lewat tautan dari daftar Lowongan. Tanpa itu, daftar yang tersaring
@@ -52,7 +138,12 @@ Data Pelamar Kerja || lemon
             '' => 'bi-collection', 'baru' => 'bi-inbox-fill', 'diseleksi' => 'bi-file-earmark-text',
             'wawancara' => 'bi-chat-dots-fill', 'diterima' => 'bi-check-circle-fill', 'ditolak' => 'bi-slash-circle',
         ];
-        $targetMuat = 'search,filterMonth,filterJob,filterStatus,setTahap,resetFilters,gotoPage,previousPage,nextPage';
+        $targetMuat = 'search,filterMonth,filterJob,filterStatus,setTahap,resetFilters,urutkan,terapkanTahapMassal,gotoPage,previousPage,nextPage';
+        $bisaUbah = $this->bisaUbah;
+        $idHalaman = $dataPelamar->pluck('id')->map(fn ($n) => (string) $n)->all();
+        $semuaTercentang = $idHalaman !== [] && empty(array_diff($idHalaman, array_map('strval', $pilihan)));
+        // Kolom yang bisa diurut: kunci => judul.
+        $kolomUrut = ['nama' => 'Pelamar', 'posisi' => 'Posisi', 'tahap' => 'Tahap', 'terbaru' => 'Melamar'];
         $avatarGrad = ['#7c3aed,#6d28d9', '#2563eb,#0ea5e9', '#059669,#10b981', '#e11d48,#f43f5e', '#d97706,#f59e0b'];
     @endphp
 
@@ -209,9 +300,11 @@ Data Pelamar Kerja || lemon
                         <span>
                             @if ($dataPelamar->total() > 0)
                                 {{ number_format($dataPelamar->total(), 0, ',', '.') }} pelamar
-                                @if ($tahapAktif === 'baru')
-                                    — belum ada yang membuka berkasnya
-                                @endif
+                                {{-- Dulu di sini tertulis "belum ada yang membuka berkasnya" untuk
+                                     tahap 'baru' — kalimat yang tidak pernah didukung data apa pun:
+                                     tidak ada yang mencatat siapa membuka apa. Sekarang berkas yang
+                                     dibuka benar-benar ditandai, dan tandanya ada per baris, bukan
+                                     sebagai kesimpulan atas seluruh tumpukan. --}}
                             @else
                                 Belum ada isinya
                             @endif
@@ -236,14 +329,60 @@ Data Pelamar Kerja || lemon
                         </div>
                     </div>
                 @else
+                    @if ($bisaUbah && count($pilihan) > 0)
+                        {{-- Aksi massal TIDAK mengirim surel, dan itu disebutkan di
+                             sini, bukan cuma di kode. Satu klik yang mengirim belasan
+                             surel tanpa pesan pribadi adalah kesalahan yang tidak bisa
+                             ditarik kembali. --}}
+                        <div class="dsb-kartu-isi" style="padding-bottom: 0">
+                            <div class="plm-massal">
+                                <span class="plm-massal-isi">
+                                    <i class="bi bi-check2-square"></i>
+                                    <strong>{{ count($pilihan) }} pelamar</strong> dicentang.
+                                    Memindahkan tahapnya di sini <strong>tidak mengirim surel</strong> —
+                                    untuk memberi tahu pelamar, buka lamarannya satu per satu.
+                                </span>
+                                <select wire:model="tahapMassal" class="dsb-isian" aria-label="Tahap tujuan">
+                                    <option value="" @selected($this->tahapMassal === '')>Pindahkan ke tahap…</option>
+                                    @foreach (\App\Models\JobApplication::STATUS as $kunciMassal => $infoMassal)
+                                        <option value="{{ $kunciMassal }}" @selected($this->tahapMassal === $kunciMassal)>
+                                            {{ $infoMassal[0] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="button" class="dsb-tombol is-utama" wire:click="terapkanTahapMassal"
+                                    wire:loading.attr="disabled" wire:target="terapkanTahapMassal">
+                                    <i class="bi bi-arrow-right-circle"></i><span>Pindahkan</span>
+                                </button>
+                                <button type="button" class="dsb-tombol is-lembut" wire:click="bersihkanPilihan">
+                                    <i class="bi bi-x-lg"></i><span>Batal</span>
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="dsb-tabel-bungkus">
                         <table class="dsb-tabel plm-tabel">
                             <thead>
                                 <tr>
-                                    <th>Pelamar</th>
-                                    <th>Posisi</th>
-                                    <th>Tahap</th>
-                                    <th>Melamar</th>
+                                    @if ($bisaUbah)
+                                        <th class="plm-kolom-cek">
+                                            <input type="checkbox" class="plm-cek" title="Centang semua di halaman ini"
+                                                aria-label="Centang semua pelamar di halaman ini"
+                                                wire:click="{{ $semuaTercentang ? 'bersihkanPilihan' : 'pilihHalaman' }}"
+                                                @checked($semuaTercentang)>
+                                        </th>
+                                    @endif
+                                    @foreach ($kolomUrut as $kunciUrut => $judulUrut)
+                                        <th wire:key="kolom-{{ $kunciUrut }}">
+                                            <button type="button" wire:click="urutkan('{{ $kunciUrut }}')"
+                                                class="dsb-tabel-urut {{ $urut === $kunciUrut ? 'aktif' : '' }}"
+                                                title="Urutkan menurut {{ strtolower($judulUrut) }}">
+                                                <span>{{ $judulUrut }}</span>
+                                                <i class="bi {{ $urut === $kunciUrut ? ($arahUrut === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up' }}"></i>
+                                            </button>
+                                        </th>
+                                    @endforeach
                                     <th class="text-end">Aksi</th>
                                 </tr>
                             </thead>
@@ -256,9 +395,20 @@ Data Pelamar Kerja || lemon
                                         ];
                                         $rupaTahap = $lencanaBs[$item->status_warna] ?? 'is-abu';
                                         $urlDetail = route('admin.pelamar.detail', $item->id);
-                                        $adaBerkas = (bool) ($item->cv_path || $item->cover_letter_path || $item->lampiran_path);
+                                        $adaBerkas = $item->ada_berkas;
+                                        $belumDibuka = $adaBerkas && ! $item->berkas_dibuka_at;
+                                        $jumlahLamaran = $emailBerulang[$item->email] ?? 0;
+                                        $tercentang = in_array((string) $item->id, array_map('strval', $pilihan), true);
                                     @endphp
                                     <tr wire:key="pelamar-{{ $item->id }}">
+                                        @if ($bisaUbah)
+                                            <td data-judul="Pilih" class="plm-kolom-cek">
+                                                <input type="checkbox" class="plm-cek" value="{{ $item->id }}"
+                                                    wire:model.live="pilihan" @checked($tercentang)
+                                                    aria-label="Pilih {{ $item->name }}">
+                                            </td>
+                                        @endif
+
                                         {{-- ===== Pelamar ===== --}}
                                         <td data-judul="Pelamar">
                                             <a wire:navigate href="{{ $urlDetail }}" class="plm-tautan">
@@ -271,9 +421,21 @@ Data Pelamar Kerja || lemon
                                                     <span class="dsb-tabel-meta">
                                                         <span><i class="bi bi-envelope"></i>{{ $item->email }}</span>
                                                     </span>
-                                                    <span class="dsb-tabel-samar plm-nomor">{{ $item->nomor_lamaran }}</span>
+                                                    <span class="plm-nomor">{{ $item->nomor_lamaran }}</span>
                                                 </span>
                                             </a>
+
+                                            @if ($jumlahLamaran > 1)
+                                                {{-- Orang yang sama punya lamaran lain. Dihitung dari
+                                                     SELURUH data, bukan halaman ini saja — lamaran
+                                                     ganda justru paling sering terpisah beberapa
+                                                     halaman, dan tanpa tanda ini dua baris itu
+                                                     diperlakukan sebagai dua orang. --}}
+                                                <span class="dsb-lencana is-kuning" style="margin-top: 6px"
+                                                    title="Email yang sama punya {{ $jumlahLamaran }} lamaran">
+                                                    <i class="bi bi-people"></i>{{ $jumlahLamaran }} lamaran
+                                                </span>
+                                            @endif
                                         </td>
 
                                         <td data-judul="Posisi">
@@ -290,7 +452,17 @@ Data Pelamar Kerja || lemon
                                                 {{-- Berkasnya sudah dihapus sesuai masa simpan. Disebut
                                                      di sini supaya admin tidak mengira sistemnya rusak
                                                      saat tombol unduh di halaman detail tidak ada. --}}
-                                                <span class="dsb-tabel-samar d-block">berkas sudah dihapus</span>
+                                                <span class="plm-catatan-sel">berkas sudah dihapus</span>
+                                            @elseif ($belumDibuka)
+                                                {{-- "Belum dibuka" sekarang BENAR-BENAR dicatat, saat
+                                                     berkasnya disajikan ke peramban. Dulu kalimat ini
+                                                     cuma menebak dari status 'baru': berkas yang sudah
+                                                     dibaca sepuluh kali tetap tertulis belum dibuka. --}}
+                                                <span class="plm-catatan-sel">
+                                                    <span class="plm-baru">
+                                                        <span class="plm-titik"></span>berkas belum dibuka
+                                                    </span>
+                                                </span>
                                             @endif
                                         </td>
 
@@ -303,23 +475,35 @@ Data Pelamar Kerja || lemon
                                                      membuka halaman detail, lalu kembali ke daftar yang
                                                      sudah ter-reset — dan membaca sepuluh CV berarti
                                                      sepuluh kali begitu. --}}
+                                                {{-- Tiap tombol membawa namanya sendiri.
+
+                                                     Di layar lebar namanya disembunyikan (.plm-aksi-teks)
+                                                     supaya kolomnya tetap ramping, tapi tetap terbaca
+                                                     pembaca layar dan muncul sebagai tooltip; di kartu
+                                                     ponsel namanya ditampilkan, karena di sana ruangnya
+                                                     ada dan tiga ikon berjajar tanpa tulisan hanya bisa
+                                                     ditebak. --}}
                                                 @if ($adaBerkas)
                                                     <button type="button" wire:click="bukaPratinjau({{ $item->id }})"
                                                         class="dsb-tombol is-lembut" style="--ikon: #dc2626"
-                                                        title="Baca berkasnya di sini">
+                                                        title="Baca berkas {{ $item->name }} di sini">
                                                         <i class="bi bi-file-earmark-text"></i>
+                                                        <span class="plm-aksi-teks">Baca berkas</span>
                                                     </button>
                                                 @endif
 
                                                 <a wire:navigate href="{{ $urlDetail }}"
-                                                    class="dsb-tombol is-lembut" style="--ikon: #0284c7" title="Buka lamaran ini">
+                                                    class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                                                    title="Buka lamaran {{ $item->name }}">
                                                     <i class="bi bi-eye"></i>
+                                                    <span class="plm-aksi-teks">Buka lamaran</span>
                                                 </a>
                                                 @if ($bisaHapus)
                                                     <button type="button" class="dsb-tombol is-bahaya delete-pelamar-btn"
                                                         data-id="{{ $item->id }}" data-name="{{ $item->name }}"
-                                                        title="Hapus lamaran ini">
+                                                        title="Hapus lamaran {{ $item->name }}">
                                                         <i class="bi bi-trash"></i>
+                                                        <span class="plm-aksi-teks">Hapus</span>
                                                     </button>
                                                 @endif
                                             </span>

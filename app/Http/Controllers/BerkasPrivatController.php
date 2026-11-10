@@ -24,19 +24,54 @@ class BerkasPrivatController extends Controller
     /** CV pelamar kerja. */
     public function cvPelamar(JobApplication $pelamar)
     {
+        $this->tandaiDibuka($pelamar);
+
         return $this->sajikan($pelamar->cv_path, 'cv-'.$pelamar->name.'.pdf');
     }
 
     /** Surat lamaran pelamar kerja. */
     public function suratPelamar(JobApplication $pelamar)
     {
+        $this->tandaiDibuka($pelamar);
+
         return $this->sajikan($pelamar->cover_letter_path, 'surat-lamaran-'.$pelamar->name.'.pdf');
     }
 
     /** Berkas pendukung pelamar kerja (opsional). */
     public function lampiranPelamar(JobApplication $pelamar)
     {
+        $this->tandaiDibuka($pelamar);
+
         return $this->sajikan($pelamar->lampiran_path, 'berkas-pendukung-'.$pelamar->name.'.pdf');
+    }
+
+    /**
+     * Catat bahwa berkas lamaran ini sudah pernah dibuka seseorang.
+     *
+     * Dicatat DI SINI, bukan saat halaman detail dibuka: yang menandakan
+     * berkasnya benar-benar dibaca adalah berkasnya diambil, dan di layar
+     * daftar pun berkas bisa dibaca tanpa pernah membuka halaman detail.
+     *
+     * Hanya yang PERTAMA yang disimpan. Yang ingin dijawab kolom ini adalah
+     * "sudah ada yang menyentuh lamaran ini atau belum" — menimpanya tiap
+     * kali berkas dibuka mengubahnya jadi "terakhir dilihat", dan tumpukan
+     * yang belum dikerjakan tidak lagi bisa dibedakan.
+     */
+    private function tandaiDibuka(JobApplication $pelamar): void
+    {
+        if ($pelamar->berkas_dibuka_at) {
+            return;
+        }
+
+        // updated_at sengaja TIDAK disentuh: membuatnya bergerak berarti
+        // lamaran ini terlihat "baru diurus", dan pemangkas berkas
+        // kedaluwarsa — yang menghitung dari sana — ikut terkecoh.
+        $pelamar->timestamps = false;
+        $pelamar->forceFill([
+            'berkas_dibuka_at' => now(),
+            'berkas_dibuka_oleh' => auth()->user()?->name,
+        ])->saveQuietly();
+        $pelamar->timestamps = true;
     }
 
     /** Lampiran tiket helpdesk (kiriman pelanggan maupun tambahan admin). */
