@@ -334,18 +334,24 @@ Data Pelamar Kerja || lemon
         </div>
     </div>
 
-    {{-- ================== JENDELA PEMBACA BERKAS ================== --}}
+    {{-- ================== JENDELA PEMBACA BERKAS ==================
+
+         Memakai kerangka .ts-modal milik sistem desain, BUKAN lapisan
+         sendiri. Lapisan buatan sendiri tadinya ber-z-index 1050/1051 —
+         di bawah bilah samping, jadi jendelanya tertindih dan separuh
+         kirinya hilang. Kerangka bersama sudah memakai 1055/1056 dan
+         sudah terbukti di empat jendela layar Task. --}}
     @if ($pratinjau)
-        <div class="pbk-latar" wire:click="tutupPratinjau"></div>
-        <div class="pbk-jendela" wire:key="pratinjau-{{ $pratinjau->id }}">
-            <div class="pbk-kotak dsb" role="dialog" aria-modal="true"
+        <div class="ts-modal-back" wire:click="tutupPratinjau"></div>
+        <div class="ts-modal" wire:key="pratinjau-{{ $pratinjau->id }}">
+            <div class="ts-modal-card dsb is-datar is-pembaca" role="dialog" aria-modal="true"
                 aria-label="Berkas lamaran {{ $pratinjau->name }}" tabindex="-1"
-                x-data x-on:keydown.escape.window="$wire.tutupPratinjau()">
-                <div class="pbk-kotak-kepala">
+                x-on:keydown.escape.window="$wire.tutupPratinjau()">
+                <div class="dsb-jendela-kepala">
                     <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
-                    <span class="pbk-kotak-teks">
-                        <h2 class="pbk-kotak-judul text-capitalize">{{ $pratinjau->name }}</h2>
-                        <span class="pbk-kotak-sub">
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul text-capitalize">{{ $pratinjau->name }}</h5>
+                        <span class="dsb-kartu-sub">
                             {{ $pratinjau->posisi_label }} · {{ $pratinjau->nomor_lamaran }}
                         </span>
                     </span>
@@ -353,12 +359,12 @@ Data Pelamar Kerja || lemon
                         class="dsb-tombol is-lembut" style="--ikon: #0284c7" title="Buka lamaran selengkapnya">
                         <i class="bi bi-eye"></i><span>Selengkapnya</span>
                     </a>
-                    <button type="button" class="pbk-tutup" wire:click="tutupPratinjau" title="Tutup">
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupPratinjau" title="Tutup">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
 
-                <div class="pbk-kotak-isi">
+                <div class="dsb-jendela-isi">
                     @include('livewire.pages.admin.pelamar-kerja.partials.berkas-pratinjau', [
                         'pelamar' => $pratinjau,
                         'aktif' => $berkasAktif,

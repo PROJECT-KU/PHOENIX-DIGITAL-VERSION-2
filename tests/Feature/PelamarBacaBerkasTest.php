@@ -68,7 +68,7 @@ it('menggambar pembaca berkas di halaman detail, bukan tiga kartu bertumpuk', fu
     Livewire::actingAs(adminBacaBerkas())
         ->test(PelamarKerjaDetail::class, ['id' => $p->id])
         ->assertSee('Dibaca langsung di sini')
-        ->assertSeeHtml('<iframe src="'.route('admin.pelamar.cv', $p).'#view=FitH"')
+        ->assertSeeHtml('data-pdf="'.route('admin.pelamar.cv', $p).'"')
         // Tab berkas lain tetap terlihat walau belum dibuka.
         ->assertSee('Surat Lamaran')
         ->assertSee('Berkas Pendukung');
@@ -80,8 +80,8 @@ it('berpindah tab menukar berkas yang dibaca', function () {
     Livewire::actingAs(adminBacaBerkas())
         ->test(PelamarKerjaDetail::class, ['id' => $p->id])
         ->call('bukaBerkas', 'surat')
-        ->assertSeeHtml('<iframe src="'.route('admin.pelamar.surat', $p).'#view=FitH"')
-        ->assertDontSeeHtml('<iframe src="'.route('admin.pelamar.cv', $p).'#view=FitH"');
+        ->assertSeeHtml('data-pdf="'.route('admin.pelamar.surat', $p).'"')
+        ->assertDontSeeHtml('data-pdf="'.route('admin.pelamar.cv', $p).'"');
 });
 
 it('membuka tab berkas yang MEMANG ADA, bukan selalu CV', function () {
@@ -109,13 +109,13 @@ it('daftar bisa membaca berkas tanpa meninggalkan halamannya', function () {
         ->test(PelamarKerjaList::class)
         ->set('search', 'Budi');
 
-    $komponen->assertDontSeeHtml('<iframe')
+    $komponen->assertDontSeeHtml('data-pdf=')
         ->call('bukaPratinjau', $p->id)
-        ->assertSeeHtml('<iframe src="'.route('admin.pelamar.cv', $p).'#view=FitH"')
+        ->assertSeeHtml('data-pdf="'.route('admin.pelamar.cv', $p).'"')
         // Saringannya TIDAK ikut hilang: itu seluruh gunanya dibaca di sini.
         ->assertSet('search', 'Budi');
 
-    $komponen->call('tutupPratinjau')->assertDontSeeHtml('<iframe');
+    $komponen->call('tutupPratinjau')->assertDontSeeHtml('data-pdf=');
 });
 
 it('tidak menawarkan baca berkas bila tidak ada berkasnya', function () {
@@ -139,4 +139,40 @@ it('menolak membuka pratinjau tanpa izin melihat pelamar', function () {
         // TIDAK merambat keluar sebagai exception, jadi assertForbidden()
         // yang dipakai — bukan ->throws().
         ->assertForbidden();
+});
+
+it('menggambar PDF sendiri, tidak menyerahkannya ke penampil peramban', function () {
+    /*
+     | <iframe src="berkas.pdf"> bergantung pada setelan peramban. Chrome
+     | yang disetel "Download PDFs instead of automatically opening them"
+     | menggantinya dengan kotak abu bertombol "Open" — isinya tidak pernah
+     | terbaca tanpa satu klik lagi, dan setelan itu ada di mesin tiap admin,
+     | bukan di tangan kita.
+     */
+    $p = pelamarBacaBerkas();
+
+    Livewire::actingAs(adminBacaBerkas())
+        ->test(PelamarKerjaDetail::class, ['id' => $p->id])
+        ->assertDontSeeHtml('<iframe');
+
+    expect(file_get_contents(resource_path(
+        'views/livewire/pages/admin/pelamar-kerja/partials/berkas-gaya.blade.php'
+    )))->toContain('pdf.js/3.11.174');
+});
+
+it('jendela pembaca memakai kerangka jendela bersama, bukan lapisan sendiri', function () {
+    /*
+     | Lapisan buatan sendiri ber-z-index 1050/1051 duduk DI BAWAH bilah
+     | samping: jendelanya tertindih dan separuh kirinya hilang. Kerangka
+     | bersama (.ts-modal, 1055/1056) sudah terbukti di empat jendela layar
+     | Task, dan ikut mengunci guliran halaman di belakangnya.
+     */
+    $p = pelamarBacaBerkas();
+
+    Livewire::actingAs(adminBacaBerkas())
+        ->test(PelamarKerjaList::class)
+        ->call('bukaPratinjau', $p->id)
+        ->assertSeeHtml('class="ts-modal-back"')
+        ->assertSeeHtml('ts-modal-card dsb is-datar is-pembaca')
+        ->assertDontSeeHtml('pbk-latar');
 });

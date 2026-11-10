@@ -76,20 +76,28 @@
         </div>
 
         @if ($urlAktif)
-            {{-- Dibaca langsung di sini, tanpa diunduh dulu.
+            {{-- Digambar SENDIRI lewat pdf.js (lihat berkas-gaya), bukan
+                 diserahkan ke penampil PDF peramban.
 
-                 BerkasPrivatController menyajikannya dengan Content-Disposition
-                 "inline" (Storage::response, bukan ->download), jadi peramban
-                 menggambarnya di tempat. Tombol unduh tetap disediakan untuk
-                 yang mau membacanya di luar layar ini. --}}
-            <div class="pbk-bingkai">
-                <iframe src="{{ $urlAktif }}#view=FitH" title="{{ $terpilih[1] }} {{ $pelamar->name }}"
-                    wire:key="pbk-{{ $pelamar->id }}-{{ $aktif }}"></iframe>
+                 <iframe src="berkas.pdf"> bergantung pada setelan peramban:
+                 Chrome yang disetel "Download PDFs instead of automatically
+                 opening them" menggantinya dengan kotak abu bertombol
+                 "Open", dan isinya tidak pernah terbaca tanpa satu klik
+                 lagi. Setelan itu ada di mesin tiap admin, bukan di tangan
+                 kita.
+
+                 wire:key memuat kunci berkasnya: tanpa itu Livewire memakai
+                 ulang wadah yang sama saat tab berganti, dan halaman CV
+                 tetap tergambar di tab Surat Lamaran. --}}
+            <div class="pbk-bingkai" data-pdf="{{ $urlAktif }}"
+                wire:key="pbk-{{ $pelamar->id }}-{{ $aktif }}"
+                aria-label="{{ $terpilih[1] }} {{ $pelamar->name }}">
+                <p class="pbk-muat">Membuka berkas…</p>
             </div>
 
             <div class="pbk-kaki">
                 <span class="pbk-kaki-ket">
-                    Tidak tergambar? Sebagian peramban menolak menampilkan PDF di dalam halaman.
+                    Perlu memperbesar atau mencetak? Pakai <em>Buka di tab baru</em>.
                 </span>
                 <span class="pbk-kaki-aksi">
                     <a href="{{ $urlAktif }}" target="_blank" rel="noopener"
