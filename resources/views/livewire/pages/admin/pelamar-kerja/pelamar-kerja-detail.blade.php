@@ -13,34 +13,92 @@ Detail Pelamar Kerja || lemon
     .pld-lencana-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 7px; }
     .pld-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-    /* Keterangan pelamar: dua kolom baris-berbaris, bukan tabel.
-       Baris yang isinya kosong tetap tergambar supaya tiap keterangan selalu
+    /* ===== Keterangan pelamar =====
+       Baris yang isinya kosong TETAP tergambar supaya tiap keterangan selalu
        di tempat yang sama — mata mencari "telepon" di posisi, bukan dengan
        membaca ulang seluruh daftarnya. */
-    .pld-medan-rak { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 clamp(16px, 2.4vw, 32px); }
-    .pld-medan {
-        display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-        padding: 9px 0; border-bottom: 1px solid #f5f7fa; min-width: 0;
+    .pld-info { display: flex; flex-direction: column; }
+    .pld-info-baris {
+        display: flex; align-items: center; gap: 11px; min-width: 0;
+        padding: 10px 0; border-bottom: 1px solid #f5f7fa;
     }
-    .pld-medan-label { color: var(--dsb-redup); font-size: .8rem; white-space: nowrap; }
-    .pld-medan-label i.bi { margin-right: 6px; }
-    .pld-medan-nilai { font-weight: 700; font-size: .85rem; color: var(--dsb-tinta); text-align: right; overflow-wrap: anywhere; }
-    .pld-medan-nilai.is-kosong { font-weight: 500; color: #cbd5e1; }
+    .pld-info-baris:last-child { border-bottom: 0; padding-bottom: 2px; }
+    .pld-info-ikon {
+        flex: 0 0 auto; width: 32px; height: 32px; border-radius: 10px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: .86rem; color: var(--c, #64748b);
+        background: color-mix(in srgb, var(--c, #64748b) 11%, #fff);
+    }
+    .pld-info-teks { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .pld-info-label {
+        font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+        color: #94a3b8;
+    }
+    .pld-info-nilai {
+        font-weight: 700; font-size: .85rem; color: var(--dsb-tinta, #1c1f26);
+        overflow-wrap: anywhere; text-decoration: none;
+    }
+    a.pld-info-nilai { color: #1d4ed8; }
+    a.pld-info-nilai:hover { text-decoration: underline; }
+    .pld-info-nilai.is-kosong { font-weight: 500; color: #cbd5e1; }
+    .pld-info-nilai.is-tunggu { font-weight: 600; color: #b45309; }
 
-    /* Tahap seleksi: deret tombol pilih, bukan kotak pilih.
-       Semua tahapnya terlihat sekaligus — yang mengubah tahap sedang
-       memutuskan di antara lima, dan kotak pilih menyembunyikan empat. */
-    .pld-tahap-rak { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-    .pld-tahap {
-        --c: #64748b;
-        display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
-        padding: 8px 14px; border-radius: 999px; font-size: .82rem; font-weight: 700;
-        background: #fff; color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 30%, #fff);
-        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    /* ===== Tahap seleksi: perjalanan tegak =====
+
+       Lima pil yang membungkus jadi dua baris cuma memberi tahu "ada lima
+       pilihan". Yang sebenarnya dilakukan orang di sini adalah memindahkan
+       seseorang di sepanjang sebuah alur, jadi urutannya yang harus terbaca —
+       dan tegak menyediakan ruang untuk kalimat yang akan dibaca PELAMAR,
+       supaya yang menekan tahu apa yang akan dilihat orang yang dinilainya. */
+    .pld-alur { list-style: none; margin: 0 0 16px; padding: 0; }
+    .pld-alur > li { position: relative; }
+    /* Garis penghubung antar-tahap: ditarik dari bulatan ke bulatan
+       berikutnya, bukan sepanjang barisnya — kalau tidak, ia menjulur
+       melewati tahap terakhir dan terbaca seperti alur yang belum selesai. */
+    .pld-alur > li:not(:last-child)::after {
+        content: ''; position: absolute; left: 25px; top: 38px; bottom: 2px;
+        width: 2px; background: #eef2f7; border-radius: 2px;
     }
-    .pld-tahap:hover:not(:disabled) { background: color-mix(in srgb, var(--c) 8%, #fff); }
-    .pld-tahap.is-aktif { background: var(--c); color: #fff; border-color: transparent; }
-    .pld-tahap:disabled { cursor: default; }
+    .pld-alur-baris {
+        position: relative; z-index: 1;
+        display: flex; align-items: flex-start; gap: 11px; width: 100%;
+        padding: 8px 10px; margin-bottom: 2px; text-align: left; cursor: pointer;
+        background: transparent; border: 1px solid transparent; border-radius: 13px;
+        transition: background .15s ease, border-color .15s ease;
+    }
+    .pld-alur-baris:hover:not(:disabled) { background: #f8fafc; }
+    .pld-alur-baris:disabled { cursor: default; }
+    .pld-alur-bulat {
+        flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: .86rem; background: #f1f5f9; color: #94a3b8;
+        border: 2px solid #fff; box-shadow: 0 0 0 1px #eef2f7;
+        transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+    }
+    .pld-alur-teks { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .pld-alur-judul {
+        display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+        font-size: .86rem; font-weight: 700; color: #475569;
+    }
+    .pld-alur-ket { font-size: .76rem; line-height: 1.5; color: var(--dsb-redup, #6b7280); }
+    /* Tahap yang TERSIMPAN (keadaan sebenarnya) diberi warnanya. */
+    .pld-alur-baris.is-tersimpan .pld-alur-bulat { background: var(--c); color: #fff; box-shadow: 0 0 0 1px var(--c); }
+    .pld-alur-baris.is-tersimpan .pld-alur-judul { color: var(--dsb-tinta, #1c1f26); }
+    .pld-alur-kini {
+        font-size: .64rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+        padding: 2px 7px; border-radius: 999px;
+        background: color-mix(in srgb, var(--c) 14%, #fff); color: var(--c);
+    }
+    /* Tahap yang sedang DIPILIH tapi belum disimpan: dibedakan dari yang
+       tersimpan, karena menekan tahap belum berarti tahapnya berpindah. */
+    .pld-alur-baris.is-dipilih {
+        background: color-mix(in srgb, var(--c) 7%, #fff);
+        border-color: color-mix(in srgb, var(--c) 32%, #fff);
+    }
+    .pld-alur-baris.is-dipilih:not(.is-tersimpan) .pld-alur-bulat {
+        background: #fff; color: var(--c); box-shadow: 0 0 0 2px var(--c);
+    }
+    .pld-alur-baris.is-dipilih .pld-alur-judul { color: var(--dsb-tinta, #1c1f26); }
 
     .pld-bantu { color: var(--dsb-redup); font-size: .8rem; line-height: 1.6; margin: 0 0 14px; }
     .pld-bantu:last-child { margin-bottom: 0; }
@@ -131,10 +189,13 @@ Detail Pelamar Kerja || lemon
             'success' => 'is-hijau', 'danger' => 'is-merah', 'warning' => 'is-kuning',
         ];
 
-        // Tenggat masa simpan berkas. Dihitung di model supaya aturannya satu
-        // tempat dengan perintah pemangkasnya.
-        $hangus = $pelamar->berkas_hangus_pada;
-        $sisaHari = $hangus ? (int) ceil(now()->floatDiffInDays($hangus, false)) : null;
+        // Ikon per tahap, sama dengan yang dipakai tab di layar daftar supaya
+        // bentuk yang sama berarti hal yang sama di dua layar.
+        $ikonTahap = [
+            'baru' => 'bi-inbox-fill', 'diseleksi' => 'bi-file-earmark-text',
+            'wawancara' => 'bi-chat-dots-fill', 'diterima' => 'bi-check-circle-fill',
+            'ditolak' => 'bi-slash-circle',
+        ];
 
         $jenisJejak = [
             'tahap' => ['bi-signpost-split', 'Tahap diubah'],
@@ -204,32 +265,14 @@ Detail Pelamar Kerja || lemon
                         <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
                         <span>
                             <h2 class="dsb-kartu-judul">Berkas Lamaran</h2>
-                            <span class="dsb-kartu-sub">Dibaca langsung di sini — tidak perlu diunduh dulu</span>
+                            <span class="dsb-kartu-sub">
+                                Dibaca langsung di sini — tersimpan sampai lamaran ini dihapus
+                            </span>
                         </span>
                     </div>
                 </div>
 
                 <div class="dsb-kartu-isi">
-                    @if ($sisaHari !== null)
-                        {{-- Masa simpan berkas disebut SEBELUM berkasnya hilang.
-                             Selama ini satu-satunya tandanya adalah tombol unduh
-                             yang suatu hari tidak ada lagi, dan yang membacanya
-                             menyimpulkan sistemnya rusak. --}}
-                        <div class="pld-kabar {{ $sisaHari <= 30 ? 'is-ingat' : 'is-kunci' }}" style="margin-bottom: 12px">
-                            <i class="bi bi-clock-history"></i>
-                            <span class="pld-kabar-isi">
-                                Berkas ini dijadwalkan dihapus
-                                <strong>{{ $hangus->locale('id')->isoFormat('D MMMM YYYY') }}</strong>
-                                @if ($sisaHari > 0)
-                                    — {{ $sisaHari }} hari lagi.
-                                @else
-                                    — sudah lewat, tinggal menunggu pemangkasan berikutnya.
-                                @endif
-                                Simpan sendiri dulu kalau masih dibutuhkan sesudah itu.
-                            </span>
-                        </div>
-                    @endif
-
                     @include('livewire.pages.admin.pelamar-kerja.partials.berkas-pratinjau', [
                         'pelamar' => $pelamar,
                         'aktif' => $berkasAktif,
@@ -266,18 +309,44 @@ Detail Pelamar Kerja || lemon
                         </div>
                     @endunless
 
-                    <div class="pld-tahap-rak" role="radiogroup" aria-label="Tahap seleksi">
+                    {{-- Tahap seleksi: perjalanan tegak, bukan deret pil.
+
+                         Lima pil yang membungkus jadi dua baris tidak
+                         memperlihatkan apa pun selain "ada lima pilihan" —
+                         padahal yang sedang dilakukan orang di sini adalah
+                         memindahkan seseorang di sepanjang sebuah ALUR, dan
+                         urutannya itulah yang perlu terbaca. Tegak juga memberi
+                         ruang untuk kalimat yang akan DIBACA PELAMAR, sehingga
+                         yang menekan tahu persis apa yang akan dilihat orang
+                         yang dinilainya. --}}
+                    <ol class="pld-alur" role="radiogroup" aria-label="Tahap seleksi">
                         @foreach ($daftarStatus as $kunciStatus => $infoStatus)
-                            <button type="button" wire:click="$set('statusBaru', '{{ $kunciStatus }}')"
-                                wire:key="tahap-{{ $kunciStatus }}"
-                                style="--c: {{ $warnaBs[$infoStatus[1]] ?? '#64748b' }}"
-                                class="pld-tahap {{ $statusBaru === $kunciStatus ? 'is-aktif' : '' }}"
-                                role="radio" aria-checked="{{ $statusBaru === $kunciStatus ? 'true' : 'false' }}"
-                                @disabled(! $bisaUbah)>
-                                {{ $infoStatus[0] }}
-                            </button>
+                            @php
+                                $iniDipilih = $statusBaru === $kunciStatus;
+                                $iniTersimpan = $pelamar->status === $kunciStatus;
+                            @endphp
+                            <li wire:key="tahap-{{ $kunciStatus }}">
+                                <button type="button" wire:click="$set('statusBaru', '{{ $kunciStatus }}')"
+                                    style="--c: {{ $warnaBs[$infoStatus[1]] ?? '#64748b' }}"
+                                    class="pld-alur-baris {{ $iniDipilih ? 'is-dipilih' : '' }} {{ $iniTersimpan ? 'is-tersimpan' : '' }}"
+                                    role="radio" aria-checked="{{ $iniDipilih ? 'true' : 'false' }}"
+                                    @disabled(! $bisaUbah)>
+                                    <span class="pld-alur-bulat">
+                                        <i class="bi {{ $ikonTahap[$kunciStatus] ?? 'bi-circle' }}"></i>
+                                    </span>
+                                    <span class="pld-alur-teks">
+                                        <span class="pld-alur-judul">
+                                            {{ $infoStatus[0] }}
+                                            @if ($iniTersimpan)
+                                                <span class="pld-alur-kini">sekarang</span>
+                                            @endif
+                                        </span>
+                                        <span class="pld-alur-ket">{{ $infoStatus[2] }}</span>
+                                    </span>
+                                </button>
+                            </li>
                         @endforeach
-                    </div>
+                    </ol>
 
                     @if ($bisaUbah && $adaTemplatSurel)
                         <div class="dsb-medan">
@@ -330,27 +399,62 @@ Detail Pelamar Kerja || lemon
                 </div>
 
                 <div class="dsb-kartu-isi">
-                    <div class="pld-medan-rak">
-                        @php
-                            $keterangan = [
-                                ['bi-envelope', 'Email', $pelamar->email],
-                                ['bi-telephone', 'Telepon', $pelamar->phone],
-                                ['bi-link-45deg', 'Portofolio', $pelamar->portofolio_url],
-                                ['bi-megaphone', 'Tahu dari', $pelamar->sumber_info_label],
-                                ['bi-pc-display', 'Alamat IP', $pelamar->ip_address],
-                            ];
-                        @endphp
-                        @foreach ($keterangan as [$ikon, $label, $nilai])
-                            <div class="pld-medan">
-                                <span class="pld-medan-label"><i class="bi {{ $ikon }}"></i>{{ $label }}</span>
-                                @if ($label === 'Portofolio' && $nilai)
-                                    <a href="{{ $nilai }}" target="_blank" rel="noopener noreferrer"
-                                        class="pld-medan-nilai">{{ $nilai }}</a>
-                                @else
-                                    <span class="pld-medan-nilai {{ $nilai ? '' : 'is-kosong' }}">
-                                        {{ $nilai ?: 'tidak diisi' }}
-                                    </span>
-                                @endif
+                    {{-- Label di ATAS nilainya, bukan berseberangan.
+
+                         Berseberangan kiri-kanan, alamat email panjang di kolom
+                         sempit menabrak labelnya sendiri lalu patah di tengah
+                         kata. Label di atas memberi nilai itu lebar penuh, dan
+                         ikon berwarna membuat tiap baris bisa dikenali tanpa
+                         membaca labelnya lebih dulu.
+
+                         Nilai yang bisa DILAKUKAN sesuatu dibuat tautan: yang
+                         dilakukan sesudah membaca CV hampir selalu menghubungi
+                         orangnya, dan menyalin alamat dengan tangan adalah
+                         langkah yang tidak perlu ada. --}}
+                    @php
+                        $wa = $pelamar->phone
+                            ? 'https://wa.me/'.preg_replace('/^0/', '62', preg_replace('/\D/', '', $pelamar->phone))
+                            : null;
+
+                        $dibukaLabel = $pelamar->berkas_dibuka_at
+                            ? ($pelamar->berkas_dibuka_oleh ?: 'seseorang').' · '
+                                .$pelamar->berkas_dibuka_at->locale('id')->isoFormat('D MMM YYYY, HH:mm')
+                            : null;
+
+                        $keterangan = [
+                            ['bi-envelope', '#2563eb', 'Email', $pelamar->email, $pelamar->email ? 'mailto:'.$pelamar->email : null, false],
+                            ['bi-telephone', '#16a34a', 'Telepon', $pelamar->phone, $wa, true],
+                            ['bi-link-45deg', '#7c3aed', 'Portofolio', $pelamar->portofolio_url, $pelamar->portofolio_url, true],
+                            ['bi-megaphone', '#d97706', 'Tahu lowongan ini dari', $pelamar->sumber_info_label, null, false],
+                            ['bi-eye', '#0284c7', 'Berkas dibuka', $dibukaLabel, null, false],
+                            ['bi-pc-display', '#64748b', 'Alamat IP saat melamar', $pelamar->ip_address, null, false],
+                        ];
+                    @endphp
+
+                    <div class="pld-info">
+                        @foreach ($keterangan as [$ikon, $warna, $label, $nilai, $tautan, $keLuar])
+                            <div class="pld-info-baris" wire:key="info-{{ $loop->index }}">
+                                <span class="pld-info-ikon" style="--c: {{ $warna }}">
+                                    <i class="bi {{ $ikon }}"></i>
+                                </span>
+                                <span class="pld-info-teks">
+                                    <span class="pld-info-label">{{ $label }}</span>
+                                    @if ($nilai && $tautan)
+                                        <a class="pld-info-nilai" href="{{ $tautan }}"
+                                            @if ($keLuar) target="_blank" rel="noopener noreferrer" @endif>
+                                            {{ $nilai }}
+                                        </a>
+                                    @elseif ($nilai)
+                                        <span class="pld-info-nilai">{{ $nilai }}</span>
+                                    @elseif ($label === 'Berkas dibuka')
+                                        {{-- Dibedakan dari "tidak diisi": ini bukan
+                                             isian yang dikosongkan pelamar, melainkan
+                                             sesuatu yang belum terjadi di pihak kita. --}}
+                                        <span class="pld-info-nilai is-tunggu">belum ada yang membukanya</span>
+                                    @else
+                                        <span class="pld-info-nilai is-kosong">tidak diisi</span>
+                                    @endif
+                                </span>
                             </div>
                         @endforeach
                     </div>

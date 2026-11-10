@@ -135,38 +135,6 @@ class JobApplication extends Model
     }
 
     /**
-     * Kapan berkas lamaran ini dijadwalkan dihapus.
-     *
-     * Aturannya menyalin HapusBerkasPelamarKadaluarsa: 90 hari sesudah
-     * diputuskan, atau 365 hari kalau tidak pernah diputuskan. Ditulis di
-     * sini supaya admin bisa melihat tenggatnya SEBELUM berkasnya hilang —
-     * selama ini satu-satunya tanda adalah tombol unduh yang tiba-tiba
-     * lenyap.
-     *
-     * Dua tempat memang menyimpan angka yang sama, dan itu disengaja:
-     * perintahnya menerima --hari lewat baris perintah, jadi angkanya tidak
-     * bisa dibaca dari sana tanpa menjalankannya. Dijaga MasaSimpanBerkasTest.
-     */
-    public const HARI_SIMPAN_SESUDAH_PUTUSAN = 90;
-
-    public const HARI_SIMPAN_DIDIAMKAN = 365;
-
-    public function getBerkasHangusPadaAttribute(): ?Carbon
-    {
-        if (! $this->ada_berkas) {
-            return null;
-        }
-
-        if (in_array($this->status, ['diterima', 'ditolak'], true)) {
-            $dasar = $this->status_diubah_at ?? $this->created_at;
-
-            return $dasar?->copy()->addDays(self::HARI_SIMPAN_SESUDAH_PUTUSAN);
-        }
-
-        return $this->created_at?->copy()->addDays(self::HARI_SIMPAN_DIDIAMKAN);
-    }
-
-    /**
      * Lamaran LAIN dari orang yang sama.
      *
      * Dicocokkan lewat email, bukan nama: nama ditulis ulang tiap melamar

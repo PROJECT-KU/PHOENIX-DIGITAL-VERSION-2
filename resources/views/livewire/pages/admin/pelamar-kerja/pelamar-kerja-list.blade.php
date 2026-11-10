@@ -449,10 +449,13 @@ Data Pelamar Kerja || lemon
                                         <td data-judul="Melamar">
                                             <span>{{ $item->created_at->locale('id')->isoFormat('D MMM YYYY') }}</span>
                                             @if (! $adaBerkas)
-                                                {{-- Berkasnya sudah dihapus sesuai masa simpan. Disebut
-                                                     di sini supaya admin tidak mengira sistemnya rusak
-                                                     saat tombol unduh di halaman detail tidak ada. --}}
-                                                <span class="plm-catatan-sel">berkas sudah dihapus</span>
+                                                {{-- Dua sebab, dan keduanya diringkas jadi satu kalimat
+                                                     netral: lamaran ini memang dikirim tanpa lampiran
+                                                     (CV boleh kosong sejak 10 Nov 2026), ATAU berkasnya
+                                                     terlanjur dibuang pemangkas lama sebelum penghapusan
+                                                     otomatis dicabut. Menebak salah satunya berarti
+                                                     mengaku tahu yang tidak pernah dicatat. --}}
+                                                <span class="plm-catatan-sel">tidak ada berkas</span>
                                             @elseif ($belumDibuka)
                                                 {{-- "Belum dibuka" sekarang BENAR-BENAR dicatat, saat
                                                      berkasnya disajikan ke peramban. Dulu kalimat ini

@@ -229,19 +229,21 @@ $jadwalkan('artikel:pangkas-revisi --hari=180 --sisakan=5')->weeklyOn(1, '01:30'
 $jadwalkan('helpdesk:bersihkan-arsip --hari=180 --hari-spam=30')->dailyAt('00:35');
 
 /*
- * Berkas pelamar kerja: CV, surat lamaran, dan berkas pendukung.
+ * TIDAK ADA pemangkas berkas pelamar di sini, dan itu keputusan — bukan yang
+ * terlupa.
  *
- * Yang dihapus HANYA berkasnya — nama, email, nomor lamaran, status, dan
- * catatan internal tetap tinggal, jadi "dulu si A pernah melamar belum?" tetap
- * bisa dijawab bertahun-tahun kemudian.
+ * Sampai 10 Nov 2026 ada 'pelamar:hapus-berkas-kadaluarsa' yang berjalan tiap
+ * hari pukul 00.40: CV dibuang 90 hari sesudah lamaran diputuskan, atau 365
+ * hari kalau tahapnya tidak pernah diubah. Dicabut atas permintaan pemilik —
+ * berkas lamaran kini disimpan sampai ada yang menghapus pelamarnya, dan
+ * penghapusan pelamar memang ikut membuang berkasnya (PelamarKerjaList@delete).
  *
- * 90 hari dihitung dari tanggal KEPUTUSAN (diterima/ditolak), bukan tanggal
- * melamar: dihitung dari tanggal melamar, berkas pelamar yang seleksinya memang
- * lama akan lenyap di tengah proses. 365 hari untuk lamaran yang statusnya tidak
- * pernah diubah — tanpa aturan kedua itu, tumpukan terbesarnya justru tidak
- * pernah tersentuh.
+ * Yang ditukar dengan keputusan ini: CV orang lain memuat alamat, nomor
+ * telepon, riwayat kerja, kadang tanggal lahir dan foto — dan sekarang semua
+ * itu tinggal di server tanpa batas waktu. Kalau suatu saat perlu dibatasi
+ * lagi, yang dihidupkan kembali adalah perintah ini beserta jadwalnya, bukan
+ * penghapusan manual satu per satu.
  */
-$jadwalkan('pelamar:hapus-berkas-kadaluarsa --hari=90 --hari-diam=365')->dailyAt('00:40');
 
 /*
  * Pengingat tiket helpdesk yang lewat batas waktu membalas. Sekali sehari pagi

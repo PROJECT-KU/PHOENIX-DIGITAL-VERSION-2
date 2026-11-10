@@ -311,39 +311,52 @@ it('menolak aksi massal dari yang tidak berizin edit', function () {
 });
 
 /* ====================================================================
- | 7. MASA SIMPAN BERKAS
+ | 7. BERKAS DISIMPAN SAMPAI PELAMARNYA DIHAPUS
  | ================================================================= */
 
-it('menyebut tenggat masa simpan berkas sebelum berkasnya hilang', function () {
-    Storage::fake('local');
+it('tidak menghapus berkas pelamar secara otomatis', function () {
+    /*
+     | Sampai 10 Nov 2026 ada 'pelamar:hapus-berkas-kadaluarsa' terjadwal tiap
+     | hari: CV dibuang 90 hari sesudah lamaran diputuskan. Dicabut atas
+     | permintaan pemilik — berkas disimpan sampai ada yang menghapus
+     | pelamarnya.
+     |
+     | Uji ini menjaga keputusan itu dari "dihidupkan lagi tanpa sengaja":
+     | pemangkas yang kembali diam-diam menghapus CV orang, dan kehilangannya
+     | baru ketahuan saat ada yang mencarinya.
+     */
+    expect(file_exists(app_path('Console/Commands/HapusBerkasPelamarKadaluarsa.php')))->toBeFalse();
 
+    // Komentar dibuang dulu: keterangan di routes/console.php yang menjelaskan
+    // kenapa pemangkas ini dicabut justru harus menyebut nama perintahnya.
+    $jadwal = preg_replace('#/\*.*?\*/#s', '', file_get_contents(base_path('routes/console.php')));
+    expect($jadwal)->not->toContain('pelamar:hapus-berkas-kadaluarsa');
+
+    // Dan layarnya tidak lagi menjanjikan tenggat yang tidak ada.
     $p = lamaranUji(['cv_path' => 'applications/uji/cv.pdf']);
 
     Livewire::actingAs(adminPelamarLengkap())
         ->test(PelamarKerjaDetail::class, ['id' => $p->id])
-        ->assertSee('dijadwalkan dihapus');
+        ->assertDontSee('dijadwalkan dihapus');
 });
 
-it('menghitung tenggat dari aturan yang sama dengan perintah pemangkasnya', function () {
-    // Angka yang sama hidup di dua tempat (model & --hari perintahnya). Uji
-    // ini yang menjaga keduanya tidak berpisah diam-diam.
-    $tanda = file_get_contents(app_path('Console/Commands/HapusBerkasPelamarKadaluarsa.php'));
+it('ikut membuang berkas saat pelamarnya dihapus', function () {
+    Storage::fake('local');
 
-    expect($tanda)->toContain('--hari='.JobApplication::HARI_SIMPAN_SESUDAH_PUTUSAN)
-        ->and($tanda)->toContain('--hari-diam='.JobApplication::HARI_SIMPAN_DIDIAMKAN);
+    $jalur = UploadedFile::fake()->create('cv.pdf', 8, 'application/pdf')
+        ->storeAs('applications/2026/11/'.\Illuminate\Support\Str::uuid(), 'cv.pdf', 'local');
 
-    $diputuskan = lamaranUji(['cv_path' => 'a.pdf', 'status' => 'ditolak']);
-    $diputuskan->forceFill(['status_diubah_at' => now()->subDays(10)])->saveQuietly();
+    $p = lamaranUji(['cv_path' => $jalur]);
 
-    expect($diputuskan->fresh()->berkas_hangus_pada->toDateString())
-        ->toBe(now()->subDays(10)->addDays(JobApplication::HARI_SIMPAN_SESUDAH_PUTUSAN)->toDateString());
+    expect(Storage::disk('local')->exists($jalur))->toBeTrue();
 
-    $didiamkan = lamaranUji(['cv_path' => 'a.pdf']);
-    expect($didiamkan->berkas_hangus_pada->toDateString())
-        ->toBe($didiamkan->created_at->copy()->addDays(JobApplication::HARI_SIMPAN_DIDIAMKAN)->toDateString());
+    Livewire::actingAs(adminPelamarLengkap(['akses_asthana', 'view_pelamar', 'delete_pelamar']))
+        ->test(PelamarKerjaList::class)
+        ->call('delete', $p->id);
 
-    // Tanpa berkas, tidak ada yang akan dihapus — jadi tidak ada tenggat.
-    expect(lamaranUji()->berkas_hangus_pada)->toBeNull();
+    // Satu-satunya jalan berkas pelamar hilang: pelamarnya dihapus.
+    expect(Storage::disk('local')->exists($jalur))->toBeFalse()
+        ->and(JobApplication::find($p->id))->toBeNull();
 });
 
 /* ====================================================================
