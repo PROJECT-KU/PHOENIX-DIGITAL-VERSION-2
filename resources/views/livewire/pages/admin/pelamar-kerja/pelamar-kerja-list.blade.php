@@ -7,6 +7,7 @@ Data Pelamar Kerja || lemon
          berangka, saringan, lalu tabel dsb. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.partials.kartu-tab-gaya')
+    @include('livewire.pages.admin.pelamar-kerja.partials.berkas-gaya')
 
     {{-- Gaya khusus layar ini, ditulis INLINE: public/build di-gitignore. --}}
     <style>
@@ -249,7 +250,7 @@ Data Pelamar Kerja || lemon
                                         ];
                                         $rupaTahap = $lencanaBs[$item->status_warna] ?? 'is-abu';
                                         $urlDetail = route('admin.pelamar.detail', $item->id);
-                                        $adaBerkas = (bool) $item->cv_path;
+                                        $adaBerkas = (bool) ($item->cv_path || $item->cover_letter_path || $item->lampiran_path);
                                     @endphp
                                     <tr wire:key="pelamar-{{ $item->id }}">
                                         {{-- ===== Pelamar ===== --}}
@@ -289,6 +290,21 @@ Data Pelamar Kerja || lemon
 
                                         <td data-judul="Aksi" class="text-end">
                                             <span class="plm-aksi">
+                                                {{-- Baca CV-nya TANPA meninggalkan daftar.
+
+                                                     Admin yang sedang menyaring sepuluh pelamar
+                                                     kehilangan posisi gulung dan saringannya tiap kali
+                                                     membuka halaman detail, lalu kembali ke daftar yang
+                                                     sudah ter-reset — dan membaca sepuluh CV berarti
+                                                     sepuluh kali begitu. --}}
+                                                @if ($adaBerkas)
+                                                    <button type="button" wire:click="bukaPratinjau({{ $item->id }})"
+                                                        class="dsb-tombol is-lembut" style="--ikon: #dc2626"
+                                                        title="Baca berkasnya di sini">
+                                                        <i class="bi bi-file-earmark-text"></i>
+                                                    </button>
+                                                @endif
+
                                                 <a wire:navigate href="{{ $urlDetail }}"
                                                     class="dsb-tombol is-lembut" style="--ikon: #0284c7" title="Buka lamaran ini">
                                                     <i class="bi bi-eye"></i>
@@ -317,6 +333,41 @@ Data Pelamar Kerja || lemon
             </div>
         </div>
     </div>
+
+    {{-- ================== JENDELA PEMBACA BERKAS ================== --}}
+    @if ($pratinjau)
+        <div class="pbk-latar" wire:click="tutupPratinjau"></div>
+        <div class="pbk-jendela" wire:key="pratinjau-{{ $pratinjau->id }}">
+            <div class="pbk-kotak dsb" role="dialog" aria-modal="true"
+                aria-label="Berkas lamaran {{ $pratinjau->name }}" tabindex="-1"
+                x-data x-on:keydown.escape.window="$wire.tutupPratinjau()">
+                <div class="pbk-kotak-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
+                    <span class="pbk-kotak-teks">
+                        <h2 class="pbk-kotak-judul text-capitalize">{{ $pratinjau->name }}</h2>
+                        <span class="pbk-kotak-sub">
+                            {{ $pratinjau->posisi_label }} · {{ $pratinjau->nomor_lamaran }}
+                        </span>
+                    </span>
+                    <a wire:navigate href="{{ route('admin.pelamar.detail', $pratinjau->id) }}"
+                        class="dsb-tombol is-lembut" style="--ikon: #0284c7" title="Buka lamaran selengkapnya">
+                        <i class="bi bi-eye"></i><span>Selengkapnya</span>
+                    </a>
+                    <button type="button" class="pbk-tutup" wire:click="tutupPratinjau" title="Tutup">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                <div class="pbk-kotak-isi">
+                    @include('livewire.pages.admin.pelamar-kerja.partials.berkas-pratinjau', [
+                        'pelamar' => $pratinjau,
+                        'aktif' => $berkasAktif,
+                        'aksi' => 'bukaBerkas',
+                    ])
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')

@@ -103,6 +103,53 @@ class PelamarKerjaList extends Component
         $this->resetPage();
     }
 
+    /**
+     * Pelamar yang berkasnya sedang dibaca di jendela sembul; null = tertutup.
+     *
+     * Supaya CV bisa dibaca TANPA meninggalkan daftarnya. Admin yang sedang
+     * menyaring sepuluh pelamar kehilangan posisi gulung dan saringannya tiap
+     * kali membuka halaman detail, lalu kembali ke daftar yang sudah
+     * ter-reset — dan membaca sepuluh CV berarti sepuluh kali begitu.
+     */
+    public $pratinjauId = null;
+
+    public string $berkasAktif = 'cv';
+
+    public function bukaPratinjau($id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('view_pelamar'), 403);
+
+        $pelamar = JobApplication::find($id);
+
+        if (! $pelamar) {
+            return;
+        }
+
+        $this->pratinjauId = $pelamar->id;
+
+        // Tab awal mengikuti berkas yang MEMANG ADA: membuka pelamar yang
+        // CV-nya sudah dipangkas pada tab kosong terbaca sebagai "tidak ada
+        // berkasnya sama sekali", padahal surat lamarannya masih ada.
+        $this->berkasAktif = 'cv';
+
+        foreach (['cv' => 'cv_path', 'surat' => 'cover_letter_path', 'lampiran' => 'lampiran_path'] as $kunci => $kolom) {
+            if ($pelamar->{$kolom}) {
+                $this->berkasAktif = $kunci;
+                break;
+            }
+        }
+    }
+
+    public function bukaBerkas(string $kunci): void
+    {
+        $this->berkasAktif = in_array($kunci, ['cv', 'surat', 'lampiran'], true) ? $kunci : 'cv';
+    }
+
+    public function tutupPratinjau(): void
+    {
+        $this->pratinjauId = null;
+    }
+
     public function adaSaringan(): bool
     {
         return trim((string) $this->search) !== ''
@@ -146,6 +193,7 @@ class PelamarKerjaList extends Component
             'jobList' => $jobList,
             'months' => $months,
             'jumlahTahap' => $this->jumlahTahap(),
+            'pratinjau' => $this->pratinjauId ? JobApplication::with('job')->find($this->pratinjauId) : null,
             // Dipakai kepala layar: lowongan mana yang sedang dibaca, bila
             // layar ini dibuka lewat tautan dari daftar Lowongan.
             'lowonganDisaring' => $this->filterJob && $this->filterJob !== 'umum'

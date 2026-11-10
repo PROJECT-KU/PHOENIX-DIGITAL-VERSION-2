@@ -24,11 +24,32 @@ class PelamarKerjaDetail extends Component
 
     public string $catatanInternal = '';
 
+    /**
+     * Berkas yang sedang dibaca: 'cv', 'surat', atau 'lampiran'.
+     *
+     * Satu jendela, tiga berkas. Dulu ketiganya kartu bertumpuk masing-masing
+     * setinggi A4 — membaca CV lalu surat lamarannya berarti menggulung tiga
+     * layar penuh, dan berkas pendukung yang kosong tetap memakan satu kartu.
+     */
+    public string $berkasAktif = 'cv';
+
+    public function bukaBerkas(string $kunci): void
+    {
+        $this->berkasAktif = in_array($kunci, ['cv', 'surat', 'lampiran'], true) ? $kunci : 'cv';
+    }
+
     public function mount($id)
     {
         $this->pelamar = JobApplication::with('job')->findOrFail($id);
         $this->statusBaru = $this->pelamar->status ?: 'baru';
         $this->catatanInternal = (string) $this->pelamar->catatan_internal;
+
+        foreach (['cv' => 'cv_path', 'surat' => 'cover_letter_path', 'lampiran' => 'lampiran_path'] as $kunci => $kolom) {
+            if ($this->pelamar->{$kolom}) {
+                $this->berkasAktif = $kunci;
+                break;
+            }
+        }
     }
 
     public function simpanStatus(): void

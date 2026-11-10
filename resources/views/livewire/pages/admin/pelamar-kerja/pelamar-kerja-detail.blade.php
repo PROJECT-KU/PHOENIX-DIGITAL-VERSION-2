@@ -6,6 +6,7 @@ Detail Pelamar Kerja || lemon
     {{-- Kerangka mengikuti Pesanan Toko (bahasa rupa dsb-*): kepala hero,
          kisi 12 kolom, kartu putih datar berkepala ikon. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.pelamar-kerja.partials.berkas-gaya')
 
     {{-- Gaya khusus layar ini, ditulis INLINE: public/build di-gitignore. --}}
     <style>
@@ -46,11 +47,6 @@ Detail Pelamar Kerja || lemon
     .pld-cek { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0 0; font-size: .83rem; cursor: pointer; }
     .pld-cek input { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; accent-color: #7c3aed; }
 
-    /* Pratinjau berkas: rasio A4. */
-    .pld-berkas { border: 1px solid var(--dsb-tepi); border-radius: 12px; overflow: hidden; background: #f8fafc; }
-    .pld-berkas iframe { display: block; width: 100%; height: 760px; border: 0; }
-    @media (max-width: 767.98px) { .pld-berkas iframe { height: 520px; } }
-
     .pld-kaki { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
     /* Isi tombol yang berganti-ganti (teks biasa ↔ "Menyimpan…").
 
@@ -79,24 +75,6 @@ Detail Pelamar Kerja || lemon
             'success' => 'is-hijau', 'danger' => 'is-merah', 'warning' => 'is-kuning',
         ];
 
-        // Tiga berkas, satu bentuk: label, rute, jalur, dan kalimat saat kosong.
-        $berkas = [
-            ['CV', 'bi-file-earmark-pdf-fill', '#dc2626', $pelamar->cv_path,
-                $pelamar->cv_path ? route('admin.pelamar.cv', $pelamar) : null,
-                'Pelamar tidak melampirkan CV.'],
-            ['Surat Lamaran', 'bi-envelope-paper-fill', '#2563eb', $pelamar->cover_letter_path,
-                $pelamar->cover_letter_path ? route('admin.pelamar.surat', $pelamar) : null,
-                'Pelamar tidak melampirkan surat lamaran.'],
-            ['Berkas Pendukung', 'bi-paperclip', '#0ea5a4', $pelamar->lampiran_path,
-                $pelamar->lampiran_path ? route('admin.pelamar.lampiran', $pelamar) : null,
-                'Pelamar tidak melampirkan berkas pendukung — ini memang tidak wajib.'],
-        ];
-
-        // Berkas yang SUDAH DIHAPUS sesuai masa simpan dibedakan dari yang
-        // memang tidak pernah dilampirkan: keduanya sama-sama kosong di layar,
-        // tetapi artinya berbeda dan hanya satu yang bisa diminta ulang.
-        $berkasDipangkas = $pelamar->cv_path === null
-            && $pelamar->created_at->lt(now()->subDays(90));
     @endphp
 
     <div class="dsb pld-detail">
@@ -279,65 +257,32 @@ Detail Pelamar Kerja || lemon
             </div>
         </div>
 
-        {{-- ================== BERKAS ================== --}}
-        @if ($berkasDipangkas)
-            {{-- Berkas yang SUDAH DIHAPUS sesuai masa simpan dibedakan dari yang
-                 memang tidak pernah dilampirkan: keduanya sama-sama kosong di
-                 layar, tetapi artinya berbeda — dan tanpa kalimat ini admin
-                 mengira sistemnya rusak. --}}
-            <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-isi" style="display:flex; align-items:center; gap:13px; flex-wrap:wrap">
-                        <span class="dsb-ikon is-kecil" style="--c: #64748b"><i class="bi bi-archive"></i></span>
-                        <span class="pld-bantu" style="flex:1 1 280px; margin:0">
-                            <strong>Berkasnya sudah dihapus.</strong>
-                            CV dan surat lamaran dihapus otomatis setelah masa simpannya lewat —
-                            catatan lamarannya tetap disimpan. Kalau masih dibutuhkan, minta
-                            pelamar mengirimkannya lagi.
+        {{-- ================== BERKAS ==================
+
+             SATU kartu bertab, bukan tiga kartu bertumpuk. Dulu ketiganya
+             masing-masing setinggi A4 — membaca CV lalu surat lamarannya
+             berarti menggulung tiga layar penuh, dan berkas pendukung yang
+             kosong tetap memakan satu kartu. --}}
+        <div class="dsb-rak dsb-bagian">
+            <div class="dsb-kartu k-12">
+                <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala-kiri">
+                        <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
+                        <span>
+                            <h2 class="dsb-kartu-judul">Berkas Lamaran</h2>
+                            <span class="dsb-kartu-sub">Dibaca langsung di sini — tidak perlu diunduh dulu</span>
                         </span>
                     </div>
                 </div>
-            </div>
-        @endif
 
-        <div class="dsb-rak dsb-bagian">
-            @foreach ($berkas as [$label, $ikon, $warna, $jalur, $url, $kalimatKosong])
-                <div class="dsb-kartu k-12" wire:key="berkas-{{ $loop->index }}">
-                    <div class="dsb-kartu-kepala">
-                        <div class="dsb-kartu-kepala-kiri">
-                            <span class="dsb-ikon is-kecil" style="--c: {{ $warna }}"><i class="bi {{ $ikon }}"></i></span>
-                            <span>
-                                <h2 class="dsb-kartu-judul">{{ $label }}</h2>
-                                <span class="dsb-kartu-sub">
-                                    {{ $jalur ? 'Klik unduh kalau perlu dibaca di luar layar ini' : 'Tidak ada berkasnya' }}
-                                </span>
-                            </span>
-                        </div>
-                        @if ($url)
-                            <a href="{{ $url }}" download class="dsb-tombol is-lembut" style="--ikon: {{ $warna }}">
-                                <i class="bi bi-download"></i><span>Unduh</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <div class="dsb-kartu-isi">
-                        @if ($url)
-                            <div class="pld-berkas">
-                                <iframe src="{{ $url }}" type="application/pdf" title="{{ $label }}">
-                                    <p>Peramban Anda tidak bisa menampilkan PDF.
-                                        <a href="{{ $url }}" download>Unduh {{ $label }}</a>
-                                    </p>
-                                </iframe>
-                            </div>
-                        @else
-                            <div class="dsb-kosong">
-                                <span class="dsb-kosong-ikon"><i class="bi {{ $ikon }}"></i></span>
-                                <p class="dsb-kosong-ket">{{ $kalimatKosong }}</p>
-                            </div>
-                        @endif
-                    </div>
+                <div class="dsb-kartu-isi">
+                    @include('livewire.pages.admin.pelamar-kerja.partials.berkas-pratinjau', [
+                        'pelamar' => $pelamar,
+                        'aktif' => $berkasAktif,
+                        'aksi' => 'bukaBerkas',
+                    ])
                 </div>
-            @endforeach
+            </div>
         </div>
     </div>
 </div>
