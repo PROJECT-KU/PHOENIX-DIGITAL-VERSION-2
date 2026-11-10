@@ -404,37 +404,35 @@ it('menampilkan nomor lamaran di SEMUA lebar layar', function () {
         ->assertSee($p->fresh()->nomor_lamaran);
 });
 
-it('menyambung rantai flex supaya pembaca berkas mengisi tinggi kartunya', function () {
+it('menyusun halaman detail jadi dua kolom yang sama-sama terisi', function () {
     /*
-     | .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
-     | tertinggi. Tinggi bingkai pembaca dipatok dengan vh, jadi ia MENGECIL
-     | di jendela pendek sementara kolom kanan — yang tingginya ditentukan
-     | tulisan — tidak. Selisihnya jatuh sebagai putih di dalam kartu, di
-     | bawah tombol Unduh: diukur 1px di jendela 1500px, 83px di 1100px, dan
-     | 228px di 900px.
+     | Riwayat SENGAJA berada di kolom kiri, bukan selebar penuh di bawah.
      |
-     | Kalau salah satu mata rantai putus (kartu → isi → .pbk → bingkai),
-     | kartunya tetap diregangkan tapi isinya tidak ikut melar, dan putihnya
-     | kembali. Tidak ada galat yang menyertainya: halamannya tetap 200, cuma
-     | berlubang — dan di monitor tinggi tempat orang mengembangkan, cacatnya
-     | praktis tidak terlihat.
+     | Dulu kartu Berkas berdiri sendiri di kiri sementara kolom kanan memuat
+     | dua kartu: kolom kiri kehabisan isi lebih dulu dan meninggalkan lubang
+     | abu-abu di ANTARA kartu — 227px di jendela 900px, karena tinggi
+     | pembaca berkas dipatok dengan vh sehingga mengecil di layar pendek
+     | sementara kolom kanan tidak.
+     |
+     | Cacat seperti ini tidak pernah terlihat oleh yang mengembangkan di
+     | monitor tinggi, dan justru paling parah di laptop. Tidak ada galat
+     | yang menyertainya: halamannya tetap 200, cuma berlubang.
      */
     $gaya = file_get_contents(
         resource_path('views/livewire/pages/admin/pelamar-kerja/pelamar-kerja-detail.blade.php')
     );
 
-    // Komentar dibuang dulu: keterangan yang menjelaskan aturan ini harus
-    // menyebut nama-nama kelasnya sendiri.
-    preg_match_all('/<style\b[^>]*>(.*?)<\/style>/si', $gaya, $cocok);
-    $css = preg_replace('#/\*.*?\*/#s', '', implode("\n", $cocok[1]));
+    $tanpaKomentar = preg_replace('/\{\{--.*?--\}\}/s', '', $gaya);
 
-    // Tiap mata rantai, dari kartu sampai bingkainya.
-    expect($css)->toContain('.pld-kartu-berkas { display: flex; flex-direction: column; }')
-        ->and($css)->toContain('.pld-kartu-berkas > .dsb-kartu-isi')
-        ->and($css)->toContain('.pld-kartu-berkas .pbk ')
-        ->and($css)->toContain('.pld-kartu-berkas .pbk-bingkai')
-        // Dan kartunya memang memakai kelas itu.
-        ->and($gaya)->toContain('dsb-kartu k-7 pld-kartu-berkas');
+    // Dua kolom, masing-masing menumpuk kartunya sendiri.
+    expect($tanpaKomentar)->toContain('class="k-7 pld-kolom"')
+        ->and($tanpaKomentar)->toContain('class="k-5 pld-kolom"')
+        // Dan TIDAK ada lagi kartu selebar penuh yang menggantung di bawah:
+        // kartu itulah yang membuat selisih tinggi kolom jadi lubang, bukan
+        // sekadar ujung halaman.
+        ->and($tanpaKomentar)->not->toContain('dsb-kartu k-12')
+        // Satu baris saja — dua baris mengembalikan masalah yang sama.
+        ->and(substr_count($tanpaKomentar, 'dsb-rak dsb-bagian'))->toBe(1);
 });
 
 it('memberi nama pada tiap tombol aksi di daftar', function () {
