@@ -1,31 +1,29 @@
-
 @section('title')
-Update Lowongan Pekerjaan || lemon
+Ubah Lowongan || lemon
 @stop
-<div class="container-fluid">
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                <div class="title-wrapper text-center text-md-start">
-                    <h3 class="gradient-text fw-bold mb-1">Update Data Lowongan</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        @php
-                        $breadcrumbs = [
-                        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                        ['name' => 'Data Lowongan', 'url' => route('admin.lowongan.index')],
-                        ['name' => 'Edit Data Lowongan'],
-                        ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <livewire:pages.admin.lowongan-pekerjaan.lowongan-pekerjaan-form :lowongan="$lowongan" />
-        </div>
+<div>
+    {{-- Kerangka mengikuti Pesanan Toko (bahasa rupa dsb-*). Isi borangnya
+         sendiri hidup di komponen bersama lowongan-pekerjaan-form. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+
+    <div class="dsb">
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Ubah Lowongan</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">Perubahannya langsung terlihat di situs begitu disimpan — selama lowongannya tayang.</span>
+                </p>
+            </div>
+
+            <div class="dsb-hero-aksi">
+                <a href="{{ route('admin.lowongan.index') }}" wire:navigate
+                    class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                    <i class="bi bi-arrow-left"></i><span>Kembali</span>
+                </a>
+            </div>
+        </header>
+
+        <livewire:pages.admin.lowongan-pekerjaan.lowongan-pekerjaan-form :lowongan="$lowongan" />
     </div>
 </div>

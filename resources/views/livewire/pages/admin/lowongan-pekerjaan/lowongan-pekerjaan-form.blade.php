@@ -1,174 +1,274 @@
 <div>
+    {{-- Kerangka mengikuti Pesanan Toko (bahasa rupa dsb-*). Kabel Quill yang
+         sudah jalan SENGAJA tidak disentuh: id editor, wire:ignore, dan blok
+         @script di bawah tetap persis seperti sebelumnya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+
+    {{-- Gaya khusus layar ini, ditulis INLINE: public/build di-gitignore,
+         jadi berkas hasil build tidak pernah sampai ke server. --}}
     <style>
-        .lwg-input {
-            border-radius: 12px;
-            border: 1.5px solid #e7e9f2;
-            padding: 11px 14px;
-            transition: 0.18s;
-        }
+    .lwg-rak { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .lwg-rak .is-lebar { grid-column: 1 / -1; }
 
-        .lwg-rincian {
-            padding: 18px;
-            border-radius: 16px;
-            background: #f8f9fd;
-            border: 1px solid #eceef6;
-        }
+    .lwg-bagian { margin-bottom: 22px; }
+    .lwg-bagian:last-child { margin-bottom: 0; }
+    .lwg-bagian-judul {
+        display: flex; align-items: center; gap: 7px; margin-bottom: 12px;
+        font-size: .72rem; font-weight: 800; letter-spacing: .05em;
+        text-transform: uppercase; color: #94a3b8;
+    }
+    .lwg-bagian-judul::after { content: ""; flex: 1 1 auto; height: 1px; background: #f1f5f9; }
+    .lwg-bagian-judul i.bi { color: #7c3aed; font-size: .88rem; line-height: 1; }
+    .lwg-bagian-judul i.bi::before { display: block; line-height: 1; }
 
-        .lwg-rincian-judul {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-bottom: 14px;
-        }
+    .lwg-bantu { color: var(--dsb-redup); font-size: .76rem; margin-top: 5px; }
 
-        .lwg-rincian-judul i {
-            font-size: 1.4rem;
-            color: #4e46e5;
-        }
+    /* Kotak Quill: bingkainya disamakan dengan .dsb-isian supaya dua jenis
+       isian di satu borang tidak tampak berasal dari dua aplikasi. */
+    .lwg-tulis {
+        border: 1px solid var(--dsb-tepi); border-radius: 11px; overflow: hidden; background: #fff;
+    }
+    .lwg-tulis .ql-toolbar.ql-snow {
+        border: 0; border-bottom: 1px solid var(--dsb-tepi); background: #f8fafc;
+        position: sticky; top: 0; z-index: 10;
+    }
+    .lwg-tulis .ql-container.ql-snow { border: 0; height: 220px; overflow-y: auto; }
+    .lwg-tulis .ql-editor { font-size: .88rem; line-height: 1.65; }
 
-        .lwg-rincian-judul strong {
-            display: block;
-            color: #1f2340;
-        }
+    /* Kaki lengket: borang ini panjang (dua editor teks), dan tombol simpan
+       yang hanya ada di ujung bawah berarti menggulung dua layar untuk
+       menyimpan satu koreksi di kotak paling atas. */
+    .lwg-kaki {
+        position: sticky; bottom: 0; z-index: 3;
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+        gap: 10px; margin: 20px -4px -4px; padding: 13px 15px;
+        border-radius: 14px; background: #f8fafc; border: 1px solid var(--dsb-tepi);
+    }
+    .lwg-kaki-ket { color: var(--dsb-redup); font-size: .8rem; }
+    .lwg-kaki-aksi { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Isi tombol yang berganti-ganti (teks biasa ↔ "Menyimpan…").
 
-        .lwg-rincian-judul small {
-            color: #6b7193;
-        }
+       Kelasnya LOKAL, bukan .orcha-ikon-teks: kelas itu hidup di berkas gaya
+       Orcha, dan layar ini tidak memuatnya — ikon dan tulisannya lalu
+       menempel rapat tanpa ada satu pun tanda bahwa gayanya hilang. */
+    .lwg-tombol-isi { display: inline-flex; align-items: center; gap: .4rem; }
+    .lwg-tombol-isi > i.bi { line-height: 1; flex: 0 0 auto; }
 
-        .lwg-input:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 0.18rem rgba(124, 58, 237, 0.12);
-        }
+    @media (max-width: 575.98px) {
+        .lwg-kaki { flex-direction: column; align-items: stretch; }
+        .lwg-kaki-aksi > * { flex: 1 1 0; justify-content: center; }
+    }
     </style>
 
-    <form wire:submit.prevent="save">
-        <div class="row g-3">
-            <div class="form-group col-md-6">
-                <label for="title" class="form-label fw-semibold text-dark">Nama Lowongan Pekerjaan <span class="text-danger">*</span></label>
-                <input class="form-control lwg-input @error('title') is-invalid @enderror" type="text" wire:model.live="title" placeholder="Nama lowongan">
-                @error('title') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-            </div>
-            <div class="form-group col-md-6">
-                <label for="isActive" class="form-label fw-semibold text-dark">Status Lowongan <span class="text-danger">*</span></label>
-                <select class="form-select lwg-input @error('isActive') is-invalid @enderror" wire:model.defer='isActive'>
-                    <option value="" @selected((string) $this->isActive === '')>Pilih Status</option>
-                    <option value="active" @selected((string) $this->isActive === 'active')>Aktif</option>
-                    <option value="non-active" @selected((string) $this->isActive === 'non-active')>Tidak Aktif</option>
-                </select>
-                @error('isActive') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+    <form wire:submit.prevent="save" class="dsb lwg-borang">
+        <div class="dsb-rak dsb-bagian">
+            <div class="dsb-kartu k-12">
+                <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala-kiri">
+                        <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-briefcase"></i></span>
+                        <span>
+                            <h2 class="dsb-kartu-judul">Keterangan Posisi</h2>
+                            <span class="dsb-kartu-sub">Inilah yang dibaca pelamar di kartu lowongan situs</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu-isi">
+                    {{-- value= DITULIS EKSPLISIT di tiap isian sebaris.
+
+                         wire:model sendiri tidak menggambar nilainya di HTML dari
+                         peladen. Di layar Ubah, isian yang kosong terbaca sebagai
+                         "lowongan ini memang belum punya judul" — lalu disimpan
+                         begitu saja. Pola yang sama sudah dipakai layar peserta
+                         Orcha dan borang tulisan Asthana.
+
+                         <textarea> tidak perlu: isinya memang ditulis sebagai isi
+                         elemen, bukan atribut. --}}
+
+                    {{-- ===== Yang wajib ===== --}}
+                    <div class="lwg-bagian">
+                        <div class="lwg-bagian-judul"><i class="bi bi-asterisk"></i> Wajib diisi</div>
+                        <div class="lwg-rak">
+                            <div class="dsb-medan is-lebar">
+                                <label class="dsb-label" for="lwg-title">
+                                    Nama posisi <span class="dsb-wajib">*</span>
+                                </label>
+                                <input id="lwg-title" type="text" wire:model.live="title" value="{{ $title }}"
+                                    class="dsb-isian @error('title') is-galat @enderror"
+                                    placeholder="mis. Programmer Laravel">
+                                @error('title') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-unit">
+                                    Perusahaan <span class="dsb-wajib">*</span>
+                                </label>
+                                <select id="lwg-unit" class="dsb-isian @error('unit') is-galat @enderror" wire:model="unit">
+                                    @foreach (\App\Models\Lowongan::UNIT as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected((string) $this->unit === $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('unit') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-status">
+                                    Tayang di situs? <span class="dsb-wajib">*</span>
+                                </label>
+                                <select id="lwg-status" class="dsb-isian @error('isActive') is-galat @enderror"
+                                    wire:model.defer="isActive">
+                                    <option value="" @selected((string) $this->isActive === '')>— pilih dulu —</option>
+                                    <option value="active" @selected((string) $this->isActive === 'active')>Ya, tayangkan</option>
+                                    <option value="non-active" @selected((string) $this->isActive === 'non-active')>Belum, simpan saja</option>
+                                </select>
+                                <span class="lwg-bantu">
+                                    "Belum" berarti tersimpan di sini tetapi tidak muncul di situs.
+                                </span>
+                                @error('isActive') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ===== Keterangan tambahan ===== --}}
+                    <div class="lwg-bagian">
+                        <div class="lwg-bagian-judul"><i class="bi bi-card-checklist"></i> Boleh dikosongkan</div>
+                        <p class="lwg-bantu" style="margin: -6px 0 12px">
+                            Yang dikosongkan tidak ditampilkan di situs — bukan ditampilkan kosong.
+                        </p>
+
+                        <div class="lwg-rak">
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-jenis">Jenis pekerjaan</label>
+                                <select id="lwg-jenis" class="dsb-isian @error('jenis') is-galat @enderror" wire:model="jenis">
+                                    <option value="" @selected((string) $this->jenis === '')>— tidak disebut —</option>
+                                    @foreach (\App\Models\Lowongan::JENIS as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected((string) $this->jenis === $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('jenis') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-pola">Bekerja di mana</label>
+                                <select id="lwg-pola" class="dsb-isian @error('polaKerja') is-galat @enderror" wire:model="polaKerja">
+                                    <option value="" @selected((string) $this->polaKerja === '')>— tidak disebut —</option>
+                                    @foreach (\App\Models\Lowongan::POLA_KERJA as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected((string) $this->polaKerja === $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('polaKerja') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-lokasi">Kota</label>
+                                <input id="lwg-lokasi" type="text" wire:model="lokasi" maxlength="100" value="{{ $lokasi }}"
+                                    class="dsb-isian @error('lokasi') is-galat @enderror" placeholder="mis. Yogyakarta">
+                                @error('lokasi') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-batas">Terakhir melamar</label>
+                                <input id="lwg-batas" type="date" wire:model="batasLamaran" value="{{ $batasLamaran }}"
+                                    class="dsb-isian @error('batasLamaran') is-galat @enderror">
+                                <span class="lwg-bantu">
+                                    Lewat tanggal ini, lowongan hilang sendiri dari situs.
+                                </span>
+                                @error('batasLamaran') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-posisi">Butuh berapa orang</label>
+                                <input id="lwg-posisi" type="number" min="1" max="999" wire:model="jumlahPosisi" value="{{ $jumlahPosisi }}"
+                                    class="dsb-isian @error('jumlahPosisi') is-galat @enderror" placeholder="mis. 2">
+                                @error('jumlahPosisi') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="lwg-gaji">Kisaran gaji</label>
+                                <input id="lwg-gaji" type="text" wire:model="gaji" maxlength="100" value="{{ $gaji }}"
+                                    class="dsb-isian @error('gaji') is-galat @enderror"
+                                    placeholder="mis. Rp 4–6 juta / bulan">
+                                <span class="lwg-bantu">Kosongkan kalau belum mau disebut.</span>
+                                @error('gaji') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan is-lebar">
+                                <label class="dsb-label" for="lwg-ringkas">Kalimat pembuka</label>
+                                <textarea id="lwg-ringkas" rows="2" wire:model="ringkasan" maxlength="255"
+                                    class="dsb-isian @error('ringkasan') is-galat @enderror"
+                                    placeholder="Satu–dua kalimat yang tampil di kartu lowongan">{{ $ringkasan }}</textarea>
+                                @error('ringkasan') <span class="dsb-galat">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        {{-- Rincian yang tampil di kartu & halaman detail situs Asthana --}}
-        <div class="lwg-rincian mt-4">
-            <div class="lwg-rincian-judul">
-                <i class="bi bi-card-checklist"></i>
-                <div>
-                    <strong>Rincian untuk situs</strong>
-                    <small>Tampil di kartu lowongan & halaman detail. Yang kosong tidak ditampilkan.</small>
+        {{-- ===== Isi lowongan (Quill) ===== --}}
+        <div class="dsb-rak dsb-bagian">
+            <div class="dsb-kartu k-12">
+                <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala-kiri">
+                        <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-file-text"></i></span>
+                        <span>
+                            <h2 class="dsb-kartu-judul">Isi Lowongannya</h2>
+                            <span class="dsb-kartu-sub">Pekerjaannya apa saja, dan siapa yang dicari</span>
+                        </span>
+                    </div>
                 </div>
-            </div>
-            <div class="row g-3">
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Perusahaan <span class="text-danger">*</span></label>
-                    <select class="form-select lwg-input @error('unit') is-invalid @enderror" wire:model="unit">
-                        @foreach (\App\Models\Lowongan::UNIT as $kunci => $label)
-                            <option value="{{ $kunci }}" @selected((string) $this->unit === $kunci)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('unit') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Jenis Pekerjaan</label>
-                    <select class="form-select lwg-input @error('jenis') is-invalid @enderror" wire:model="jenis">
-                        <option value="" @selected((string) $this->jenis === '')>— Tidak disebut —</option>
-                        @foreach (\App\Models\Lowongan::JENIS as $kunci => $label)
-                            <option value="{{ $kunci }}" @selected((string) $this->jenis === $kunci)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('jenis') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Pola Kerja</label>
-                    <select class="form-select lwg-input @error('polaKerja') is-invalid @enderror" wire:model="polaKerja">
-                        <option value="" @selected((string) $this->polaKerja === '')>— Tidak disebut —</option>
-                        @foreach (\App\Models\Lowongan::POLA_KERJA as $kunci => $label)
-                            <option value="{{ $kunci }}" @selected((string) $this->polaKerja === $kunci)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('polaKerja') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Lokasi</label>
-                    <input class="form-control lwg-input @error('lokasi') is-invalid @enderror" type="text" wire:model="lokasi" maxlength="100" placeholder="mis. Yogyakarta">
-                    @error('lokasi') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Batas Lamaran</label>
-                    <input class="form-control lwg-input @error('batasLamaran') is-invalid @enderror" type="date" wire:model="batasLamaran">
-                    <small class="text-muted">Lewat dari tanggal ini, lowongan otomatis hilang dari situs.</small>
-                    @error('batasLamaran') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Jumlah Posisi</label>
-                    <input class="form-control lwg-input @error('jumlahPosisi') is-invalid @enderror" type="number" min="1" max="999" wire:model="jumlahPosisi" placeholder="mis. 2">
-                    @error('jumlahPosisi') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-4">
-                    <label class="form-label fw-semibold text-dark">Kisaran Gaji</label>
-                    <input class="form-control lwg-input @error('gaji') is-invalid @enderror" type="text" wire:model="gaji" maxlength="100" placeholder="mis. Rp 4–6 juta / bulan">
-                    <small class="text-muted">Kosongkan bila tidak ingin ditampilkan.</small>
-                    @error('gaji') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-                <div class="form-group col-md-8">
-                    <label class="form-label fw-semibold text-dark">Ringkasan Singkat</label>
-                    <textarea class="form-control lwg-input @error('ringkasan') is-invalid @enderror" rows="2" wire:model="ringkasan" maxlength="255" placeholder="1–2 kalimat yang tampil di kartu lowongan">{{ $ringkasan }}</textarea>
-                    @error('ringkasan') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                </div>
-            </div>
-        </div>
 
-        <!-- descriptions form -->
-        <div class="form-group mt-3" wire:ignore>
-            <label class="form-label fw-semibold text-dark">Deskripsi Lowongan</label>
-            <div class="border rounded-3 quill-container" style="height: 150px; overflow: auto;">
-                <div id="editor-descriptions"></div>
-            </div>
-            <input type="hidden" wire:model="descriptions" id="descriptions">
-            @error('descriptions')
-            <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
-        </div>
+                <div class="dsb-kartu-isi">
+                    {{-- wire:ignore WAJIB: Quill mengubah DOM di dalamnya, dan
+                         Livewire yang menggambar ulang kotak ini akan membuang
+                         editornya berikut tulisan yang belum tersimpan. --}}
+                    <div class="dsb-medan lwg-bagian" wire:ignore>
+                        <label class="dsb-label">Pekerjaannya apa saja</label>
+                        <div class="lwg-tulis quill-container">
+                            <div id="editor-descriptions"></div>
+                        </div>
+                        <input type="hidden" wire:model="descriptions" id="descriptions">
+                        @error('descriptions') <span class="dsb-galat">{{ $message }}</span> @enderror
+                    </div>
 
-        <!-- requirements form -->
-        <div class="form-group mt-3" wire:ignore>
-            <label class="form-label fw-semibold text-dark">Persyaratan Lowongan</label>
-            <div class="border rounded-3 quill-container" style="height: 150px; overflow: auto;">
-                <div id="editor-requirements"></div>
-            </div>
-            <input type="hidden" wire:model="requirements" id="requirements">
-            @error('requirements')
-            <div class="text-danger small mt-1">{{ $message }}</div>
-            @enderror
-        </div>
+                    <div class="dsb-medan lwg-bagian" wire:ignore>
+                        <label class="dsb-label">Syarat pelamarnya</label>
+                        <div class="lwg-tulis quill-container">
+                            <div id="editor-requirements"></div>
+                        </div>
+                        <input type="hidden" wire:model="requirements" id="requirements">
+                        @error('requirements') <span class="dsb-galat">{{ $message }}</span> @enderror
+                    </div>
 
-        <div class="d-flex mt-4">
-            <button type="submit"
-                class="btn flex-grow-1 d-inline-flex align-items-center justify-content-center text-white rounded-pill shadow-lg"
-                style="height: 55px; background: linear-gradient(135deg, #6c63ff, #4e46e5); font-weight: 600; font-size: 1.1rem; border: none;"
-                wire:loading.attr="disabled" wire:target="save">
-                {{-- Kelas display di dalam, bukan pada elemen wire:loading: d-* !important
-                     mengalahkan cara Livewire menyembunyikannya. --}}
-                <span wire:loading.remove wire:target="save">
-                    <span class="d-inline-flex align-items-center">
-                        <i class="bi bi-check2-circle me-2 fs-4"></i>
-                        <span>{{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}</span>
-                    </span>
-                </span>
-                <span wire:loading wire:target="save">
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan…
-                </span>
-            </button>
+                    <div class="lwg-kaki">
+                        <span class="lwg-kaki-ket">
+                            {{ $this->mode === 'create'
+                                ? 'Belum tayang sebelum Anda menekan Simpan.'
+                                : 'Perubahan baru berlaku setelah disimpan.' }}
+                        </span>
+
+                        <div class="lwg-kaki-aksi">
+                            <a href="{{ route('admin.lowongan.index') }}" wire:navigate
+                                class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                                <i class="bi bi-x-lg"></i><span>Batal</span>
+                            </a>
+                            {{-- Kelas display di dalam, bukan pada elemen wire:loading:
+                                 d-* !important mengalahkan cara Livewire
+                                 menyembunyikannya. --}}
+                            <button type="submit" class="dsb-tombol is-utama"
+                                wire:loading.attr="disabled" wire:target="save">
+                                <span wire:loading.remove wire:target="save" class="lwg-tombol-isi">
+                                    <i class="bi bi-check2-circle"></i>
+                                    {{ $this->mode === 'create' ? 'Simpan Lowongan' : 'Simpan Perubahan' }}
+                                </span>
+                                <span wire:loading wire:target="save" class="lwg-tombol-isi">
+                                    <span class="dsb-putar is-kecil"></span> Menyimpan…
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </form>
 </div>
@@ -228,29 +328,3 @@
     });
 </script>
 @endscript
-
-@push('styles')
-<style>
-    .quill-container {
-        position: relative;
-        height: 250px;
-        overflow: auto;
-        border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-    }
-
-    .quill-container .ql-toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: white;
-        border-bottom: 1px solid #ccc;
-    }
-
-    .quill-container .ql-container {
-        height: calc(100% - 42px);
-        /* 42px adalah tinggi toolbar */
-        overflow-y: auto;
-    }
-</style>
-@endpush

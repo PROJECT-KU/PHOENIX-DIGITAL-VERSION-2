@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\LowonganPekerjaan;
 
 use App\Models\Lowongan;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -114,7 +115,18 @@ class LowonganPekerjaanList extends Component
             // Berapa orang yang sudah melamar: pertanyaan pertama yang
             // dibawa orang saat membuka layar ini, dan dulu tidak terjawab
             // di sini sama sekali.
-            ->withCount('applications')
+            ->withCount([
+                'applications',
+                /*
+                 | Berapa yang BELUM disentuh, terpisah dari totalnya.
+                 |
+                 | "7 pelamar" bisa berarti tujuh berkas menumpuk belum
+                 | dibaca, atau tujuh yang sudah tuntas diproses — dua
+                 | keadaan yang menuntut hal berbeda dari admin, dan satu
+                 | angka tidak bisa membedakannya.
+                 */
+                'applications as applications_baru_count' => fn ($q) => $q->where('status', 'baru'),
+            ])
             ->latest()
             ->paginate($this->perPage);
 
@@ -125,6 +137,75 @@ class LowonganPekerjaanList extends Component
             'jumlahTab' => $this->jumlahTab(),
             'pilihanUnit' => Lowongan::UNIT,
         ]);
+    }
+
+    /**
+     * Tutup lowongan yang batas lamarannya sudah lewat.
+     *
+     * Sekali tekan dari barisnya, bukan lewat layar ubah. Lowongan lewat
+     * batas sudah BERHENTI tampil di situs; membukanya penuh hanya untuk
+     * mengubah satu kotak pilih adalah lima langkah untuk satu keputusan
+     * yang sudah jelas — dan karena repot, ia dibiarkan menumpuk.
+     */
+    #[On('tutup-lowongan')]
+    public function tutup($id): void
+    {
+        if (! auth()->user()->hasPermission('edit_lowongan')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah data lowongan.');
+
+            return;
+        }
+
+        $lowongan = Lowongan::find($id);
+
+        if (! $lowongan) {
+            $this->dispatch('swal-error', message: 'Lowongan tidak ditemukan.');
+
+            return;
+        }
+
+        $lowongan->update(['is_active' => 'non-active']);
+        $this->dispatch('swal-success', message: 'Lowongan "'.$lowongan->title.'" ditutup.');
+    }
+
+    /**
+     * Salin lowongan jadi draf baru yang belum tayang.
+     *
+     * Membuka ulang posisi tahun lalu berarti mengetik ulang seluruh syarat
+     * dan deskripsinya — dan yang terjadi berikutnya bukan admin mengetik
+     * ulang, melainkan lowongan lama diaktifkan kembali dengan isi yang
+     * sudah tidak sesuai.
+     *
+     * Salinannya sengaja NON-AKTIF dan tanpa batas lamaran: ia belum siap
+     * tayang, dan salinan yang langsung hidup berarti dua lowongan kembar
+     * muncul bersamaan di situs sebelum sempat disunting.
+     */
+    public function gandakan($id)
+    {
+        if (! auth()->user()->hasPermission('create_lowongan')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menambah data lowongan.');
+
+            return null;
+        }
+
+        $asli = Lowongan::find($id);
+
+        if (! $asli) {
+            $this->dispatch('swal-error', message: 'Lowongan tidak ditemukan.');
+
+            return null;
+        }
+
+        $salinan = $asli->replicate(['slug', 'created_at', 'updated_at']);
+        $salinan->title = $asli->title.' (salinan)';
+        $salinan->slug = Str::slug($asli->title).'-'.Str::lower(Str::random(6));
+        $salinan->is_active = 'non-active';
+        $salinan->batas_lamaran = null;
+        $salinan->save();
+
+        session()->flash('success', 'Salinan dibuat. Sunting dulu, lalu aktifkan kalau sudah siap.');
+
+        return $this->redirectRoute('admin.lowongan.edit', ['lowongan' => $salinan->id], navigate: true);
     }
 
     #[On('delete-lowongan-data')]

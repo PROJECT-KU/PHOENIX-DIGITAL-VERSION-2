@@ -26,7 +26,11 @@ Data Lowongan Pekerjaan || lemon
     .lw-tautan { text-decoration: none; color: inherit; display: block; min-width: 0; }
     .lw-tautan:hover .dsb-tabel-judul { color: #6d28d9; text-decoration: underline; }
 
-    .lw-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; }
+    .lw-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    /* Lencana yang bisa ditekan: tetap berupa lencana, tetapi jelas bahwa ia
+       membawa ke suatu tempat. */
+    .lw-lencana-tautan { text-decoration: none; }
+    .lw-lencana-tautan:hover { filter: brightness(.95); text-decoration: underline; }
 
     /* Peringatan batas lamaran, di barisnya sendiri.
 
@@ -211,6 +215,8 @@ Data Lowongan Pekerjaan || lemon
                                         $batas = $lowongan->batas_lamaran;
                                         $sisaHari = $batas ? now()->startOfDay()->diffInDays($batas, false) : null;
                                         $jumlahPelamar = (int) ($lowongan->applications_count ?? 0);
+                                        $belumDisentuh = (int) ($lowongan->applications_baru_count ?? 0);
+                                        $urlBagikan = route('situs.lowongan', $lowongan->slug);
                                         $urlUbah = $bisaUbah ? route('admin.lowongan.edit', $lowongan->id) : null;
                                     @endphp
                                     <tr wire:key="lowongan-{{ $lowongan->id }}">
@@ -254,9 +260,23 @@ Data Lowongan Pekerjaan || lemon
                                              ini, dan dulu tidak terjawab di sini sama sekali. --}}
                                         <td data-judul="Pelamar">
                                             @if ($jumlahPelamar > 0)
-                                                <span class="dsb-lencana is-biru">
+                                                {{-- Tautan, bukan sekadar angka: yang membaca "7 orang"
+                                                     berikutnya mau membuka ketujuhnya. --}}
+                                                <a wire:navigate href="{{ route('admin.pelamar.index', ['lowongan' => $lowongan->id]) }}"
+                                                    class="dsb-lencana is-biru lw-lencana-tautan"
+                                                    title="Buka pelamar posisi ini">
                                                     <i class="bi bi-people-fill"></i>{{ number_format($jumlahPelamar, 0, ',', '.') }} orang
-                                                </span>
+                                                </a>
+                                                @if ($belumDisentuh > 0)
+                                                    {{-- "7 pelamar" bisa berarti tujuh berkas menumpuk
+                                                         belum dibaca, atau tujuh yang sudah tuntas
+                                                         diproses — dua keadaan yang menuntut hal
+                                                         berbeda, dan satu angka tidak bisa
+                                                         membedakannya. --}}
+                                                    <span class="dsb-tabel-samar d-block lw-awas">
+                                                        {{ $belumDisentuh }} belum dibuka
+                                                    </span>
+                                                @endif
                                             @else
                                                 <span class="lw-samar">Belum ada</span>
                                             @endif
@@ -306,6 +326,42 @@ Data Lowongan Pekerjaan || lemon
                                         @if ($bisaAksi)
                                             <td data-judul="Aksi" class="text-end">
                                                 <span class="lw-aksi">
+                                                    {{-- Lihat seperti yang dilihat pelamar.
+
+                                                         Rutenya sudah lama ada (meta OG lalu dialihkan ke
+                                                         situs), tetapi tidak ada satu layar admin pun yang
+                                                         menautkannya — jadi untuk menyebarkan lowongan ke
+                                                         WhatsApp, tautannya harus dirakit sendiri. --}}
+                                                    @if ($aktif && ! $lewatBatas)
+                                                        <a href="{{ $urlBagikan }}" target="_blank" rel="noopener"
+                                                            class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                                                            title="Lihat & bagikan — ini yang dibuka pelamar">
+                                                            <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
+                                                    @endif
+
+                                                    {{-- Tutup sekali tekan, hanya untuk yang memang sudah
+                                                         lewat batas: ia sudah berhenti tampil di situs, dan
+                                                         membuka layar ubah hanya untuk satu kotak pilih
+                                                         adalah lima langkah untuk keputusan yang sudah
+                                                         jelas — lalu dibiarkan menumpuk karena repot. --}}
+                                                    @if ($bisaUbah && $lewatBatas)
+                                                        <button type="button" class="dsb-tombol is-lembut tutup-lowongan-btn"
+                                                            style="--ikon: #64748b"
+                                                            data-id="{{ $lowongan->id }}" data-name="{{ $lowongan->title }}"
+                                                            title="Tutup lowongan ini">
+                                                            <i class="bi bi-slash-circle"></i>
+                                                        </button>
+                                                    @endif
+
+                                                    @if ($bisaTambah)
+                                                        <button type="button" wire:click="gandakan({{ $lowongan->id }})"
+                                                            class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
+                                                            title="Salin jadi lowongan baru (belum tayang)">
+                                                            <i class="bi bi-copy"></i>
+                                                        </button>
+                                                    @endif
+
                                                     @if ($bisaUbah)
                                                         <a href="{{ route('admin.lowongan.edit', $lowongan->id) }}" wire:navigate
                                                             class="dsb-tombol is-lembut" style="--ikon: #d97706" title="Ubah lowongan ini">
@@ -359,6 +415,37 @@ Data Lowongan Pekerjaan || lemon
 
     document.addEventListener('livewire:navigated', function() {
         document.body.addEventListener('click', function(event) {
+            /* Menutup lowongan BUKAN menghapusnya: ia bisa dibuka lagi kapan
+               saja. Dialognya karena itu bertanya biasa, bukan memperingatkan
+               seperti dialog hapus — dialog yang sama persis membuat keduanya
+               terasa sama berat, dan yang berat cenderung tidak ditekan. */
+            const tutup = event.target.closest('.tutup-lowongan-btn');
+
+            if (tutup) {
+                event.preventDefault();
+                const idTutup = tutup.getAttribute('data-id');
+                const namaTutup = tutup.getAttribute('data-name');
+
+                Swal.fire({
+                    title: 'Tutup lowongan ini?',
+                    text: '"' + (namaTutup || '') + '" tidak akan tampil lagi di situs. Bisa dibuka kembali lewat tombol Ubah.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, tutup',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfigLowongan
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const komponen = tutup.closest('[wire\\:id]');
+                        if (komponen) {
+                            Livewire.find(komponen.getAttribute('wire:id')).call('tutup', idTutup);
+                        }
+                    }
+                });
+
+                return;
+            }
+
             const button = event.target.closest('.delete-lowongan-btn');
 
             if (button) {

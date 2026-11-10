@@ -7,6 +7,7 @@ use App\Models\Lowongan;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -20,6 +21,15 @@ class PelamarKerjaList extends Component
 
     public $filterMonth = '';
 
+    /**
+     * Lowongan yang sedang disaring.
+     *
+     * Terikat URL supaya layar Lowongan bisa menautkannya langsung:
+     * /admin/pelamar?filterJob=7. Tanpa itu, angka "7 orang" di daftar
+     * lowongan tidak bisa ditindaklanjuti — admin harus membuka layar ini
+     * lalu mencari lowongannya lagi di kotak pilih.
+     */
+    #[Url(as: 'lowongan', except: '')]
     public $filterJob = '';
 
     public $filterStatus = '';
@@ -63,6 +73,44 @@ class PelamarKerjaList extends Component
         return $query;
     }
 
+    /**
+     * Berapa pelamar di tiap tahap, mengikuti saringan yang SEDANG hidup.
+     *
+     * Dihitung dari kueri yang sama dengan daftarnya, hanya tanpa batas
+     * tahapnya sendiri. Dua kueri yang ditulis terpisah akan berselisih
+     * begitu saringannya bertambah, dan angka di tab lalu menjanjikan isi
+     * yang tidak ada saat ditekan.
+     */
+    public function jumlahTahap(): array
+    {
+        $tahap = $this->filterStatus;
+        $this->filterStatus = '';
+        $dasar = $this->kueri();
+        $this->filterStatus = $tahap;
+
+        $jumlah = ['' => (clone $dasar)->count()];
+
+        foreach (array_keys(JobApplication::STATUS) as $kunci) {
+            $jumlah[$kunci] = (clone $dasar)->where('status', $kunci)->count();
+        }
+
+        return $jumlah;
+    }
+
+    public function setTahap(string $tahap): void
+    {
+        $this->filterStatus = array_key_exists($tahap, JobApplication::STATUS) ? $tahap : '';
+        $this->resetPage();
+    }
+
+    public function adaSaringan(): bool
+    {
+        return trim((string) $this->search) !== ''
+            || $this->filterMonth !== ''
+            || $this->filterJob !== ''
+            || $this->filterStatus !== '';
+    }
+
     public function ekspor()
     {
         return \Maatwebsite\Excel\Facades\Excel::download(
@@ -97,6 +145,12 @@ class PelamarKerjaList extends Component
             'dataPelamar' => $dataPelamar,
             'jobList' => $jobList,
             'months' => $months,
+            'jumlahTahap' => $this->jumlahTahap(),
+            // Dipakai kepala layar: lowongan mana yang sedang dibaca, bila
+            // layar ini dibuka lewat tautan dari daftar Lowongan.
+            'lowonganDisaring' => $this->filterJob && $this->filterJob !== 'umum'
+                ? Lowongan::find($this->filterJob)
+                : null,
         ]);
     }
 

@@ -1,191 +1,319 @@
-
 @section('title')
 Data Pelamar Kerja || lemon
 @stop
+
 <div>
-    <!--================== GLOSSY STYLE ==================-->
+    {{-- Kerangka mengikuti Pesanan Toko (bahasa rupa dsb-*): kartu tab
+         berangka, saringan, lalu tabel dsb. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.partials.kartu-tab-gaya')
+
+    {{-- Gaya khusus layar ini, ditulis INLINE: public/build di-gitignore. --}}
     <style>
-        .stat-icon-wrapper {
-            line-height: 1 !important;
-            display: inline-flex !important;
-            align-items: center;
-            justify-content: center;
-        }
+    .plm-saring { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)) auto; gap: 12px; align-items: end; }
+    @media (max-width: 991.98px) { .plm-saring { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    @media (max-width: 575.98px) { .plm-saring { grid-template-columns: minmax(0, 1fr); } }
+    .plm-medan-aksi { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
 
-        .stat-icon-wrapper i {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-        }
+    .plm-avatar {
+        width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: .86rem; color: #fff;
+    }
+    .plm-tautan { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .plm-tautan:hover .dsb-tabel-judul { color: #6d28d9; text-decoration: underline; }
+    .plm-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; }
+    .plm-aksi { display: inline-flex; gap: 6px; justify-content: flex-end; }
+    .plm-samar { color: var(--dsb-redup); }
 
-        .plm-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #fff;
-            flex-shrink: 0;
-        }
+    /* Keterangan "sedang membaca pelamar posisi X", saat layar ini dibuka
+       lewat tautan dari daftar Lowongan. Tanpa itu, daftar yang tersaring
+       terbaca sebagai seluruh pelamar — dan yang membacanya menyimpulkan
+       lamaran lain hilang. */
+    .plm-konteks {
+        display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+        margin-top: 12px; padding: 10px 13px; border-radius: 12px;
+        background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+        font-size: .82rem; line-height: 1.5;
+    }
+    .plm-konteks > i.bi { flex-shrink: 0; }
     </style>
 
-    <div class="container-fluid">
-        <!--================== HEADER + SEARCH (SATU CARD) ==================-->
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-lg-start">
-                        <h3 class="gradient-text fw-bold mb-1">Data Pelamar Kerja</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-lg-start">
+    @php
+        $bisaHapus = auth()->user()->hasPermission('delete_pelamar');
+        $adaSaringan = $this->adaSaringan();
+        $tahapAktif = (string) $this->filterStatus;
+        $warnaTahap = [
+            '' => '#7c3aed', 'baru' => '#0ea5e9', 'diseleksi' => '#6366f1',
+            'wawancara' => '#d97706', 'diterima' => '#16a34a', 'ditolak' => '#64748b',
+        ];
+        $ikonTahap = [
+            '' => 'bi-collection', 'baru' => 'bi-inbox-fill', 'diseleksi' => 'bi-file-earmark-text',
+            'wawancara' => 'bi-chat-dots-fill', 'diterima' => 'bi-check-circle-fill', 'ditolak' => 'bi-slash-circle',
+        ];
+        $targetMuat = 'search,filterMonth,filterJob,filterStatus,setTahap,resetFilters,gotoPage,previousPage,nextPage';
+        $avatarGrad = ['#7c3aed,#6d28d9', '#2563eb,#0ea5e9', '#059669,#10b981', '#e11d48,#f43f5e', '#d97706,#f59e0b'];
+    @endphp
+
+    <div class="dsb plm-daftar">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Pelamar Kerja</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">
+                        <i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}
+                    </span>
+                    <span class="d-block">
+                        Semua lamaran yang masuk lewat situs — per posisi maupun lamaran umum.
+                    </span>
+                </p>
+            </div>
+
+            <div class="dsb-hero-aksi">
+                <button type="button" wire:click="ekspor" class="dsb-tombol is-lembut" style="--ikon: #16a34a"
+                    wire:loading.attr="disabled" wire:target="ekspor"
+                    title="Unduh Excel berisi persis yang sedang tampil">
+                    <i class="bi bi-file-earmark-excel"></i><span>Unduh Excel</span>
+                </button>
+            </div>
+        </header>
+
+        {{-- ================== TAHAP ==================
+
+             Satu kelompok: semua tab di sini cara melihat daftar yang sama,
+             diurut mengikuti perjalanan lamaran. "Belum dibuka" sengaja
+             paling kiri sesudah Semua — itu satu-satunya tumpukan yang
+             menunggu dikerjakan orang. --}}
+        <div class="dsb-rak">
+            <div class="k-12">
+                <div class="pt-grup-deret">
+                    <nav class="pt-grup" aria-label="Tahap seleksi">
+                        <div class="pt-grup-kepala">
+                            <span class="pt-grup-judul">Tahap seleksi</span>
+                            <span class="pt-grup-ket">Urut perjalanan lamaran</span>
+                        </div>
+                        <div class="pt-kartu-deret" style="--n: 6">
                             @php
-                            $breadcrumbs = [
-                            ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                            ['name' => 'Data Pelamar'],
-                            ];
+                                $daftarTahap = [['', 'Semua lamaran']];
+                                foreach (\App\Models\JobApplication::STATUS as $kunci => $info) {
+                                    $daftarTahap[] = [$kunci, $info[0]];
+                                }
                             @endphp
-                            <x-breadcrumb :items="$breadcrumbs" />
+                            @foreach ($daftarTahap as [$kunci, $label])
+                                @php
+                                    $angka = $jumlahTahap[$kunci] ?? 0;
+                                    $iniAktif = $tahapAktif === $kunci;
+                                @endphp
+                                <button type="button" wire:click="setTahap('{{ $kunci }}')"
+                                    style="--c: {{ $warnaTahap[$kunci] ?? '#7c3aed' }}"
+                                    class="pt-kartu-tab {{ $iniAktif ? 'is-aktif' : '' }} {{ $angka === 0 ? 'is-nol' : '' }}"
+                                    aria-pressed="{{ $iniAktif ? 'true' : 'false' }}">
+                                    <span class="pt-kartu-ikon"><i class="bi {{ $ikonTahap[$kunci] ?? 'bi-dot' }}"></i></span>
+                                    <span class="pt-kartu-teks">
+                                        <span class="pt-kartu-angka">{{ number_format($angka, 0, ',', '.') }}</span>
+                                        <span class="pt-kartu-label">{{ $label }}</span>
+                                    </span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </nav>
+                </div>
+            </div>
+
+            {{-- ================== SARINGAN ================== --}}
+            <div class="dsb-kartu k-12">
+                <div class="dsb-kartu-isi">
+                    <div class="plm-saring">
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="plm-cari">Cari pelamar</label>
+                            <div class="dsb-cari">
+                                <i class="bi bi-search"></i>
+                                <input id="plm-cari" type="search" class="dsb-isian"
+                                    wire:model.live.debounce.300ms="search"
+                                    placeholder="Nama, email, telepon, nomor lamaran, atau posisi">
+                            </div>
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="plm-posisi">Posisi yang dilamar</label>
+                            <select id="plm-posisi" wire:model.live="filterJob" class="dsb-isian">
+                                <option value="" @selected((string) $this->filterJob === '')>Semua posisi</option>
+                                <option value="umum" @selected((string) $this->filterJob === 'umum')>Lamaran umum</option>
+                                @foreach ($jobList as $job)
+                                    <option value="{{ $job->id }}" @selected((string) $this->filterJob === (string) $job->id)>{{ $job->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="plm-bulan">Bulan melamar</label>
+                            <select id="plm-bulan" wire:model.live="filterMonth" class="dsb-isian">
+                                <option value="" @selected((string) $this->filterMonth === '')>Semua bulan</option>
+                                @foreach ($months as $month)
+                                    <option value="{{ $month['value'] }}" @selected((string) $this->filterMonth === (string) $month['value'])>{{ $month['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="dsb-medan plm-medan-aksi">
+                            @if ($adaSaringan)
+                                <button type="button" wire:click="resetFilters" class="dsb-tombol is-lembut">
+                                    <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua lagi</span>
+                                </button>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="form-group position-relative mb-0 header-action" style="flex: 1 1 auto; max-width: 420px;">
-                        <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                        <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
-                            placeholder="Cari nama, email, telepon, atau posisi...">
-                        @if ($search)
-                        <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                            style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                            <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                        </span>
-                        @endif
-                    </div>
+                    @if ($lowonganDisaring)
+                        {{-- Layar ini bisa dibuka lewat tautan "7 orang" dari daftar
+                             Lowongan. Tanpa keterangan ini, daftar yang tersaring
+                             terbaca sebagai seluruh pelamar — dan yang membacanya
+                             menyimpulkan lamaran lain hilang. --}}
+                        <div class="plm-konteks">
+                            <i class="bi bi-funnel-fill"></i>
+                            <span>
+                                Sedang menampilkan pelamar posisi
+                                <strong>{{ $lowonganDisaring->title }}</strong> saja.
+                            </span>
+                            <a href="{{ route('admin.lowongan.index') }}" wire:navigate
+                                class="dsb-tombol is-lembut" style="--ikon: #1e40af">
+                                <i class="bi bi-arrow-left"></i><span>Kembali ke Lowongan</span>
+                            </a>
+                        </div>
+                    @endif
+
+                    @if ($adaSaringan)
+                        <p class="plm-samar" style="margin: 12px 0 0; font-size: .8rem">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Unduh Excel</strong> ikut tersaring — isinya persis yang sedang tampil.
+                        </p>
+                    @endif
                 </div>
             </div>
         </div>
 
-        <!--================== FILTER ==================-->
-        <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
-            <div class="card-body p-3 px-4">
-                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
-                        <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
-                            style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
-                            <i class="bi bi-funnel"></i>
+        {{-- ================== DAFTARNYA ================== --}}
+        <div class="dsb-rak dsb-bagian">
+            <div class="dsb-kartu k-12" wire:loading.class="dsb-sedang-muat" wire:target="{{ $targetMuat }}">
+                <div class="pt-daftar-kepala" style="--c: {{ $warnaTahap[$tahapAktif] ?? '#7c3aed' }}">
+                    <div class="pt-daftar-judul">
+                        <b>{{ $tahapAktif === '' ? 'Semua lamaran' : (\App\Models\JobApplication::STATUS[$tahapAktif][0] ?? 'Lamaran') }}</b>
+                        <span>
+                            @if ($dataPelamar->total() > 0)
+                                {{ number_format($dataPelamar->total(), 0, ',', '.') }} pelamar
+                                @if ($tahapAktif === 'baru')
+                                    — belum ada yang membuka berkasnya
+                                @endif
+                            @else
+                                Belum ada isinya
+                            @endif
                         </span>
-                        <span>Filter Pelamar</span>
-                    </div>
-
-                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                        <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
-                            <option value="" @selected((string) $this->filterMonth === '')>Semua Bulan</option>
-                            @foreach ($months as $month)
-                            <option value="{{ $month['value'] }}" @selected((string) $this->filterMonth === (string) $month['value'])>{{ $month['label'] }}</option>
-                            @endforeach
-                        </select>
-                        <select wire:model.live="filterJob" class="form-select rounded-3 text-capitalize" style="min-width: 180px;">
-                            <option value="" @selected((string) $this->filterJob === '')>Semua Posisi</option>
-                            <option value="umum" @selected((string) $this->filterJob === 'umum')>Lamaran umum</option>
-                            @foreach ($jobList as $job)
-                            <option value="{{ $job->id }}" @selected((string) $this->filterJob === (string) $job->id)>{{ $job->title }}</option>
-                            @endforeach
-                        </select>
-                        <select wire:model.live="filterStatus" class="form-select rounded-3" style="min-width: 160px;" aria-label="Tahap seleksi">
-                            <option value="" @selected((string) $this->filterStatus === '')>Semua Tahap</option>
-                            @foreach (\App\Models\JobApplication::STATUS as $kunciStatus => $infoStatus)
-                            <option value="{{ $kunciStatus }}" @selected((string) $this->filterStatus === $kunciStatus)>{{ $infoStatus[0] }}</option>
-                            @endforeach
-                        </select>
-                        <button wire:click="ekspor" type="button" class="btn btn-success rounded-3 text-nowrap" title="Unduh Excel sesuai saringan" wire:loading.attr="disabled" wire:target="ekspor">
-                            <i class="bi bi-file-earmark-excel me-1"></i>Excel
-                        </button>
-                        @if ($search || $filterMonth || $filterJob || $filterStatus)
-                        <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3" title="Reset filter">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
-                        @endif
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!--================== TABEL ==================-->
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Pelamar</th>
-                                <th>Posisi</th>
-                                <th>Tahap</th>
-                                <th>Tanggal Melamar</th>
-                                <th class="text-center" width="120">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php
-                            $avatarGrad = ['#7c3aed,#6d28d9', '#2563eb,#0ea5e9', '#059669,#10b981', '#e11d48,#f43f5e', '#d97706,#f59e0b'];
-                            @endphp
-                            @forelse ($dataPelamar as $item)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <span class="plm-avatar" style="background: linear-gradient(135deg,{{ $avatarGrad[$loop->index % count($avatarGrad)] }});">
-                                            {{ strtoupper(substr($item->name, 0, 1)) }}
-                                        </span>
-                                        <div>
-                                            <div class="fw-semibold text-dark text-capitalize">{{ $item->name }}</div>
-                                            <small class="text-muted">{{ $item->email }}</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-gradient-blue rounded-pill px-3 py-2 text-capitalize">
-                                        {{ $item->posisi_label }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge rounded-pill px-3 py-2 bg-{{ $item->status_warna }}">{{ $item->status_label }}</span>
-                                </td>
-                                <td class="text-muted">
-                                    {{ $item->created_at->locale('id')->isoFormat('D MMMM YYYY') }}
-                                    <div class="small font-monospace">{{ $item->nomor_lamaran }}</div>
-                                </td>
-                                <td class="text-center text-nowrap">
-                                    <a wire:navigate href="{{ route('admin.pelamar.detail', $item->id) }}"
-                                        class="btn btn-warning btn-sm text-white p-2" title="Detail">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    @if (auth()->user()->hasPermission('delete_pelamar'))
-                                    <button type="button" class="btn btn-danger btn-sm p-2 delete-pelamar-btn"
-                                        data-id="{{ $item->id }}" data-name="{{ $item->name }}" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-person-lines-fill"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">Belum Ada Pelamar</h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">Tidak ada pelamar yang cocok dengan pencarian/filter.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                @if ($dataPelamar->isEmpty())
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon">
+                                <i class="bi {{ $adaSaringan ? 'bi-funnel' : 'bi-person-lines-fill' }}"></i>
+                            </span>
+                            <p class="dsb-kosong-judul">
+                                {{ $adaSaringan ? 'Tidak ada yang cocok' : 'Belum ada pelamar' }}
+                            </p>
+                            <p class="dsb-kosong-ket">
+                                {{ $adaSaringan
+                                    ? 'Coba ganti kata pencarian, pilih posisi lain, atau tekan Semua lamaran.'
+                                    : 'Lamaran yang masuk lewat halaman karier situs akan muncul di sini sendiri.' }}
+                            </p>
+                        </div>
+                    </div>
+                @else
+                    <div class="dsb-tabel-bungkus">
+                        <table class="dsb-tabel plm-tabel">
+                            <thead>
+                                <tr>
+                                    <th>Pelamar</th>
+                                    <th>Posisi</th>
+                                    <th>Tahap</th>
+                                    <th>Melamar</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($dataPelamar as $item)
+                                    @php
+                                        $lencanaBs = [
+                                            'secondary' => 'is-abu', 'primary' => 'is-ungu', 'info' => 'is-biru',
+                                            'success' => 'is-hijau', 'danger' => 'is-merah', 'warning' => 'is-kuning',
+                                        ];
+                                        $rupaTahap = $lencanaBs[$item->status_warna] ?? 'is-abu';
+                                        $urlDetail = route('admin.pelamar.detail', $item->id);
+                                        $adaBerkas = (bool) $item->cv_path;
+                                    @endphp
+                                    <tr wire:key="pelamar-{{ $item->id }}">
+                                        {{-- ===== Pelamar ===== --}}
+                                        <td data-judul="Pelamar">
+                                            <a wire:navigate href="{{ $urlDetail }}" class="plm-tautan">
+                                                <span class="plm-avatar"
+                                                    style="background: linear-gradient(135deg,{{ $avatarGrad[$loop->index % count($avatarGrad)] }});">
+                                                    {{ mb_strtoupper(mb_substr($item->name, 0, 1)) }}
+                                                </span>
+                                                <span class="dsb-tabel-teks">
+                                                    <span class="dsb-tabel-judul text-capitalize">{{ $item->name }}</span>
+                                                    <span class="dsb-tabel-meta">
+                                                        <span><i class="bi bi-envelope"></i>{{ $item->email }}</span>
+                                                    </span>
+                                                    <span class="dsb-tabel-samar plm-nomor">{{ $item->nomor_lamaran }}</span>
+                                                </span>
+                                            </a>
+                                        </td>
 
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $dataPelamar->links('vendor.pagination') }}
-                </div>
+                                        <td data-judul="Posisi">
+                                            <span class="dsb-lencana is-biru text-capitalize">{{ $item->posisi_label }}</span>
+                                        </td>
+
+                                        <td data-judul="Tahap">
+                                            <span class="dsb-lencana {{ $rupaTahap }}">{{ $item->status_label }}</span>
+                                        </td>
+
+                                        <td data-judul="Melamar">
+                                            <span>{{ $item->created_at->locale('id')->isoFormat('D MMM YYYY') }}</span>
+                                            @if (! $adaBerkas)
+                                                {{-- Berkasnya sudah dihapus sesuai masa simpan. Disebut
+                                                     di sini supaya admin tidak mengira sistemnya rusak
+                                                     saat tombol unduh di halaman detail tidak ada. --}}
+                                                <span class="dsb-tabel-samar d-block">berkas sudah dihapus</span>
+                                            @endif
+                                        </td>
+
+                                        <td data-judul="Aksi" class="text-end">
+                                            <span class="plm-aksi">
+                                                <a wire:navigate href="{{ $urlDetail }}"
+                                                    class="dsb-tombol is-lembut" style="--ikon: #0284c7" title="Buka lamaran ini">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                @if ($bisaHapus)
+                                                    <button type="button" class="dsb-tombol is-bahaya delete-pelamar-btn"
+                                                        data-id="{{ $item->id }}" data-name="{{ $item->name }}"
+                                                        title="Hapus lamaran ini">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                @endif
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if ($dataPelamar->hasPages())
+                        <div class="dsb-kartu-isi">
+                            {{ $dataPelamar->links('vendor.pagination') }}
+                        </div>
+                    @endif
+                @endif
             </div>
         </div>
     </div>

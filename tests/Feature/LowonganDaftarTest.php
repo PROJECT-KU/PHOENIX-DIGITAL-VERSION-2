@@ -141,3 +141,175 @@ it('kelas rupa yang dipakai layar ini punya definisinya', function () {
         expect($isi)->toContain('.'.$kelas);
     }
 });
+
+/* =============== TINDAKAN DI BARISNYA =============== */
+
+it('menutup lowongan lewat batas sekali tekan', function () {
+    /*
+     | Lowongan lewat batas sudah BERHENTI tampil di situs. Membuka layar
+     | ubah hanya untuk satu kotak pilih adalah lima langkah untuk keputusan
+     | yang sudah jelas — lalu dibiarkan menumpuk karena repot.
+     */
+    $lowongan = lowonganDaftarUji(['batas_lamaran' => now()->subDays(3)]);
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->call('tutup', $lowongan->id);
+
+    expect($lowongan->fresh()->is_active)->toBe('non-active');
+});
+
+it('tombol tutup hanya tergambar untuk yang lewat batas', function () {
+    // Pada lowongan yang sedang dibuka, "tutup" adalah keputusan yang belum
+    // tentu benar — dan tombol sekali tekan untuk keputusan yang belum jelas
+    // adalah tombol yang salah tekan.
+    lowonganDaftarUji(['title' => 'Masih Dibuka', 'batas_lamaran' => now()->addDays(10)]);
+
+    /*
+     | Diperiksa lewat MARKAH tombolnya, bukan nama kelasnya saja: nama itu
+     | juga muncul di penangan JS di halaman yang sama (.closest(...)), jadi
+     | assertDontSee atas namanya merah walau tidak ada satu tombol pun
+     | tergambar. Jebakan yang sama dengan teks CSS di dalam <style>.
+     */
+    $markah = 'dsb-tombol is-lembut tutup-lowongan-btn';
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertDontSee($markah, false);
+
+    lowonganDaftarUji(['title' => 'Sudah Lewat', 'batas_lamaran' => now()->subDays(2)]);
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertSee($markah, false);
+});
+
+it('menolak menutup tanpa izin ubah', function () {
+    $lowongan = lowonganDaftarUji(['batas_lamaran' => now()->subDays(3)]);
+    $tanpaIzin = adminRab(['akses_asthana', 'view_lowongan']);
+
+    Livewire::actingAs($tanpaIzin)
+        ->test(LowonganPekerjaanList::class)
+        ->call('tutup', $lowongan->id);
+
+    // Tombolnya memang tidak tergambar, tetapi layar boleh dilewati.
+    expect($lowongan->fresh()->is_active)->toBe('active');
+});
+
+it('menggandakan lowongan jadi salinan yang BELUM tayang', function () {
+    /*
+     | Salinan yang langsung hidup berarti dua lowongan kembar muncul
+     | bersamaan di situs sebelum sempat disunting.
+     */
+    $asli = lowonganDaftarUji([
+        'title' => 'Programmer Laravel',
+        'batas_lamaran' => now()->addDays(10),
+        'requirements' => 'Minimal 2 tahun pengalaman',
+    ]);
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->call('gandakan', $asli->id)
+        ->assertRedirect();
+
+    $salinan = Lowongan::where('title', 'Programmer Laravel (salinan)')->first();
+
+    expect($salinan)->not->toBeNull()
+        ->and($salinan->is_active)->toBe('non-active')
+        ->and($salinan->batas_lamaran)->toBeNull()
+        // Isinya ikut, karena itu justru gunanya.
+        ->and($salinan->requirements)->toBe('Minimal 2 tahun pengalaman')
+        // Slug WAJIB beda: slug kembar membuat tautan situs menunjuk yang salah.
+        ->and($salinan->slug)->not->toBe($asli->slug);
+});
+
+it('angka pelamar menautkan ke pelamar lowongan itu saja', function () {
+    $lowongan = lowonganDaftarUji(['title' => 'Desainer Grafis']);
+    \App\Models\JobApplication::create([
+        'job_id' => $lowongan->id, 'name' => 'Budi', 'email' => 'budi@contoh.test',
+        'phone' => '081234567890', 'cv_path' => 'uji.pdf',
+    ]);
+
+    // Yang membaca "1 orang" berikutnya mau membukanya.
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertSeeHtml(route('admin.pelamar.index', ['lowongan' => $lowongan->id]));
+});
+
+it('memisahkan pelamar yang belum dibuka dari totalnya', function () {
+    /*
+     | "7 pelamar" bisa berarti tujuh berkas menumpuk belum dibaca, atau
+     | tujuh yang sudah tuntas diproses — dua keadaan yang menuntut hal
+     | berbeda dari admin, dan satu angka tidak bisa membedakannya.
+     */
+    $lowongan = lowonganDaftarUji(['title' => 'Desainer Grafis']);
+
+    foreach (['baru', 'baru', 'ditolak'] as $i => $status) {
+        \App\Models\JobApplication::create([
+            'job_id' => $lowongan->id, 'name' => 'Pelamar '.$i,
+            'email' => "p{$i}@contoh.test", 'phone' => '081234567890',
+            'cv_path' => 'uji.pdf', 'status' => $status,
+        ]);
+    }
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertSee('3 orang')
+        ->assertSee('2 belum dibuka');
+});
+
+it('menautkan lowongan yang tayang ke halaman situsnya', function () {
+    /*
+     | Rutenya sudah lama ada (meta OG lalu dialihkan ke situs), tetapi tidak
+     | ada satu layar admin pun yang menautkannya — jadi untuk menyebarkan
+     | lowongan ke WhatsApp, tautannya harus dirakit sendiri.
+     */
+    $tayang = lowonganDaftarUji(['title' => 'Masih Dibuka', 'batas_lamaran' => now()->addDays(10)]);
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertSeeHtml(route('situs.lowongan', $tayang->slug));
+});
+
+it('tidak menawarkan bagikan untuk lowongan yang tidak tampil di situs', function () {
+    // Tautan yang dibagikan akan mendarat di daftar lowongan, bukan di
+    // posisinya — dan yang membagikannya tidak tahu sampai ada yang mengeluh.
+    $ditutup = lowonganDaftarUji(['title' => 'Sudah Ditutup', 'is_active' => 'non-active']);
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(LowonganPekerjaanList::class)
+        ->assertDontSeeHtml(route('situs.lowongan', $ditutup->slug));
+});
+
+/* =============== BORANG =============== */
+
+it('borang ubah menggambar nilai yang tersimpan', function () {
+    /*
+     | wire:model sendiri TIDAK menggambar nilainya di HTML dari peladen.
+     |
+     | Tanpa value= eksplisit, layar Ubah membuka isian kosong — dan isian
+     | kosong di layar ubah terbaca sebagai "lowongan ini memang belum punya
+     | judul", lalu disimpan begitu saja. Pola yang sama sudah dipakai layar
+     | peserta Orcha dan borang tulisan Asthana.
+     */
+    $lowongan = lowonganDaftarUji([
+        'title' => 'Programmer Laravel',
+        'lokasi' => 'Yogyakarta',
+        'gaji' => 'Rp 5-8 juta',
+        'jumlah_posisi' => 2,
+        'batas_lamaran' => now()->addDays(10)->toDateString(),
+    ]);
+
+    $html = Livewire::actingAs(adminDaftarLowongan())
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class, ['lowongan' => $lowongan])
+        ->html();
+
+    expect($html)
+        ->toContain('value="Programmer Laravel"')
+        ->toContain('value="Yogyakarta"')
+        ->toContain('value="Rp 5-8 juta"')
+        ->toContain('value="2"')
+        ->toContain('value="'.now()->addDays(10)->format('Y-m-d').'"')
+        // Kotak pilih memakai @selected, bukan value=.
+        ->toContain('value="reka" selected');
+});
