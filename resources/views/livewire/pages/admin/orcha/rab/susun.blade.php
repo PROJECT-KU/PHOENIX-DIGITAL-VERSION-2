@@ -481,6 +481,27 @@ Susun RAB || lemon
             white-space: nowrap;
         }
         .rb-biaya-medan.is-sempit .dsb-isian { width: 96px; }
+        /* Kotak satuan lebih lebar dan rata kiri: isinya kalimat ("per kamar
+           per malam"), bukan angka. Rata kanan seperti kotak uang membuat
+           kata-katanya menempel ke panah kotak pilih. */
+        .rb-biaya-medan.is-satuan .dsb-isian {
+            /* 196px, bukan 168: "per kamar per malam" terpotong jadi "per
+               kamar per mala" — dan satuan yang terbaca separuh adalah
+               satuan yang salah dibaca, bukan sekadar jelek. */
+            width: 196px; text-align: left; font-size: .8rem;
+        }
+
+        /* Perubahan satuan yang DITAHAN, di barisnya sendiri.
+           Bukan toast: yang membacanya sedang menatap baris ini, dan toast
+           yang hilang tiga detik kemudian membuat layar tampak diam saja
+           padahal perubahannya memang tidak jadi. */
+        .rb-satuan-tertahan {
+            display: flex; align-items: flex-start; gap: 7px;
+            margin-top: .55rem; padding: .5rem .7rem;
+            border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a;
+            color: #92400e; font-size: .78rem; line-height: 1.5;
+        }
+        .rb-satuan-tertahan > i.bi { line-height: 1.45; flex-shrink: 0; }
         /* Petunjuknya lebih kecil daripada angkanya, dan itu bukan hiasan:
            "otomatis" di ukuran penuh terpotong jadi "otoma" di kotak
            sesempit ini — dan kata yang terpenggal terbaca sebagai sampah,
@@ -2705,10 +2726,16 @@ Susun RAB || lemon
                                                     @elseif ($b['seluruh_perjalanan'] ?? false)
                                                         <span class="rab-pil-hari is-semua">Seluruh perjalanan</span>
                                                     @endif
-                                                    <span class="rab-pil-satuan">{{ $b['satuan_label'] }}</span>
-                                                    @if ($b['kapasitas'])
-                                                        <span class="rab-pil-satuan">kapasitas {{ $b['kapasitas'] }}</span>
-                                                    @endif
+                                                    {{-- Keping "per kamar per malam" dan "kapasitas 2"
+                                                         DIBUANG dari sini: keduanya kini kotak isian di
+                                                         bawah. Baris yang menyebut hal yang sama dua kali
+                                                         membuat yang satu terbaca sebagai keterangan yang
+                                                         tidak ikut berubah — lalu admin mengira
+                                                         suntingannya tidak tersimpan.
+
+                                                         Yang tinggal kalimat penjelasannya, dan ia memang
+                                                         menyebutkan hitungannya utuh: "Rp 337.500 × 4
+                                                         kamar × 1 malam". --}}
                                                     <span class="rab-hitung-teks">{{ $b['penjelasan'] }}</span>
                                                 </div>
 
@@ -2753,6 +2780,41 @@ Susun RAB || lemon
                                                  kesepuluh, yang terlihat cuma dua kotak angka
                                                  tanpa nama. --}}
                                             <div class="rb-biaya-isian">
+                                                {{-- "Dihitung per apa" — paling kiri, karena ia yang
+                                                     menentukan kotak-kotak di sebelahnya.
+
+                                                     Dulu satuan hanya bisa ditentukan sekali, saat
+                                                     barisnya dibuat. Begitu salah, satu-satunya jalan
+                                                     adalah menghapus barisnya lalu mengetik ulang nama,
+                                                     vendor, harga hasil negosiasi, catatan, dan hari
+                                                     pemakaiannya — dan yang terjadi berikutnya bukan
+                                                     admin mengetik ulang, melainkan barisnya dibiarkan
+                                                     salah lalu jumlahnya "dibetulkan" dengan angka
+                                                     karangan. --}}
+                                                <label class="rb-biaya-medan is-satuan">
+                                                    <span>Dihitung per</span>
+                                                    <select wire:model.live="satuanBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                        @foreach ($kosakata['satuan'] ?? [] as $kunci => $label)
+                                                            <option value="{{ $kunci }}" @selected((string) ($this->satuanBaris[$b['id']] ?? '') === (string) $kunci)>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </label>
+
+                                                {{-- Berapa orang muat dalam satu kamar/unit.
+
+                                                     Tampilnya mengikuti satuan yang SEDANG DIPILIH,
+                                                     bukan yang sudah tersimpan — kalau tidak, admin
+                                                     terkunci: memilih "per kamar per malam" ditahan
+                                                     karena kapasitasnya belum ada, sementara kotak
+                                                     kapasitasnya sendiri belum muncul. --}}
+                                                @if (in_array((string) ($this->satuanBaris[$b['id']] ?? ''), $this->satuanBerkapasitas(), true))
+                                                    <label class="rb-biaya-medan is-sempit">
+                                                        <span>Isi {{ (string) ($this->satuanBaris[$b['id']] ?? '') === 'kamar_malam' ? 'kamar' : 'unit' }}</span>
+                                                        <input type="number" min="1" max="1000" placeholder="orang"
+                                                            wire:model.blur="kapasitasBaris.{{ $b['id'] }}" class="dsb-isian">
+                                                    </label>
+                                                @endif
+
                                                 <label class="rb-biaya-medan">
                                                     <span>Harga satuan</span>
                                                     <span class="orcha-rupiah orcha-rupiah-kecil rb-uang-sel">
@@ -2805,6 +2867,18 @@ Susun RAB || lemon
                                                     <strong>{{ $b['subtotal_teks'] }}</strong>
                                                 </div>
                                             </div>
+
+                                            {{-- Apa yang kurang, di barisnya sendiri.
+
+                                                 Bukan toast: yang membacanya sedang menatap baris ini,
+                                                 dan toast yang hilang tiga detik kemudian membuat layar
+                                                 tampak diam saja padahal perubahannya memang ditahan. --}}
+                                            @if (! empty($satuanTertahan[$b['id']]))
+                                                <div class="rb-satuan-tertahan">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                                    <span>{{ $satuanTertahan[$b['id']] }}</span>
+                                                </div>
+                                            @endif
 
                                             <div class="rb-biaya-aksi">
                                                 <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat rab-geser-btn"

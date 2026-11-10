@@ -181,6 +181,44 @@ class OrchaRabSusun extends Component
      */
     public array $malamBaris = [];
 
+    /**
+     * Satuan tiap baris — "dihitung per apa".
+     *
+     * Dulu hanya bisa ditentukan sekali, saat barisnya dibuat. Begitu salah,
+     * satu-satunya jalan adalah menghapus barisnya lalu mengetik ulang
+     * seluruh isinya: nama, vendor, harga hasil negosiasi, catatan, hari
+     * pemakaiannya. Yang terjadi berikutnya bukan admin mengetik ulang,
+     * melainkan barisnya dibiarkan salah dan jumlahnya "dibetulkan" dengan
+     * angka karangan.
+     *
+     * @var array<int, string>
+     */
+    public array $satuanBaris = [];
+
+    /**
+     * Berapa orang muat dalam satu kamar/unit.
+     *
+     * Hanya berarti untuk satuan berkapasitas. Ikut bisa disunting karena
+     * tanpa itu admin terkunci: memilih "per kamar per malam" ditolak sebab
+     * kapasitasnya belum ada, sementara kotak kapasitasnya sendiri dulu
+     * hanya muncul untuk baris yang SUDAH bersatuan kamar.
+     *
+     * @var array<int, string>
+     */
+    public array $kapasitasBaris = [];
+
+    /**
+     * Baris yang satuannya sudah dipilih tetapi belum bisa disimpan.
+     *
+     * Isinya kalimat yang memberi tahu apa yang kurang. Disimpan per baris,
+     * bukan sebagai toast sekali lewat: yang membacanya sedang menatap
+     * barisnya, dan toast yang hilang tiga detik kemudian membuat layar
+     * tampak diam saja.
+     *
+     * @var array<int, string>
+     */
+    public array $satuanTertahan = [];
+
     public string $pilihMaster = '';
 
     public bool $bukaManual = false;
@@ -296,6 +334,9 @@ class OrchaRabSusun extends Component
         $this->jumlahBaris = [];
         $this->unitBaris = [];
         $this->malamBaris = [];
+        $this->satuanBaris = [];
+        $this->kapasitasBaris = [];
+        $this->satuanTertahan = [];
         $this->catatanBaris = [];
         foreach ($data['ringkasan']['baris'] ?? [] as $b) {
             $this->hargaBaris[$b['id']] = $this->keRupiah($b['harga_satuan']) ?: '0';
@@ -312,6 +353,9 @@ class OrchaRabSusun extends Component
              */
             $this->malamBaris[$b['id']] = ($b['malam_manual'] ?? null) === null
                 ? '' : (string) $b['malam_manual'];
+            $this->satuanBaris[$b['id']] = (string) ($b['satuan'] ?? '');
+            // Kosong berarti belum ditentukan — bukan nol orang per kamar.
+            $this->kapasitasBaris[$b['id']] = (string) ($b['kapasitas'] ?? '');
             $this->catatanBaris[$b['id']] = (string) ($b['catatan'] ?? '');
         }
 
@@ -1060,6 +1104,69 @@ class OrchaRabSusun extends Component
         $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", [
             'malam_manual' => $bersih === '' ? null : max(0, min(365, (int) $bersih)),
         ]);
+    }
+
+    /**
+     * Mengganti satuan baris: "dihitung per apa".
+     *
+     * Satuan dan kapasitas dikirim BERSAMAAN, bukan dua panggilan berurutan.
+     * Berurutan, admin terkunci: memilih "per kamar per malam" ditolak sebab
+     * kapasitasnya belum ada, dan kapasitasnya tidak bisa diisi karena
+     * satuannya belum berganti. Kalau kapasitasnya memang belum ada, layar
+     * MENAHAN perubahannya dan mengatakan apa yang kurang — tidak menebak
+     * angkanya, karena 40 peserta dibagi kapasitas tebakan 1 menghasilkan 40
+     * kamar yang terlihat seperti hitungan sungguhan.
+     */
+    public function updatedSatuanBaris($nilai, $id): void
+    {
+        $satuan = trim((string) $nilai);
+        $kapasitas = trim((string) ($this->kapasitasBaris[$id] ?? ''));
+
+        if (in_array($satuan, $this->satuanBerkapasitas(), true) && $kapasitas === '') {
+            $this->satuanTertahan[$id] = 'Isi dulu berapa orang per '
+                .($satuan === 'kamar_malam' ? 'kamar' : 'unit').' di kotak sebelah.';
+
+            return;
+        }
+
+        unset($this->satuanTertahan[$id]);
+
+        $muatan = ['satuan' => $satuan];
+        if ($kapasitas !== '') {
+            $muatan['kapasitas'] = max(1, min(1000, (int) $kapasitas));
+        }
+
+        $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", $muatan);
+    }
+
+    /**
+     * Berapa orang muat dalam satu kamar/unit.
+     *
+     * Ikut membawa satuan yang sedang dipilih bila ia belum tersimpan —
+     * inilah yang melepaskan kunci di atas: admin memilih satuannya dulu,
+     * lalu mengisi kapasitasnya, dan keduanya berangkat sekali jalan.
+     */
+    public function updatedKapasitasBaris($nilai, $id): void
+    {
+        $bersih = trim((string) $nilai);
+        $muatan = ['kapasitas' => $bersih === '' ? null : max(1, min(1000, (int) $bersih))];
+
+        $dipilih = trim((string) ($this->satuanBaris[$id] ?? ''));
+        if ($dipilih !== '' && isset($this->satuanTertahan[$id])) {
+            $muatan['satuan'] = $dipilih;
+        }
+
+        if ($bersih === '' && in_array($dipilih, $this->satuanBerkapasitas(), true)) {
+            // Mengosongkan kapasitas pada satuan berkapasitas akan membuat
+            // seluruh rombongan dihitung muat dalam satu kamar. Ditahan di
+            // sini, bukan dikirim lalu ditolak peladen.
+            $this->satuanTertahan[$id] = 'Kapasitas tidak boleh kosong untuk satuan ini.';
+
+            return;
+        }
+
+        unset($this->satuanTertahan[$id]);
+        $this->kirimKe('ubah', "/rab/{$this->rabId}/biaya/{$id}", $muatan);
     }
 
     public function pakaiHargaMaster(int $id): void
