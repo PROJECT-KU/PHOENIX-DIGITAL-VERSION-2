@@ -13,6 +13,31 @@ Detail Pelamar Kerja || lemon
     .pld-lencana-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 7px; }
     .pld-nomor { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
+    /* ===== Pembaca berkas mengisi tinggi kartunya =====
+
+       .dsb-rak meregangkan semua kartu dalam satu baris setinggi yang
+       tertinggi. Kolom kanan (alur tahap + keterangan) kini lebih tinggi
+       daripada pembaca berkas yang tingginya dipatok min(64vh, 740px), jadi
+       kartu kiri ikut diregangkan sementara ISINYA tidak — menyisakan putih
+       sepanjang ~250px di bawah tombol Unduh.
+
+       Yang diperbaiki: rantai flex dari kartu sampai bingkainya, supaya
+       ruang yang ada dipakai menggambar halaman lebih besar. min-height
+       menjaga bingkainya tetap layak saat kolom kanan justru lebih pendek
+       (mis. layar sempit, tempat kedua kolom bertumpuk).
+
+       Lingkupnya SATU kartu lewat .pld-kartu-berkas, bukan .dsb-kartu
+       umum: menjadikan semua kartu flex column akan mengubah tata letak
+       kartu lain di layar ini tanpa ada yang memintanya. */
+    .pld-kartu-berkas { display: flex; flex-direction: column; }
+    .pld-kartu-berkas > .dsb-kartu-isi {
+        flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+    }
+    .pld-kartu-berkas .pbk { flex: 1 1 auto; min-height: 0; }
+    .pld-kartu-berkas .pbk-bingkai {
+        height: auto; flex: 1 1 auto; min-height: min(58vh, 620px);
+    }
+
     /* ===== Keterangan pelamar =====
        Baris yang isinya kosong TETAP tergambar supaya tiap keterangan selalu
        di tempat yang sama — mata mencari "telepon" di posisi, bukan dengan
@@ -259,7 +284,7 @@ Detail Pelamar Kerja || lemon
              berarti menggulung ke bawah membaca CV, lalu menggulung ke atas
              lagi untuk menekan tahapnya — bolak-balik untuk tiap pelamar. --}}
         <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-7">
+            <div class="dsb-kartu k-7 pld-kartu-berkas">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-file-earmark-text"></i></span>
