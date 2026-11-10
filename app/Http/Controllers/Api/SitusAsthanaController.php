@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Asthana\Berita;
 use App\Models\Asthana\Klien;
 use App\Models\Asthana\Portofolio;
-use App\Models\Asthana\Testimoni;
 use App\Models\Asthana\Tim;
 use App\Support\Asthana\BeritaOrcha;
 use Illuminate\Http\JsonResponse;
@@ -40,14 +39,8 @@ class SitusAsthanaController extends Controller
                 'logo_url' => Klien::urlGambar($k->logo),
                 'tautan' => $k->tautan,
             ]),
-            'testimoni' => Testimoni::tampil()->get()->map(fn (Testimoni $t) => [
-                'nama' => $t->nama,
-                'jabatan' => $t->jabatan,
-                'perusahaan' => $t->perusahaan,
-                'isi' => $t->isi,
-                'bintang' => $t->bintang,
-                'foto_url' => Testimoni::urlGambar($t->foto),
-            ]),
+            // Asthana + testimoni tayang Orcha (+ Reka, segera hadir) — lihat TestimoniGrup.
+            'testimoni' => \App\Support\Asthana\TestimoniGrup::semua(),
             'portofolio' => Portofolio::terbit()->where('unggulan', true)->urutSitus()->limit(3)->get()
                 ->map(fn (Portofolio $p) => $p->keKartu()),
             // Berita Asthana + artikel blog Orcha yang sudah tayang.

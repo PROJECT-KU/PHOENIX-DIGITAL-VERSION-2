@@ -29,7 +29,7 @@ class AsthanaDaftarList extends Component
      */
     public const JENIS = [
         'klien' => ['Klien & Mitra', 'bi-buildings', '#2455e6', Klien::class, 'logo', 'Logo yang berjalan di beranda situs.'],
-        'testimoni' => ['Testimoni', 'bi-chat-quote', '#7b5cff', Testimoni::class, 'foto', 'Kutipan klien di beranda situs.'],
+        'testimoni' => ['Testimoni', 'bi-chat-quote', '#7b5cff', Testimoni::class, 'foto', 'Kutipan klien di beranda situs. Testimoni Orcha Journey yang tayang ikut tampil otomatis; Reka Technology segera hadir.'],
         'tim' => ['Tim Manajemen', 'bi-people', '#0ea5c6', Tim::class, 'foto', 'Pimpinan di halaman Tentang Kami.'],
         'karyawan' => ['Suara Karyawan', 'bi-person-heart', '#17a974', \App\Models\Asthana\SuaraKaryawan::class, 'foto', 'Kutipan karyawan di halaman Karir.'],
     ];

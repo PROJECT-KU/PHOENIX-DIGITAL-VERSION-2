@@ -134,12 +134,22 @@ class OrchaEtalaseList extends Component
 
         if ($this->kirimData($jalur, $data, $pesan, $this->gambar)) {
             $this->tutup();
+            $this->segarkanTestimoniAsthana();
         }
     }
 
     public function hapus(int $id): void
     {
         $this->hapusData("/{$this->jenis}/{$id}", 'Data dihapus di Orcha.');
+        $this->segarkanTestimoniAsthana();
+    }
+
+    /** Testimoni Orcha yang tayang ikut di beranda situs Asthana — segarkan seketika. */
+    private function segarkanTestimoniAsthana(): void
+    {
+        if ($this->jenis === 'testimoni') {
+            \App\Support\Asthana\TestimoniGrup::lupakanOrcha();
+        }
     }
 
     /**
@@ -157,6 +167,7 @@ class OrchaEtalaseList extends Component
             : 'Testimoni tidak ditayangkan.';
 
         $this->kirimPerubahan("/testimoni/{$id}/status", ['status' => $status], $pesan);
+        \App\Support\Asthana\TestimoniGrup::lupakanOrcha();
     }
 
     public function tutup(): void

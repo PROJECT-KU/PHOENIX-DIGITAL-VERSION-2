@@ -582,6 +582,35 @@ it('artikel blog Orcha yang tayang ikut menjadi berita situs Asthana', function 
         ->and($this->getJson('/api/situs/beranda')->json('data.berita.0.slug'))->toBe('orcha-tips-bromo');
 });
 
+it('testimoni beranda menggabungkan Asthana dan testimoni Orcha yang tayang, bergiliran', function () {
+    Testimoni::create(['nama' => 'Klien A1', 'isi' => 'Bagus', 'bintang' => 5, 'urutan' => 1]);
+    Testimoni::create(['nama' => 'Klien A2', 'isi' => 'Rapi', 'bintang' => 4, 'urutan' => 2]);
+    Testimoni::create(['nama' => 'Tersembunyi', 'isi' => 'x', 'bintang' => 5, 'tampil' => false]);
+    config(['orcha.url' => 'https://orcha.test/api/v1', 'orcha.kunci' => 'kunci-uji']);
+    \Illuminate\Support\Facades\Http::fake(['orcha.test/api/v1/testimoni*' => \Illuminate\Support\Facades\Http::response([
+        'data' => [
+            ['id' => 1, 'nama' => 'Peserta Lama', 'isi' => 'Seru', 'rating' => 4, 'foto' => '/storage/t/a.webp', 'status' => 'tayang'],
+            ['id' => 2, 'nama' => 'Peserta Bintang 5', 'isi' => 'Mantap', 'rating' => 5, 'foto' => null, 'status' => 'tayang'],
+            ['id' => 3, 'nama' => 'Menunggu', 'isi' => 'Belum disetujui', 'rating' => 5, 'foto' => null, 'status' => 'menunggu'],
+        ],
+        'meta' => ['halaman' => 1, 'halaman_terakhir' => 1],
+    ])]);
+
+    $t = $this->getJson('/api/situs/beranda')->assertOk()->json('data.testimoni');
+
+    expect(array_column($t, 'nama'))->toBe(['Klien A1', 'Peserta Bintang 5', 'Klien A2', 'Peserta Lama'])
+        ->and(array_column($t, 'sumber'))->toBe(['asthana', 'orcha', 'asthana', 'orcha'])
+        ->and($t[1]['perusahaan'])->toBe('Pelanggan Orcha Journey')
+        ->and($t[3]['foto_url'])->toBe('https://orcha.test/storage/t/a.webp');
+});
+
+it('Reka belum tersambung: ditandai segera hadir dan tidak menyumbang testimoni', function () {
+    expect(\App\Support\Asthana\TestimoniGrup::SUMBER['reka']['terhubung'])->toBeFalse();
+
+    Testimoni::create(['nama' => 'Klien', 'isi' => 'Oke', 'bintang' => 5]);
+    expect(array_column($this->getJson('/api/situs/beranda')->json('data.testimoni'), 'sumber'))->toBe(['asthana']);
+});
+
 it('Orcha tidak terjangkau: berita Asthana tetap tampil', function () {
     Berita::create(['judul' => 'Berita Asthana', 'slug' => 'asthana-2', 'terbit_at' => now()->subDay()]);
     config(['orcha.url' => 'https://orcha.test/api/v1', 'orcha.kunci' => 'kunci-uji']);
