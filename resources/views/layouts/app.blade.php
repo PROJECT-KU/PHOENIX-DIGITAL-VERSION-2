@@ -41,8 +41,23 @@
     <style>
         /* Transisi halus saat berpindah menu (wire:navigate).
            Fade opacity murni (di-composite GPU) — tetap mulus meski halaman berat.
-           Dipicu via requestAnimationFrame di JS (tanpa reflow paksa yang bikin sendat). */
-        #page-content { will-change: opacity; }
+           Dipicu via requestAnimationFrame di JS (tanpa reflow paksa yang bikin sendat).
+
+           will-change-nya TIDAK dipasang di sini, melainkan dinyalakan sesaat
+           oleh JS selama fade berlangsung lalu dicabut lagi.
+
+           Sebabnya: will-change: opacity membuat KONTEKS PENUMPUKAN baru di
+           #page-content, dan seluruh isi halaman terkurung di dalamnya. Jendela
+           .ts-modal yang hidup di dalam situ lalu tidak pernah bisa naik di atas
+           .sidebar-wrapper (position: fixed; z-index: 10) betapapun besar
+           z-index-nya — 1056 di dalam konteks yang ber-z-index auto tetap
+           dibandingkan sebagai 0 di tingkat akar. Gejalanya: separuh kiri
+           jendela lebar (mis. pembaca berkas pelamar, 980px) tertindih bilah
+           samping, dan latar gelapnya tidak menggelapkan bilah itu.
+
+           Selama fade, opacity < 1 toh sudah membuat konteks penumpukan sendiri,
+           jadi menyalakan will-change di saat itu tidak menambah masalah: tidak
+           ada jendela yang terbuka saat halaman baru sedang muncul. */
 
         @media (prefers-reduced-motion: reduce) {
             #page-content { transition: none !important; opacity: 1 !important; }
@@ -165,12 +180,23 @@
             if (pc) {
                 pc.style.transition = 'none';
                 pc.style.opacity = '0';
+                // Dinyalakan hanya selama fade, lalu DICABUT: kalau menetap, ia
+                // mengurung seluruh isi halaman dalam satu konteks penumpukan
+                // dan jendela .ts-modal tak bisa naik di atas bilah samping
+                // (keterangan lengkapnya di <style> pada <head>).
+                pc.style.willChange = 'opacity';
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         pc.style.transition = 'opacity .28s ease';
                         pc.style.opacity = '1';
                     });
                 });
+                // transitionend saja tidak cukup: kalau fade-nya tidak pernah
+                // jalan (tab di latar, prefers-reduced-motion), peristiwanya tak
+                // pernah datang dan will-change tertinggal menyala selamanya.
+                const lepas = () => { pc.style.willChange = 'auto'; };
+                pc.addEventListener('transitionend', lepas, { once: true });
+                setTimeout(lepas, 600);
             }
         });
 

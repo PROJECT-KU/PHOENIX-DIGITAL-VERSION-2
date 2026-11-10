@@ -343,10 +343,19 @@ Data Pelamar Kerja || lemon
     {{-- ================== JENDELA PEMBACA BERKAS ==================
 
          Memakai kerangka .ts-modal milik sistem desain, BUKAN lapisan
-         sendiri. Lapisan buatan sendiri tadinya ber-z-index 1050/1051 —
-         di bawah bilah samping, jadi jendelanya tertindih dan separuh
-         kirinya hilang. Kerangka bersama sudah memakai 1055/1056 dan
-         sudah terbukti di empat jendela layar Task. --}}
+         sendiri.
+
+         Jendela ini sempat tertindih bilah samping dua kali, dan z-index
+         BUKAN obatnya: menaikkannya dari 1050/1051 ke 1055/1056 tidak
+         mengubah apa pun. Sebabnya ada di layout — #page-content dulu
+         ber-will-change: opacity, yang mengurung semua isi halaman dalam
+         satu konteks penumpukan, sehingga z-index sebesar apa pun di
+         dalamnya tetap kalah dari bilah samping. Sudah dicabut di
+         layouts/app.blade.php; keterangan lengkapnya di sana.
+
+         Jendela selebar 560px tidak pernah memperlihatkan cacat itu karena
+         tidak sampai menjorok ke wilayah bilah samping — yang 980px ini
+         yang membuatnya terlihat. --}}
     @if ($pratinjau)
         <div class="ts-modal-back" wire:click="tutupPratinjau"></div>
         <div class="ts-modal" wire:key="pratinjau-{{ $pratinjau->id }}">
