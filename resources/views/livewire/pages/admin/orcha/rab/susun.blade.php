@@ -1148,11 +1148,6 @@ Susun RAB || lemon
             padding: 1px 7px 2px; border-radius: 7px;
             background: #e0f2fe; color: #075985; font-size: .72rem; font-weight: 700;
         }
-        .rab-pil-satuan {
-            display: inline-flex; align-items: center; padding: 1px 7px 2px; border-radius: 7px;
-            background: #eef2f7; color: var(--dsb-redup, #6b7280);
-            font-size: .68rem; font-weight: 700; white-space: nowrap;
-        }
         .rab-hitung-teks { font-size: .76rem; color: var(--dsb-redup, #6b7280); }
 
         /* Di ponsel tabel biaya berhenti jadi tabel: tiap baris jadi kartu
