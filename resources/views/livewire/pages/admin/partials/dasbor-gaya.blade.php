@@ -1214,6 +1214,13 @@
         display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
         color: var(--dsb-redup); font-size: .76rem;
     }
+    /* Jarak ikon ke tulisannya DI DALAM satu keping.
+
+       gap di atas hanya memisahkan keping satu sama lain; di dalam sebuah
+       <span><i …></i>teks</span> ikon dan tulisannya menempel rapat —
+       "⌂Reka Technology" terbaca sebagai satu kata aneh, bukan sebagai ikon
+       berikut keterangannya. */
+    .dsb-tabel .dsb-tabel-meta span > i.bi { margin-right: 4px; }
     .dsb-tabel .dsb-tabel-angka { font-variant-numeric: tabular-nums; white-space: nowrap; }
     /* Garis kemajuan harus melebar mengikuti kolomnya; sebagai anak kolom
        ber-align-items: flex-start ia menyusut sampai selebar nol. */

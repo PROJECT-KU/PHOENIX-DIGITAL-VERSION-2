@@ -10,14 +10,10 @@
 
 @once
 <style>
-    /* ===== Judul kecil di dalam kartu tabel ===== */
-    .pt-daftar-kepala {
-        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-        padding: 14px clamp(14px, 2vw, 18px); border-bottom: 1px solid #f1f5f9;
-    }
-    .pt-daftar-judul { flex: 1 1 auto; min-width: 0; }
-    .pt-daftar-judul b { display: block; font-size: 1rem; font-weight: 800; color: #1c1f26; }
-    .pt-daftar-judul span { display: block; font-size: .76rem; color: #94a3b8; }
+    /* .pt-daftar-kepala & .pt-daftar-judul PINDAH ke partials/kartu-tab-gaya
+       (yang sudah di-include di atas): layar lain yang memakai kartu tab —
+       Pendaftaran Trip, Lowongan — menggambarnya tanpa gaya selama aturannya
+       hanya ada di sini. */
 
     /* ===== Tabel pesanan di HP: kartu ringkas 3 baris, bukan 7 baris berlabel =====
        Urutan sel: 1 pesanan, 2 produk, 3 total, 4 pembayaran, 5 status, 6 tanggal, 7 aksi. */

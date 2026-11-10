@@ -10,6 +10,20 @@
      .gitignore dan tidak ikut ter-deploy. --}}
 @once
 <style>
+    /* ===== Judul kecil di dalam kartu tabel =====
+       Hidup di sini, bukan di toko-gaya: ia dipakai layar mana pun yang
+       memakai kartu tab — Pendaftaran Trip dan Lowongan ikut memakainya,
+       dan keduanya sempat menggambarnya TANPA GAYA karena aturannya cuma
+       ada di berkas gaya Pesanan Toko. Halamannya tetap 200, jadi tidak ada
+       satu pun tanda bahwa rupanya hilang. */
+    .pt-daftar-kepala {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        padding: 14px clamp(14px, 2vw, 18px); border-bottom: 1px solid #f1f5f9;
+    }
+    .pt-daftar-judul { flex: 1 1 auto; min-width: 0; }
+    .pt-daftar-judul b { display: block; font-size: 1rem; font-weight: 800; color: #1c1f26; }
+    .pt-daftar-judul span { display: block; font-size: .76rem; color: #94a3b8; }
+
     /* Lencana angka kecil — dipakai tombol "Saringan lainnya" di kedua layar. */
     .pt-tab-jumlah {
         min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px;
