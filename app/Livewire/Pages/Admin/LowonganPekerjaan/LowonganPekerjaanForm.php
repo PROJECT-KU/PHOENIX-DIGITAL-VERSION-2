@@ -95,8 +95,25 @@ class LowonganPekerjaanForm extends Component
         return $rules;
     }
 
+    /**
+     * Slug mengikuti judul HANYA saat lowongannya baru.
+     *
+     * Slug adalah ALAMAT lowongan di situs. Dirakit ulang tiap kali judul
+     * diketik — termasuk saat mengubah lowongan yang sudah tayang — admin
+     * yang membetulkan satu huruf salah ketik diam-diam memindahkan
+     * alamatnya, dan setiap tautan yang sudah terlanjur disebar (WhatsApp,
+     * LinkedIn, bio Instagram, indeks Google) menunjuk slug yang tidak ada
+     * lagi. /lowongan/{slug} lalu melemparkan orangnya ke daftar lowongan,
+     * dan yang membagikan tidak pernah tahu.
+     *
+     * Judulnya sendiri tetap boleh diubah — yang dibekukan alamatnya.
+     */
     public function updatingTitle($value)
     {
+        if ($this->mode === 'edit') {
+            return;
+        }
+
         $this->slug = Str::slug($value);
     }
 

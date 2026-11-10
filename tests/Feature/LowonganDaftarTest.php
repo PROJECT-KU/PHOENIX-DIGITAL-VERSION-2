@@ -352,3 +352,48 @@ it('tiap rak di layar daftar punya jarak ke rak berikutnya', function () {
         expect($sisa)->toContain('dsb-bagian');
     }
 });
+
+/* =============== SINKRON DENGAN SITUS =============== */
+
+it('membetulkan judul TIDAK mengubah slug lowongan yang sudah tayang', function () {
+    /*
+     | Slug adalah ALAMAT lowongan di situs.
+     |
+     | updatingTitle() merakit ulang slug tiap kali judul diketik — termasuk
+     | saat MENGUBAH lowongan yang sudah tayang. Admin yang membetulkan satu
+     | huruf salah ketik ("Programer" → "Programmer") diam-diam memindahkan
+     | alamatnya, dan setiap tautan yang sudah terlanjur disebar — WhatsApp,
+     | LinkedIn, bio Instagram, indeks Google — menunjuk slug yang tidak ada
+     | lagi. /lowongan/{slug} lalu melemparkan orangnya ke daftar lowongan,
+     | dan yang membagikan tidak pernah tahu.
+     |
+     | Pada lowongan BARU slug memang harus ikut judulnya; yang tidak boleh
+     | adalah mengubahnya sesudah ia punya alamat.
+     */
+    $lowongan = lowonganDaftarUji(['title' => 'Programer Laravel']);
+    $slugAsli = $lowongan->slug;
+
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class, ['lowongan' => $lowongan])
+        ->set('title', 'Programmer Laravel')
+        ->call('save');
+
+    $sesudah = $lowongan->fresh();
+    expect($sesudah->title)->toBe('Programmer Laravel')
+        ->and($sesudah->slug)->toBe($slugAsli);
+});
+
+it('lowongan baru tetap mendapat slug dari judulnya', function () {
+    // Penjaga arah sebaliknya: kalau slug dibekukan untuk semua keadaan,
+    // lowongan baru lahir tanpa alamat.
+    Livewire::actingAs(adminDaftarLowongan())
+        ->test(\App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanForm::class)
+        ->set('title', 'Desainer Grafis')
+        ->set('isActive', 'active')
+        ->set('unit', 'reka')
+        ->set('descriptions', 'Uji')
+        ->set('requirements', 'Uji')
+        ->call('save');
+
+    expect(Lowongan::where('title', 'Desainer Grafis')->value('slug'))->toBe('desainer-grafis');
+});
