@@ -13,6 +13,23 @@ use Livewire\Volt\Component;
 
 new class extends Component
 {
+    /**
+     * 'lemon' | 'orcha' | 'asthana' — ditetapkan SEKALI saat bilah dipasang.
+     *
+     * Dulu mode dihitung dari request()->routeIs() di with(), yang ikut
+     * dijalankan ulang saat event 'sidebar-badge-updated' merender bilah ini
+     * lewat /livewire/update. Di permintaan itu tidak ada rute halaman, jadi
+     * bilah Orcha tiba-tiba berganti menu lemon di tengah pekerjaan.
+     */
+    public string $mode = 'lemon';
+
+    public function mount(): void
+    {
+        $this->mode = request()->routeIs('admin.orcha.*')
+            ? 'orcha'
+            : (\App\Support\Asthana\ModeAsthana::aktif() ? 'asthana' : 'lemon');
+    }
+
     public function logout(Logout $logout): void
     {
         $logout();
@@ -112,7 +129,10 @@ new class extends Component
             'rscSegera' => $rscSegera,
             'tokoSegera' => $tokoSegera,
             'orchaPerlu' => $orchaPerlu,
-            'modeOrcha' => request()->routeIs('admin.orcha.*'),
+            'modeOrcha' => $this->mode === 'orcha',
+            'modeAsthana' => $this->mode === 'asthana',
+            'asthanaPerlu' => $login && $u->hasPermission('akses_asthana')
+                ? \App\Support\Asthana\ModeAsthana::perlu($u) : ['pelamar_baru' => 0, 'pesan_belum_dibaca' => 0, 'lowongan_lewat_batas' => 0],
 
             // Badge di judul tab (mis. "(3) lemon") = jumlah hal BARU yang perlu
             // ditindaklanjuti: pesanan toko paid + testimoni + ulasan + helpdesk.
@@ -439,6 +459,38 @@ new class extends Component
             letter-spacing: .08em;
             text-transform: uppercase;
         }
+
+        /* Mode Asthana: warna grup Asthana (biru → toska → hijau), padanan Orcha. */
+        #sidebar .asthana-ganti>.sidebar-link {
+            background: linear-gradient(120deg, #2455e6, #0ea5c6 60%, #17a974);
+            margin-bottom: .45rem;
+        }
+
+        #sidebar .asthana-ganti>.sidebar-link i {
+            color: #fff !important;
+        }
+
+        #sidebar .asthana-lencana-menu {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin: .25rem .35rem .5rem;
+            padding: .5rem .75rem;
+            border-radius: .7rem;
+            background: linear-gradient(120deg, #2455e6, #0ea5c6 60%, #17a974);
+            color: #fff;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        #sidebar .asthana-lencana-menu img {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: #fff;
+        }
     </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
@@ -695,6 +747,84 @@ new class extends Component
                                         <span class="orcha-hitung-menu" title="{{ $penanda[$rute][1] }}">
                                             {{ $penanda[$rute][0] > 99 ? '99+' : $penanda[$rute][0] }}
                                         </span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endforeach
+                    @endforeach
+
+                    <li class="mt-4 sidebar-title">Aplikasi</li>
+                    <li class="sidebar-item">
+                        <a href="{{ route('admin.dashboard') }}" class="sidebar-link" wire:navigate>
+                            <i class="bi bi-arrow-left-circle"></i>
+                            <span>Kembali ke lemon</span>
+                        </a>
+                    </li>
+                @elseif ($modeAsthana)
+                    <li class="asthana-lencana-menu">
+                        <img src="{{ asset('images/asthana/logo-surel.png') }}" alt="" width="20" height="20"> Asthana
+                    </li>
+
+                    @php
+                        /*
+                         | Menu mode Asthana — dikelompokkan seperti mode Orcha.
+                         | Tiap butir hanya tampil bagi pemegang izin layarnya.
+                         | [rute, parameter, ikon, label, izin, kunci penanda, jenis aktif]
+                         */
+                        $grupAsthana = [
+                            'Menu' => [
+                                ['admin.asthana.dashboard', [], 'bi-grid-fill', 'Dashboard', 'akses_asthana', null, null],
+                            ],
+                            'Karir' => [
+                                ['admin.lowongan.index', [], 'bi-briefcase', 'Lowongan Kerja', 'view_lowongan', 'lowongan_lewat_batas', null],
+                                ['admin.pelamar.index', [], 'bi-person-badge', 'Pelamar', 'view_pelamar', 'pelamar_baru', null],
+                            ],
+                            'Kepegawaian' => [
+                                ['admin.karyawan.index', [], 'bi-person-vcard', 'Karyawan', 'view_karyawan', null, null],
+                            ],
+                            'Kotak Masuk' => [
+                                ['admin.message.index', [], 'bi-envelope', 'Pesan Masuk', 'view_message', 'pesan_belum_dibaca', null],
+                            ],
+                            'Situs Asthana' => [
+                                ['admin.asthana.portofolio', [], 'bi-grid-1x2', 'Portofolio', 'kelola_situs_asthana', null, 'portofolio'],
+                                ['admin.asthana.berita', [], 'bi-newspaper', 'Berita', 'kelola_situs_asthana', null, 'berita'],
+                                ['admin.asthana.daftar', ['klien'], 'bi-buildings', 'Klien & Mitra', 'kelola_situs_asthana', null, 'klien'],
+                                ['admin.asthana.daftar', ['testimoni'], 'bi-chat-quote', 'Testimoni', 'kelola_situs_asthana', null, 'testimoni'],
+                                ['admin.asthana.daftar', ['tim'], 'bi-people', 'Tim Manajemen', 'kelola_situs_asthana', null, 'tim'],
+                                ['admin.asthana.daftar', ['karyawan'], 'bi-person-heart', 'Suara Karyawan', 'kelola_situs_asthana', null, 'karyawan'],
+                            ],
+                        ];
+                        $judulPenandaAsthana = [
+                            'pelamar_baru' => 'lamaran belum ditinjau',
+                            'pesan_belum_dibaca' => 'pesan belum dibaca',
+                            'lowongan_lewat_batas' => 'lowongan aktif yang batas lamarannya sudah lewat',
+                        ];
+                        $jenisAktifAsthana = (string) request()->route('jenis');
+                        $menuAsthana = collect($grupAsthana)
+                            ->map(fn ($isi) => collect($isi)->filter(fn ($b) => auth()->user()->hasPermission($b[4]))->values())
+                            ->filter(fn ($isi) => $isi->isNotEmpty());
+                    @endphp
+
+                    @foreach ($menuAsthana as $judulGrup => $isiGrup)
+                        <li class="{{ $loop->first ? '' : 'mt-4 ' }}sidebar-title">{{ $judulGrup }}</li>
+
+                        @foreach ($isiGrup as [$rute, $param, $ikon, $label, $izinButir, $kunciPenanda, $jenisButir])
+                            @php
+                                $butirAktif = $jenisButir
+                                    ? request()->routeIs($rute) && ($param === [] || $jenisAktifAsthana === $jenisButir)
+                                    : request()->routeIs($rute) || request()->routeIs(\Illuminate\Support\Str::beforeLast($rute, '.').'.*');
+                                if ($rute === 'admin.asthana.dashboard') {
+                                    $butirAktif = request()->routeIs('admin.asthana.dashboard');
+                                }
+                                $nilaiPenanda = $kunciPenanda ? (int) ($asthanaPerlu[$kunciPenanda] ?? 0) : 0;
+                                $adaPenanda = $nilaiPenanda !== 0;
+                            @endphp
+                            <li class="sidebar-item {{ $butirAktif ? 'active' : '' }}">
+                                <a href="{{ route($rute, $param) }}" class="sidebar-link" wire:navigate>
+                                    <i class="bi {{ $ikon }}"></i>
+                                    <span>{{ $label }}</span>
+                                    @if ($adaPenanda)
+                                        <span class="orcha-hitung-menu" title="{{ $nilaiPenanda }} {{ $judulPenandaAsthana[$kunciPenanda] }}">{{ min($nilaiPenanda, 99) }}</span>
                                     @endif
                                 </a>
                             </li>
@@ -1144,90 +1274,33 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyPermission(['view_karyawan', 'view_lowongan', 'view_pelamar', 'view_message']))
-                <li class="mt-4 sidebar-title">Karyawan & Karir</li>
-                <li
-                    class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'active' : '' }}">
-
-                    <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary fw-bold' : '' }}">
-                        <i
-                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}"></i>
-                        <span
-                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}">
-                            karir
-                        </span>
-                    </a>
-
-                    <ul class="submenu">
-                        @if (auth()->user()->hasPermission('view_karyawan'))
-                        <li class="submenu-item {{ request()->routeIs('admin.karyawan.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.karyawan.index') }}" class="submenu-link">
-                                Karyawan
-                            </a>
-                        </li>
-                        @endif
-                        @if (auth()->user()->hasPermission('view_lowongan'))
-                        <li class="submenu-item {{ request()->routeIs('admin.lowongan.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.lowongan.index') }}" class="submenu-link">
-                                Lowongan Kerja
-                            </a>
-                        </li>
-                        @endif
-                        @if (auth()->user()->hasPermission('view_pelamar'))
-                        <li class="submenu-item {{ request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.pelamar.index') }}"
-                                class="submenu-link">Pelamar</a>
-                        </li>
-                        @endif
-                        @if (auth()->user()->hasPermission('view_message'))
-                        <li class="submenu-item {{ request()->routeIs('admin.message.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.message.index') }}"
-                                class="submenu-link">Pesan Masuk</a>
-                        </li>
-                        @endif
-                    </ul>
-                </li>
-                @endif
-
-                {{-- Isi situs profil PT. Asthana Cipta Mandiri. Izinnya dihitung dulu
-                     jadi boolean supaya kondisi blok di bawah tidak berkurung bersarang. --}}
-                @php
-                    $bolehSitusAsthana = auth()->user()->hasPermission('kelola_situs_asthana');
-                    $aktifSitusAsthana = request()->routeIs('admin.asthana.*');
-                    $jenisSitusAsthana = (string) request()->route('jenis');
-                    $menuSitusAsthana = [
-                        ['admin.asthana.portofolio', [], 'portofolio', 'Portofolio'],
-                        ['admin.asthana.berita', [], 'berita', 'Berita'],
-                        ['admin.asthana.daftar', ['klien'], 'klien', 'Klien & Mitra'],
-                        ['admin.asthana.daftar', ['testimoni'], 'testimoni', 'Testimoni'],
-                        ['admin.asthana.daftar', ['tim'], 'tim', 'Tim Manajemen'],
-                        ['admin.asthana.daftar', ['karyawan'], 'karyawan', 'Suara Karyawan'],
-                    ];
-                @endphp
-                @if ($bolehSitusAsthana)
-                <li class="mt-4 sidebar-title">Situs Perusahaan</li>
-                <li class="sidebar-item has-sub {{ $aktifSitusAsthana ? 'active' : '' }}">
-                    <a href="#" class="sidebar-link {{ $aktifSitusAsthana ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-globe2 {{ $aktifSitusAsthana ? 'text-primary' : '' }}"></i>
-                        <span class="{{ $aktifSitusAsthana ? 'text-primary' : '' }}">Situs Asthana</span>
-                    </a>
-                    <ul class="submenu">
-                        @foreach ($menuSitusAsthana as $butirSitus)
-                        <li class="submenu-item {{ $aktifSitusAsthana && $jenisSitusAsthana === $butirSitus[2] ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route($butirSitus[0], $butirSitus[1]) }}" class="submenu-link">{{ $butirSitus[3] }}</a>
-                        </li>
-                        @endforeach
-                    </ul>
-                </li>
-                @endif
-
                 {{-- Pindah ke Orcha Journey. Hanya tampil bagi yang punya
                      permission — tapi penjaga sebenarnya ada di middleware
                      'permission:akses_orcha' pada rutenya. --}}
-                @if (auth()->user()->hasPermission('akses_orcha'))
+                @php
+                    // Dirakit di sini: dua @if (auth()->user()->…) berurutan
+                    // membuat penanda morph Livewire timpang.
+                    $bolehOrcha = auth()->user()->hasPermission('akses_orcha');
+                    $bolehAsthana = auth()->user()->hasPermission('akses_asthana');
+                    $adaAplikasiLain = $bolehOrcha || $bolehAsthana;
+                    $jumlahAsthana = array_sum($asthanaPerlu);
+                    $adaPerluAsthana = $jumlahAsthana !== 0;
+                @endphp
+                @if ($adaAplikasiLain)
                 <li class="mt-4 sidebar-title">Aplikasi Lain</li>
+                @endif
+                @if ($bolehAsthana)
+                <li class="sidebar-item orcha-ganti asthana-ganti">
+                    <a href="{{ route('admin.asthana.dashboard') }}" class="sidebar-link" wire:navigate>
+                        <i class="bi bi-buildings"></i>
+                        <span>Ganti ke Asthana</span>
+                        @if ($adaPerluAsthana)
+                            <span class="sidebar-badge" title="{{ $jumlahAsthana }} hal menunggu ditindak di Asthana">{{ $jumlahAsthana }}</span>
+                        @endif
+                    </a>
+                </li>
+                @endif
+                @if ($bolehOrcha)
                 <li class="sidebar-item orcha-ganti">
                     <a href="{{ route('admin.orcha.dashboard') }}" class="sidebar-link" wire:navigate>
                         <i class="bi bi-water"></i>

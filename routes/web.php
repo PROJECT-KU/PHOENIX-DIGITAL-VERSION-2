@@ -340,7 +340,7 @@ Route::middleware('permission:view_activity_log')->group(function () {
 });
 
 // Karyawan
-Route::middleware('permission:view_karyawan')->group(function () {
+Route::middleware(['permission:akses_asthana', 'permission:view_karyawan'])->group(function () {
     Route::get('/admin/karyawan', KaryawanList::class)->name('admin.karyawan.index');
     Route::get('/admin/karyawan/create', KaryawanCreate::class)->middleware('permission:create_karyawan')->name('admin.karyawan.create');
     Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->middleware('permission:edit_karyawan')->name('admin.karyawan.edit');
@@ -492,14 +492,14 @@ Route::middleware('permission:view_task')->group(function () {
 });
 
 // Lowongan Pekerjaan
-Route::middleware('permission:view_lowongan')->group(function () {
+Route::middleware(['permission:akses_asthana', 'permission:view_lowongan'])->group(function () {
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
     Route::get('/admin/lowongan/create', LowonganPekerjaanCreate::class)->middleware('permission:create_lowongan')->name('admin.lowongan.create');
     Route::get('/admin/lowongan/{lowongan}/edit', LowonganPekerjaanEdit::class)->middleware('permission:edit_lowongan')->name('admin.lowongan.edit');
 });
 
 // Pelamar Kerja
-Route::middleware('permission:view_pelamar')->group(function () {
+Route::middleware(['permission:akses_asthana', 'permission:view_pelamar'])->group(function () {
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
     // CV & surat lamaran memuat data pribadi — wajib lewat route ber-izin.
@@ -519,7 +519,7 @@ Route::middleware('permission:view_promo')->group(function () {
 });
 
 // Pesan Masuk
-Route::middleware('permission:view_message')->group(function () {
+Route::middleware(['permission:akses_asthana', 'permission:view_message'])->group(function () {
     Route::get('/admin/message', MessageList::class)->name('admin.message.index');
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });
@@ -530,7 +530,15 @@ Route::middleware('permission:view_message')->group(function () {
  | /api/situs/*. Rute tulis didaftarkan SEBELUM {id} supaya "tulis" tidak
  | terbaca sebagai nomor.
  */
-Route::middleware('permission:kelola_situs_asthana')->prefix('admin/asthana')->name('admin.asthana.')->group(function () {
+/*
+ | Mode Asthana (padanan mode Orcha): situs, karyawan, lowongan, pelamar, pesan
+ | masuk — semuanya di balik izin gerbang 'akses_asthana' + izin layarnya.
+ */
+Route::middleware('permission:akses_asthana')
+    ->get('/admin/asthana', \App\Livewire\Pages\Admin\Asthana\AsthanaDashboard::class)
+    ->name('admin.asthana.dashboard');
+
+Route::middleware(['permission:akses_asthana', 'permission:kelola_situs_asthana'])->prefix('admin/asthana')->name('admin.asthana.')->group(function () {
     $tulisan = \App\Livewire\Pages\Admin\Asthana\AsthanaTulisanList::class;
     $form = \App\Livewire\Pages\Admin\Asthana\AsthanaTulisanForm::class;
 

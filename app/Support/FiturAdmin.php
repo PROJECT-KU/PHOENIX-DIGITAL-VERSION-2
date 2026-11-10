@@ -82,6 +82,11 @@ class FiturAdmin
             'ket' => 'Unduhan berkas pengecekan',
             'rute' => ['admin.jasa.'],
         ],
+        'asthana' => [
+            'label' => 'Situs Asthana',
+            'ket' => 'Dasbor mode Asthana dan isi situs perusahaan',
+            'rute' => ['admin.asthana.'],
+        ],
         'orcha' => [
             'label' => 'Orcha Journey',
             'ket' => 'Seluruh modul Orcha di dalam lemon',

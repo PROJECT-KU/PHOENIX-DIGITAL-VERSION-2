@@ -51,6 +51,8 @@ class PermissionForm extends Component
         'lowongan' => 'Lowongan Kerja',
         'pelamar' => 'Pelamar',
         'message' => 'Pesan Masuk',
+        'asthana' => 'Asthana (mode Asthana)',
+        'orcha' => 'Orcha Journey',
     ];
 
     /**

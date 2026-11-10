@@ -66,6 +66,9 @@ class RolePermissionEdit extends Component
         'lowongan' => ['Lowongan Kerja', 'bi-briefcase', '#db2777,#ec4899'],
         'pelamar' => ['Pelamar', 'bi-file-earmark-person', '#db2777,#ec4899'],
         'message' => ['Pesan Masuk', 'bi-envelope', '#db2777,#ec4899'],
+        // Aplikasi lain (mode tersendiri di bilah samping)
+        'asthana' => ['Asthana — Situs, Karyawan & Karir', 'bi-buildings', '#2455e6,#17a974'],
+        'orcha' => ['Orcha Journey', 'bi-water', '#0f2d4a,#1d6fa5'],
     ];
 
     public function mount(Role $role)

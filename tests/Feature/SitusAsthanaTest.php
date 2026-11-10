@@ -45,9 +45,11 @@ function artikelOrcha(int $id, string $slug, string $terbit, ?string $sampul = '
         'sampul' => $sampul, 'terbit_pada' => $terbit, 'tautan' => "https://orcha.test/blog/{$slug}", 'status' => 'tayang'];
 }
 
-function penggunaSitus(array $izin = ['kelola_situs_asthana']): User
+function penggunaSitus(array $izin = ['kelola_situs_asthana'], bool $aksesAsthana = true): User
 {
     $peran = Role::create(['name' => 'uji-ast-'.Str::random(5), 'description' => 'uji']);
+    // Layar mode Asthana dijaga izin gerbang akses_asthana (seperti akses_orcha).
+    $izin = $aksesAsthana ? array_values(array_unique([...$izin, 'akses_asthana'])) : $izin;
     foreach ($izin as $nama) {
         $p = Permission::firstOrCreate(['name' => $nama], ['display_name' => $nama, 'group' => 'uji', 'description' => 'uji']);
         $peran->permissions()->attach($p->id);
@@ -596,6 +598,68 @@ it('tautan bagikan artikel Orcha memakai judul & sampulnya', function () {
         ->assertSee('Artikel pantai — Orcha Journey', false)
         ->assertSee('https://orcha.test/storage/blog/a.webp', false)
         ->assertSee('https://asthana.test/berita/baca.html?slug=orcha-pantai', false);
+});
+
+// ------------------------------------------------------------- mode Asthana
+
+it('layar mode Asthana tertutup tanpa izin gerbang akses_asthana', function () {
+    $this->actingAs(penggunaSitus(['view_pelamar', 'view_lowongan', 'view_message', 'view_karyawan', 'kelola_situs_asthana'], aksesAsthana: false));
+
+    foreach (['admin.asthana.dashboard', 'admin.pelamar.index', 'admin.lowongan.index', 'admin.message.index', 'admin.karyawan.index', 'admin.asthana.portofolio'] as $rute) {
+        expect($this->get(route($rute))->status())->not->toBe(200, $rute);
+    }
+});
+
+it('dasbor Asthana menampilkan yang menunggu dan menu mode Asthana', function () {
+    Storage::fake('local');
+    Mail::fake();
+    \App\Models\JobApplication::create(['name' => 'Rina', 'email' => 'rina@gmail.com', 'phone' => '0812', 'cv_path' => 'x.pdf', 'cover_letter_path' => 'y.pdf']);
+    Message::create(['name' => 'Andi', 'email' => 'andi@gmail.com', 'message' => 'Halo, saya mau tanya.']);
+    $this->actingAs(penggunaSitus(['view_pelamar', 'view_message', 'kelola_situs_asthana']));
+
+    $html = $this->get(route('admin.asthana.dashboard'))->assertOk()->getContent();
+
+    expect($html)->toContain('Dashboard Asthana')
+        ->toContain('Pelamar baru')
+        ->toContain('Pesan belum dibaca')
+        ->toContain('class="asthana-lencana-menu"')
+        ->toContain('Kembali ke lemon')
+        // Menu yang tidak diizinkan tidak tampil; menu lemon tidak ikut.
+        ->not->toContain('Lowongan Kerja</span>')
+        ->not->toContain('sidebar-title">Kepegawaian');
+});
+
+it('halaman pelamar memakai bilah samping mode Asthana; lemon menampilkan tombol ganti', function () {
+    $u = penggunaSitus(['view_pelamar', 'view_dashboard']);
+    $this->actingAs($u);
+
+    expect($this->get(route('admin.pelamar.index'))->assertOk()->getContent())
+        ->toContain('class="asthana-lencana-menu"');
+
+    expect($this->get(route('admin.dashboard'))->getContent())
+        ->toContain('Ganti ke Asthana')
+        ->not->toContain('class="asthana-lencana-menu"');
+});
+
+it('seeder akses Asthana: buat izin gerbang, kelompokkan, dan bagikan ke pemegang izin lama', function () {
+    $hr = Role::create(['name' => 'hr-ast', 'description' => 'uji']);
+    $view = Permission::firstOrCreate(['name' => 'view_pelamar'], ['display_name' => 'Lihat Pelamar', 'group' => 'pelamar', 'description' => 'x']);
+    $view->update(['group' => 'pelamar']);
+    $hr->permissions()->attach($view->id);
+    $lain = Role::create(['name' => 'lain-ast', 'description' => 'uji']);
+
+    $orang = User::factory()->create(['role_id' => $lain->id]);
+    $pesan = Permission::firstOrCreate(['name' => 'view_message'], ['display_name' => 'Lihat Pesan', 'group' => 'message', 'description' => 'x']);
+    \Illuminate\Support\Facades\DB::table('permission_user')->insert(['user_id' => $orang->id, 'permission_id' => $pesan->id]);
+
+    $this->seed(\Database\Seeders\AksesAsthanaSeeder::class);
+    $this->seed(\Database\Seeders\AksesAsthanaSeeder::class); // aman diulang
+
+    expect($hr->hasPermission('akses_asthana'))->toBeTrue()
+        ->and($lain->hasPermission('akses_asthana'))->toBeFalse()
+        ->and($orang->fresh()->hasPermission('akses_asthana'))->toBeTrue()
+        ->and($view->fresh()->group)->toBe('asthana')
+        ->and(Permission::where('name', 'akses_asthana')->count())->toBe(1);
 });
 
 it('pesan masuk memberi tahu admin dan mengirim tanda terima', function () {
