@@ -406,25 +406,142 @@ trait MenyuntingMasterHarga
     }
 
     /**
-     * Nama yang dirakit dari kategori dan tempatnya.
+     * Awalan nama menurut kategorinya.
+     *
+     * Dipisah dari perakitnya supaya kategori baru cukup ditambahkan satu
+     * baris di sini — bukan disisipkan ke dalam match yang juga mengurus
+     * tempat, vendor, dan wilayah sekaligus.
+     *
+     * Kategori yang TIDAK terdaftar sengaja tidak punya awalan: "Lain-lain
+     * Sleman" bukan nama apa pun, dan awalan yang dikarang akan muncul di
+     * rincian biaya RAB yang dibaca pelanggan.
+     */
+    private function awalanKategori(bool $adaDestinasi, bool $intinyaTempat): string
+    {
+        return match ($this->isian['kategori'] ?? '') {
+            'tiket' => $adaDestinasi ? 'Tiket Masuk' : 'Retribusi',
+            // "Hotel di Sleman" bila intinya tempat, "Hotel Graha Makmur"
+            // bila intinya nama vendor. Kata "di" di depan nama hotel
+            // membuat namanya terbaca sebagai alamat.
+            'akomodasi' => $intinyaTempat ? 'Hotel di' : 'Hotel',
+            'konsumsi' => 'Makan di',
+            'pemandu' => 'Pemandu',
+            'transportasi' => 'Sewa',
+            'asuransi' => 'Asuransi Perjalanan',
+            'dokumentasi' => 'Dokumentasi',
+            'operasional' => 'Operasional Tim',
+            'sopir' => 'Konsumsi & Rokok Sopir',
+            default => '',
+        };
+    }
+
+    /** Kategori yang barangnya memang MILIK vendor, bukan sebuah tempat. */
+    private function intinyaBolehVendor(): bool
+    {
+        return in_array($this->isian['kategori'] ?? '', ['akomodasi', 'konsumsi', 'transportasi', 'pemandu'], true);
+    }
+
+    /**
+     * Nama yang dirakit dari seluruh isian tempatnya.
+     *
+     * Enam bahan, dengan urutan yang sama seperti borangnya dibaca dari
+     * atas: kategori, destinasi, tempat lain yang pakai tiket yang sama,
+     * vendor, lalu wilayah (daerah; provinsi bila daerahnya kosong).
+     *
+     *   Tiket Masuk Taman Nasional Baluran - Banyuwangi
+     *   Tiket Masuk Pantai Baron dll (23 tempat) - Gunung Kidul
+     *   Hotel Graha Makmur - Yogyakarta
+     *   Retribusi Gunung Kidul
      *
      * Untuk tiket ini bukan sekadar menghemat ketikan: namanya dirakit DARI
      * destinasi yang dipilih, jadi tidak bisa lagi berbeda dari destinasi
      * yang dimaksudnya.
+     *
+     * Yang dihitung "tempat" adalah destinasi utama DITAMBAH tempat lain —
+     * satu tiket Rp 15.000 untuk 23 pantai memang berlaku di 23 pantai, dan
+     * menulis 22 membuat nama barisnya berselisih dengan isinya sendiri.
+     *
+     * Daerahnya ditaruh PALING BELAKANG, dipisah tanda hubung — "Hotel
+     * Graha Makmur - Yogyakarta". DILEWATI bila nama yang sudah terakit
+     * memuatnya: "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
+     *
+     * Intinya memakai vendor bila tidak ada destinasi DAN kategorinya
+     * memang berbarang milik vendor (hotel, rumah makan, kendaraan,
+     * pemandu). "Hotel di Yogyakarta — Graha Makmur" menyebut tempatnya
+     * lebih dulu padahal yang dicari orang di daftar adalah nama hotelnya.
      */
     public function namaOtomatis(): string
     {
         $destinasi = trim((string) ($this->isian['destinasi'] ?? ''));
         $daerah = trim((string) ($this->isian['daerah'] ?? ''));
-        $tempat = $daerah !== '' ? $daerah : trim((string) ($this->isian['provinsi'] ?? ''));
+        $provinsi = trim((string) ($this->isian['provinsi'] ?? ''));
+        $wilayah = $daerah !== '' ? $daerah : $provinsi;
 
-        return match ($this->isian['kategori'] ?? '') {
-            'tiket' => $destinasi !== '' ? "Tiket Masuk {$destinasi}" : ($tempat !== '' ? "Retribusi {$tempat}" : ''),
-            'akomodasi' => $tempat !== '' ? "Hotel di {$tempat}" : '',
-            'konsumsi' => $tempat !== '' ? "Makan di {$tempat}" : '',
-            'pemandu' => $tempat !== '' ? "Pemandu {$tempat}" : '',
-            default => '',
-        };
+        $vendor = $this->namaVendorTerpilih();
+
+        $intiVendor = $destinasi === '' && $vendor !== '' && $this->intinyaBolehVendor();
+        $inti = $destinasi !== '' ? $destinasi : ($intiVendor ? $vendor : $wilayah);
+
+        if ($inti === '') {
+            return '';
+        }
+
+        $bagian = trim($this->awalanKategori($destinasi !== '', ! $intiVendor).' '.$inti);
+
+        // Tempat lain yang pakai tiket yang sama. Hanya berarti bila ada
+        // destinasi utamanya — tanpa itu daftarnya memang tidak dikirim.
+        $lain = $destinasi !== '' ? count($this->destinasiLain) : 0;
+
+        if ($lain > 0) {
+            $bagian .= ' dll ('.($lain + 1).' tempat)';
+        }
+
+        // Vendor ditempelkan hanya kalau ia BELUM jadi intinya.
+        if ($vendor !== '' && ! $intiVendor) {
+            $bagian .= ' — '.$vendor;
+        }
+
+        if ($wilayah !== '' && ! str_contains(mb_strtolower($bagian), mb_strtolower($wilayah))) {
+            $bagian .= ' - '.$wilayah;
+        }
+
+        // Kolomnya 150 huruf. Dipotong di sini, bukan dibiarkan ditolak
+        // validator sesudah admin menekan Simpan.
+        return mb_strimwidth($bagian, 0, 150, '…');
+    }
+
+    /** Nama vendor yang sedang terpilih, bila ada. */
+    private function namaVendorTerpilih(): string
+    {
+        $id = (int) ($this->isian['vendor_id'] ?? 0);
+
+        if ($id === 0) {
+            return '';
+        }
+
+        return trim((string) (collect($this->katalog()['vendor'] ?? [])
+            ->firstWhere('id', $id)['nama'] ?? ''));
+    }
+
+    /**
+     * Memakai nama rakitan sebagai isi kotaknya — "semi otomatis".
+     *
+     * Dulu rakitannya hanya dipakai bila kotaknya DIBIARKAN kosong, jadi
+     * nama yang sudah terlanjur diketik tidak punya jalan kembali: admin
+     * harus menghapusnya huruf demi huruf lebih dulu, dan karena itu
+     * kebanyakan dibiarkan apa adanya walau sudah tidak cocok lagi dengan
+     * destinasi yang kemudian diganti.
+     */
+    public function pakaiNamaOtomatis(): void
+    {
+        $nama = $this->namaOtomatis();
+
+        if ($nama === '') {
+            return;
+        }
+
+        $this->isian['nama'] = $nama;
+        $this->resetValidation('isian.nama');
     }
 
     /**

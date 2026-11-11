@@ -275,6 +275,12 @@
         }
         .mh-rakitan-teks { display: flex; flex-direction: column; min-width: 0; flex: 1 1 240px; }
         .mh-rakitan-judul { font-size: .9rem; color: var(--dsb-tinta, #1c1f26); }
+        /* Tombolnya tidak ikut melar mengisi sisa baris, dan di layar sempit
+           turun selebar kartu — bukan terjepit di sisa ruang kalimat. */
+        .mh-rakitan-pakai { flex: 0 0 auto; height: 38px; padding: 0 14px; }
+        @media (max-width: 575.98px) {
+            .mh-rakitan-pakai { flex: 1 1 100%; justify-content: center; }
+        }
 
         /* Peringatan yang menyebut akibatnya, bukan cuma "tidak valid". */
         .mh-peringatan {

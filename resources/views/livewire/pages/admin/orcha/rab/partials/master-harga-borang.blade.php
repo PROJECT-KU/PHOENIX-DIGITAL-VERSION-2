@@ -749,14 +749,39 @@
                         {{-- Yang terisi sendiri diperlihatkan, bukan dikerjakan
                              diam-diam: nama yang baru muncul sesudah menyimpan
                              tidak bisa dikoreksi oleh orang yang tidak pernah
-                             melihatnya. --}}
-                        @if ($namaKini === '' && $namaRakitan !== '')
+                             melihatnya.
+
+                             DUA keadaan, bukan satu. Kotak kosong akan terisi
+                             sendiri saat Simpan ditekan — panelnya cuma
+                             memberitahu. Kotak yang sudah berisi nama LAIN
+                             tidak disentuh, tetapi saranannya tetap ditawarkan
+                             berikut tombolnya: nama yang terlanjur diketik
+                             dulu tidak punya jalan kembali selain dihapus
+                             huruf demi huruf, jadi nama lama dibiarkan apa
+                             adanya walau destinasinya sudah diganti. --}}
+                        @if ($namaRakitan !== '' && $namaKini !== $namaRakitan)
                             <div class="mh-rakitan">
                                 <span class="dsb-ikon is-kecil" style="--c: var(--dsb-aman)"><i class="bi bi-magic"></i></span>
                                 <div class="mh-rakitan-teks">
-                                    <span class="dsb-kartu-sub">Nama ini akan terisi sendiri</span>
+                                    <span class="dsb-kartu-sub">
+                                        {{ $namaKini === ''
+                                            ? 'Nama ini akan terisi sendiri'
+                                            : 'Dirakit dari kategori, destinasi, tempat lain, vendor & daerah' }}
+                                    </span>
                                     <strong class="mh-rakitan-judul">{{ $namaRakitan }}</strong>
                                 </div>
+
+                                {{-- Hanya saat kotaknya sudah berisi. Pada kotak
+                                     kosong tombolnya tidak menambah apa pun —
+                                     Simpan sudah mengerjakan hal yang sama. --}}
+                                @if ($namaKini !== '')
+                                    <button type="button" wire:click="pakaiNamaOtomatis"
+                                        class="dsb-tombol is-aman mh-rakitan-pakai">
+                                        <i class="bi bi-magic" wire:loading.remove wire:target="pakaiNamaOtomatis"></i>
+                                        <span class="dsb-putar" wire:loading wire:target="pakaiNamaOtomatis"></span>
+                                        <span>Pakai nama ini</span>
+                                    </button>
+                                @endif
                             </div>
                         @endif
                         </section>

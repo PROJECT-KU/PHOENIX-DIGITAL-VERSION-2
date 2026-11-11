@@ -1489,13 +1489,124 @@ test('nama tiket dirakit dari destinasi yang dipilih', function () {
         // muncul sesudah menyimpan tidak bisa dikoreksi oleh yang tak
         // melihatnya. (Sesudah simpan formulirnya ditutup dan dikosongkan,
         // jadi yang bisa diperiksa di sana isi permintaannya.)
-        ->assertSee('Tiket Masuk Candi Prambanan')
+        // Daerahnya ikut, menempel paling belakang sebagai kata biasa:
+        // memilih destinasi mengisi daerahnya sendiri dari katalog, dan dua
+        // "Tiket Masuk Pantai Sadranan" di kabupaten berbeda tidak bisa
+        // dibedakan tanpa itu.
+        ->assertSee('Tiket Masuk Candi Prambanan - Sleman')
         ->call('simpan')
         ->assertHasNoErrors();
 
     Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/master-harga')
-        && $r['nama'] === 'Tiket Masuk Candi Prambanan'
+        && $r['nama'] === 'Tiket Masuk Candi Prambanan - Sleman'
         && $r['destinasi'] === 'Candi Prambanan');
+});
+
+test('nama rakitan memakai keenam bahannya', function () {
+    /*
+     | Kategori, destinasi, tempat lain yang pakai tiket yang sama, vendor,
+     | lalu wilayah — urutan yang sama seperti borangnya dibaca dari atas.
+     |
+     | Jumlah tempatnya menghitung destinasi utama JUGA: satu tiket untuk
+     | Prambanan + 2 tempat lain memang berlaku di 3 tempat, dan menulis 2
+     | membuat nama barisnya berselisih dengan isinya sendiri.
+     */
+    palsukanRab();
+    $this->actingAs(adminRab());
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.destinasi', 'Candi Prambanan')
+        ->set('destinasiLain', ['Candi Sewu', 'Candi Plaosan']);
+
+    expect($layar->instance()->namaOtomatis())
+        ->toBe('Tiket Masuk Candi Prambanan dll (3 tempat) - Sleman');
+
+    // Vendor duduk di antara tempat dan wilayah.
+    $vendor = collect(rekamanRab('katalog')['data']['vendor'] ?? [])->first();
+
+    if ($vendor) {
+        $layar->set('isian.vendor_id', (string) $vendor['id']);
+
+        expect($layar->instance()->namaOtomatis())
+            ->toContain(' — '.$vendor['nama'].' - Sleman');
+    }
+});
+
+test('daerah jadi bagian terakhir, dipisah tanda hubung', function () {
+    /*
+     | "Tiket Masuk Taman Nasional Baluran - Banyuwangi". Paling belakang,
+     | dipisah tanda hubung — bukan diselipkan di tengah, dan bukan
+     | menempel tanpa jarak pada kata sebelumnya.
+     */
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.kategori', 'tiket')
+        ->set('isian.destinasi', 'Taman Nasional Baluran')
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->set('isian.daerah', 'Banyuwangi');
+
+    expect($layar->instance()->namaOtomatis())
+        ->toBe('Tiket Masuk Taman Nasional Baluran - Banyuwangi');
+});
+
+test('akomodasi tanpa destinasi memakai nama vendornya sebagai inti', function () {
+    /*
+     | "Hotel Graha Makmur - Yogyakarta", bukan "Hotel di Yogyakarta —
+     | Graha Makmur": yang dicari orang di daftar Master Harga adalah nama
+     | hotelnya, dan kata "di" di depan nama hotel membuat namanya terbaca
+     | sebagai alamat.
+     */
+    palsukanRab();
+
+    $vendor = collect(rekamanRab('katalog')['data']['vendor'] ?? [])->first();
+
+    expect($vendor)->not->toBeNull();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.kategori', 'akomodasi')
+        ->set('isian.destinasi', '')
+        ->set('isian.daerah', 'Yogyakarta')
+        ->set('isian.vendor_id', (string) $vendor['id']);
+
+    expect($layar->instance()->namaOtomatis())
+        ->toBe('Hotel '.$vendor['nama'].' - Yogyakarta');
+});
+
+test('daerah tidak disebut dua kali saat namanya sudah memuatnya', function () {
+    // "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
+    palsukanRab();
+
+    $layar = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.kategori', 'akomodasi')
+        ->set('isian.destinasi', '')
+        ->set('isian.daerah', 'Sleman');
+
+    expect($layar->instance()->namaOtomatis())->toBe('Hotel di Sleman');
+});
+
+test('tombol pakai nama ini menimpa nama yang sudah diketik', function () {
+    /*
+     | Dulu rakitannya hanya dipakai bila kotaknya DIBIARKAN kosong, jadi
+     | nama yang terlanjur diketik tidak punya jalan kembali: harus dihapus
+     | huruf demi huruf lebih dulu. Karena itu nama lama dibiarkan apa
+     | adanya walau destinasinya kemudian diganti.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.nama', 'Nama lama yang sudah tidak cocok')
+        ->set('isian.destinasi', 'Candi Prambanan')
+        // Ditawarkan, bukan dipaksakan: kotaknya belum berubah sebelum
+        // tombolnya ditekan.
+        ->assertSet('isian.nama', 'Nama lama yang sudah tidak cocok')
+        ->call('pakaiNamaOtomatis')
+        ->assertSet('isian.nama', 'Tiket Masuk Candi Prambanan - Sleman');
 });
 
 test('nama yang diketik tangan menang atas nama rakitan', function () {
