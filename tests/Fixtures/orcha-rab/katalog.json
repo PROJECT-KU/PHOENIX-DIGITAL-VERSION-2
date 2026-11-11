@@ -216,6 +216,7 @@
                 "kamar_malam": "per kamar per malam"
             },
             "satuan_berkapasitas": [
+                "unit",
                 "unit_hari",
                 "kamar_malam"
             ],

@@ -114,6 +114,17 @@ trait MenyuntingMasterHarga
      *
      * @var array<int, string>
      */
+    /**
+     * Nama sedang DITULIS SENDIRI oleh admin, bukan dirakit.
+     *
+     * Kotak namanya terkunci dan terisi sendiri; penanda ini dinyalakan
+     * tombol "Ubah nama". Dinyalakan pula saat membuka baris lama yang
+     * namanya memang tidak sama dengan rakitannya — kalau tidak, membuka
+     * lalu menyimpan baris lama akan MENGGANTI namanya diam-diam, dan nama
+     * yang sudah dipakai di penawaran yang terkirim ikut berubah.
+     */
+    public bool $namaSendiri = false;
+
     public array $destinasiLain = [];
 
     /** Pilihan yang sedang disorot di kotak "tambah destinasi lain". */
@@ -236,6 +247,8 @@ trait MenyuntingMasterHarga
     {
         $this->isian = [
             'kategori' => 'tiket',
+            // HiAce, Elf, Jeep, Twin, Deluxe. Boleh kosong.
+            'tipe' => '',
             'vendor_id' => '',
             'nama' => '',
             // Provinsi bawaan datang dari pemanggilnya (daftar mengirim
@@ -257,6 +270,7 @@ trait MenyuntingMasterHarga
         $this->pakaiMusim = false;
         $this->hargaMusim = [];
         $this->satuanDisetel = false;
+        $this->namaSendiri = false;
         $this->destinasiLain = [];
         $this->destinasiLainPilih = '';
         $this->destinasiBaru = false;
@@ -282,6 +296,7 @@ trait MenyuntingMasterHarga
 
         $this->isian = [
             'kategori' => $baris['kategori'],
+            'tipe' => (string) ($baris['tipe'] ?? ''),
             'vendor_id' => (string) ($baris['vendor_id'] ?? ''),
             'nama' => $baris['nama'],
             'provinsi' => (string) ($baris['provinsi'] ?? ''),
@@ -328,6 +343,18 @@ trait MenyuntingMasterHarga
         $this->satuanDisetel = true;
         $this->destinasiBaru = false;
         $this->namaDestinasiBaru = '';
+
+        /*
+         | Nama baris lama yang TIDAK sama dengan rakitannya dianggap ditulis
+         | sendiri, dan kotaknya dibuka apa adanya.
+         |
+         | Tanpa ini, membuka lalu menyimpan baris lama akan mengganti
+         | namanya diam-diam — termasuk nama yang sudah tercetak di penawaran
+         | yang terlanjur dikirim ke pelanggan. Dihitung PALING AKHIR, sesudah
+         | seluruh isian & destinasiLain terpasang: rakitannya membaca
+         | semuanya.
+         */
+        $this->namaSendiri = trim((string) $this->isian['nama']) !== $this->namaOtomatis();
     }
 
     public function tutup(): void
@@ -409,12 +436,12 @@ trait MenyuntingMasterHarga
      * Awalan nama menurut kategorinya.
      *
      * Dipisah dari perakitnya supaya kategori baru cukup ditambahkan satu
-     * baris di sini — bukan disisipkan ke dalam match yang juga mengurus
-     * tempat, vendor, dan wilayah sekaligus.
+     * baris di sini. Kategori yang TIDAK terdaftar sengaja tidak punya
+     * awalan: "Lain-lain Sleman" bukan nama apa pun, dan awalan yang
+     * dikarang ikut terbaca pelanggan di rincian biaya RAB.
      *
-     * Kategori yang TIDAK terdaftar sengaja tidak punya awalan: "Lain-lain
-     * Sleman" bukan nama apa pun, dan awalan yang dikarang akan muncul di
-     * rincian biaya RAB yang dibaca pelanggan.
+     * Transportasi juga tanpa awalan saat intinya vendor: yang dicari orang
+     * di daftar adalah "HiAce Graha Trans", bukan "Sewa HiAce Graha Trans".
      */
     private function awalanKategori(bool $adaDestinasi, bool $intinyaTempat): string
     {
@@ -426,7 +453,7 @@ trait MenyuntingMasterHarga
             'akomodasi' => $intinyaTempat ? 'Hotel di' : 'Hotel',
             'konsumsi' => 'Makan di',
             'pemandu' => 'Pemandu',
-            'transportasi' => 'Sewa',
+            'transportasi' => $intinyaTempat ? 'Sewa' : '',
             'asuransi' => 'Asuransi Perjalanan',
             'dokumentasi' => 'Dokumentasi',
             'operasional' => 'Operasional Tim',
@@ -442,65 +469,111 @@ trait MenyuntingMasterHarga
     }
 
     /**
-     * Nama yang dirakit dari seluruh isian tempatnya.
+     * Ukuran barangnya, untuk ditulis dalam kurung.
      *
-     * Enam bahan, dengan urutan yang sama seperti borangnya dibaca dari
-     * atas: kategori, destinasi, tempat lain yang pakai tiket yang sama,
-     * vendor, lalu wilayah (daerah; provinsi bila daerahnya kosong).
+     *   kamar per malam  →  "(Twin, 2 orang)"  /  "(2 orang)"
+     *   unit             →  "(13 kursi)"
      *
-     *   Tiket Masuk Taman Nasional Baluran - Banyuwangi
-     *   Tiket Masuk Pantai Baron dll (23 tempat) - Gunung Kidul
-     *   Hotel Graha Makmur - Yogyakarta
+     * Hanya satuan berkapasitas yang punya ukuran. "per orang" tidak
+     * berukuran — satu orang adalah satu orang.
+     */
+    private function ukuranNama(string $tipe): string
+    {
+        if (! $this->perluKapasitas()) {
+            return '';
+        }
+
+        $muat = (int) ($this->isian['kapasitas'] ?? 0);
+
+        if ($muat < 1) {
+            // Tipe tanpa angka tetap berarti: "(Twin)" lebih baik daripada
+            // tidak menyebut apa-apa, dan kapasitasnya memang wajib diisi
+            // sebelum bisa disimpan.
+            return $tipe !== '' ? "({$tipe})" : '';
+        }
+
+        $satuan = $this->isian['satuan'] ?? '';
+        $isi = $satuan === 'kamar_malam' ? "{$muat} orang" : "{$muat} kursi";
+
+        return $tipe !== '' ? "({$tipe}, {$isi})" : "({$isi})";
+    }
+
+    /**
+     * Nama yang dirakit dari seluruh isian barisnya.
+     *
+     *   Hotel Graha Makmur (Twin, 2 orang) Weekday & Weekend - Yogyakarta
+     *   HiAce Graha Trans (13 kursi) ke Dieng - Jogja
+     *   Tiket Masuk Pantai Baron dll 23 tempat - Gunung Kidul
+     *   Makan di Loji Breakfast - Banyuwangi
      *   Retribusi Gunung Kidul
      *
-     * Untuk tiket ini bukan sekadar menghemat ketikan: namanya dirakit DARI
-     * destinasi yang dipilih, jadi tidak bisa lagi berbeda dari destinasi
-     * yang dimaksudnya.
+     * Urutannya: tipe & inti, ukuran, tempat lain, penanda dua harga,
+     * tujuan, lalu DAERAH — selalu paling belakang, dipisah tanda hubung.
+     * Daerah di ujung membuat dua baris yang namanya mirip tetap bisa
+     * dibedakan sekilas, dan itu aturan keras: tidak ada bagian lain yang
+     * boleh ditulis sesudahnya.
      *
-     * Yang dihitung "tempat" adalah destinasi utama DITAMBAH tempat lain —
-     * satu tiket Rp 15.000 untuk 23 pantai memang berlaku di 23 pantai, dan
-     * menulis 22 membuat nama barisnya berselisih dengan isinya sendiri.
-     *
-     * Daerahnya ditaruh PALING BELAKANG, dipisah tanda hubung — "Hotel
-     * Graha Makmur - Yogyakarta". DILEWATI bila nama yang sudah terakit
-     * memuatnya: "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
-     *
-     * Intinya memakai vendor bila tidak ada destinasi DAN kategorinya
+     * Intinya memakai nama VENDOR bila tidak ada destinasi dan kategorinya
      * memang berbarang milik vendor (hotel, rumah makan, kendaraan,
-     * pemandu). "Hotel di Yogyakarta — Graha Makmur" menyebut tempatnya
-     * lebih dulu padahal yang dicari orang di daftar adalah nama hotelnya.
+     * pemandu). Yang dicari orang di daftar adalah nama hotelnya, bukan
+     * kotanya.
+     *
+     * Jumlah tempat menghitung destinasi UTAMA juga: satu tiket untuk 1 + 22
+     * pantai memang berlaku di 23 pantai, dan menulis 22 membuat nama
+     * barisnya berselisih dengan isinya sendiri.
      */
     public function namaOtomatis(): string
     {
+        $tipe = trim((string) ($this->isian['tipe'] ?? ''));
         $destinasi = trim((string) ($this->isian['destinasi'] ?? ''));
         $daerah = trim((string) ($this->isian['daerah'] ?? ''));
         $provinsi = trim((string) ($this->isian['provinsi'] ?? ''));
         $wilayah = $daerah !== '' ? $daerah : $provinsi;
-
         $vendor = $this->namaVendorTerpilih();
 
-        $intiVendor = $destinasi === '' && $vendor !== '' && $this->intinyaBolehVendor();
-        $inti = $destinasi !== '' ? $destinasi : ($intiVendor ? $vendor : $wilayah);
+        /*
+         | Vendor jadi intinya begitu kategorinya berbarang miliknya —
+         | WALAU destinasinya terisi. Carter Jogja–Dieng dinamai dari
+         | armadanya ("HiAce Graha Trans"), bukan dari Dieng; Dieng-nya
+         | jadi tujuan, ditulis sesudah ukurannya.
+         */
+        $intiVendor = $vendor !== '' && $this->intinyaBolehVendor();
+        $inti = $intiVendor ? $vendor : ($destinasi !== '' ? $destinasi : $wilayah);
 
         if ($inti === '') {
             return '';
         }
 
-        $bagian = trim($this->awalanKategori($destinasi !== '', ! $intiVendor).' '.$inti);
+        // Tipe mendahului inti, KECUALI pada akomodasi: di sana ia bagian
+        // dari ukurannya ("Twin, 2 orang"), bukan jenis bendanya.
+        $tipeDiDepan = $tipe !== '' && ($this->isian['kategori'] ?? '') !== 'akomodasi';
 
-        // Tempat lain yang pakai tiket yang sama. Hanya berarti bila ada
-        // destinasi utamanya — tanpa itu daftarnya memang tidak dikirim.
-        $lain = $destinasi !== '' ? count($this->destinasiLain) : 0;
+        $bagian = trim(implode(' ', array_filter([
+            $this->awalanKategori($destinasi !== '', ! $intiVendor),
+            $tipeDiDepan ? $tipe : '',
+            $inti,
+            $this->ukuranNama($tipeDiDepan ? '' : $tipe),
+        ])));
 
-        if ($lain > 0) {
-            $bagian .= ' dll ('.($lain + 1).' tempat)';
+        if ($destinasi !== '' && count($this->destinasiLain) > 0) {
+            $bagian .= ' dll '.(count($this->destinasiLain) + 1).' tempat';
         }
 
-        // Vendor ditempelkan hanya kalau ia BELUM jadi intinya.
-        if ($vendor !== '' && ! $intiVendor) {
-            $bagian .= ' — '.$vendor;
+        // Dua harga memang perlu disebut di namanya: baris yang tarifnya
+        // berbeda akhir pekan sering berdampingan dengan baris tarif tunggal
+        // untuk tempat yang sama.
+        if ($this->duaHarga) {
+            $bagian .= ' Weekday & Weekend';
         }
 
+        // Tujuan ditulis hanya bila intinya vendor — kalau tidak, destinasi
+        // SUDAH jadi intinya dan menulisnya lagi berarti dua kali.
+        if ($intiVendor && $destinasi !== '') {
+            $bagian .= (($this->isian['kategori'] ?? '') === 'transportasi' ? ' ke ' : ' ').$destinasi;
+        }
+
+        // DAERAH, selalu terakhir. Dilewati bila namanya sudah memuatnya —
+        // "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
         if ($wilayah !== '' && ! str_contains(mb_strtolower($bagian), mb_strtolower($wilayah))) {
             $bagian .= ' - '.$wilayah;
         }
@@ -521,6 +594,47 @@ trait MenyuntingMasterHarga
 
         return trim((string) (collect($this->katalog()['vendor'] ?? [])
             ->firstWhere('id', $id)['nama'] ?? ''));
+    }
+
+    /**
+     * Mengetik di kotak nama menandainya sebagai ditulis sendiri.
+     *
+     * Kotaknya memang terkunci sampai tombolnya ditekan, jadi di layar
+     * jalan ini cuma lewat tombol itu. Tetapi penanda yang hanya dipasang
+     * tombol berarti nilai yang sampai lewat jalan lain — tempelan,
+     * pengisi otomatis peramban, atau uji — akan ditimpa rakitannya saat
+     * Simpan ditekan, tanpa satu pun tanda bahwa yang diketik dibuang.
+     *
+     * Dikosongkan kembali berarti kembali otomatis: kotak kosong bukan
+     * nama yang ditulis sendiri.
+     */
+    public function updatedIsianNama(): void
+    {
+        $this->namaSendiri = trim((string) ($this->isian['nama'] ?? '')) !== '';
+    }
+
+    /**
+     * Membuka kunci kotak nama supaya bisa ditulis sendiri.
+     *
+     * Isinya TIDAK dikosongkan: yang dimulai dari rakitannya lalu disunting
+     * seperlunya jauh lebih sering daripada yang ditulis dari nol, dan
+     * kotak yang mendadak kosong berarti mengetik ulang seluruhnya.
+     */
+    public function ubahNamaSendiri(): void
+    {
+        $this->namaSendiri = true;
+
+        if (trim((string) ($this->isian['nama'] ?? '')) === '') {
+            $this->isian['nama'] = $this->namaOtomatis();
+        }
+    }
+
+    /** Mengunci kembali, dan namanya kembali mengikuti isian. */
+    public function kembaliNamaOtomatis(): void
+    {
+        $this->namaSendiri = false;
+        $this->isian['nama'] = $this->namaOtomatis();
+        $this->resetValidation('isian.nama');
     }
 
     /**
@@ -792,7 +906,7 @@ trait MenyuntingMasterHarga
          | Nama yang baru muncul sesudah menyimpan tidak bisa dikoreksi oleh
          | orang yang tidak pernah melihatnya.
          */
-        if (trim((string) $this->isian['nama']) === '') {
+        if (! $this->namaSendiri || trim((string) $this->isian['nama']) === '') {
             $this->isian['nama'] = $this->namaOtomatis();
         }
 
@@ -820,6 +934,7 @@ trait MenyuntingMasterHarga
 
         $data = [
             'kategori' => $this->isian['kategori'],
+            'tipe' => trim((string) ($this->isian['tipe'] ?? '')) ?: null,
             // Kosong dikirim sebagai null, bukan "" — kolomnya kunci asing,
             // dan "" bukan id yang ada di tabel vendor.
             'vendor_id' => ($this->isian['vendor_id'] ?? '') !== '' ? (int) $this->isian['vendor_id'] : null,
@@ -1077,6 +1192,7 @@ trait MenyuntingMasterHarga
             $balasan = $this->orcha()->kirim('/master-harga/banyak', [
                 'baris' => $baris,
                 'kategori' => $this->isian['kategori'],
+                'tipe' => trim((string) ($this->isian['tipe'] ?? '')) ?: null,
                 'satuan' => $this->isian['satuan'],
                 'provinsi' => $this->isian['provinsi'] ?: null,
                 'daerah' => trim((string) $this->isian['daerah']) ?: null,

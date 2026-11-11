@@ -278,6 +278,22 @@
         /* Tombolnya tidak ikut melar mengisi sisa baris, dan di layar sempit
            turun selebar kartu — bukan terjepit di sisa ruang kalimat. */
         .mh-rakitan-pakai { flex: 0 0 auto; height: 38px; padding: 0 14px; }
+
+        /* Kotak nama + tombol kuncinya, sebaris. */
+        .mh-nama-baris { display: flex; align-items: center; gap: 8px; }
+        .mh-nama-baris > .dsb-isian { flex: 1 1 auto; min-width: 0; }
+        .mh-nama-tombol { flex: 0 0 auto; height: 40px; padding: 0 14px; }
+        /* Terkunci TERLIHAT terkunci. Kotak putih biasa yang menolak
+           ketikan terbaca sebagai halaman yang rusak, bukan sebagai
+           keputusan — dan admin mencoba lagi, lalu menyerah. */
+        .dsb-isian.is-terkunci {
+            background: #f8fafc; color: var(--dsb-tinta, #1c1f26);
+            border-style: dashed; cursor: default;
+        }
+        @media (max-width: 575.98px) {
+            .mh-nama-baris { flex-wrap: wrap; }
+            .mh-nama-tombol { flex: 1 1 100%; justify-content: center; }
+        }
         @media (max-width: 575.98px) {
             .mh-rakitan-pakai { flex: 1 1 100%; justify-content: center; }
         }

@@ -1520,17 +1520,26 @@ test('nama rakitan memakai keenam bahannya', function () {
         ->set('destinasiLain', ['Candi Sewu', 'Candi Plaosan']);
 
     expect($layar->instance()->namaOtomatis())
-        ->toBe('Tiket Masuk Candi Prambanan dll (3 tempat) - Sleman');
+        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat - Sleman');
 
-    // Vendor duduk di antara tempat dan wilayah.
+    /*
+     | Vendor TIDAK ditempelkan ke nama tiket.
+     |
+     | Pada hotel, rumah makan, dan armada, vendornya memang BENDA yang
+     | dijual — namanya jadi inti ("Hotel Graha Makmur"). Pada tiket ia
+     | cuma loket yang menjualnya: "Tiket Masuk Candi Prambanan — PO
+     | Sumber Jaya - Sleman" memanjang tanpa membedakan apa pun, dan nama
+     | inilah yang terbaca pelanggan di rincian biaya RAB.
+     */
     $vendor = collect(rekamanRab('katalog')['data']['vendor'] ?? [])->first();
 
-    if ($vendor) {
-        $layar->set('isian.vendor_id', (string) $vendor['id']);
+    expect($vendor)->not->toBeNull();
 
-        expect($layar->instance()->namaOtomatis())
-            ->toContain(' — '.$vendor['nama'].' - Sleman');
-    }
+    $layar->set('isian.vendor_id', (string) $vendor['id']);
+
+    expect($layar->instance()->namaOtomatis())
+        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat - Sleman')
+        ->not->toContain($vendor['nama']);
 });
 
 test('daerah jadi bagian terakhir, dipisah tanda hubung', function () {
@@ -1623,7 +1632,13 @@ test('nama yang diketik tangan menang atas nama rakitan', function () {
         && $r['nama'] === 'Tiket Prambanan (turis asing)');
 });
 
-test('nama rakitan diperlihatkan sebelum disimpan', function () {
+test('nama rakitan berdiri di kotaknya sendiri, terkunci', function () {
+    /*
+     | Bukan sekadar placeholder atau panel di bawahnya: nama yang baru
+     | muncul sesudah menyimpan tidak bisa dikoreksi oleh orang yang tidak
+     | pernah melihatnya. Terkuncinya pun harus TERLIHAT — kotak putih
+     | biasa yang menolak ketikan terbaca sebagai halaman yang rusak.
+     */
     palsukanRab();
 
     $isi = Livewire::actingAs(adminRab())
@@ -1632,8 +1647,52 @@ test('nama rakitan diperlihatkan sebelum disimpan', function () {
         ->set('isian.daerah', 'Sleman')
         ->html();
 
-    expect($isi)->toContain('Nama ini akan terisi sendiri')
-        ->and($isi)->toContain('Hotel di Sleman');
+    expect($isi)->toContain('terisi sendiri dari isian di atas')
+        ->and($isi)->toContain('is-terkunci')
+        ->and($isi)->toContain('readonly')
+        ->and($isi)->toContain('Hotel di Sleman')
+        // Dan jalan keluarnya ada di layar yang sama.
+        ->and($isi)->toContain('Ubah nama');
+});
+
+test('tombol ubah nama membuka kuncinya, tombol otomatis menguncinya lagi', function () {
+    /*
+     | Dibuka, isinya TIDAK dikosongkan: yang dimulai dari rakitannya lalu
+     | disunting seperlunya jauh lebih sering daripada yang ditulis dari
+     | nol, dan kotak yang mendadak kosong berarti mengetik ulang semuanya.
+     */
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.kategori', 'akomodasi')
+        ->set('isian.daerah', 'Sleman')
+        ->assertSet('namaSendiri', false)
+        ->call('ubahNamaSendiri')
+        ->assertSet('namaSendiri', true)
+        ->assertSet('isian.nama', 'Hotel di Sleman')
+        ->set('isian.nama', 'Penginapan Mbak Sri')
+        ->call('kembaliNamaOtomatis')
+        ->assertSet('namaSendiri', false)
+        ->assertSet('isian.nama', 'Hotel di Sleman');
+});
+
+test('nama yang terkunci ikut terkirim apa adanya saat disimpan', function () {
+    palsukanRab();
+    $this->actingAs(adminRab());
+
+    Livewire::test(OrchaMasterHargaForm::class)
+        ->set('isian.kategori', 'akomodasi')
+        ->set('isian.daerah', 'Sleman')
+        ->set('isian.satuan', 'kamar_malam')
+        ->set('isian.kapasitas', '2')
+        ->set('isian.harga', '450000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with($r->url(), '/master-harga')
+        && $r['nama'] === 'Hotel di Sleman (2 orang)');
 });
 
 test('nama tetap wajib bila tak ada yang bisa dirakit', function () {

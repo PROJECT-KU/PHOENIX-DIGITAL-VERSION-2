@@ -53,6 +53,22 @@
                                 </select>
                             </div>
 
+                            {{-- Jenis barangnya, yang selama ini DIKETIK ke dalam
+                                 nama barisnya ("HiAce Jogja - Banyuwangi") dan
+                                 karena itu tidak pernah bisa dipakai apa pun
+                                 selain mata: tidak bisa disaring, tidak bisa
+                                 dibandingkan, dan hilang begitu namanya diubah. --}}
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="mh-tipe">
+                                    Tipe
+                                    <span class="dsb-label-ket">boleh dikosongkan</span>
+                                </label>
+                                <input id="mh-tipe" type="text" wire:model.live.debounce.400ms="isian.tipe"
+                                    maxlength="40" class="dsb-isian"
+                                    placeholder="{{ ($isian['kategori'] ?? '') === 'akomodasi' ? 'Twin, Deluxe…' : 'HiAce, Elf, Jeep…' }}">
+                                <span class="dsb-kartu-sub">Ikut terbawa ke nama barisnya.</span>
+                            </div>
+
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="mh-satuan">
                                     Dihitung per <span class="dsb-wajib">*</span>
@@ -687,16 +703,55 @@
                                 </div>
                             </div>
                         <div class="mh-medan-rak">
+                            {{-- Terkunci dan terisi sendiri, dengan satu tombol
+                                 untuk membukanya.
+
+                                 Nama yang diketik bebas adalah sumber baris
+                                 kembar yang tidak terlihat kembar: "Tiket
+                                 Baluran" dan "Tiket Masuk Baluran" duduk
+                                 berjauhan di daftar yang diurutkan menurut
+                                 nama, dan keduanya tertarik ke RAB. Dirakit,
+                                 nama yang sama selalu ditulis sama.
+
+                                 Tetap BISA ditulis sendiri — ada nama yang
+                                 memang tidak terakit dari isian mana pun. --}}
                             <div class="dsb-medan is-lebar">
                                 <label class="dsb-label" for="mh-nama">
                                     Nama <span class="dsb-wajib">*</span>
-                                    @if ($namaKini === '' && $namaRakitan !== '')
-                                        <span class="dsb-label-ket">boleh dibiarkan kosong</span>
-                                    @endif
+                                    <span class="dsb-label-ket">
+                                        {{ $namaSendiri ? 'ditulis sendiri' : 'terisi sendiri dari isian di atas' }}
+                                    </span>
                                 </label>
-                                <input id="mh-nama" type="text" wire:model.blur="isian.nama" maxlength="150"
-                                    class="dsb-isian @error('isian.nama') is-galat @enderror"
-                                    placeholder="{{ $namaRakitan !== '' ? $namaRakitan : 'Sewa kendaraan + sopir + BBM' }}">
+
+                                <div class="mh-nama-baris">
+                                    <input id="mh-nama" type="text" maxlength="150"
+                                        class="dsb-isian @error('isian.nama') is-galat @enderror @unless ($namaSendiri) is-terkunci @endunless"
+                                        @if ($namaSendiri)
+                                            wire:model.blur="isian.nama"
+                                            placeholder="Sewa kendaraan + sopir + BBM"
+                                        @else
+                                            readonly
+                                            wire:key="nama-rakit-{{ md5($namaRakitan) }}"
+                                            value="{{ $namaRakitan }}"
+                                            placeholder="Pilih kategori & destinasinya — namanya terakit sendiri"
+                                        @endif
+                                    >
+
+                                    @if ($namaSendiri)
+                                        <button type="button" wire:click="kembaliNamaOtomatis"
+                                            class="dsb-tombol is-lembut mh-nama-tombol" style="--ikon: #0f766e"
+                                            title="Kembali memakai nama yang dirakit dari isian">
+                                            <i class="bi bi-arrow-counterclockwise"></i><span>Otomatis</span>
+                                        </button>
+                                    @else
+                                        <button type="button" wire:click="ubahNamaSendiri"
+                                            class="dsb-tombol is-lembut mh-nama-tombol" style="--ikon: #7c3aed"
+                                            title="Tulis namanya sendiri">
+                                            <i class="bi bi-pencil"></i><span>Ubah nama</span>
+                                        </button>
+                                    @endif
+                                </div>
+
                                 @error('isian.nama')<span class="dsb-galat">{{ $message }}</span>@enderror
                             </div>
 
@@ -746,42 +801,23 @@
                             </div>
                         </div>
 
-                        {{-- Yang terisi sendiri diperlihatkan, bukan dikerjakan
-                             diam-diam: nama yang baru muncul sesudah menyimpan
-                             tidak bisa dikoreksi oleh orang yang tidak pernah
-                             melihatnya.
-
-                             DUA keadaan, bukan satu. Kotak kosong akan terisi
-                             sendiri saat Simpan ditekan — panelnya cuma
-                             memberitahu. Kotak yang sudah berisi nama LAIN
-                             tidak disentuh, tetapi saranannya tetap ditawarkan
-                             berikut tombolnya: nama yang terlanjur diketik
-                             dulu tidak punya jalan kembali selain dihapus
-                             huruf demi huruf, jadi nama lama dibiarkan apa
-                             adanya walau destinasinya sudah diganti. --}}
-                        @if ($namaRakitan !== '' && $namaKini !== $namaRakitan)
+                        {{-- Saranannya tetap diperlihatkan selagi namanya
+                             ditulis sendiri: tanpa itu, satu-satunya cara
+                             melihat rakitannya adalah membuang nama yang
+                             sudah diketik. --}}
+                        @if ($namaSendiri && $namaRakitan !== '' && $namaKini !== $namaRakitan)
                             <div class="mh-rakitan">
                                 <span class="dsb-ikon is-kecil" style="--c: var(--dsb-aman)"><i class="bi bi-magic"></i></span>
                                 <div class="mh-rakitan-teks">
-                                    <span class="dsb-kartu-sub">
-                                        {{ $namaKini === ''
-                                            ? 'Nama ini akan terisi sendiri'
-                                            : 'Dirakit dari kategori, destinasi, tempat lain, vendor & daerah' }}
-                                    </span>
+                                    <span class="dsb-kartu-sub">Kalau dibiarkan otomatis, namanya jadi</span>
                                     <strong class="mh-rakitan-judul">{{ $namaRakitan }}</strong>
                                 </div>
-
-                                {{-- Hanya saat kotaknya sudah berisi. Pada kotak
-                                     kosong tombolnya tidak menambah apa pun —
-                                     Simpan sudah mengerjakan hal yang sama. --}}
-                                @if ($namaKini !== '')
-                                    <button type="button" wire:click="pakaiNamaOtomatis"
-                                        class="dsb-tombol is-aman mh-rakitan-pakai">
-                                        <i class="bi bi-magic" wire:loading.remove wire:target="pakaiNamaOtomatis"></i>
-                                        <span class="dsb-putar" wire:loading wire:target="pakaiNamaOtomatis"></span>
-                                        <span>Pakai nama ini</span>
-                                    </button>
-                                @endif
+                                <button type="button" wire:click="pakaiNamaOtomatis"
+                                    class="dsb-tombol is-aman mh-rakitan-pakai">
+                                    <i class="bi bi-magic" wire:loading.remove wire:target="pakaiNamaOtomatis"></i>
+                                    <span class="dsb-putar" wire:loading wire:target="pakaiNamaOtomatis"></span>
+                                    <span>Pakai nama ini</span>
+                                </button>
                             </div>
                         @endif
                         </section>
