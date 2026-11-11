@@ -97,13 +97,15 @@ test('kotak pilih berdaftar panjang memang dipasangi pencarian', function () {
      | Yang dipasangi bukan semua kotak pilih — pada daftar enam baris,
      | kotak cari justru menambah satu benda yang harus diabaikan mata.
      | Yang dipasangi yang daftarnya memang bisa panjang.
+     |
+     | Ini SARINGAN di halaman daftar. Isian di halaman borangnya tidak lagi
+     | memakai Select2: daftarnya perlu menampung keterangan, penanda "punya
+     | tiket", dan tombol buang per baris — tiga hal yang tidak muat di satu
+     | baris kotak pilih. Yang itu dijaga PemuatPilihPopupTest.
      */
-    $isi = sumberMasterHarga();
+    $isi = sumberLayar('rab/master-harga');
 
     foreach ([
-        "pasangSelectCari(\$el, 'isian.destinasi'",   // puluhan destinasi katalog
-        "pasangSelectCari(\$el, 'isian.vendor_id'",   // tumbuh terus
-        "pasangSelectCari(\$el, 'isian.provinsi'",    // 38 provinsi
         "pasangSelectCari(\$el, 'filterProvinsi'",
         "pasangSelectCari(\$el, 'filterVendor'",
         "pasangSelectCari(\$el, 'pasangKeVendor'",

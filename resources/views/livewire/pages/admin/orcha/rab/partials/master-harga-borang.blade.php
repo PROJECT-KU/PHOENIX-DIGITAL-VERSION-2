@@ -308,21 +308,53 @@
                                          nilainya — node yang kuncinya berubah diganti
                                          utuh, dan Select2 dipasang ulang dengan
                                          pilihan yang baru. --}}
-                                    <div wire:key="dst-{{ md5($destinasiKini.'|'.implode('|', $destinasi)) }}" wire:ignore
-                                        x-data x-init="pasangSelectCari($el, 'isian.destinasi', { placeholder: 'Tidak terikat destinasi' })">
-                                        <select id="mh-destinasi"
-                                            class="dsb-isian @error('isian.destinasi') is-galat @enderror">
-                                            <option value="">Tidak terikat destinasi</option>
-                                            @if ($destinasiAsing)
-                                                {{-- Nilai lama yang tidak ada di katalog TETAP
-                                                     ditawarkan, supaya menyunting baris lain
-                                                     tidak diam-diam menghapusnya. --}}
-                                                <option value="{{ $destinasiKini }}" selected>{{ $destinasiKini }} — tidak ada di katalog</option>
-                                            @endif
-                                            @foreach ($destinasi as $d)
-                                                <option value="{{ $d }}" @selected($destinasiKini === $d)>{{ $d }}</option>
-                                            @endforeach
-                                        </select>
+                                    @php
+                                        /*
+                                         | Baris pemilih destinasi.
+                                         |
+                                         | `hapus` hanya terisi untuk nama yang benar-benar
+                                         | akan hilang bila dibuang — katalog Orcha tumpukan
+                                         | tiga sumber, dan yang bawaan tidak punya barisnya
+                                         | sendiri. Lihat KatalogDestinasi::bisaDihapus().
+                                         */
+                                        $barisPilihDestinasi = collect($destinasiBaris)->map(fn ($b) => [
+                                            'nilai' => $b['nama'],
+                                            'label' => $b['nama'],
+                                            'ket' => trim(implode(' · ', array_filter([$b['daerah'] ?? null, $b['provinsi'] ?? null]))),
+                                            'lencana' => ($b['punya_tiket'] ?? false) ? 'punya tiket' : null,
+                                            'hapus' => $b['katalog_id'] ?? null,
+                                        ])->values();
+
+                                        // Nilai lama yang tidak ada di katalog TETAP ditawarkan,
+                                        // supaya menyunting baris lain tidak diam-diam
+                                        // menghapusnya.
+                                        if ($destinasiAsing) {
+                                            $barisPilihDestinasi->prepend([
+                                                'nilai' => $destinasiKini,
+                                                'label' => $destinasiKini,
+                                                'ket' => 'tidak ada di katalog',
+                                                'lencana' => null,
+                                                'hapus' => null,
+                                            ]);
+                                        }
+                                    @endphp
+
+                                    <div class="op-pilih" wire:key="dst-{{ md5($destinasiKini.'|'.$barisPilihDestinasi->toJson()) }}">
+                                        <button type="button" id="mh-destinasi"
+                                            onclick="pilihPopup(this)"
+                                            class="op-pilih-tombol @error('isian.destinasi') is-galat @enderror @if ($destinasiKini === '') is-kosong @endif"
+                                            data-ke="isian.destinasi"
+                                            data-terpilih="{{ $destinasiKini }}"
+                                            data-judul="Pilih Destinasi"
+                                            data-keterangan="Harga tiket ini ikut terbawa saat tempat yang sama dimasukkan ke jadwal perjalanan."
+                                            data-cari="Cari nama destinasi…"
+                                            data-kosong="Tidak terikat destinasi"
+                                            data-hapus-aksi="hapusDestinasiKatalog"
+                                            data-daftar="{{ $barisPilihDestinasi->toJson(JSON_UNESCAPED_UNICODE) }}">
+                                            <i class="bi bi-geo-alt"></i>
+                                            <span class="op-pilih-nilai">{{ $destinasiKini !== '' ? $destinasiKini : 'Tidak terikat destinasi' }}</span>
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
                                     </div>
 
                                     @unless ($destinasiBaru)
@@ -362,16 +394,35 @@
                                     Vendor
                                     <span class="dsb-label-ket">nomornya ikut terbawa ke RAB</span>
                                 </label>
-                                <div wire:key="ven-{{ $isian['vendor_id'] ?? '' }}-{{ count($vendor) }}" wire:ignore
-                                    x-data x-init="pasangSelectCari($el, 'isian.vendor_id', { placeholder: 'Belum ditentukan' })">
-                                    <select id="mh-vendor" class="dsb-isian">
-                                        <option value="">Belum ditentukan</option>
-                                        @foreach ($vendor as $v)
-                                            <option value="{{ $v['id'] }}" @selected((string) ($this->isian['vendor_id'] ?? '') === (string) $v['id'])>{{ $v['nama'] }}@if (! empty($v['jenis'])) — {{ $v['jenis'] }}@endif</option>
-                                        @endforeach
-                                    </select>
+                                @php
+                                    $vendorKini = collect($vendor)->firstWhere('id', (int) ($isian['vendor_id'] ?? 0));
+
+                                    $barisPilihVendor = collect($vendor)->map(fn ($v) => [
+                                        'nilai' => (string) $v['id'],
+                                        'label' => $v['nama'],
+                                        // Nomornya ikut DICARI, bukan cuma dibaca: vendor
+                                        // kerap diingat lewat nomornya, bukan namanya.
+                                        'ket' => trim(implode(' · ', array_filter([$v['jenis'] ?? null, $v['kontak'] ?? null]))),
+                                        'lencana' => null,
+                                        'hapus' => null,
+                                    ])->values();
+                                @endphp
+
+                                <div class="op-pilih" wire:key="ven-{{ $isian['vendor_id'] ?? '' }}-{{ count($vendor) }}">
+                                    <button type="button" id="mh-vendor"
+                                        onclick="pilihPopup(this)"
+                                        class="op-pilih-tombol @if (! $vendorKini) is-kosong @endif"
+                                        data-ke="isian.vendor_id"
+                                        data-terpilih="{{ (string) ($isian['vendor_id'] ?? '') }}"
+                                        data-judul="Pilih Vendor"
+                                        data-cari="Cari nama atau nomor vendor…"
+                                        data-kosong="Belum ditentukan"
+                                        data-daftar="{{ $barisPilihVendor->toJson(JSON_UNESCAPED_UNICODE) }}">
+                                        <i class="bi bi-shop"></i>
+                                        <span class="op-pilih-nilai">{{ $vendorKini['nama'] ?? 'Belum ditentukan' }}</span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
                                 </div>
-                                @php($vendorKini = collect($vendor)->firstWhere('id', (int) ($isian['vendor_id'] ?? 0)))
                                 @if ($vendorKini && ! empty($vendorKini['kontak']))
                                     <span class="mh-vendor-kontak">
                                         <i class="bi bi-telephone"></i>{{ $vendorKini['kontak'] }}
@@ -402,14 +453,29 @@
 
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="mh-provinsi">Provinsi</label>
-                                <div wire:key="prov-{{ $isian['provinsi'] ?? '' }}" wire:ignore
-                                    x-data x-init="pasangSelectCari($el, 'isian.provinsi', { placeholder: 'Berlaku umum (semua provinsi)' })">
-                                    <select id="mh-provinsi" class="dsb-isian">
-                                        <option value="">Berlaku umum (semua provinsi)</option>
-                                        @foreach ($provinsi as $p)
-                                            <option value="{{ $p }}" @selected(($isian['provinsi'] ?? '') === $p)>{{ $p }}</option>
-                                        @endforeach
-                                    </select>
+                                @php
+                                    $provinsiKini = (string) ($isian['provinsi'] ?? '');
+                                    $barisPilihProvinsi = collect($provinsi)->map(fn ($p) => [
+                                        'nilai' => $p, 'label' => $p, 'ket' => null,
+                                        'lencana' => null, 'hapus' => null,
+                                    ])->values();
+                                @endphp
+
+                                <div class="op-pilih" wire:key="prov-{{ $provinsiKini }}">
+                                    <button type="button" id="mh-provinsi"
+                                        onclick="pilihPopup(this)"
+                                        class="op-pilih-tombol @if ($provinsiKini === '') is-kosong @endif"
+                                        data-ke="isian.provinsi"
+                                        data-terpilih="{{ $provinsiKini }}"
+                                        data-judul="Pilih Provinsi"
+                                        data-keterangan="Harga yang tidak diikat provinsi berlaku di seluruh Indonesia."
+                                        data-cari="Cari provinsi…"
+                                        data-kosong="Berlaku umum (semua provinsi)"
+                                        data-daftar="{{ $barisPilihProvinsi->toJson(JSON_UNESCAPED_UNICODE) }}">
+                                        <i class="bi bi-map"></i>
+                                        <span class="op-pilih-nilai">{{ $provinsiKini !== '' ? $provinsiKini : 'Berlaku umum (semua provinsi)' }}</span>
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -478,23 +544,48 @@
                                         </div>
                                     @endif
 
-                                    <div class="mh-terusan-tambah">
-                                        <select wire:model="destinasiLainPilih" class="dsb-isian">
-                                            {{-- Penandanya ikut, seperti pilihan lain di bawahnya:
-                                                 Blade tidak menuliskan `selected` sendiri, dan kotak
-                                                 yang nilainya baru dikosongkan akan tetap menggambar
-                                                 pilihan terakhir.
+                                    @php
+                                        /*
+                                         | Yang SUDAH masuk tiket ini tidak ditawarkan lagi,
+                                         | begitu pula destinasi utamanya sendiri — keduanya
+                                         | hanya membingungkan tanpa mengubah apa pun, karena
+                                         | penjodohannya memang menyaring yang kembar.
+                                         |
+                                         | Tanpa tombol buang: yang dibuang di sini adalah
+                                         | keanggotaan di tiket ini, dan itu dikerjakan lewat
+                                         | tanda × pada pilnya di atas. Tombol hapus di sini
+                                         | akan berarti membuang namanya dari KATALOG, dua
+                                         | perbuatan berbeda yang kebetulan bersebelahan.
+                                         */
+                                        $barisTempatLain = collect($destinasiBaris)
+                                            ->reject(fn ($b) => $b['nama'] === ($isian['destinasi'] ?? '')
+                                                || in_array($b['nama'], $destinasiLain, true))
+                                            ->map(fn ($b) => [
+                                                'nilai' => $b['nama'],
+                                                'label' => $b['nama'],
+                                                'ket' => trim(implode(' · ', array_filter([$b['daerah'] ?? null, $b['provinsi'] ?? null]))),
+                                                'lencana' => ($b['punya_tiket'] ?? false) ? 'punya tiket' : null,
+                                                'hapus' => null,
+                                            ])->values();
+                                    @endphp
 
-                                                 Kata kuncinya sengaja TIDAK ditulis utuh di komentar
-                                                 ini — pemindai penjaga menghitung kemunculannya, dan
-                                                 komentar pun ikut terhitung. --}}
-                                            <option value="" @selected($destinasiLainPilih === '')>Pilih tempat lain…</option>
-                                            @foreach ($destinasi as $d)
-                                                @if ($d !== ($isian['destinasi'] ?? '') && ! in_array($d, $destinasiLain, true))
-                                                    <option value="{{ $d }}" @selected($destinasiLainPilih === $d)>{{ $d }}</option>
-                                                @endif
-                                            @endforeach
-                                        </select>
+                                    <div class="mh-terusan-tambah">
+                                        <div class="op-pilih" wire:key="dlp-{{ md5($destinasiLainPilih.'|'.$barisTempatLain->toJson()) }}">
+                                            <button type="button"
+                                                onclick="pilihPopup(this)"
+                                                class="op-pilih-tombol @if ($destinasiLainPilih === '') is-kosong @endif"
+                                                data-ke="destinasiLainPilih"
+                                                data-terpilih="{{ $destinasiLainPilih }}"
+                                                data-judul="Tempat lain yang pakai tiket yang sama"
+                                                data-keterangan="Dibayar sekali untuk semuanya. Yang dipilih di sini belum masuk — tekan Tambah sesudahnya."
+                                                data-cari="Cari nama tempat…"
+                                                data-kosong="Pilih tempat lain…"
+                                                data-daftar="{{ $barisTempatLain->toJson(JSON_UNESCAPED_UNICODE) }}">
+                                                <i class="bi bi-geo"></i>
+                                                <span class="op-pilih-nilai">{{ $destinasiLainPilih !== '' ? $destinasiLainPilih : 'Pilih tempat lain…' }}</span>
+                                                <i class="bi bi-chevron-down"></i>
+                                            </button>
+                                        </div>
                                         {{-- Tombol penuh, bukan tautan bergaris bawah.
 
                                              Perintahnya BUKAN "pergi ke suatu tempat": ia

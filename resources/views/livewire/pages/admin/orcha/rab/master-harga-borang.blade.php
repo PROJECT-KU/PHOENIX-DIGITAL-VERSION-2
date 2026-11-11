@@ -39,6 +39,19 @@
     @include('livewire.pages.admin.orcha.partials.gaya')
     @include('livewire.pages.admin.orcha.rab.partials.master-harga-gaya')
 
+    {{-- Pemilih berbentuk jendela, untuk Destinasi, Tempat lain, Vendor,
+         dan Provinsi.
+
+         Pemuatnya WAJIB di halaman yang memakainya. Markah isiannya dulu
+         memanggil pasangSelectCari() sementara yang menyertakan pustakanya
+         cuma halaman DAFTAR, jadi di halaman ini fungsinya tidak pernah ada:
+         dibuka langsung, keempat kotak itu tetap kotak pilih bawaan peramban;
+         dicapai lewat wire:navigate dari daftar, skripnya terlanjur hidup
+         tetapi lembar gayanya tidak ikut, dan yang terlihat kotak pilih asli
+         DITAMBAH salinan telanjang nilainya di bawahnya. Keduanya tanpa satu
+         pun galat. Dijaga PemuatPilihPopupTest. --}}
+    @include('livewire.pages.admin.orcha.partials.pilih-popup')
+
     <div class="dsb">
         @include('livewire.pages.admin.orcha.rab.partials.master-harga-borang')
     </div>

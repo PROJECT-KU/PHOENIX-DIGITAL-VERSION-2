@@ -561,6 +561,41 @@ trait MenyuntingMasterHarga
     }
 
     /**
+     * Mengeluarkan satu nama dari katalog destinasi, dari dalam pemilihnya.
+     *
+     * Katalog ini hanya bertambah sejak ada: salah ketik, nama percobaan,
+     * dan destinasi yang batal dipakai menumpuk di kotak pilih selamanya,
+     * dan satu-satunya jalan membersihkannya ada di menu lain.
+     *
+     * Yang dihapus HANYA barisnya di katalog. Baris harga, RAB, dan
+     * itinerary menyimpan NAMA destinasinya, bukan id katalog, jadi tidak
+     * satu pun dari mereka ikut terhapus — Orcha malah MENOLAK menghapus
+     * nama yang masih dipakai salah satunya, dan alasannya diteruskan apa
+     * adanya ke layar. Hapusnya sendiri bisa dikembalikan: menambahkan
+     * nama yang sama lewat "Destinasinya belum ada di daftar" memulihkan
+     * baris yang sama berikut provinsi & daerahnya.
+     */
+    public function hapusDestinasiKatalog(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/katalog-destinasi/{$id}");
+        } catch (OrchaTidakTerjangkau $e) {
+            // Termasuk penolakan 422 "masih dipakai" — pesannya sudah
+            // menyebut di mana dipakainya, jadi diteruskan apa adanya.
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        // Tanpa dilupakan, nama yang baru dihapus masih berdiri di kotak
+        // pilihnya sendiri sampai sepuluh menit ke depan — dan tampak
+        // seperti hapus yang gagal.
+        cache()->forget('orcha.rab.katalog');
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Destinasi dihapus dari daftar.');
+    }
+
+    /**
      * Menambah vendor tanpa meninggalkan formulir ini.
      *
      * Satu-satunya jalan sebelumnya adalah tautan ke daftar vendor — yang

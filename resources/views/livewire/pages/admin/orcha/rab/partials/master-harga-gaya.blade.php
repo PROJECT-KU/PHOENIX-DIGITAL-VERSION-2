@@ -244,7 +244,10 @@
         .mh-terusan-judul { flex: 0 0 auto; font-size: .78rem; font-weight: 600; color: var(--dsb-tinta, #1c1f26); line-height: 1.35; }
         .mh-terusan-judul .dsb-label-ket { display: block; font-weight: 400; }
         .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 240px; }
-        .mh-terusan-tambah > .dsb-isian { flex: 1 1 180px; min-width: 0; }
+        /* Anak lenturnya kini PEMBUNGKUS pemilih, bukan kotak pilihnya
+           sendiri: aturan lama memilih .dsb-isian yang sudah tidak ada di
+           baris ini, jadi tombolnya menciut selebar tulisannya. */
+        .mh-terusan-tambah > .op-pilih { flex: 1 1 180px; min-width: 0; }
         /* Setinggi kotak pilih di sebelahnya (.dsb-isian, min-height 40px),
            bukan 44px bawaan .dsb-tombol: sepasang kotak yang berbeda dua
            piksel di satu baris terbaca sebagai salah susun, bukan sebagai

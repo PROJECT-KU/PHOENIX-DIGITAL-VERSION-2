@@ -135,12 +135,24 @@ class OrchaMasterHargaForm extends Component
          | gulungan. Yang dipakai menandai "belum terdaftar" tetap seluruh
          | provinsi, karena nama di luar provinsi ini pun tetap nama yang ada.
          */
-        $destinasi = collect($katalog['destinasi'] ?? [])
+        $barisDestinasi = collect($katalog['destinasi'] ?? [])
             ->when($this->isian['provinsi'] ?? '', fn ($c, $p) => $c->where('provinsi', $p))
-            ->pluck('nama')->values()->all();
+            ->values()->all();
+
+        $destinasi = collect($barisDestinasi)->pluck('nama')->values()->all();
 
         return view('livewire.pages.admin.orcha.rab.master-harga-borang', [
             'destinasi' => $destinasi,
+            /*
+             | Baris UTUHNYA, bukan sekadar namanya.
+             |
+             | Pemilihnya menampilkan daerah di bawah nama, menandai mana
+             | yang sudah punya tiket, dan menawarkan tombol hapus hanya
+             | pada baris yang memang bisa dihapus (`katalog_id` terisi —
+             | nama bawaan dan yang sudah tercatat tidak punya). Ketiganya
+             | hilang kalau yang dioper cuma deret nama.
+             */
+            'destinasiBaris' => $barisDestinasi,
             'namaKatalog' => collect($katalog['destinasi'] ?? [])->pluck('nama')->all(),
             'vendorAda' => $katalog['vendor'] ?? [],
             'kosakata' => $katalog['kosakata'] ?? [],

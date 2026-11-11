@@ -1216,11 +1216,14 @@ test('destinasi di master harga DIPILIH dari katalog, bukan diketik', function (
         ->test(OrchaMasterHargaForm::class)
         ->html();
 
-    expect($isi)->toContain('<select id="mh-destinasi"')
-        ->and($isi)->toContain('isian.destinasi')
+    // Kotak pilihnya kini pemilih berjendela — isian bebasnya yang penting
+    // tidak ada, apa pun bentuk pemilihnya.
+    expect($isi)->toContain('id="mh-destinasi"')
+        ->and($isi)->toContain('data-ke="isian.destinasi"')
         ->and($isi)->toContain('Tidak terikat destinasi')
-        // Datalist cuma menyarankan; yang dipakai sekarang kotak pilih.
-        ->and($isi)->not->toContain('rab-daftar-destinasi');
+        // Datalist cuma menyarankan; yang dipakai sekarang daftar tertutup.
+        ->and($isi)->not->toContain('rab-daftar-destinasi')
+        ->and($isi)->not->toContain('wire:model.live.debounce.400ms="isian.destinasi"');
 });
 
 test('nilai lama yang tidak ada di katalog tetap ditawarkan dan ditandai', function () {
@@ -1343,6 +1346,100 @@ test('destinasi yang sudah terpilih tidak tergeser destinasi baru', function () 
     Http::assertSent(fn (Request $r) => $r->method() === 'POST'
         && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/katalog-destinasi')
         && $r['nama'] === 'Pantai Sembukan');
+});
+
+test('destinasi bisa dibuang dari katalog lewat pemilihnya', function () {
+    $katalogDipanggil = 0;
+
+    Http::fake(function (Request $r) use (&$katalogDipanggil) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            $katalogDipanggil++;
+
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        return Http::response(['pesan' => 'Candi Arjuna dihapus dari daftar.']);
+    });
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->call('hapusDestinasiKatalog', 42)
+        ->assertDispatched('order-updated');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'DELETE'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/katalog-destinasi/42'));
+
+    // Katalognya disimpan sepuluh menit; tanpa dilupakan, nama yang baru
+    // dibuang masih berdiri di kotak pilihnya sendiri dan tampak seperti
+    // hapus yang gagal.
+    expect($katalogDipanggil)->toBeGreaterThan(1);
+});
+
+test('penolakan "masih dipakai" diteruskan apa adanya ke layar', function () {
+    /*
+     | Orcha menolak 422 bila namanya masih dipakai baris harga atau
+     | itinerary, dan pesannya sudah menyebut di mana dipakainya. Diganti
+     | pesan sendiri, admin kehilangan satu-satunya petunjuk ke mana harus
+     | melihat.
+     */
+    Http::fake(function (Request $r) {
+        if (str_contains(parse_url($r->url(), PHP_URL_PATH), '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        return Http::response([
+            'pesan' => 'Candi Arjuna masih dipakai 3 baris harga, jadi tidak dihapus.',
+        ], 422);
+    });
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->call('hapusDestinasiKatalog', 7)
+        ->assertDispatched('toast-error', message: 'Candi Arjuna masih dipakai 3 baris harga, jadi tidak dihapus.')
+        ->assertNotDispatched('order-updated');
+});
+
+test('tombol buang hanya ditawarkan pada destinasi yang memang punya barisnya', function () {
+    /*
+     | Katalog Orcha tumpukan tiga sumber dan hanya satu di antaranya punya
+     | baris yang bisa dihapus. Tombol buang di sebelah nama bawaan
+     | menjanjikan sesuatu yang tidak terjadi: admin menekannya, namanya
+     | masih di sana, dan ia menekannya lagi.
+     */
+    Http::fake(function (Request $r) {
+        if (! str_contains(parse_url($r->url(), PHP_URL_PATH), '/rab/katalog')) {
+            return Http::response(rekamanRab('master'));
+        }
+
+        $data = rekamanRab('katalog');
+        $data['data']['destinasi'] = [
+            ['nama' => 'Candi Bawaan', 'provinsi' => 'Jawa Tengah', 'daerah' => 'Magelang',
+                'punya_tiket' => false, 'katalog_id' => null],
+            ['nama' => 'Candi Buatan Admin', 'provinsi' => 'Jawa Tengah', 'daerah' => 'Magelang',
+                'punya_tiket' => false, 'katalog_id' => 91],
+        ];
+
+        return Http::response($data);
+    });
+
+    $isi = Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->html();
+
+    // Daftarnya dioper sebagai JSON di atribut; yang diperiksa isinya, bukan
+    // bentuk teksnya — satu baris ber-id, satu baris tanpa.
+    preg_match('/data-ke="isian\.destinasi"(?:.|\n)*?data-daftar="([^"]*)"/', $isi, $cocok);
+
+    expect($cocok)->not->toBeEmpty();
+
+    $baris = collect(json_decode(html_entity_decode($cocok[1], ENT_QUOTES), true))->keyBy('label');
+
+    expect($baris['Candi Buatan Admin']['hapus'])->toBe(91)
+        ->and($baris['Candi Bawaan']['hapus'])->toBeNull()
+        // Daerah & provinsinya ikut sebagai keterangan di bawah namanya.
+        ->and($baris['Candi Bawaan']['ket'])->toBe('Magelang · Jawa Tengah');
 });
 
 test('nama destinasi baru yang terlalu pendek tidak dikirim', function () {

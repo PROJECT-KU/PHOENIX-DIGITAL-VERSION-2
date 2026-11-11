@@ -421,7 +421,13 @@ test('tombol tempel Excel sebaris dengan tombol simpan, bukan barisnya sendiri',
 
     // Berdiri sendiri, ia menyisakan hampir selebar kartu menganggur di
     // kanannya — dan tombol tunggal yang menggantung terbaca seperti sisa.
-    $kaki = substr($html, strpos($html, 'mh-kaki-kiri'));
+    //
+    // Dijangkarkan ke MARKAHNYA, bukan ke nama kelasnya: aturan .mh-kaki-kiri
+    // di blok <style> muncul jauh lebih dulu, dan potongan yang dimulai dari
+    // sana ikut memuat seluruh skrip di antaranya. Satu kata "Batal" di dalam
+    // skrip mana pun lalu memotong potongannya sebelum kakinya sendiri — tes
+    // merah yang tidak menyebut satu pun hal yang benar-benar berubah.
+    $kaki = substr($html, strpos($html, 'class="mh-kaki-kiri"'));
 
     expect($kaki)->toContain('Tempel banyak baris dari Excel')
         ->and(substr($kaki, 0, strpos($kaki, 'Batal')))->toContain('Tempel banyak baris');
