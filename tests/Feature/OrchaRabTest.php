@@ -1303,6 +1303,48 @@ test('destinasi di luar daftar bisa ditambahkan tanpa meninggalkan formulir', fu
         ->and($layar->html())->not->toContain('Tebing Breksi — tidak ada di katalog');
 });
 
+test('destinasi yang sudah terpilih tidak tergeser destinasi baru', function () {
+    /*
+     | Menambah destinasi ke katalog sambil mengisi borang biasanya dilakukan
+     | untuk tempat LAIN yang ikut tiket yang sama, bukan untuk mengganti
+     | destinasi utamanya.
+     |
+     | Dulu kolomnya selalu ditimpa: admin yang sudah memilih Pantai Baron
+     | lalu mendaftarkan Pantai Sembukan mendapati destinasinya berganti
+     | tanpa diminta — dan harga tiketnya berjodoh ke destinasi yang salah,
+     | sering baru ketahuan setelah tersimpan.
+     */
+    Http::fake(function (Request $r) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        if (str_contains($jalur, '/rab/katalog')) {
+            return Http::response(rekamanRab('katalog'));
+        }
+
+        if (str_ends_with($jalur, '/katalog-destinasi')) {
+            return Http::response(['pesan' => 'Pantai Sembukan ditambahkan ke daftar.', 'data' => []], 201);
+        }
+
+        return Http::response(rekamanRab('master'));
+    });
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.destinasi', 'Candi Arjuna')
+        ->set('destinasiBaru', true)
+        ->set('namaDestinasiBaru', 'Pantai Sembukan')
+        ->call('tambahDestinasiKatalog')
+        ->assertSet('isian.destinasi', 'Candi Arjuna')
+        // Kotaknya tetap tertutup & bersih: yang dikirim memang tersimpan,
+        // cuma tidak ikut menggeser pilihan yang sudah ada.
+        ->assertSet('destinasiBaru', false)
+        ->assertSet('namaDestinasiBaru', '');
+
+    Http::assertSent(fn (Request $r) => $r->method() === 'POST'
+        && str_ends_with(parse_url($r->url(), PHP_URL_PATH), '/katalog-destinasi')
+        && $r['nama'] === 'Pantai Sembukan');
+});
+
 test('nama destinasi baru yang terlalu pendek tidak dikirim', function () {
     palsukanRab();
 

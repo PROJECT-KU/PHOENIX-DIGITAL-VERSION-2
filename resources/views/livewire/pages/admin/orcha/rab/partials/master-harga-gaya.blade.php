@@ -245,6 +245,11 @@
         .mh-terusan-judul .dsb-label-ket { display: block; font-weight: 400; }
         .mh-terusan-tambah { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 240px; }
         .mh-terusan-tambah > .dsb-isian { flex: 1 1 180px; min-width: 0; }
+        /* Setinggi kotak pilih di sebelahnya (.dsb-isian, min-height 40px),
+           bukan 44px bawaan .dsb-tombol: sepasang kotak yang berbeda dua
+           piksel di satu baris terbaca sebagai salah susun, bukan sebagai
+           rancangan. */
+        .mh-terusan-tambah > .dsb-tombol { flex: 0 0 auto; height: 40px; padding: 0 15px; }
         .mh-cip-rak { display: flex; flex-wrap: wrap; gap: 6px; flex: 0 1 auto; }
         .mh-cip {
             display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;

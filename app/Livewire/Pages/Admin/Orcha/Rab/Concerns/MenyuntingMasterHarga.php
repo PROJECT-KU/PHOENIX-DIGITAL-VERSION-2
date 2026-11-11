@@ -527,11 +527,37 @@ trait MenyuntingMasterHarga
         // saja dibuat tidak muncul di kotak pilihnya sendiri.
         cache()->forget('orcha.rab.katalog');
 
-        $this->isian['destinasi'] = $nama;
+        /*
+         | Yang SUDAH terpilih tidak ditimpa.
+         |
+         | Menambah destinasi ke katalog sambil mengisi borang biasanya
+         | dilakukan untuk tempat LAIN yang ikut tiket yang sama — bukan
+         | untuk mengganti destinasi utamanya. Dulu kolomnya selalu diisi
+         | ulang: admin yang sudah memilih Pantai Baron lalu mendaftarkan
+         | Pantai Sembukan mendapati destinasinya berganti tanpa diminta,
+         | dan ketahuannya kerap baru setelah tersimpan — harga tiketnya
+         | pun berjodoh ke destinasi yang salah.
+         |
+         | Yang kosong tetap diisi: di sanalah penggantinya memang tidak
+         | ada, dan menyuruh admin memilih ulang apa yang baru saja
+         | diketiknya hanya pekerjaan dua kali.
+         */
+        $sudahAda = trim((string) ($this->isian['destinasi'] ?? '')) !== '';
+
+        if (! $sudahAda) {
+            $this->isian['destinasi'] = $nama;
+        }
+
         $this->namaDestinasiBaru = '';
         $this->destinasiBaru = false;
 
-        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Destinasi ditambahkan.');
+        $pesan = $balasan['pesan'] ?? 'Destinasi ditambahkan.';
+
+        if ($sudahAda) {
+            $pesan = "\"{$nama}\" masuk daftar destinasi. Kolom Destinasi dibiarkan tetap \"{$this->isian['destinasi']}\".";
+        }
+
+        $this->dispatch('order-updated', message: $pesan);
     }
 
     /**

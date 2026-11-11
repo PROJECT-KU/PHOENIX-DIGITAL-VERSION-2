@@ -495,8 +495,20 @@
                                                 @endif
                                             @endforeach
                                         </select>
-                                        <button type="button" wire:click="tambahDestinasiLain" class="mh-tambah">
-                                            <i class="bi bi-plus-lg"></i> Tambah
+                                        {{-- Tombol penuh, bukan tautan bergaris bawah.
+
+                                             Perintahnya BUKAN "pergi ke suatu tempat": ia
+                                             memasukkan tempat yang barusan dipilih ke tiket
+                                             ini. Dengan rupa tautan, perbuatan itu berdiri
+                                             tanpa bidang yang bisa ditekan di sebelah kotak
+                                             pilihnya — dan garis bawah yang muncul saat
+                                             disentuh menjanjikan perpindahan halaman yang
+                                             tidak pernah terjadi. --}}
+                                        <button type="button" wire:click="tambahDestinasiLain"
+                                            class="dsb-tombol is-aman">
+                                            <i class="bi bi-plus-lg" wire:loading.remove wire:target="tambahDestinasiLain"></i>
+                                            <span class="dsb-putar" wire:loading wire:target="tambahDestinasiLain"></span>
+                                            <span>Tambah</span>
                                         </button>
                                     </div>
                                 </div>
