@@ -501,17 +501,16 @@ trait MenyuntingMasterHarga
     /**
      * Nama yang dirakit dari seluruh isian barisnya.
      *
-     *   Hotel Graha Makmur (Twin, 2 orang) Weekday & Weekend - Yogyakarta
-     *   HiAce Graha Trans (13 kursi) ke Dieng - Jogja
-     *   Tiket Masuk Pantai Baron dll 23 tempat - Gunung Kidul
-     *   Makan di Loji Breakfast - Banyuwangi
+     *   Hotel Graha Makmur (Twin, 2 orang) Weekday & Weekend | Yogyakarta
+     *   HiAce Graha Trans (13 kursi) | Dieng - Jogja
+     *   Tiket Masuk Pantai Baron dll 23 tempat | Gunung Kidul
+     *   Makan di Loji Breakfast | Banyuwangi
      *   Retribusi Gunung Kidul
      *
-     * Urutannya: tipe & inti, ukuran, tempat lain, penanda dua harga,
-     * tujuan, lalu DAERAH — selalu paling belakang, dipisah tanda hubung.
-     * Daerah di ujung membuat dua baris yang namanya mirip tetap bisa
-     * dibedakan sekilas, dan itu aturan keras: tidak ada bagian lain yang
-     * boleh ditulis sesudahnya.
+     * Urutannya: tipe & inti, ukuran, tempat lain, penanda dua harga, lalu
+     * — sesudah garis tegak — tujuan dan DAERAH. Daerah selalu paling
+     * belakang, dan itu aturan keras: tidak ada bagian lain yang boleh
+     * ditulis sesudahnya.
      *
      * Intinya memakai nama VENDOR bila tidak ada destinasi dan kategorinya
      * memang berbarang milik vendor (hotel, rumah makan, kendaraan,
@@ -566,16 +565,37 @@ trait MenyuntingMasterHarga
             $bagian .= ' Weekday & Weekend';
         }
 
-        // Tujuan ditulis hanya bila intinya vendor — kalau tidak, destinasi
-        // SUDAH jadi intinya dan menulisnya lagi berarti dua kali.
+        /*
+         | Blok tempat, dipisah dari nama barangnya dengan garis tegak.
+         |
+         |   Hotel PO Sumber Jaya (Twin, 2 orang) Weekday & Weekend | Yogyakarta
+         |   HiAce Graha Trans (13 kursi) | Dieng - Jogja
+         |
+         | Satu tanda pemisah untuk dua hal yang berbeda membuat nama
+         | panjang tidak terbaca: "HiAce Graha Trans - Dieng - Jogja"
+         | menyajikan tiga potongan setara, padahal yang pertama nama
+         | barangnya dan dua sisanya tempat. Garis tegak memisahkan APA dari
+         | DI MANA; tanda hubung memisahkan tempat dari tempat.
+         |
+         | Isinya: tujuan lebih dulu (hanya bila intinya vendor — kalau
+         | tidak, destinasinya SUDAH jadi intinya), lalu DAERAH, selalu
+         | paling belakang. Tidak ada bagian lain yang boleh ditulis
+         | sesudah daerah.
+         */
+        $tempat = [];
+
         if ($intiVendor && $destinasi !== '') {
-            $bagian .= (($this->isian['kategori'] ?? '') === 'transportasi' ? ' ke ' : ' ').$destinasi;
+            $tempat[] = $destinasi;
         }
 
-        // DAERAH, selalu terakhir. Dilewati bila namanya sudah memuatnya —
-        // "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
+        // Dilewati bila namanya sudah memuatnya — "Hotel di Sleman | Sleman"
+        // menyebut satu hal dua kali.
         if ($wilayah !== '' && ! str_contains(mb_strtolower($bagian), mb_strtolower($wilayah))) {
-            $bagian .= ' - '.$wilayah;
+            $tempat[] = $wilayah;
+        }
+
+        if ($tempat !== []) {
+            $bagian .= ' | '.implode(' - ', $tempat);
         }
 
         // Kolomnya 150 huruf. Dipotong di sini, bukan dibiarkan ditolak

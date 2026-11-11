@@ -1493,12 +1493,12 @@ test('nama tiket dirakit dari destinasi yang dipilih', function () {
         // memilih destinasi mengisi daerahnya sendiri dari katalog, dan dua
         // "Tiket Masuk Pantai Sadranan" di kabupaten berbeda tidak bisa
         // dibedakan tanpa itu.
-        ->assertSee('Tiket Masuk Candi Prambanan - Sleman')
+        ->assertSee('Tiket Masuk Candi Prambanan | Sleman')
         ->call('simpan')
         ->assertHasNoErrors();
 
     Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/master-harga')
-        && $r['nama'] === 'Tiket Masuk Candi Prambanan - Sleman'
+        && $r['nama'] === 'Tiket Masuk Candi Prambanan | Sleman'
         && $r['destinasi'] === 'Candi Prambanan');
 });
 
@@ -1520,7 +1520,7 @@ test('nama rakitan memakai keenam bahannya', function () {
         ->set('destinasiLain', ['Candi Sewu', 'Candi Plaosan']);
 
     expect($layar->instance()->namaOtomatis())
-        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat - Sleman');
+        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat | Sleman');
 
     /*
      | Vendor TIDAK ditempelkan ke nama tiket.
@@ -1538,15 +1538,15 @@ test('nama rakitan memakai keenam bahannya', function () {
     $layar->set('isian.vendor_id', (string) $vendor['id']);
 
     expect($layar->instance()->namaOtomatis())
-        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat - Sleman')
+        ->toBe('Tiket Masuk Candi Prambanan dll 3 tempat | Sleman')
         ->not->toContain($vendor['nama']);
 });
 
-test('daerah jadi bagian terakhir, dipisah tanda hubung', function () {
+test('daerah jadi bagian terakhir, sesudah garis tegak', function () {
     /*
-     | "Tiket Masuk Taman Nasional Baluran - Banyuwangi". Paling belakang,
-     | dipisah tanda hubung — bukan diselipkan di tengah, dan bukan
-     | menempel tanpa jarak pada kata sebelumnya.
+     | "Tiket Masuk Taman Nasional Baluran | Banyuwangi". Blok tempatnya
+     | dipisah garis tegak dari nama barangnya, dan daerah selalu jadi
+     | bagian paling belakang di dalam blok itu.
      */
     palsukanRab();
 
@@ -1558,7 +1558,7 @@ test('daerah jadi bagian terakhir, dipisah tanda hubung', function () {
         ->set('isian.daerah', 'Banyuwangi');
 
     expect($layar->instance()->namaOtomatis())
-        ->toBe('Tiket Masuk Taman Nasional Baluran - Banyuwangi');
+        ->toBe('Tiket Masuk Taman Nasional Baluran | Banyuwangi');
 });
 
 test('akomodasi tanpa destinasi memakai nama vendornya sebagai inti', function () {
@@ -1582,11 +1582,11 @@ test('akomodasi tanpa destinasi memakai nama vendornya sebagai inti', function (
         ->set('isian.vendor_id', (string) $vendor['id']);
 
     expect($layar->instance()->namaOtomatis())
-        ->toBe('Hotel '.$vendor['nama'].' - Yogyakarta');
+        ->toBe('Hotel '.$vendor['nama'].' | Yogyakarta');
 });
 
 test('daerah tidak disebut dua kali saat namanya sudah memuatnya', function () {
-    // "Hotel di Sleman - Sleman" menyebut satu hal dua kali.
+    // "Hotel di Sleman | Sleman" menyebut satu hal dua kali.
     palsukanRab();
 
     $layar = Livewire::actingAs(adminRab())
@@ -1615,7 +1615,7 @@ test('tombol pakai nama ini menimpa nama yang sudah diketik', function () {
         // tombolnya ditekan.
         ->assertSet('isian.nama', 'Nama lama yang sudah tidak cocok')
         ->call('pakaiNamaOtomatis')
-        ->assertSet('isian.nama', 'Tiket Masuk Candi Prambanan - Sleman');
+        ->assertSet('isian.nama', 'Tiket Masuk Candi Prambanan | Sleman');
 });
 
 test('nama yang diketik tangan menang atas nama rakitan', function () {
