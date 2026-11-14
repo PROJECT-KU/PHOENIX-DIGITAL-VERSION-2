@@ -72,6 +72,120 @@
                                     @error('tanggalPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
+                                {{-- ============ TANGGAL KEBERANGKATAN ============
+
+                                     Satu paket boleh dijual untuk beberapa tanggal dengan isi
+                                     yang SAMA — itinerary, destinasi, fasilitas, dan fotonya
+                                     dipakai bersama. Sebelum ada ini, tiga tanggal berarti
+                                     tiga paket: tiga kali mengetik itinerary, dan tiga tempat
+                                     yang harus diubah saat satu kegiatan bergeser.
+
+                                     Baru muncul SESUDAH paketnya tersimpan: tanggal menempel
+                                     pada paket, dan paket yang belum punya id belum punya
+                                     tempat untuk ditempeli. --}}
+                                @if ($ubah)
+                                    <div class="col-12">
+                                        <div class="p-3 border rounded-4" style="background:#faf9ff;border-color:#ddd6fe !important">
+                                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                <div>
+                                                    <strong class="small">Tanggal keberangkatan</strong>
+                                                    <div class="text-muted" style="font-size:.78rem">
+                                                        Isi tripnya dipakai bersama — yang berbeda hanya tanggalnya.
+                                                        Kuota &amp; harga kosong berarti ikut paket ini.
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            @forelse ($keberangkatan as $kb)
+                                                <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-top" wire:key="kb-{{ $kb['id'] }}">
+                                                    <span class="fw-semibold">{{ $kb['rentang_tanggal'] }}</span>
+
+                                                    @if (! empty($kb['harga']))
+                                                        <span class="badge bg-light text-dark">Rp {{ number_format($kb['harga_dipakai'], 0, ',', '.') }}</span>
+                                                    @endif
+
+                                                    @if (! $kb['aktif'])
+                                                        <span class="badge bg-secondary">Ditutup</span>
+                                                    @elseif ($kb['penuh'])
+                                                        <span class="badge bg-danger">Penuh</span>
+                                                    @elseif ($kb['sisa_kursi'] !== null)
+                                                        <span class="badge bg-success-subtle text-success-emphasis">sisa {{ $kb['sisa_kursi'] }} kursi</span>
+                                                    @endif
+
+                                                    <span class="ms-auto d-inline-flex gap-1">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                            wire:click="salinKeberangkatan({{ $kb['id'] }})"
+                                                            title="Salin ke tanggal lain — isinya ikut, tinggal ganti tanggalnya">
+                                                            <i class="bi bi-copy"></i> Salin
+                                                        </button>
+
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            wire:click="alihkanKeberangkatan({{ $kb['id'] }}, {{ $kb['aktif'] ? 'true' : 'false' }})"
+                                                            title="{{ $kb['aktif'] ? 'Tutup dari pendaftaran' : 'Buka lagi' }}">
+                                                            <i class="bi {{ $kb['aktif'] ? 'bi-lock' : 'bi-unlock' }}"></i>
+                                                        </button>
+
+                                                        {{-- Konfirmasinya lewat SweetAlert bersama, bukan
+                                                             wire:confirm bawaan peramban. --}}
+                                                        <button type="button" class="btn btn-sm btn-outline-danger pcek-konfirmasi"
+                                                            data-action="hapusKeberangkatan" data-arg="{{ $kb['id'] }}"
+                                                            data-title="Hapus tanggal {{ $kb['rentang_tanggal'] }}?"
+                                                            data-text="Tanggal yang sudah punya pendaftar tidak bisa dihapus — tutup saja supaya tidak menerima pendaftar baru."
+                                                            data-confirm="Ya, hapus" data-icon="warning">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </span>
+                                                </div>
+                                            @empty
+                                                <div class="text-muted small py-2 border-top">
+                                                    Belum ada tanggal. Tambahkan satu supaya pengunjung bisa mendaftar.
+                                                </div>
+                                            @endforelse
+
+                                            {{-- Baris isian: tambah baru, atau salinan dari satu baris.
+                                                 Yang diminta cuma tanggalnya. --}}
+                                            <div class="d-flex flex-wrap align-items-end gap-2 pt-3 border-top">
+                                                <div>
+                                                    <label class="form-label small fw-semibold mb-1">
+                                                        {{ $kbSalinDari ? 'Tanggal berangkat salinan' : 'Tanggal berangkat baru' }}
+                                                    </label>
+                                                    <input type="date" class="form-control form-control-sm @error('kbTanggal') is-invalid @enderror"
+                                                        wire:model="kbTanggal" value="{{ $kbTanggal }}">
+                                                    @error('kbTanggal') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                                </div>
+
+                                                <div>
+                                                    <label class="form-label small fw-semibold mb-1">
+                                                        Tanggal pulang
+                                                        <span class="text-muted fw-normal">(boleh kosong)</span>
+                                                    </label>
+                                                    <input type="date" class="form-control form-control-sm"
+                                                        wire:model="kbTanggalPulang" value="{{ $kbTanggalPulang }}">
+                                                </div>
+
+                                                <button type="button" class="btn btn-sm btn-primary"
+                                                    wire:click="simpanKeberangkatan" wire:loading.attr="disabled" wire:target="simpanKeberangkatan">
+                                                    <i class="bi {{ $kbSalinDari ? 'bi-copy' : 'bi-plus-lg' }}"></i>
+                                                    {{ $kbSalinDari ? 'Simpan salinan' : 'Tambah tanggal' }}
+                                                </button>
+
+                                                @if ($kbSalinDari)
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="batalKeberangkatan">
+                                                        Batal
+                                                    </button>
+                                                @endif
+                                            </div>
+
+                                            @if ($kbSalinDari)
+                                                <div class="text-muted mt-2" style="font-size:.78rem">
+                                                    Kuota, harga, dan catatannya ikut tersalin. Tanggal pulang yang
+                                                    dikosongkan bergeser sejauh lama trip yang disalin.
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="col-12 col-md-8">
                                     <label class="form-label small fw-semibold">Titik jemput</label>
                                     <input type="text" class="form-control" wire:model="titikJemput" value="{{ $titikJemput }}"

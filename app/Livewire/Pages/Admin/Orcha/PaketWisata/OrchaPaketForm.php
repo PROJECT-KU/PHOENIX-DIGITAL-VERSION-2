@@ -129,6 +129,26 @@ class OrchaPaketForm extends Component
      */
     public array $hari = [];
 
+    /**
+     * Tanggal keberangkatan paket ini, apa adanya dari Orcha.
+     *
+     * Dibaca saja — menambah, menyalin, mengubah, dan menutupnya masing
+     * masing satu panggilan tersendiri. Menumpangkannya pada borang paket
+     * berarti satu simpan mengirim dua macam perubahan sekaligus, dan yang
+     * gagal separuh tidak punya cara memberi tahu bagian mana yang masuk.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $keberangkatan = [];
+
+    /** Tanggal yang sedang diisi di baris "tambah". */
+    public string $kbTanggal = '';
+
+    public string $kbTanggalPulang = '';
+
+    /** Keberangkatan yang sedang disalin; null berarti sedang menambah baru. */
+    public ?int $kbSalinDari = null;
+
     public $gambar;
 
     public ?string $gambarLama = null;
@@ -197,6 +217,7 @@ class OrchaPaketForm extends Component
             return;
         }
 
+        $this->keberangkatan = $isi['keberangkatan'] ?? [];
         $this->nama = $isi['nama'] ?? '';
         $this->kategori = $isi['kategori'] ?? 'open_trip';
         $this->status = $isi['status'] ?? 'terbit';
@@ -230,6 +251,107 @@ class OrchaPaketForm extends Component
     }
 
     /* -------------------------------- DURASI -------------------------------- */
+
+    /* ===================== TANGGAL KEBERANGKATAN ===================== */
+
+    /**
+     * Membuka baris isian untuk menyalin satu tanggal.
+     *
+     * Yang diminta HANYA tanggal barunya. Kuota, harga, dan catatannya ikut
+     * tersalin, dan tanggal pulangnya bergeser sejauh yang sama di sisi
+     * Orcha — menyalin 27–29 November ke 4 Desember hampir selalu berarti
+     * 4–6 Desember.
+     */
+    public function salinKeberangkatan(int $id): void
+    {
+        $this->kbSalinDari = $id;
+        $this->kbTanggal = '';
+        $this->kbTanggalPulang = '';
+        $this->resetValidation('kbTanggal');
+    }
+
+    public function batalKeberangkatan(): void
+    {
+        $this->kbSalinDari = null;
+        $this->kbTanggal = '';
+        $this->kbTanggalPulang = '';
+        $this->resetValidation('kbTanggal');
+    }
+
+    /** Menambah tanggal baru, atau menyalin yang sedang dipilih. */
+    public function simpanKeberangkatan(): void
+    {
+        $this->resetValidation('kbTanggal');
+
+        if (trim($this->kbTanggal) === '') {
+            $this->addError('kbTanggal', 'Tanggal berangkatnya belum diisi.');
+
+            return;
+        }
+
+        if (! $this->paketId) {
+            $this->dispatch('toast-error', message: 'Simpan paketnya dulu, baru tanggalnya bisa ditambahkan.');
+
+            return;
+        }
+
+        $isi = array_filter([
+            'tanggal_berangkat' => $this->kbTanggal,
+            'tanggal_pulang' => trim($this->kbTanggalPulang) ?: null,
+        ], fn ($v) => $v !== null);
+
+        $jalur = $this->kbSalinDari
+            ? "/paket-wisata/{$this->paketId}/keberangkatan/{$this->kbSalinDari}/salin"
+            : "/paket-wisata/{$this->paketId}/keberangkatan";
+
+        if (! $this->kirimData($jalur, $isi, 'Tanggal keberangkatan disimpan.')) {
+            return;
+        }
+
+        $this->batalKeberangkatan();
+        $this->muatUlangKeberangkatan();
+    }
+
+    /** Menutup / membuka lagi satu tanggal tanpa menghapusnya. */
+    public function alihkanKeberangkatan(int $id, bool $aktif): void
+    {
+        if (! $this->paketId) {
+            return;
+        }
+
+        $this->kirimData(
+            "/paket-wisata/{$this->paketId}/keberangkatan/{$id}",
+            ['aktif' => ! $aktif],
+            $aktif ? 'Tanggal ditutup dari pendaftaran.' : 'Tanggal dibuka lagi.',
+        );
+
+        $this->muatUlangKeberangkatan();
+    }
+
+    public function hapusKeberangkatan(int $id): void
+    {
+        if (! $this->paketId) {
+            return;
+        }
+
+        // Penolakan "sudah punya pendaftar" datang dari Orcha berikut
+        // kalimatnya; diteruskan apa adanya.
+        $this->hapusData("/paket-wisata/{$this->paketId}/keberangkatan/{$id}", 'Tanggal keberangkatan dihapus.');
+
+        $this->muatUlangKeberangkatan();
+    }
+
+    /**
+     * Membaca ulang daftarnya dari Orcha.
+     *
+     * Bukan menyunting senarai di layar: kuota terpakai & sisa kursinya
+     * dihitung di sana, dan menebaknya di sini berarti dua angka untuk satu
+     * hal yang akan berselisih begitu ada yang mendaftar.
+     */
+    private function muatUlangKeberangkatan(): void
+    {
+        $this->keberangkatan = $this->muat("/paket-wisata/{$this->paketId}")['data']['keberangkatan'] ?? [];
+    }
 
     public function updatedTanggalBerangkat(): void
     {
