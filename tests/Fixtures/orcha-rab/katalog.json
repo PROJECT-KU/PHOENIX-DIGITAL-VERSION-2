@@ -263,6 +263,70 @@
                 "kontak": null,
                 "jenis": null
             }
+        ],
+        "master_cari": [
+            {
+                "id": 101,
+                "nama": "HiAce Best Tour Yogyakarta (13 kursi)",
+                "kategori": "transportasi",
+                "kategori_label": "Transportasi",
+                "tipe": "HiAce",
+                "destinasi": null,
+                "destinasi_lain": [],
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Sleman",
+                "satuan": "unit",
+                "satuan_label": "per unit",
+                "kapasitas": 13,
+                "harga": 8500000,
+                "harga_teks": "Rp 8.500.000",
+                "vendor": "Best Tour Yogyakarta",
+                "vendor_kontak": "0812-3456-7890",
+                "catatan": "Belum termasuk tol & parkir.",
+                "bisa_jadi_kegiatan": false
+            },
+            {
+                "id": 102,
+                "nama": "Makan di Warung Ndeso",
+                "kategori": "konsumsi",
+                "kategori_label": "Konsumsi",
+                "tipe": null,
+                "destinasi": null,
+                "destinasi_lain": [],
+                "provinsi": "Jawa Timur",
+                "daerah": "Banyuwangi",
+                "satuan": "orang",
+                "satuan_label": "per orang",
+                "kapasitas": null,
+                "harga": 40000,
+                "harga_teks": "Rp 40.000",
+                "vendor": null,
+                "vendor_kontak": null,
+                "catatan": "Minimal 10 orang.",
+                "bisa_jadi_kegiatan": true
+            },
+            {
+                "id": 103,
+                "nama": "Tiket Candi Arjuna",
+                "kategori": "tiket",
+                "kategori_label": "Tiket",
+                "tipe": null,
+                "destinasi": "Candi Arjuna",
+                "destinasi_lain": [
+                    "Kawah Sikidang"
+                ],
+                "provinsi": "Jawa Tengah",
+                "daerah": "Wonosobo",
+                "satuan": "orang",
+                "satuan_label": "per orang",
+                "kapasitas": null,
+                "harga": 30000,
+                "harga_teks": "Rp 30.000",
+                "vendor": null,
+                "vendor_kontak": null,
+                "catatan": null,
+                "bisa_jadi_kegiatan": false
+            }
         ]
     }
 }

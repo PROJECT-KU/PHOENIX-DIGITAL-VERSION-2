@@ -124,8 +124,28 @@ class OrchaRabSusun extends Component
     public function pakaiBiayaDariCari(int $id): void
     {
         $bt = collect($this->bukanTempat)->firstWhere('id', $id);
-        $jugaKegiatan = (bool) ($bt['bisa_jadi_kegiatan'] ?? false);
 
+        $this->pakaiBiaya($id, (bool) ($bt['bisa_jadi_kegiatan'] ?? false), (string) ($bt['nama'] ?? ''));
+    }
+
+    /**
+     * Menarik satu biaya yang dipilih dari jendela pencarian.
+     *
+     * Jendelanya memuat SELURUH master harga lintas provinsi, bukan cuma yang
+     * sempat dijawab pencarian peladen — jadi penggolong "sekaligus kegiatan"
+     * dibaca dari daftar itu, bukan dari $bukanTempat yang hanya terisi saat
+     * kotak cari lama dipakai.
+     */
+    public function pakaiBiayaPemilih(int $id): void
+    {
+        $m = collect($this->katalog['master_cari'] ?? [])->firstWhere('id', $id);
+
+        $this->pakaiBiaya($id, (bool) ($m['bisa_jadi_kegiatan'] ?? false), (string) ($m['nama'] ?? ''));
+    }
+
+    /** Dipakai dua jalur di atas; bentuknya satu supaya keduanya tidak berbeda. */
+    private function pakaiBiaya(int $id, bool $jugaKegiatan, string $nama): void
+    {
         $pesan = $jugaKegiatan
             ? 'Masuk rincian biaya, dan ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.'
             : 'Biaya ditambahkan.';
@@ -134,9 +154,27 @@ class OrchaRabSusun extends Component
             return;
         }
 
-        if ($jugaKegiatan && trim((string) ($bt['nama'] ?? '')) !== '') {
-            $this->tambahKegiatanBernama(trim($bt['nama']));
+        if ($jugaKegiatan && trim($nama) !== '') {
+            $this->tambahKegiatanBernama(trim($nama));
         }
+    }
+
+    /**
+     * Menambahkan nama yang diketik di jendela sebagai kegiatan biasa.
+     *
+     * Jalan keluar saat yang dicari memang belum ada di mana pun. Tiketnya
+     * tidak ikut tertarik — itu disebutkan di jendelanya, bukan dibiarkan
+     * jadi kejutan saat rincian biayanya ternyata kosong.
+     */
+    public function tambahKegiatanDariPemilih(string $nama): void
+    {
+        $nama = trim(preg_replace('/\s+/', ' ', $nama));
+
+        if ($nama === '') {
+            return;
+        }
+
+        $this->tambahKegiatanBernama($nama);
     }
 
     public string $kegiatanBaru = '';

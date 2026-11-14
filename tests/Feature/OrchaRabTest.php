@@ -5448,3 +5448,93 @@ test('kontak vendor yang dikosongkan dikirim sebagai null, bukan teks kosong', f
     // tidak — dan penanda "belum punya nomor" berhenti muncul.
     Http::assertSent(fn ($p) => str_contains($p->url(), '/vendor/4') && $p['kontak'] === null);
 });
+
+/* ---------- JENDELA PENCARIAN MASTER HARGA DI LAYAR SUSUN ---------- */
+
+test('jendela pencarian memuat seluruh master harga, bukan cuma nama tempat', function () {
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    /*
+     | Yang dicari admin kerap BUKAN nama tempat: "hiace", nama vendornya,
+     | atau "13 kursi". Memisahkannya jadi dua kotak berarti ia harus menebak
+     | lebih dulu termasuk golongan mana yang dicarinya — dan tebakan itu
+     | sering salah, lalu ia menyimpulkan datanya tidak ada.
+     */
+    expect($isi)->toContain('HiAce Best Tour Yogyakarta')
+        ->toContain('Makan di Warung Ndeso')
+        // Keterangannya menyebut yang dipakai membedakan dua harga mirip.
+        ->toContain('Best Tour Yogyakarta')
+        ->toContain('muat 13')
+        ->toContain('Rp 8.500.000')
+        // Catatan harga ikut tampil — isinya kerap syarat yang menentukan.
+        ->toContain('Belum termasuk tol &amp; parkir.')
+        ->toContain('Minimal 10 orang.');
+});
+
+test('medan yang tidak tertulis tetap ikut dicari', function () {
+    palsukanRab();
+
+    $isi = Livewire::actingAs(adminRab())->test(OrchaRabSusun::class, ['rab' => 3])->html();
+
+    // Nomor vendor, destinasi terusan, dan satuan tidak semuanya tertulis di
+    // barisnya — tetapi mengetiknya harus tetap menemukan barangnya.
+    expect($isi)->toContain('0812-3456-7890')
+        ->toContain('Kawah Sikidang');
+});
+
+test('memilih biaya dari jendela menariknya ke rincian', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 101);
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/rab/3/biaya')
+        && $p->method() === 'POST'
+        && (int) $p['master_harga_id'] === 101);
+});
+
+test('biaya dari jendela yang juga kejadian berwaktu ikut masuk jadwal', function () {
+    palsukanRab();
+
+    /*
+     | "Makan di Warung Ndeso" menempati jam di hari itu; armada tidak.
+     | Penggolongnya datang dari Orcha lewat bisa_jadi_kegiatan — dan kini
+     | dibaca dari master_cari, bukan dari $bukanTempat yang hanya terisi
+     | saat kotak cari lama dipakai.
+     */
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 102);
+
+    Http::assertSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
+        && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('Makan di Warung Ndeso'));
+});
+
+test('armada dari jendela TIDAK ikut masuk jadwal', function () {
+    palsukanRab();
+
+    // Sisi sebaliknya: yang tidak punya jam tidak boleh menempati jam.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 101);
+
+    Http::assertNotSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
+        && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('HiAce Best Tour Yogyakarta (13 kursi)'));
+});
+
+test('nama yang belum ada di mana pun bisa ditambahkan sebagai kegiatan', function () {
+    palsukanRab();
+
+    // Jalan keluar saat pencariannya nihil — tanpa ini admin harus menghapus
+    // ketikannya, pindah ke kotak lain, lalu mengetik ulang kata yang sama.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('tambahKegiatanDariPemilih', '  Mampir   oleh-oleh  ');
+
+    // Spasi berlebih dirapikan, bukan ikut tersimpan apa adanya.
+    Http::assertSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
+        && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('Mampir oleh-oleh'));
+});

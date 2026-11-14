@@ -683,7 +683,12 @@
                                     @else
                                         <span class="dsb-kartu-sub mh-baru-kaki">
                                             Namanya langsung masuk ke daftar destinasi Orcha, jadi bisa dipakai saat menyusun jadwal perjalanan juga.
-                                            @if (trim((string) ($isian['provinsi'] ?? '')) !== '')
+                                            {{-- filled(), bukan trim(...) !== '': kurung bersarang yang potongan
+                                                     awalnya sama dengan direktif lebih awal membuat
+                                                     Livewire MELEWATI penanda morph-nya, dan pasangan
+                                                     penanda yang timpang merusak tiap pembaruan
+                                                     berikutnya di Block.appendChild. --}}
+                                                @if (filled($isian['provinsi'] ?? null))
                                                 Provinsi <strong>{{ $isian['provinsi'] }}</strong> ikut terkirim.
                                             @endif
                                         </span>

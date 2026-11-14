@@ -262,6 +262,10 @@ Susun RAB || lemon
          dasbor Orcha, jejak audit, dan daftar RAB. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
+    {{-- Jendela pencarian master harga memakai pilihPopup(); gaya DAN
+         perilakunya hidup di partial yang sama, jadi memuat salah satunya
+         saja tidak pernah cukup. --}}
+    @include('livewire.pages.admin.orcha.partials.pilih-popup')
 
     <style>
         /* Dua kolom lewat sistem 12 kolom rak dsb (k-8 / k-4), bukan grid
@@ -2151,8 +2155,84 @@ Susun RAB || lemon
                                             <i class="bi bi-ticket-perforated rab-tiket"></i> bertiket = harganya sudah ada
                                         </span>
                                     </div>
-                                    <input type="text" wire:model.live.debounce.300ms="cariDestinasi"
-                                        class="dsb-isian rb-pilih-cari" placeholder="Cari destinasi…">
+                                    @php
+                                        /*
+                                         | Daftar untuk jendela pencarian: destinasi katalog
+                                         | DAN seluruh master harga lintas provinsi, dalam satu
+                                         | daftar yang sama.
+                                         |
+                                         | Admin yang mengetik "hiace", nama vendor, atau "13
+                                         | kursi" sedang mencari barangnya — bukan menyaring
+                                         | provinsi. Memisahkannya jadi dua kotak berarti ia
+                                         | harus menebak lebih dulu termasuk golongan mana yang
+                                         | dicarinya, dan tebakan itu sering salah.
+                                         */
+                                        $barisCari = collect($semuaDestinasi)->map(fn ($d) => [
+                                            'nilai' => $d['nama'],
+                                            'label' => $d['nama'],
+                                            'aksi' => 'tambahDestinasi',
+                                            'ket' => trim(implode(' · ', array_filter([
+                                                $d['daerah'] ?? null, $d['provinsi'] ?? null,
+                                            ]))) ?: 'Destinasi',
+                                            'lencana' => ($d['punya_tiket'] ?? false) ? 'bertiket' : null,
+                                            'catatan' => null,
+                                            'cari' => 'destinasi tempat',
+                                        ])->values();
+
+                                        $barisCari = $barisCari->concat(
+                                            collect($katalog['master_cari'] ?? [])->map(function ($m) {
+                                                // Keterangannya menyebut yang dipakai admin untuk
+                                                // membedakan dua harga bernama mirip: dari siapa,
+                                                // di mana, per apa, muat berapa, dan berapanya.
+                                                $ket = array_filter([
+                                                    $m['kategori_label'] ?? null,
+                                                    $m['vendor'] ?? null,
+                                                    trim(implode(' ', array_filter([$m['daerah'] ?? null, $m['provinsi'] ?? null]))) ?: null,
+                                                    $m['satuan_label'] ?? null,
+                                                    ! empty($m['kapasitas']) ? 'muat '.$m['kapasitas'] : null,
+                                                    $m['harga_teks'] ?? null,
+                                                ]);
+
+                                                return [
+                                                    'nilai' => (string) $m['id'],
+                                                    'label' => $m['nama'],
+                                                    'aksi' => 'pakaiBiayaPemilih',
+                                                    'ket' => implode(' · ', $ket),
+                                                    'lencana' => ! empty($m['destinasi']) ? 'bertiket' : null,
+                                                    'catatan' => $m['catatan'] ?? null,
+                                                    // Ikut DICARI meski tidak semuanya tertulis.
+                                                    'cari' => trim(implode(' ', array_filter([
+                                                        $m['destinasi'] ?? null,
+                                                        implode(' ', $m['destinasi_lain'] ?? []),
+                                                        $m['vendor_kontak'] ?? null,
+                                                        $m['tipe'] ?? null,
+                                                        $m['satuan'] ?? null,
+                                                        ! empty($m['kapasitas']) ? $m['kapasitas'].' kursi orang unit' : null,
+                                                        'biaya harga master',
+                                                    ]))),
+                                                ];
+                                            })
+                                        )->values();
+                                    @endphp
+
+                                    <div class="op-pilih rb-pilih-cari">
+                                        <button type="button"
+                                            onclick="pilihPopup(this)"
+                                            class="op-pilih-tombol is-kosong"
+                                            data-ke="cariDestinasi"
+                                            data-terpilih=""
+                                            data-judul="Cari di Master Harga"
+                                            data-keterangan="Cari apa saja: nama tempat, vendor, provinsi, daerah, satuan, muat berapa, atau isi catatannya."
+                                            data-cari="Ketik nama, vendor, daerah, kapasitas…"
+                                            data-tambah-aksi="tambahKegiatanDariPemilih"
+                                            data-tambah-label="Tidak ada? Tambah sebagai kegiatan"
+                                            data-tambah-medan="Nama kegiatan"
+                                            data-daftar="{{ $barisCari->toJson(JSON_UNESCAPED_UNICODE) }}">
+                                            <i class="bi bi-search"></i>
+                                            <span class="op-pilih-nilai">Cari destinasi, vendor, atau biaya…</span>
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="rab-destinasi">

@@ -82,11 +82,23 @@
 
                 return '<div class="op-baris' + (dipilih ? ' is-terpilih' : '') + '"'
                     + ' data-nilai="' + aman(b.nilai ?? '') + '"'
-                    + ' data-cari="' + aman(((b.label ?? '') + ' ' + (b.ket ?? '')).toLowerCase()) + '">'
+                    + (b.aksi ? ' data-aksi="' + aman(b.aksi) + '"' : '')
+                    /* Yang dicari MELEBIHI yang tertulis: kolom tersembunyi
+                       (b.cari) membawa vendor, provinsi, daerah, satuan, dan
+                       kapasitas — supaya mengetik "13 kursi" atau nama vendor
+                       menemukan barangnya, bukan mengaku tidak ada. */
+                    + ' data-cari="' + aman(((b.label ?? '') + ' ' + (b.ket ?? '') + ' '
+                        + (b.catatan ?? '') + ' ' + (b.cari ?? '')).toLowerCase()) + '">'
                     + '<button type="button" class="op-baris-pilih">'
                     + '<span class="op-baris-teks">'
                     + '<span class="op-baris-label">' + aman(b.label ?? b.nilai) + '<\/span>'
                     + (b.ket ? '<span class="op-baris-ket">' + aman(b.ket) + '<\/span>' : '')
+                    /* Catatan harga punya barisnya sendiri, bukan disambung ke
+                       keterangan. Isinya kerap syarat yang menentukan — "belum
+                       termasuk tiket masuk", "minimal 10 orang" — dan yang
+                       disambung di ujung kalimat panjang tidak pernah terbaca. */
+                    + (b.catatan ? '<span class="op-baris-catatan"><i class="bi bi-info-circle"><\/i>'
+                        + aman(b.catatan) + '<\/span>' : '')
                     + '<\/span>'
                     + (b.lencana ? '<span class="op-baris-lencana">' + aman(b.lencana) + '<\/span>' : '')
                     + (dipilih ? '<i class="bi bi-check-lg op-baris-centang"><\/i>' : '')
@@ -249,7 +261,19 @@
                             var pilih = e.target.closest('.op-baris-pilih');
 
                             if (pilih && wire) {
-                                wire.set(d.ke, pilih.closest('.op-baris').dataset.nilai);
+                                var barisPilih = pilih.closest('.op-baris');
+
+                                /* Sebagian daftar tidak MENYETEL nilai, melainkan
+                                   MENGERJAKAN sesuatu — menambah destinasi ke hari
+                                   ini, menarik satu biaya ke rincian. Aksinya
+                                   menempel di barisnya, bukan di tombolnya, karena
+                                   satu daftar bisa memuat dua macam baris sekaligus. */
+                                if (barisPilih.dataset.aksi) {
+                                    wire.call(barisPilih.dataset.aksi, barisPilih.dataset.nilai);
+                                } else {
+                                    wire.set(d.ke, barisPilih.dataset.nilai);
+                                }
+
                                 Swal.close();
 
                                 return;
@@ -391,6 +415,13 @@
            bukan sekadar menutup sesuatu. */
         .op-baris:hover .op-baris-hapus { color: #ef4444; }
         .op-baris-hapus:hover { background: #fee2e2; color: #dc2626; }
+
+        .op-baris-catatan {
+            display: flex; align-items: flex-start; gap: 5px; margin-top: 3px;
+            font-size: .72rem; line-height: 1.4; color: #b45309;
+            overflow-wrap: anywhere;
+        }
+        .op-baris-catatan > i.bi { flex: 0 0 auto; margin-top: .12rem; }
 
         /* Pensil: ungu, bukan merah. Warnanya memisahkan "ubah" dari
            "buang" sebelum ikonnya sempat dibaca — dua tombol berdampingan

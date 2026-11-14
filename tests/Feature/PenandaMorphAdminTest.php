@@ -31,6 +31,11 @@ function berkasPenandaAdmin(): array
         'task/task-saya-list.blade.php',
         'task/partials/task-*.blade.php',
         'orcha/rab/*.blade.php',
+        // partials/ TIDAK ikut tercakup pola di atas, dan di sanalah
+        // master-harga-borang hidup — berkas terpanjang layar RAB, dan
+        // terbukti sempat timpang tanpa ada yang melihat (14 Nov 2026).
+        'orcha/rab/partials/*.blade.php',
+        'orcha/partials/*.blade.php',
         'blog/*.blade.php',
         'blog/partials/*.blade.php',
         'message/*.blade.php',
