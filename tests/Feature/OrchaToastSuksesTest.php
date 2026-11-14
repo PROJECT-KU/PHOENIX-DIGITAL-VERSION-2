@@ -8,13 +8,22 @@ use Tests\TestCase;
 /**
  * Pemberitahuan di halaman admin Orcha.
  *
- * Aturannya: SUKSES memakai toast, GAGAL tetap memakai SweetAlert.
+ * Aturannya sekarang: SEMUANYA SweetAlert glossy milik lemon, sukses maupun
+ * gagal. Tidak ada lagi toast.
  *
- * Bedanya disengaja. Pesan sukses cuma mengabarkan bahwa yang barusan ditekan
- * memang berhasil — admin tidak perlu berhenti, apalagi menekan tombol untuk
- * menutupnya. Pesan gagal berarti pekerjaannya TIDAK tersimpan; itu harus
- * menghentikan langkah dan menunggu diakui, bukan lewat di pojok layar
- * sementara admin sudah pindah ke baris berikutnya.
+ * Berkas ini dulu menjaga aturan yang SEBALIKNYA (sukses memakai toast).
+ * Aturan itu dicabut 14 Nov 2026 karena dua alasan. Pertama, layar Orcha jadi
+ * terasa bukan bagian dari lemon: satu tindakan yang sama memberi kabar
+ * dengan dua bentuk berbeda tergantung layarnya. Kedua, pada layar yang
+ * penangan lamanya masih hidup keduanya terbit BERBARENGAN — Detail Pesanan
+ * memasang Livewire.on('order-updated') sekali lalu sengaja membiarkannya
+ * bertahan lintas wire:navigate, sehingga satu unggahan di Galeri
+ * menerbitkan satu dialog DAN satu toast sekaligus.
+ *
+ * Yang tetap dibedakan cuma satu: sukses menutup sendiri, gagal menunggu
+ * ditekan. Pesan gagal berarti pekerjaannya TIDAK tersimpan; itu harus
+ * menghentikan langkah, bukan lewat begitu saja sementara admin sudah pindah
+ * ke baris berikutnya.
  */
 class OrchaToastSuksesTest extends TestCase
 {
@@ -23,6 +32,22 @@ class OrchaToastSuksesTest extends TestCase
         return file_get_contents(
             resource_path('views/livewire/pages/admin/orcha/partials/skrip.blade.php')
         );
+    }
+
+    /** @return list<string> */
+    private function bladeOrcha(): array
+    {
+        $berkas = array_merge(
+            glob(resource_path('views/livewire/pages/admin/orcha/*.blade.php')) ?: [],
+            glob(resource_path('views/livewire/pages/admin/orcha/*/*.blade.php')) ?: [],
+        );
+
+        // Salinan kembar buatan OneDrive ("form.blade 2.php") bukan berkas
+        // yang dipakai Blade — melaporkannya hanya kebisingan.
+        return array_values(array_filter(
+            $berkas,
+            fn ($satu) => ! preg_match('/ \d+\.php$/', $satu),
+        ));
     }
 
     public function test_partial_pemberitahuan_orcha_terkompilasi(): void
@@ -37,20 +62,58 @@ class OrchaToastSuksesTest extends TestCase
         $this->assertSame(0, $kode, implode("\n", $keluaran));
     }
 
-    /** Tidak boleh ada lagi popup sukses di seluruh halaman Orcha. */
-    public function test_tidak_ada_sweetalert_sukses_tersisa(): void
+    /**
+     * Tidak boleh ada sisa toast di mana pun di halaman Orcha.
+     *
+     * Diperiksa dari GAYA-nya, bukan dari nama fungsinya: window.orchaToast
+     * sengaja dipertahankan sebagai nama lama supaya pemanggil yang sudah ada
+     * tidak perlu diubah — yang berganti isinya. Kalau wadah dan animasinya
+     * muncul lagi, berarti toastnya benar-benar kembali.
+     */
+    public function test_tidak_ada_sisa_toast(): void
     {
-        $berkas = array_merge(
-            glob(resource_path('views/livewire/pages/admin/orcha/*.blade.php')) ?: [],
-            glob(resource_path('views/livewire/pages/admin/orcha/*/*.blade.php')) ?: [],
-        );
-
         $pelanggar = [];
 
-        foreach ($berkas as $satu) {
-            // Salinan kembar buatan OneDrive ("form.blade 2.php") bukan berkas
-            // yang dipakai Blade — melaporkannya hanya kebisingan.
-            if (preg_match('/ \d+\.php$/', $satu)) {
+        foreach ($this->bladeOrcha() as $satu) {
+            $isi = file_get_contents($satu);
+
+            foreach (['.orcha-toast-wadah', 'orchaToastMasuk', 'orchaToastWaktu', 'toast: true'] as $jejak) {
+                if (str_contains($isi, $jejak)) {
+                    $pelanggar[] = basename($satu).' → '.$jejak;
+                }
+            }
+        }
+
+        $this->assertSame([], $pelanggar,
+            'Toast muncul lagi di halaman Orcha; semuanya harus SweetAlert: '.implode(', ', $pelanggar));
+    }
+
+    /**
+     * Sukses digambar oleh helper lemon, bukan Swal.fire milik Orcha sendiri.
+     *
+     * Kalau rupa dialog lemon suatu saat disetel ulang, layar Orcha harus ikut
+     * berubah tanpa ada yang perlu ingat menyentuh berkas ini. Dua salinan
+     * gaya untuk satu dialog pasti berbeda suatu hari.
+     */
+    public function test_sukses_memakai_dialog_glossy_lemon(): void
+    {
+        $this->assertStringContainsString('window.fireGlossySwal', $this->partial(),
+            'Dialog sukses Orcha tidak memakai helper glossy milik lemon.');
+    }
+
+    /**
+     * Halaman Orcha tidak merakit popup suksesnya sendiri.
+     *
+     * Dijaga sejak sebelum toast dicabut, dan alasannya tidak berubah: satu
+     * tempat yang menentukan rupa kabar sukses. Bedanya dulu "harus toast",
+     * sekarang "harus lewat peristiwa, biar partial bersama yang menggambar".
+     */
+    public function test_halaman_orcha_tidak_merakit_popup_suksesnya_sendiri(): void
+    {
+        $pelanggar = [];
+
+        foreach ($this->bladeOrcha() as $satu) {
+            if (basename($satu) === 'skrip.blade.php') {
                 continue;
             }
 
@@ -60,19 +123,7 @@ class OrchaToastSuksesTest extends TestCase
         }
 
         $this->assertSame([], $pelanggar,
-            'Pesan sukses di halaman Orcha harus memakai toast: '.implode(', ', $pelanggar));
-    }
-
-    public function test_toast_sukses_tersedia_dan_bergaya(): void
-    {
-        $isi = $this->partial();
-
-        $this->assertStringContainsString('window.orchaToast', $isi, 'Fungsi toast tidak ada.');
-
-        // Gaya DAN perilaku harus berada di berkas yang sama — kalau terpisah,
-        // sebuah halaman bisa memuat perilakunya tanpa memuat tampilannya.
-        $this->assertStringContainsString('.orcha-toast-wadah', $isi, 'Gaya toast tidak ikut di berkas ini.');
-        $this->assertStringContainsString('aria-live', $isi, 'Toast tidak terbaca pembaca layar.');
+            'Kabar sukses harus dikirim sebagai peristiwa, bukan digambar sendiri: '.implode(', ', $pelanggar));
     }
 
     /**
@@ -93,14 +144,29 @@ class OrchaToastSuksesTest extends TestCase
         }
     }
 
-    /** Pesan gagal harus tetap menghentikan langkah. */
-    public function test_pesan_gagal_tetap_sweetalert(): void
+    /**
+     * Pesan gagal harus tetap menghentikan langkah.
+     *
+     * Bukan cuma "memakai SweetAlert" — sukses pun begitu sekarang. Yang
+     * membedakan: gagal punya tombol dan TIDAK menutup sendiri.
+     */
+    public function test_pesan_gagal_menunggu_diakui(): void
     {
+        $isi = $this->partial();
+
         $this->assertMatchesRegularExpression(
             "/Livewire\.on\('toast-error'.*?Swal\.fire/s",
-            $this->partial(),
+            $isi,
             'Pesan gagal tidak boleh jadi toast — ia harus menunggu diakui.'
         );
+
+        preg_match("/Livewire\.on\('toast-error'.*?\}\);/s", $isi, $cocok);
+        $blok = $cocok[0] ?? '';
+
+        $this->assertStringContainsString('confirmButtonText', $blok,
+            'Dialog gagal tidak punya tombol untuk diakui.');
+        $this->assertStringNotContainsString('timer', $blok,
+            'Dialog gagal tidak boleh menutup sendiri — admin bisa melewatkannya.');
     }
 
     /**
@@ -112,35 +178,7 @@ class OrchaToastSuksesTest extends TestCase
         $isi = $this->partial();
 
         $this->assertStringContainsString('orchaSuksesNanti', $isi);
-        $this->assertStringContainsString("sessionStorage.setItem('orcha-toast'", $isi);
-        $this->assertStringContainsString("sessionStorage.getItem('orcha-toast')", $isi);
-    }
-
-    /**
-     * Toast harus bertahan cukup lama untuk benar-benar terbaca.
-     *
-     * Toast terbit di pojok kanan atas, sedangkan tombol yang barusan ditekan
-     * admin ada di kaki formulir. Pandangannya perlu melintasi layar dulu,
-     * jadi durasi yang terasa cukup saat menguji — dengan mata sudah tertuju
-     * ke pojok itu — ternyata terlalu pendek saat dipakai sungguhan.
-     *
-     * Diikat dengan angka supaya tidak diam-diam dikembalikan ke nilai yang
-     * sudah terbukti kependekan; gejalanya cuma "kok tidak ada kabarnya",
-     * bukan galat yang bisa ditelusuri.
-     */
-    public function test_toast_bertahan_cukup_lama_untuk_terbaca(): void
-    {
-        preg_match('/const LAMA = (\d+);/', $this->partial(), $cocok);
-
-        $this->assertNotEmpty($cocok, 'Durasi toast (const LAMA) tidak ditemukan.');
-
-        $this->assertGreaterThanOrEqual(6000, (int) $cocok[1],
-            'Toast terlalu cepat pergi — admin tidak sempat menyadarinya.');
-
-        // Batas atas ikut dijaga: toast yang menetap terlalu lama mulai
-        // terbaca sebagai sesuatu yang menunggu ditutup, dan itu justru yang
-        // dihindari saat memilih toast alih-alih SweetAlert.
-        $this->assertLessThanOrEqual(10000, (int) $cocok[1],
-            'Toast terlalu lama menetap — ia jadi terasa seperti popup.');
+        $this->assertStringContainsString("sessionStorage.setItem('orcha-kabar'", $isi);
+        $this->assertStringContainsString("sessionStorage.getItem('orcha-kabar')", $isi);
     }
 }

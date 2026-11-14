@@ -649,9 +649,13 @@ test('kabar sukses selamat menyeberangi perpindahan halaman', function () {
      | Yang berubah cuma caranya. Dulu popup ditampilkan di halaman ASAL dan
      | perpindahan menempel pada .then() miliknya, sehingga admin menunggu 2,6
      | detik dan kabarnya muncul di halaman yang justru sedang ia tinggalkan.
-     | Sekarang pesannya dititipkan lewat sessionStorage dan ditampilkan sebagai
-     | toast di halaman TUJUAN — tanpa menunggu, dan di tempat yang memang ingin
-     | dilihat admin: daftarnya sudah bertambah.
+     | Sekarang pesannya dititipkan lewat sessionStorage dan ditampilkan di
+     | halaman TUJUAN — tanpa menunggu, dan di tempat yang memang ingin dilihat
+     | admin: daftarnya sudah bertambah.
+     |
+     | Bentuk tampilannya kini SweetAlert glossy lemon, bukan toast; kunci
+     | titipannya ikut berganti nama jadi 'orcha-kabar' supaya tidak lagi
+     | menyebut bentuk yang sudah tidak dipakai.
      */
     $skrip = file_get_contents(base_path(
         'resources/views/livewire/pages/admin/orcha/partials/skrip.blade.php'
@@ -659,9 +663,9 @@ test('kabar sukses selamat menyeberangi perpindahan halaman', function () {
 
     expect($skrip)->toContain("Livewire.on('orcha-sukses-pindah'")
         // Dititipkan sebelum berpindah...
-        ->and($skrip)->toContain("sessionStorage.setItem('orcha-toast'")
+        ->and($skrip)->toContain("sessionStorage.setItem('orcha-kabar'")
         // ...dan diambil lagi saat halaman berikutnya terbuka.
-        ->and($skrip)->toContain("sessionStorage.getItem('orcha-toast')");
+        ->and($skrip)->toContain("sessionStorage.getItem('orcha-kabar')");
 
     // Tidak ada lagi jalur titip-sesi yang dulu ikut ditampilkan penampil
     // bawaan layout sampai popupnya tertutup dua kali.

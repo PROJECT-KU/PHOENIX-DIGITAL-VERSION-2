@@ -3,178 +3,22 @@
 
     Ditulis inline karena aset Vite tidak ikut ter-deploy.
 
-    SUKSES memakai toast, GAGAL tetap memakai SweetAlert. Bedanya disengaja:
-    pesan sukses cuma mengabarkan bahwa yang barusan ditekan memang berhasil —
-    admin tidak perlu berhenti, apalagi menekan tombol untuk menutupnya.
-    Sedangkan pesan gagal berarti pekerjaannya TIDAK tersimpan; itu harus
-    menghentikan langkah dan menunggu diakui, bukan lewat begitu saja di pojok
-    layar sementara admin sudah pindah ke baris berikutnya.
+    SEMUANYA memakai SweetAlert glossy milik lemon — sukses maupun gagal.
 
-    Gaya dan skripnya ditaruh di SATU berkas ini supaya tidak mungkin ada
-    halaman yang memuat perilakunya tanpa memuat tampilannya.
+    Dulu sukses memakai toast sendiri di pojok kanan atas. Dua bentuk
+    pemberitahuan untuk satu hal yang sama membuat layar Orcha terasa bukan
+    bagian dari lemon, dan pada layar yang penangan lamanya masih hidup
+    keduanya bahkan terbit BERBARENGAN: Detail Pesanan memasang
+    Livewire.on('order-updated') sekali lalu sengaja membiarkannya bertahan
+    lintas wire:navigate, sehingga satu unggahan di Galeri menerbitkan satu
+    dialog DAN satu toast sekaligus.
+
+    Bedanya tinggal satu dan tetap disengaja: sukses menutup sendiri,
+    sedangkan GAGAL menunggu ditekan "Mengerti". Pesan gagal berarti
+    pekerjaannya TIDAK tersimpan; itu harus menghentikan langkah, bukan lewat
+    begitu saja sementara admin sudah pindah ke baris berikutnya.
 --}}
 
-<style>
-    .orcha-toast-wadah {
-        position: fixed;
-        top: 18px;
-        right: 18px;
-        z-index: 100050;
-        display: flex;
-        flex-direction: column;
-        /* Tanpa ini setiap toast diregangkan selebar wadah (380px), sehingga
-           pesan pendek seperti "Artikel diperbarui." menyisakan ruang kosong
-           selebar separuh kartu dan tombol tutupnya terlempar jauh dari
-           tulisannya. flex-end membuat lebarnya mengikuti isi, tetap rata
-           kanan. */
-        align-items: flex-end;
-        gap: 10px;
-        pointer-events: none;
-        max-width: min(380px, calc(100vw - 36px));
-    }
-
-    .orcha-toast {
-        pointer-events: auto;
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: .8rem;
-        padding: .9rem 2.4rem .95rem 1.05rem;
-        border-radius: 16px;
-        /* Putih yang menghangat ke ungu merek di sudut jauh. Putih rata terasa
-           seperti kotak sistem; gradien setipis ini membuatnya sekeluarga
-           dengan kartu di belakangnya tanpa ikut berteriak. */
-        background: linear-gradient(148deg, #fff 0%, #fcfbff 55%, #f4f1fe 100%);
-        border: 1px solid rgba(124, 58, 237, .16);
-        /* Dua bayangan: satu berwarna merek supaya toast terasa menyala di
-           atas halaman, satu netral supaya tepinya tetap jelas di latar putih. */
-        box-shadow: 0 18px 40px -14px rgba(79, 70, 229, .38),
-                    0 3px 12px rgba(31, 45, 61, .10);
-        overflow: hidden;
-        cursor: pointer;
-        animation: orchaToastMasuk .42s cubic-bezier(.18, .95, .28, 1);
-    }
-
-    .orcha-toast:hover {
-        box-shadow: 0 22px 46px -14px rgba(79, 70, 229, .46),
-                    0 4px 14px rgba(31, 45, 61, .12);
-    }
-
-    /* Cahaya lembut di belakang ikon. Murni hiasan, jadi tidak boleh menangkap
-       tetikus — tanpa pointer-events:none ia menutupi separuh toast dan
-       menelan klik yang seharusnya menutupnya. */
-    .orcha-toast::after {
-        content: "";
-        position: absolute;
-        left: -34px;
-        top: -46px;
-        width: 132px;
-        height: 132px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(124, 58, 237, .18), transparent 68%);
-        pointer-events: none;
-    }
-
-    .orcha-toast .ikon {
-        position: relative;
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: .9rem;
-        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
-        /* Garis putih tipis di dalam tepi atas: memberi kesan cembung, sama
-           seperti tombol utama di halaman ini. */
-        box-shadow: 0 6px 14px -3px rgba(124, 58, 237, .5),
-                    inset 0 1px 0 rgba(255, 255, 255, .45);
-    }
-
-    /* Centangnya sendiri dijadikan wadah flex.
-
-       Cakramnya sudah menengahkan isinya, tapi yang ditengahkan adalah KOTAK
-       BARIS ikonnya — bukan glifnya. Tinggi kotak baris itu mengikuti
-       line-height halaman, sedangkan bootstrap-icons menggambar glifnya di
-       garis dasar dengan vertical-align bawaannya sendiri. Hasilnya centang
-       duduk di bawah-kanan dan menyisakan tempat kosong di atas-kiri.
-
-       Pola yang sama sudah dipakai .stat-icon-wrapper dan centang transmisi
-       di gaya.blade.php; tanpa aturan ini cakramnya rata tapi isinya tidak. */
-    .orcha-toast .ikon > i {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        vertical-align: 0;
-    }
-    .orcha-toast .ikon > i::before { display: block; line-height: 1; }
-
-    .orcha-toast .isi { min-width: 0; padding-top: 1px; }
-    .orcha-toast .judul { font-weight: 800; font-size: .85rem; color: var(--orc-tinta); line-height: 1.25; letter-spacing: -.01em; }
-    .orcha-toast .pesan { font-size: .82rem; color: #5b6a79; line-height: 1.45; margin-top: 2px; word-break: break-word; }
-
-    .orcha-toast .tutup {
-        position: absolute;
-        top: 7px;
-        right: 7px;
-        width: 22px;
-        height: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: #a9b6c4;
-        font-size: 1.05rem;
-        line-height: 1;
-        padding: 0;
-        cursor: pointer;
-        transition: background .15s ease, color .15s ease;
-    }
-    .orcha-toast .tutup:hover { background: rgba(124, 58, 237, .1); color: var(--orc-primer); }
-
-    /* Batang waktu: admin bisa melihat toast-nya akan pergi, jadi tidak
-       menunggu-nunggu apakah masih ada yang perlu ditekan. */
-    .orcha-toast .waktu {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--orc-primer), var(--orc-primer-2), #8ab6f9);
-        transform-origin: left center;
-        animation: orchaToastWaktu linear forwards;
-    }
-
-    .orcha-toast.pergi { animation: orchaToastKeluar .26s ease forwards; }
-
-    @keyframes orchaToastMasuk {
-        from { opacity: 0; transform: translateX(26px) scale(.96); }
-        to   { opacity: 1; transform: none; }
-    }
-    @keyframes orchaToastKeluar {
-        to { opacity: 0; transform: translateX(26px) scale(.96); }
-    }
-    @keyframes orchaToastWaktu {
-        from { transform: scaleX(1); }
-        to   { transform: scaleX(0); }
-    }
-
-    @media (max-width: 575.98px) {
-        .orcha-toast-wadah { left: 12px; right: 12px; top: 12px; max-width: none; }
-    }
-
-    /* Hormati pengguna yang mengurangi animasi: toast tetap muncul dan tetap
-       pergi sendiri, hanya tanpa gerak. */
-    @media (prefers-reduced-motion: reduce) {
-        .orcha-toast, .orcha-toast.pergi { animation: none; }
-        .orcha-toast .waktu { animation: none; transform: scaleX(0); }
-    }
-</style>
 <script>
     /* Popup sederhana untuk halaman Orcha.
 
@@ -211,98 +55,30 @@
        menyimpan lalu berpindah halaman). Karena kodenya satu, tampilan dan
        lamanya pasti sama. */
     window.orchaToast = window.orchaToast || function (pesan, judul) {
-        let wadah = document.querySelector('.orcha-toast-wadah');
+        const teks = pesan || 'Berhasil diperbarui.';
 
-        if (! wadah) {
-            wadah = document.createElement('div');
-            wadah.className = 'orcha-toast-wadah';
-            // aria-live: pembaca layar ikut mendengar kabarnya. Tanpa ini
-            // pemberitahuan yang muncul-dan-pergi sendiri sama sekali tidak
-            // sampai ke yang memakai pembaca layar.
-            wadah.setAttribute('aria-live', 'polite');
-            wadah.setAttribute('aria-atomic', 'false');
-            document.body.appendChild(wadah);
+        /* Memakai helper lemon (window.fireGlossySwal dari layouts/app), bukan
+           Swal.fire sendiri: kalau rupa dialog lemon suatu saat disetel ulang,
+           layar Orcha ikut berubah tanpa ada yang perlu ingat menyentuh berkas
+           ini. Dua salinan gaya untuk satu dialog pasti berbeda suatu hari. */
+        if (typeof window.fireGlossySwal === 'function') {
+            window.fireGlossySwal(judul || 'Berhasil', teks, 'success');
+
+            return true;
         }
 
-        /*
-         | Lamanya toast bertahan sebelum pergi sendiri.
-         |
-         | Dulu 3,6 detik dan admin kerap tidak sempat menyadarinya. Sebabnya
-         | letak: toast terbit di pojok kanan ATAS, sedangkan yang barusan
-         | ditekan admin — tombol simpan — ada di kaki formulir. Pandangannya
-         | perlu berpindah dulu melintasi layar, dan sisa waktu setelah itu
-         | tidak cukup untuk membaca judul beserta pesannya.
-         |
-         | Angkanya untuk kasus terburuk itu, bukan untuk yang kebetulan sudah
-         | menatap pojok kanan atas. Tidak dibuat lebih panjang lagi karena
-         | toast yang menetap terlalu lama mulai terbaca sebagai sesuatu yang
-         | menunggu ditutup — padahal justru itu yang dihindari saat memilih
-         | toast alih-alih SweetAlert.
-         |
-         | Yang membaca pelan tidak bergantung pada angka ini: menyentuhnya
-         | menahan hitungan mundur, dan batang waktu di kaki toast
-         | memperlihatkan sisa waktunya.
-         */
-        const LAMA = 7000;
-
-        const toast = document.createElement('div');
-        toast.className = 'orcha-toast';
-        toast.setAttribute('role', 'status');
-
-        const ikon = document.createElement('span');
-        ikon.className = 'ikon';
-        ikon.innerHTML = '<i class="bi bi-check-lg"></i>';
-
-        const isi = document.createElement('div');
-        isi.className = 'isi';
-
-        const judulEl = document.createElement('div');
-        judulEl.className = 'judul';
-        judulEl.textContent = judul || 'Berhasil';
-
-        const pesanEl = document.createElement('div');
-        pesanEl.className = 'pesan';
-        // textContent, bukan innerHTML: pesannya sebagian memuat nama yang
-        // diketik admin (judul artikel, nama kategori), dan itu tidak boleh
-        // ditafsirkan sebagai markup.
-        pesanEl.textContent = pesan || 'Berhasil diperbarui.';
-
-        const tutup = document.createElement('button');
-        tutup.type = 'button';
-        tutup.className = 'tutup';
-        tutup.setAttribute('aria-label', 'Tutup pemberitahuan');
-        tutup.innerHTML = '&times;';
-
-        const waktu = document.createElement('span');
-        waktu.className = 'waktu';
-        waktu.style.animationDuration = LAMA + 'ms';
-
-        isi.append(judulEl, pesanEl);
-        toast.append(ikon, isi, tutup, waktu);
-        wadah.appendChild(toast);
-
-        let jam = null;
-
-        const pergi = () => {
-            clearTimeout(jam);
-            if (toast.classList.contains('pergi')) return;
-            toast.classList.add('pergi');
-            setTimeout(() => toast.remove(), 260);
-        };
-
-        // Ditahan selama kursor di atasnya: pesan yang panjang tidak keburu
-        // hilang saat admin baru mulai membacanya.
-        toast.addEventListener('mouseenter', () => {
-            clearTimeout(jam);
-            waktu.style.animationPlayState = 'paused';
-        });
-        toast.addEventListener('mouseleave', () => {
-            waktu.style.animationPlayState = 'running';
-            jam = setTimeout(pergi, 1200);
-        });
-
-        toast.addEventListener('click', pergi);
-        jam = setTimeout(pergi, LAMA);
+        /* Jaring pengaman. Helper lemon hidup di layout, jadi secara teori
+           selalu ada — tetapi kabar sukses yang hilang tanpa jejak jauh lebih
+           mahal daripada beberapa baris cadangan ini. */
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: judul || 'Berhasil',
+                text: teks,
+                icon: 'success',
+                timer: 2500,
+                showConfirmButton: false,
+            });
+        }
 
         return true;
     };
@@ -320,15 +96,15 @@
        berpindah — admin menunggu tanpa alasan, dan kabarnya muncul di halaman
        yang sudah ia tinggalkan. */
     window.orchaSuksesNanti = window.orchaSuksesNanti || function (pesan) {
-        try { sessionStorage.setItem('orcha-toast', pesan || ''); } catch (e) {}
+        try { sessionStorage.setItem('orcha-kabar', pesan || ''); } catch (e) {}
     };
 
     (function tampilkanTitipan() {
         const tampil = () => {
             let pesan = null;
             try {
-                pesan = sessionStorage.getItem('orcha-toast');
-                if (pesan !== null) sessionStorage.removeItem('orcha-toast');
+                pesan = sessionStorage.getItem('orcha-kabar');
+                if (pesan !== null) sessionStorage.removeItem('orcha-kabar');
             } catch (e) { return; }
 
             if (pesan) window.orchaToast(pesan);
@@ -372,10 +148,18 @@
         if (window.__orchaNotifBound) return;
         window.__orchaNotifBound = true;
 
+        /* Nilai yang SAMA dengan window.fireGlossySwal di layouts/app —
+           hanya tombolnya yang ditambahkan, karena dialog gagal wajib
+           ditekan, tidak boleh menutup sendiri. */
         const glossy = {
-            background: 'rgba(255,255,255,.96)',
-            backdrop: 'rgba(31, 45, 61,.25)',
-            customClass: { popup: 'shadow rounded-4' },
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdrop: 'rgba(139, 92, 246, 0.15)',
+            customClass: {
+                popup: 'swal-glossy-popup rounded-4 shadow-lg border-0',
+                confirmButton: 'btn-glossy-confirm',
+                title: 'fw-bold',
+            },
+            buttonsStyling: false,
         };
 
         const ambilPesan = (e, bawaan) =>
@@ -410,7 +194,7 @@
                 // Tidak ke mana-mana: tampilkan langsung, jangan sampai
                 // titipannya menggantung sampai halaman berikutnya.
                 window.orchaToast(ambilPesan(e, 'Berhasil disimpan.'));
-                try { sessionStorage.removeItem('orcha-toast'); } catch (err) {}
+                try { sessionStorage.removeItem('orcha-kabar'); } catch (err) {}
             }
         });
 
