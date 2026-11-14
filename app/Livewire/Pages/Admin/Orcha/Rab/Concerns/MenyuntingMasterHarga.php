@@ -826,6 +826,125 @@ trait MenyuntingMasterHarga
      * nama yang sama lewat "Destinasinya belum ada di daftar" memulihkan
      * baris yang sama berikut provinsi & daerahnya.
      */
+    /**
+     * Mengganti nama satu destinasi katalog dari dalam jendela pemilih.
+     *
+     * Hanya untuk destinasi KUSTOM — baris yang sama dengan yang boleh
+     * dihapus. Destinasi bawaan hidup di katalog situs publik Orcha, dan
+     * menggantinya dari sini berarti mengubah isi situs tanpa disadari.
+     *
+     * Perambatan ke baris harga & itinerary dikerjakan di sisi Orcha dalam
+     * satu transaksi; di sini yang perlu diurus cuma dua: lupakan katalog
+     * yang disimpan sementara, dan ikut membetulkan nama yang SEDANG
+     * terpilih di borang ini — kalau tidak, isiannya memegang nama yang
+     * baru saja tidak ada lagi.
+     */
+    public function suntingDestinasiKatalog(int $id, string $nama): void
+    {
+        $nama = trim(preg_replace('/\s+/', ' ', $nama));
+
+        if (mb_strlen($nama) < 3) {
+            $this->dispatch('toast-error', message: 'Nama destinasi minimal 3 huruf.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->ubah("/katalog-destinasi/{$id}", ['nama' => $nama]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        cache()->forget('orcha.rab.katalog');
+
+        $dari = (string) ($balasan['dari'] ?? '');
+        $ke = (string) ($balasan['ke'] ?? $nama);
+
+        if ($dari !== '' && trim((string) ($this->isian['destinasi'] ?? '')) === $dari) {
+            $this->isian['destinasi'] = $ke;
+        }
+
+        // Destinasi tambahan di borang ini ikut, dengan alasan yang sama.
+        foreach (($this->destinasiLain ?? []) as $i => $d) {
+            if (trim((string) $d) === $dari) {
+                $this->destinasiLain[$i] = $ke;
+            }
+        }
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Nama destinasi diperbarui.');
+    }
+
+    /**
+     * Mengganti nama & kontak vendor dari dalam jendela pemilih.
+     *
+     * Dua medan itu saja, bukan seluruh rekaman vendor: jenis, provinsi, dan
+     * catatan punya layarnya sendiri, dan jendela kecil di atas borang harga
+     * bukan tempat untuk mengisi lima kolom. Yang benar-benar dibetulkan di
+     * sini adalah salah ketik nama dan nomor yang berganti — dan nomor
+     * itulah yang ikut terbawa ke RAB.
+     */
+    public function suntingVendorKatalog(int $id, string $nama, ?string $kontak = null): void
+    {
+        $nama = trim(preg_replace('/\s+/', ' ', $nama));
+
+        if (mb_strlen($nama) < 2) {
+            $this->dispatch('toast-error', message: 'Nama vendor minimal 2 huruf.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->ubah("/vendor/{$id}", [
+                'nama' => $nama,
+                'kontak' => trim((string) $kontak) ?: null,
+            ]);
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return;
+        }
+
+        cache()->forget('orcha.rab.katalog');
+
+        $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Vendor diperbarui.');
+    }
+
+    /**
+     * Menambah destinasi dari dalam jendela pemilih.
+     *
+     * Membungkus jalur yang sudah ada supaya namanya boleh datang sebagai
+     * argumen — jendela tidak punya tempat menitipkan nilai ke properti
+     * komponen lebih dulu.
+     */
+    public function tambahDestinasiDariPopup(string $nama): void
+    {
+        $this->namaDestinasiBaru = $nama;
+        $this->tambahDestinasiKatalog();
+
+        // Galat validasi di sini tidak punya tempat tampil: jendelanya sudah
+        // tertutup saat ini berjalan. Disuarakan sebagai dialog gagal.
+        if ($this->getErrorBag()->has('namaDestinasiBaru')) {
+            $this->dispatch('toast-error', message: $this->getErrorBag()->first('namaDestinasiBaru'));
+            $this->resetValidation('namaDestinasiBaru');
+        }
+
+        $this->namaDestinasiBaru = '';
+    }
+
+    public function tambahVendorDariPopup(string $nama, ?string $kontak = null): void
+    {
+        $this->namaVendorBaru = $nama;
+        $this->kontakVendorBaru = (string) $kontak;
+        $this->tambahVendorKatalog();
+
+        if ($this->getErrorBag()->has('namaVendorBaru')) {
+            $this->dispatch('toast-error', message: $this->getErrorBag()->first('namaVendorBaru'));
+            $this->resetValidation('namaVendorBaru');
+        }
+    }
+
     public function hapusDestinasiKatalog(int $id): void
     {
         try {

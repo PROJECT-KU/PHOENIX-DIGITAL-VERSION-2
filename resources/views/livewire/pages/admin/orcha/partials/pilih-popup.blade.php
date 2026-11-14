@@ -91,9 +91,68 @@
                     + (b.lencana ? '<span class="op-baris-lencana">' + aman(b.lencana) + '<\/span>' : '')
                     + (dipilih ? '<i class="bi bi-check-lg op-baris-centang"><\/i>' : '')
                     + '<\/button>'
+                    + (b.sunting ? '<button type="button" class="op-baris-sunting"'
+                        + ' data-sunting="' + aman(b.sunting) + '"'
+                        + ' data-nama="' + aman(b.label ?? '') + '"'
+                        + ' data-kontak="' + aman(b.kontak ?? '') + '"'
+                        + ' title="Ubah nama"><i class="bi bi-pencil"><\/i><\/button>' : '')
                     + (b.hapus ? '<button type="button" class="op-baris-hapus" data-hapus="' + aman(b.hapus)
                         + '" title="Buang dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
                     + '<\/div>';
+            }
+
+            /**
+             * Jendela isian kecil untuk menambah / mengubah satu nama.
+             *
+             * Dipakai dua jalur sekaligus supaya keduanya tidak pernah
+             * berbeda rupa. Memulangkan null bila dibatalkan — pemanggilnya
+             * membuka kembali daftarnya, sebab membatalkan tidak boleh
+             * berarti mencari dari awal lagi.
+             *
+             * @returns {Promise<{nama: string, kontak: string}|null>}
+             */
+            function bukaBorang(opsi) {
+                return Swal.fire({
+                    title: opsi.judul,
+                    html: '<div class="op-borang">'
+                        + '<label class="op-borang-label">' + aman(opsi.labelNama) + '<\/label>'
+                        + '<input type="text" class="op-borang-isian" id="op-nama" value="'
+                        + aman(opsi.nama) + '" autocomplete="off">'
+                        + (opsi.pakaiKontak
+                            ? '<label class="op-borang-label">Kontak (boleh dikosongkan)<\/label>'
+                                + '<input type="text" class="op-borang-isian" id="op-kontak" value="'
+                                + aman(opsi.kontak) + '" autocomplete="off" '
+                                + 'placeholder="08\u2026">'
+                            : '')
+                        + '<\/div>',
+                    width: 460,
+                    showCancelButton: true,
+                    confirmButtonText: 'Simpan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    customClass: { popup: 'op-swal' },
+                    didOpen: function (modal) {
+                        var isian = modal.querySelector('#op-nama');
+                        isian.focus();
+                        isian.select();
+                    },
+                    preConfirm: function () {
+                        var modal = Swal.getPopup();
+                        var nama = (modal.querySelector('#op-nama').value || '').trim();
+
+                        if (nama === '') {
+                            Swal.showValidationMessage('Namanya belum diisi.');
+
+                            return false;
+                        }
+
+                        var kontakEl = modal.querySelector('#op-kontak');
+
+                        return { nama: nama, kontak: kontakEl ? (kontakEl.value || '').trim() : '' };
+                    },
+                }).then(function (hasil) {
+                    return hasil.isConfirmed ? hasil.value : null;
+                });
             }
 
             /**
@@ -135,6 +194,15 @@
                         + '<\/div>'
                         + '<div class="op-daftar">' + kosong + isi + '<\/div>'
                         + '<p class="op-kosong-pesan" hidden>Tidak ada yang cocok.<\/p>'
+                        /* Menambah dikerjakan DI SINI, bukan lewat tombol
+                           terpisah di bawah kotak pilih. Yang sedang dicari
+                           admin saat ia menyadari namanya belum ada adalah
+                           daftar ini — menutup jendela dulu untuk menekan
+                           tombol lain berarti kehilangan tempatnya. */
+                        + (d.tambahAksi || d.ketikBaru
+                            ? '<button type="button" class="op-tambah"><i class="bi bi-plus-circle"><\/i> '
+                                + aman(d.tambahLabel || 'Tambah baru') + '<\/button>'
+                            : '')
                         + '<\/div>',
                     width: 520,
                     showConfirmButton: false,
@@ -183,6 +251,54 @@
                             if (pilih && wire) {
                                 wire.set(d.ke, pilih.closest('.op-baris').dataset.nilai);
                                 Swal.close();
+
+                                return;
+                            }
+
+                            /* ---- Tambah baru ---- */
+                            if (e.target.closest('.op-tambah')) {
+                                bukaBorang({
+                                    judul: d.tambahLabel || 'Tambah baru',
+                                    nama: '',
+                                    kontak: '',
+                                    pakaiKontak: d.pakaiKontak === '1',
+                                    labelNama: d.tambahMedan || 'Nama',
+                                }).then(function (isi) {
+                                    if (! isi) { window.pilihPopup(tombol); return; }
+
+                                    /* Provinsi tidak punya rekaman apa pun — daftarnya
+                                       diturunkan dari yang sudah dipakai. Jadi "menambah"
+                                       di sana berarti memakai nama yang diketik apa
+                                       adanya, bukan memanggil peladen. */
+                                    if (d.ketikBaru && ! d.tambahAksi) {
+                                        if (wire) { wire.set(d.ke, isi.nama); }
+
+                                        return;
+                                    }
+
+                                    if (wire && d.tambahAksi) {
+                                        wire.call(d.tambahAksi, isi.nama, isi.kontak);
+                                    }
+                                });
+
+                                return;
+                            }
+
+                            /* ---- Ubah nama ---- */
+                            var sunting = e.target.closest('.op-baris-sunting');
+
+                            if (sunting && wire && d.suntingAksi) {
+                                bukaBorang({
+                                    judul: 'Ubah nama',
+                                    nama: sunting.dataset.nama || '',
+                                    kontak: sunting.dataset.kontak || '',
+                                    pakaiKontak: d.pakaiKontak === '1',
+                                    labelNama: d.tambahMedan || 'Nama',
+                                }).then(function (isi) {
+                                    if (! isi) { window.pilihPopup(tombol); return; }
+
+                                    wire.call(d.suntingAksi, Number(sunting.dataset.sunting), isi.nama, isi.kontak);
+                                });
 
                                 return;
                             }
@@ -275,6 +391,42 @@
            bukan sekadar menutup sesuatu. */
         .op-baris:hover .op-baris-hapus { color: #ef4444; }
         .op-baris-hapus:hover { background: #fee2e2; color: #dc2626; }
+
+        /* Pensil: ungu, bukan merah. Warnanya memisahkan "ubah" dari
+           "buang" sebelum ikonnya sempat dibaca — dua tombol berdampingan
+           yang sewarna akan tertekan silang cepat atau lambat. */
+        .op-baris-sunting {
+            flex: 0 0 auto; width: 36px; border: 0; border-radius: 10px;
+            background: transparent; color: #c4b5fd; font-size: .88rem;
+        }
+        .op-baris:hover .op-baris-sunting { color: #7c3aed; }
+        .op-baris-sunting:hover { background: #f5f3ff; color: #6d28d9; }
+
+        /* ===== Tombol tambah di kaki jendela ===== */
+        .op-tambah {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            width: 100%; min-height: 42px; margin-top: 10px; padding: 0 14px;
+            border: 1px dashed #ddd6fe; border-radius: 12px;
+            background: #faf9ff; color: #6d28d9;
+            font-size: .84rem; font-weight: 700; cursor: pointer;
+        }
+        .op-tambah:hover { background: #f5f3ff; border-color: #a78bfa; }
+
+        /* ===== Borang kecil (tambah & ubah) ===== */
+        .op-borang { text-align: left; padding: 2px 4px 4px; }
+        .op-borang-label {
+            display: block; margin: 10px 0 5px;
+            font-size: .78rem; font-weight: 700; color: var(--dsb-tinta, #1c1f26);
+        }
+        .op-borang-label:first-child { margin-top: 0; }
+        .op-borang-isian {
+            width: 100%; min-height: 42px; padding: 9px 13px;
+            border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 11px; background: #fff;
+            color: var(--dsb-tinta, #1c1f26); font-size: .88rem; font-family: inherit;
+        }
+        .op-borang-isian:focus {
+            outline: none; border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124, 58, 237, .14);
+        }
 
         /* ===== Tombol pemicunya di borang ===== */
         .op-pilih { position: relative; }

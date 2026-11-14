@@ -162,3 +162,64 @@ test('hanya pemilih destinasi yang menawarkan tombol buang', function () {
         'hapusDestinasiKatalog'
     ))->toBeTrue();
 });
+
+test('tiap aksi yang disebut pemicu pemilih memang ada metodenya', function () {
+    /*
+     | Nama metode yang salah ketik di data-* DIAM SAJA sampai tombolnya
+     | ditekan — dan yang terjadi saat itu bukan galat, melainkan tidak ada
+     | apa-apa. Jadi tiap nama aksi diperiksa di sini, bukan dipercaya.
+     */
+    $isi = sumberOrcha('rab.partials.master-harga-borang');
+    $kelas = \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm::class;
+
+    preg_match_all('/data-(?:hapus|sunting|tambah)-aksi="([a-zA-Z]+)"/', $isi, $cocok);
+
+    expect($cocok[1])->not->toBeEmpty();
+
+    foreach (array_unique($cocok[1]) as $aksi) {
+        expect(method_exists($kelas, $aksi))->toBeTrue("Aksi '{$aksi}' disebut pemicu tetapi metodenya tidak ada.");
+    }
+});
+
+test('destinasi bawaan tidak menawarkan pensil, hanya yang kustom', function () {
+    /*
+     | Pensil harus duduk di baris yang SAMA dengan tombol buang: destinasi
+     | kustom. Destinasi bawaan hidup di katalog situs publik Orcha, dan
+     | menggantinya dari borang harga berarti mengubah isi situs tanpa
+     | disadari — tanpa galat, dan tanpa ada yang melihat.
+     */
+    $isi = sumberOrcha('rab.partials.master-harga-borang');
+
+    expect($isi)->toContain("'sunting' => \$b['katalog_id'] ?? null,")
+        ->and($isi)->toContain("'hapus' => \$b['katalog_id'] ?? null,");
+});
+
+test('provinsi hanya boleh diketik, tidak disunting atau dibuang', function () {
+    // Provinsi tidak punya rekaman sendiri: daftarnya diturunkan dari yang
+    // sudah dipakai. Tombol ubah di sana akan menjanjikan sesuatu yang tidak
+    // ada barisnya.
+    $isi = sumberOrcha('rab.partials.master-harga-borang');
+
+    $blokProvinsi = substr($isi, strpos($isi, 'data-judul="Pilih Provinsi"'));
+    $blokProvinsi = substr($blokProvinsi, 0, strpos($blokProvinsi, '</button>'));
+
+    expect($blokProvinsi)->toContain('data-ketik-baru="1"')
+        ->and($blokProvinsi)->not->toContain('data-sunting-aksi')
+        ->and($blokProvinsi)->not->toContain('data-hapus-aksi');
+});
+
+test('menambah destinasi & vendor dikerjakan di dalam jendela, bukan tombol terpisah', function () {
+    /*
+     | Yang sedang dicari admin saat ia menyadari namanya belum ada adalah
+     | DAFTARNYA. Menutup jendela dulu untuk menekan tombol lain di bawah
+     | kotak pilih berarti kehilangan tempatnya, dan dua jalan menuju satu
+     | perbuatan membuat yang satu tertinggal saat yang lain disentuh.
+     */
+    $isi = sumberOrcha('rab.partials.master-harga-borang');
+
+    expect($isi)->toContain('data-tambah-aksi="tambahDestinasiDariPopup"')
+        ->and($isi)->toContain('data-tambah-aksi="tambahVendorDariPopup"')
+        // Tombol lama di luar jendela sudah tidak ada.
+        ->and($isi)->not->toContain("\$set('destinasiBaru', true)")
+        ->and($isi)->not->toContain("\$set('vendorBaru', true)");
+});

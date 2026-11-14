@@ -339,6 +339,14 @@
                                             'ket' => trim(implode(' · ', array_filter([$b['daerah'] ?? null, $b['provinsi'] ?? null]))),
                                             'lencana' => ($b['punya_tiket'] ?? false) ? 'punya tiket' : null,
                                             'hapus' => $b['katalog_id'] ?? null,
+                                            /*
+                                             | Pensil muncul di baris yang SAMA dengan tombol
+                                             | buang — yaitu destinasi kustom saja. Destinasi
+                                             | bawaan hidup di katalog situs publik Orcha, dan
+                                             | menggantinya dari borang harga berarti mengubah
+                                             | isi situs tanpa disadari.
+                                             */
+                                            'sunting' => $b['katalog_id'] ?? null,
                                         ])->values();
 
                                         // Nilai lama yang tidak ada di katalog TETAP ditawarkan,
@@ -366,6 +374,10 @@
                                             data-cari="Cari nama destinasi…"
                                             data-kosong="Tidak terikat destinasi"
                                             data-hapus-aksi="hapusDestinasiKatalog"
+                                            data-sunting-aksi="suntingDestinasiKatalog"
+                                            data-tambah-aksi="tambahDestinasiDariPopup"
+                                            data-tambah-label="Tambah destinasi baru"
+                                            data-tambah-medan="Nama destinasi"
                                             data-daftar="{{ $barisPilihDestinasi->toJson(JSON_UNESCAPED_UNICODE) }}">
                                             <i class="bi bi-geo-alt"></i>
                                             <span class="op-pilih-nilai">{{ $destinasiKini !== '' ? $destinasiKini : 'Tidak terikat destinasi' }}</span>
@@ -373,11 +385,11 @@
                                         </button>
                                     </div>
 
-                                    @unless ($destinasiBaru)
-                                        <button type="button" wire:click="$set('destinasiBaru', true)" class="mh-tambah">
-                                            <i class="bi bi-plus-circle"></i> Destinasinya belum ada di daftar
-                                        </button>
-                                    @endunless
+                                    {{-- Tombol "Destinasinya belum ada di daftar" DIBUANG dari
+                                         sini: menambah kini dikerjakan di dalam jendela pemilih,
+                                         tempat admin berada saat ia menyadari namanya belum ada.
+                                         Dua jalan menuju satu perbuatan hanya membuat yang satu
+                                         tertinggal saat yang lain disentuh. --}}
 
                                     {{-- SATU tiket untuk beberapa tempat.
                                          Tiket terusan Dieng berlaku di Candi Arjuna dan
@@ -421,6 +433,9 @@
                                         'ket' => trim(implode(' · ', array_filter([$v['jenis'] ?? null, $v['kontak'] ?? null]))),
                                         'lencana' => null,
                                         'hapus' => null,
+                                        'sunting' => $v['id'],
+                                        // Dipakai mengisi awal kotak kontak di jendela ubah.
+                                        'kontak' => $v['kontak'] ?? '',
                                     ])->values();
                                 @endphp
 
@@ -433,6 +448,12 @@
                                         data-judul="Pilih Vendor"
                                         data-cari="Cari nama atau nomor vendor…"
                                         data-kosong="Belum ditentukan"
+                                        data-sunting-aksi="suntingVendorKatalog"
+                                        data-tambah-aksi="tambahVendorDariPopup"
+                                        data-tambah-label="Tambah vendor baru"
+                                        data-tambah-medan="Nama vendor"
+                                        {{-- Vendor punya nomor; destinasi tidak. --}}
+                                        data-pakai-kontak="1"
                                         data-daftar="{{ $barisPilihVendor->toJson(JSON_UNESCAPED_UNICODE) }}">
                                         <i class="bi bi-shop"></i>
                                         <span class="op-pilih-nilai">{{ $vendorKini['nama'] ?? 'Belum ditentukan' }}</span>
@@ -457,13 +478,6 @@
                                         Vendor ini belum punya nomor.
                                         <a href="{{ route('admin.orcha.vendor') }}" wire:navigate>Isi di daftar vendor</a>
                                     </span>
-                                @elseif (! $vendorBaru)
-                                    {{-- Dulu di sini ada tautan ke daftar vendor —
-                                         yang MEMINDAHKAN halaman, dan seluruh isian
-                                         harga yang sudah diketik hilang bersamanya. --}}
-                                    <button type="button" wire:click="$set('vendorBaru', true)" class="mh-tambah">
-                                        <i class="bi bi-plus-circle"></i> Vendornya belum ada di daftar
-                                    </button>
                                 @endif
                             </div>
 
@@ -487,6 +501,14 @@
                                         data-keterangan="Harga yang tidak diikat provinsi berlaku di seluruh Indonesia."
                                         data-cari="Cari provinsi…"
                                         data-kosong="Berlaku umum (semua provinsi)"
+                                        {{-- Provinsi tidak punya rekaman sendiri: daftarnya
+                                             diturunkan dari provinsi yang sudah dipakai. Jadi
+                                             tidak ada yang bisa disunting atau dibuang — yang
+                                             ada cuma mengetik nama yang belum pernah dipakai,
+                                             dan ia masuk daftar sendiri begitu tersimpan. --}}
+                                        data-ketik-baru="1"
+                                        data-tambah-label="Ketik provinsi lain"
+                                        data-tambah-medan="Nama provinsi"
                                         data-daftar="{{ $barisPilihProvinsi->toJson(JSON_UNESCAPED_UNICODE) }}">
                                         <i class="bi bi-map"></i>
                                         <span class="op-pilih-nilai">{{ $provinsiKini !== '' ? $provinsiKini : 'Berlaku umum (semua provinsi)' }}</span>

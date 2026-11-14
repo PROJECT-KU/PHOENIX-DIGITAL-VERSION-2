@@ -5350,3 +5350,101 @@ test('kotak tiket terusan berdiri selebar rak, bukan di dalam medan Destinasi', 
         // Dan memang dilebarkan sepenuh rak.
         ->and($html)->toContain('flex: 1 1 100%');
 });
+
+/* ------------- MENYUNTING DARI DALAM JENDELA PEMILIH ------------- */
+
+test('ganti nama destinasi dari jendela ikut membetulkan isian yang sedang terpilih', function () {
+    /*
+     | Stub khusus didaftarkan SEBELUM palsukanRab(): penampung umum itu
+     | punya arm `default` yang menjawab apa pun, dan Laravel memakai stub
+     | pertama yang cocok menurut urutan pendaftaran. Dibalik urutannya,
+     | balasan khusus ini tidak pernah terpakai — dan ujinya merah dengan
+     | sebab yang sama sekali tidak menunjuk ke sana.
+     */
+    Http::fake([
+        '*/katalog-destinasi/7' => Http::response([
+            'pesan' => 'Candi Lama diganti jadi Candi Baru. 2 baris harga ikut diperbarui.',
+            'dari' => 'Candi Lama',
+            'ke' => 'Candi Baru',
+        ]),
+    ]);
+
+    palsukanRab();
+
+    /*
+     | Perambatan ke baris harga & itinerary dikerjakan di sisi Orcha. Yang
+     | diperiksa di sini bagian yang HANYA bisa dikerjakan di borang: nama
+     | yang sedang terpilih — dan yang ada di daftar tempat lain — ikut
+     | dibetulkan. Tanpa itu isiannya memegang nama yang baru saja tidak ada
+     | lagi, dan admin menyimpannya tanpa curiga.
+     */
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.destinasi', 'Candi Lama')
+        ->set('destinasiLain', ['Candi Lama', 'Tempat Lain'])
+        ->call('suntingDestinasiKatalog', 7, 'Candi Baru')
+        ->assertSet('isian.destinasi', 'Candi Baru')
+        ->assertSet('destinasiLain', ['Candi Baru', 'Tempat Lain'])
+        ->assertDispatched('order-updated');
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/katalog-destinasi/7')
+        && $p->method() === 'PATCH'
+        && $p['nama'] === 'Candi Baru');
+});
+
+test('ganti nama destinasi TIDAK menyentuh isian bila yang terpilih memang lain', function () {
+    Http::fake(['*/katalog-destinasi/7' => Http::response([
+        'pesan' => 'ok', 'dari' => 'Candi Lama', 'ke' => 'Candi Baru',
+    ])]);
+
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->set('isian.destinasi', 'Pantai Lain')
+        ->call('suntingDestinasiKatalog', 7, 'Candi Baru')
+        ->assertSet('isian.destinasi', 'Pantai Lain');
+});
+
+test('nama destinasi terlalu pendek ditolak sebelum menyentuh Orcha', function () {
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->call('suntingDestinasiKatalog', 7, 'ab')
+        ->assertDispatched('toast-error');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-destinasi/'));
+});
+
+test('ganti vendor dari jendela mengirim nama dan kontaknya', function () {
+    Http::fake(['*/vendor/4' => Http::response(['pesan' => 'Vendor diperbarui.'])]);
+
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->call('suntingVendorKatalog', 4, 'Bus Sejahtera', '0812-0000-0000')
+        ->assertDispatched('order-updated');
+
+    // Nomornya ikut terbawa ke RAB, jadi ia memang harus bisa dibetulkan
+    // dari sini — bukan cuma namanya.
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/vendor/4')
+        && $p->method() === 'PATCH'
+        && $p['nama'] === 'Bus Sejahtera'
+        && $p['kontak'] === '0812-0000-0000');
+});
+
+test('kontak vendor yang dikosongkan dikirim sebagai null, bukan teks kosong', function () {
+    Http::fake(['*/vendor/4' => Http::response(['pesan' => 'ok'])]);
+
+    palsukanRab();
+
+    Livewire::actingAs(adminRab())
+        ->test(OrchaMasterHargaForm::class)
+        ->call('suntingVendorKatalog', 4, 'Tanpa Nomor', '   ');
+
+    // Teks kosong akan tersimpan sebagai nomor "" yang terlihat ada padahal
+    // tidak — dan penanda "belum punya nomor" berhenti muncul.
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/vendor/4') && $p['kontak'] === null);
+});
