@@ -63,11 +63,36 @@ class OrchaGaleriList extends Component
 
     public bool $tampil = true;
 
+    /**
+     * Aturan berkas foto — SENGAJA tanpa batas ukuran.
+     *
+     * Yang disimpan Orcha bukan berkas yang dikirim admin: di sana ia diubah
+     * jadi WebP dan sisi terpanjangnya dipangkas ke 1920px, sehingga foto
+     * kamera ponsel 12 MB mendarat sebagai beberapa ratus KB. Menolaknya di
+     * depan pintu dengan alasan "terlalu besar" berarti menyuruh admin
+     * mengecilkan sendiri foto yang sebentar lagi dikecilkan mesin — dan yang
+     * benar-benar terjadi bukan admin mengecilkan foto, melainkan foto itu
+     * tidak jadi diunggah.
+     *
+     * Batas nyatanya tetap ada dan datang dari tempat yang memang berwenang:
+     * gerbang unggah sementara Livewire (100MB di config/livewire.php) serta
+     * upload_max_filesize di server.
+     *
+     * @var string
+     */
+    private const ATURAN_FOTO = 'image';
+
+    /** @var array<string, string> */
+    private const PESAN_FOTO = [
+        'fotoBaru.required' => 'Pilih dulu foto yang mau diunggah.',
+        'fotoBaru.*.image' => 'Berkas ke-:position bukan gambar. Format yang bisa dibaca: JPG, PNG, WebP, atau GIF.',
+    ];
+
     public function updatedFotoBaru(): void
     {
         $this->validate([
-            'fotoBaru.*' => 'image|max:4096',
-        ], [], ['fotoBaru.*' => 'foto']);
+            'fotoBaru.*' => self::ATURAN_FOTO,
+        ], self::PESAN_FOTO, ['fotoBaru.*' => 'foto']);
 
         // Disiapkan sepanjang jumlah fotonya, supaya isian tiap kartu punya
         // tempatnya sendiri sejak awal — larik yang tumbuh sambil diketik
@@ -93,9 +118,9 @@ class OrchaGaleriList extends Component
     {
         $this->validate([
             'fotoBaru' => 'required|array|min:1',
-            'fotoBaru.*' => 'image|max:4096',
+            'fotoBaru.*' => self::ATURAN_FOTO,
             'keteranganPer.*' => 'nullable|string|max:191',
-        ], [], ['fotoBaru' => 'foto', 'fotoBaru.*' => 'foto', 'keteranganPer.*' => 'keterangan']);
+        ], self::PESAN_FOTO, ['fotoBaru' => 'foto', 'fotoBaru.*' => 'foto', 'keteranganPer.*' => 'keterangan']);
 
         $berhasil = 0;
         $gagal = 0;

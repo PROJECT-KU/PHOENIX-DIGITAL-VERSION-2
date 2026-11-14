@@ -22,6 +22,19 @@ return [
     'timeout' => (int) env('ORCHA_API_TIMEOUT', 10),
 
     /*
+     | Detik, KHUSUS permintaan yang membawa berkas.
+     |
+     | Sepuluh detik benar untuk permintaan yang isinya teks — halaman yang
+     | menggantung lebih buruk daripada halaman yang bilang Orcha sedang tidak
+     | bisa dihubungi. Untuk unggahan ia salah: foto kamera ponsel belasan MB
+     | dikirim utuh ke Orcha (yang mengubahnya jadi WebP di sana), dan sepuluh
+     | detik habis di tengah jalan pada jaringan yang biasa saja. Yang dilihat
+     | admin bukan "terlalu besar", melainkan "server tidak bisa dihubungi" —
+     | pesan yang membuatnya menyalahkan jaringan lalu mencoba lagi dan lagi.
+     */
+    'timeout_unggah' => (int) env('ORCHA_API_TIMEOUT_UNGGAH', 120),
+
+    /*
      | Panggilan ke Orcha dipaksa lewat IPv4.
      |
      | Orcha membatasi pemanggilnya dengan daftar IP. Server ini punya DUA

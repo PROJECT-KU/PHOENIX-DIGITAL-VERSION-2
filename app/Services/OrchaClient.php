@@ -95,7 +95,10 @@ class OrchaClient
         return $hostSama && (int) $tujuan['port'] === $port;
     }
 
-    private function permintaan(): PendingRequest
+    /**
+     * @param  int|null  $detik  Batas waktu khusus; null memakai config('orcha.timeout').
+     */
+    private function permintaan(?int $detik = null): PendingRequest
     {
         return Http::withHeaders([
             'X-Orcha-Key' => config('orcha.kunci'),
@@ -118,7 +121,7 @@ class OrchaClient
                 config('orcha.paksa_ipv4'),
                 fn (PendingRequest $p) => $p->withOptions(['force_ip_resolve' => 'v4'])
             )
-            ->timeout(config('orcha.timeout'))
+            ->timeout($detik ?: (int) config('orcha.timeout'))
             ->baseUrl(config('orcha.url'));
     }
 
@@ -270,7 +273,15 @@ class OrchaClient
         }
 
         try {
-            $permintaan = $this->permintaan();
+            /*
+             | Batas waktunya ditentukan SEBELUM berkasnya ditempel, karena
+             | yang menentukan bukan besar berkasnya melainkan ada-tidaknya
+             | berkas: permintaan berisi teks tetap gagal cepat seperti dulu,
+             | yang membawa foto diberi waktu mengirimnya sampai selesai.
+             */
+            $permintaan = ($gambar || $berkasLain !== [])
+                ? $this->permintaan((int) config('orcha.timeout_unggah'))
+                : $this->permintaan();
 
             if ($gambar) {
                 $permintaan = $permintaan->attach(
@@ -354,7 +365,7 @@ class OrchaClient
         }
 
         try {
-            $balasan = $this->permintaan()
+            $balasan = $this->permintaan((int) config('orcha.timeout_unggah'))
                 ->attach($nama, $isi, $berkas->getClientOriginalName())
                 ->post($jalur, $this->ratakan($data));
         } catch (\Throwable $e) {

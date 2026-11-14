@@ -47,7 +47,17 @@ test('foto tampil sebagai petak, lengkap dengan nomor urutnya', function () {
         ->assertSee('Rombongan di Kawah Ijen')
         // Yang tanpa keterangan tidak dibiarkan kosong melompong.
         ->assertSee('Tanpa keterangan')
-        ->assertSee('2 dari 2 foto tampil');
+        // Hitungannya kini dua cip terpisah di kepala halaman: berapa yang
+        // dipajang, dan berapa yang ditahan. Saat tidak ada yang ditahan, cip
+        // keduanya memang tidak digambar.
+        //
+        // Yang diperiksa bunyi cipnya ("0 disembunyikan"), BUKAN kata
+        // "disembunyikan" saja: gaya layar ini ditulis inline di blade, dan
+        // komentar di dalamnya ikut terkirim sebagai isi respons — asersi atas
+        // kata umum akan merah tanpa ada yang salah di layarnya.
+        ->assertSee('2 tampil di beranda')
+        ->assertDontSee('0 disembunyikan')
+        ->assertSee('2 foto');
 });
 
 test('hapus foto memakai konfirmasi SweetAlert, bukan dialog bawaan peramban', function () {
@@ -85,7 +95,8 @@ test('foto yang disembunyikan ditandai, bukan dihilangkan dari layar admin', fun
         ->get('/admin/orcha/galeri')
         ->assertOk()
         ->assertSee('Disembunyikan')
-        ->assertSee('1 dari 2 foto tampil');
+        ->assertSee('1 tampil di beranda')
+        ->assertSee('1 disembunyikan');
 });
 
 test('foto ditampilkan lewat alamat Orcha, bukan alamat lemon', function () {
@@ -241,6 +252,41 @@ test('berkas selain gambar ditolak sebelum dikirim', function () {
         ->test(OrchaGaleriList::class)
         ->set('fotoBaru', [UploadedFile::fake()->create('catatan.txt', 10)])
         ->assertHasErrors('fotoBaru.*');
+});
+
+test('foto besar TIDAK ditolak: ukurannya diurus Orcha, bukan dijegal di sini', function () {
+    palsukanGaleri();
+
+    /*
+     | Apa pun yang lolos dari sini diubah Orcha jadi WebP dengan sisi
+     | terpanjang 1920px, jadi foto kamera ponsel belasan MB tersimpan sebagai
+     | beberapa ratus KB. Batas 4 MB yang dulu dipasang hanya memindahkan
+     | pekerjaan mengecilkan foto ke admin, untuk hasil yang sama persis — dan
+     | yang benar-benar terjadi bukan admin mengecilkan foto, melainkan
+     | fotonya tidak jadi diunggah.
+     */
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->set('fotoBaru', [UploadedFile::fake()->image('ijen.jpg')->size(12288)])
+        ->assertHasNoErrors()
+        ->call('unggah')
+        ->assertHasNoErrors()
+        ->assertDispatched('order-updated');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST' && str_ends_with($p->url(), '/galeri'));
+});
+
+test('unggahan diberi waktu lebih lama daripada permintaan biasa', function () {
+    /*
+     | Sepuluh detik benar untuk permintaan berisi teks — halaman yang
+     | menggantung lebih buruk daripada halaman yang berterus terang. Untuk
+     | unggahan ia salah: foto belasan MB tidak selesai terkirim dalam sepuluh
+     | detik di jaringan biasa, dan yang dilihat admin bukan "terlalu besar"
+     | melainkan "server tidak bisa dihubungi" — pesan yang membuatnya
+     | menyalahkan jaringan lalu mencoba lagi dan lagi.
+     */
+    expect((int) config('orcha.timeout_unggah'))
+        ->toBeGreaterThan((int) config('orcha.timeout'));
 });
 
 test('menyembunyikan foto tidak menghapus berkasnya', function () {
