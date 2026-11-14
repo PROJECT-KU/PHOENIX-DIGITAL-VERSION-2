@@ -105,20 +105,21 @@ test('judul kolom daftar sewa ditengahkan, termasuk yang isinya rata kanan', fun
         '*' => Http::response(['data' => [], 'meta' => []]),
     ]);
 
-    // Dua judul memakai .text-end bawaan Bootstrap. Tanpa ditimpa, barisnya
-    // setengah tengah setengah kanan — justru lebih tidak rapi daripada
-    // sebelum diubah.
+    /*
+     | Layar ini dipindahkan ke bahasa rupa dasbor (.dsb-tabel), yang sudah
+     | mengurus perataan judul kolomnya sendiri. Yang dijaga sekarang: tabelnya
+     | memang .dsb-tabel, dan kolom yang isinya rata kanan menyatakan
+     | perataannya di judulnya juga — kalau hanya selnya yang dirata-kanan,
+     | judul dan angkanya berdiri di dua garis yang berbeda.
+     */
     $isi = $this->actingAs(adminPeserta())
         ->get('/admin/orcha/penyewaan')->assertOk()->getContent();
 
-    // Potongannya diambil sampai kurung tutup aturannya, bukan sekian ratus
-    // huruf: daftar pemilihnya bertambah panjang tiap kali ada tabel lain yang
-    // ikut ditengahkan, dan jendela tetap membuat tesnya patah tanpa sebab.
-    $mulai = strpos($isi, '.orcha-tabel-sewa thead th');
-    $gaya = substr($isi, $mulai, strpos($isi, '}', $mulai) - $mulai);
+    $kepala = substr($isi, strpos($isi, '<thead'), strpos($isi, '</thead>') - strpos($isi, '<thead'));
 
-    expect($gaya)->toContain('.orcha-tabel-sewa thead th.text-end')
-        ->and($gaya)->toContain('text-align: center !important');
+    expect($isi)->toContain('class="dsb-tabel sw-tabel"')
+        // Tagihan & Aksi rata kanan, judulnya ikut.
+        ->and(substr_count($kepala, 'text-align: right;'))->toBe(2);
 });
 
 test('dua tombol di kolom aksi sama tingginya', function () {
@@ -133,12 +134,38 @@ test('dua tombol di kolom aksi sama tingginya', function () {
     $isi = $this->actingAs(adminPeserta())
         ->get('/admin/orcha/penyewaan')->assertOk()->getContent();
 
-    // Dihitung di dalam tabelnya saja: gaya halaman ini ditulis inline, jadi
-    // nama kelasnya juga muncul di blok <style> dan ikut terhitung.
-    $tabel = substr($isi, strpos($isi, '<tbody'), strpos($isi, '</tbody>') - strpos($isi, '<tbody'));
+    /*
+     | Diiris dari TABELNYA, bukan dari '<tbody' pertama di halaman.
+     |
+     | Halaman admin memuat tabel lain lebih dulu (bilah samping), jadi irisan
+     | yang dimulai dari '<tbody' pertama justru membentang melewati blok
+     | <style> — dan nama kelas yang muncul di aturan CSS ikut terhitung.
+     | Terukur: 6 kemunculan untuk satu baris data.
+     */
+    $mulaiTabel = strpos($isi, 'class="dsb-tabel sw-tabel"');
+    $tabel = substr($isi, $mulaiTabel, strpos($isi, '</table>', $mulaiTabel) - $mulaiTabel);
 
-    expect(substr_count($tabel, 'orcha-aksi-sewa'))->toBe(2)
-        ->and($tabel)->toContain('orcha-aksi-sewa ikon-saja');
+    // Dua kendali di satu sel: tombol ikon detail, dan tombol berlabel.
+    expect(substr_count($tabel, 'dsb-tabel-btn'))->toBe(1)
+        ->and(substr_count($tabel, 'sw-lanjut'))->toBe(1);
+
+    /*
+     | Tingginya DIPATOK sama, bukan diperiksa lewat nama kelasnya: nama yang
+     | sama tidak menjamin angka yang sama, dan selisih sembilan piksel itulah
+     | yang dulu membuat garis bawah keduanya tidak pernah sejajar.
+     |
+     | .dsb-tabel-btn setinggi 34px (partials/dasbor-gaya); yang berlabel
+     | mengikuti angka itu, bukan 44px bawaan .dsb-tombol yang terlalu jangkung
+     | untuk duduk di dalam baris tabel.
+     */
+    $gayaDasbor = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+    preg_match('/\.dsb-tabel-btn\s*\{[^}]*?height:\s*(\d+)px/s', $gayaDasbor, $ikon);
+
+    $mulai = strpos($isi, '.sw-lanjut {');
+    preg_match('/height:\s*(\d+)px/', substr($isi, $mulai, strpos($isi, '}', $mulai) - $mulai), $label);
+
+    expect($ikon[1] ?? null)->not->toBeNull('Tinggi .dsb-tabel-btn tidak ditemukan.')
+        ->and($label[1] ?? null)->toBe($ikon[1], 'Tombol berlabel tidak setinggi tombol ikon di sebelahnya.');
 });
 
 test('status di daftar sewa ringkas dan berwarna menurut keadaannya', function () {
