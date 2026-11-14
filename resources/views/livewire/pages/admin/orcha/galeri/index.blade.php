@@ -80,8 +80,33 @@ Galeri Perjalanan || lemon
         .gal-kartu.is-sembunyi { background: #f8fafc; }
         .gal-kartu.is-sembunyi .gal-kotak img { filter: grayscale(1); opacity: .55; }
 
-        .gal-kotak { position: relative; aspect-ratio: 4 / 3; background: #f1f5f9; }
-        .gal-kotak img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* Rasio 4:3 — SAMA dengan beranda Orcha (aspect-[4/3] + object-cover
+           di beranda/index.blade.php). Admin harus melihat potongan yang
+           persis akan dilihat pengunjung, bukan foto utuhnya: kalau berbeda,
+           ia memilih foto berdasarkan bagian yang ternyata tidak terpajang.
+
+           Gambarnya dipasang ABSOLUTE, dan itu bukan gaya-gayaan. .gal-kotak
+           adalah anak dari .gal-kartu yang display:flex arah kolom, sehingga
+           min-height-nya auto — tingginya ikut ISI. Dengan gambar yang masih
+           mengalir, foto tegak membuat kotaknya memanjang melewati rasio 4:3
+           dan crop-nya tidak pernah terjadi; itu yang terlihat di produksi
+           hari ini. Gambar absolut tidak menyumbang tinggi sama sekali, jadi
+           rasionyalah yang menentukan. */
+        .gal-kotak {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            flex: 0 0 auto;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+        .gal-kotak img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
         .gal-nomor {
             position: absolute; top: 8px; left: 8px; min-width: 26px; height: 26px; padding: 0 8px;
@@ -123,7 +148,36 @@ Galeri Perjalanan || lemon
             padding: clamp(13px, 1.6vw, 17px); margin-bottom: 16px;
             border: 1px solid #ddd6fe; border-radius: 15px; background: #faf9ff;
         }
-        .gal-sunting .gal-kotak { flex: 0 0 132px; width: 132px; border-radius: 12px; overflow: hidden; }
+        /* ===== Penggeser titik fokus =====
+           Kotaknya 4:3 — rasio yang SAMA dengan beranda, jadi yang digeser
+           admin benar-benar potongan yang akan dilihat pengunjung, bukan
+           perkiraan. */
+        .gal-fokus { flex: 0 0 240px; width: 240px; }
+        .gal-fokus-kotak {
+            position: relative; aspect-ratio: 4 / 3; overflow: hidden;
+            border-radius: 12px; background: #f1f5f9;
+            cursor: grab;
+            /* Tanpa ini menggeser di layar sentuh menggulung halaman,
+               bukan menggeser fotonya. */
+            touch-action: none;
+        }
+        .gal-fokus-kotak:active { cursor: grabbing; }
+        .gal-fokus-kotak img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; display: block;
+            user-select: none; -webkit-user-drag: none;
+        }
+        .gal-fokus-bingkai {
+            position: absolute; inset: 0; pointer-events: none;
+            border: 2px dashed rgba(255, 255, 255, .8); border-radius: 12px;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .18);
+        }
+        .gal-fokus-kaki { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+        .gal-fokus-ket { flex: 1 1 auto; font-size: .72rem; color: var(--dsb-redup, #6b7280); line-height: 1.35; }
+        .gal-fokus-angka {
+            font-size: .68rem; font-weight: 700; color: #6d28d9;
+            background: #f5f3ff; border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+        }
         .gal-sunting-isi { flex: 1 1 auto; min-width: 0; }
         .gal-sunting-judul {
             display: flex; align-items: center; gap: 7px;
@@ -139,7 +193,7 @@ Galeri Perjalanan || lemon
         .gal-sunting-aksi .orcha-saklar { margin-right: auto; }
         @media (max-width: 767.98px) {
             .gal-sunting { flex-direction: column; }
-            .gal-sunting .gal-kotak { flex: 0 0 auto; width: 100%; }
+            .gal-fokus { flex: 0 0 auto; width: 100%; }
             .gal-sunting-medan { grid-template-columns: minmax(0, 1fr); }
             .gal-sunting-aksi .orcha-saklar { margin-right: 0; width: 100%; }
             .gal-sunting-aksi .dsb-tombol { flex: 1 1 0; }
@@ -323,9 +377,52 @@ Galeri Perjalanan || lemon
                                      jadi admin tidak perlu mengingat foto mana yang tadi
                                      diketuk. --}}
                                 <div class="gal-sunting">
-                                    <div class="gal-kotak">
-                                        <img src="{{ $tautanGambar($foto['foto']) }}" alt="">
-                                        <span class="gal-nomor">{{ $foto['urutan'] ?? 0 }}</span>
+                                    {{-- Geser fotonya untuk memilih bagian yang tampil.
+
+                                         Yang disimpan POSISINYA, bukan hasil potongannya:
+                                         berkas fotonya tidak pernah diubah, jadi titiknya
+                                         boleh digeser berkali-kali tanpa mutunya menurun —
+                                         dan foto yang sudah terlanjur diunggah ikut bisa
+                                         diatur, tanpa perlu diunggah ulang. --}}
+                                    <div class="gal-fokus" x-data="{
+                                        x: @entangle('fokusX'),
+                                        y: @entangle('fokusY'),
+                                        seret: false, ax: 0, ay: 0,
+                                        mulai(e) {
+                                            this.seret = true;
+                                            this.ax = e.clientX; this.ay = e.clientY;
+                                            e.currentTarget.setPointerCapture(e.pointerId);
+                                        },
+                                        geser(e) {
+                                            if (! this.seret) return;
+                                            const k = e.currentTarget.getBoundingClientRect();
+                                            const batas = (n) => Math.min(100, Math.max(0, Math.round(n)));
+                                            this.x = batas(this.x - (e.clientX - this.ax) / k.width * 100);
+                                            this.y = batas(this.y - (e.clientY - this.ay) / k.height * 100);
+                                            this.ax = e.clientX; this.ay = e.clientY;
+                                        },
+                                        selesai() { this.seret = false; },
+                                    }">
+                                        <div class="gal-fokus-kotak"
+                                            x-on:pointerdown.prevent="mulai($event)"
+                                            x-on:pointermove="geser($event)"
+                                            x-on:pointerup="selesai()"
+                                            x-on:pointercancel="selesai()">
+                                            <img src="{{ $tautanGambar($foto['foto']) }}" alt=""
+                                                draggable="false"
+                                                x-bind:style="'object-position: ' + x + '% ' + y + '%'">
+                                            <span class="gal-nomor">{{ $foto['urutan'] ?? 0 }}</span>
+                                            <span class="gal-fokus-bingkai"></span>
+                                        </div>
+
+                                        <div class="gal-fokus-kaki">
+                                            <span class="gal-fokus-ket">Geser fotonya untuk memilih bagian yang tampil di beranda.</span>
+                                            <span class="gal-fokus-angka" x-text="x + '% ' + y + '%'"></span>
+                                            <button type="button" class="dsb-tabel-btn" style="--c: #64748b"
+                                                x-on:click="x = 50; y = 50" title="Kembalikan ke tengah">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div class="gal-sunting-isi">
@@ -380,7 +477,13 @@ Galeri Perjalanan || lemon
                                 @foreach ($daftar as $foto)
                                     <div class="gal-kartu {{ ($foto['tampil'] ?? true) ? '' : 'is-sembunyi' }}">
                                         <div class="gal-kotak">
-                                            <img src="{{ $tautanGambar($foto['foto']) }}" alt="{{ $foto['keterangan'] ?? '' }}">
+                                            {{-- Potongannya sama dengan beranda: rasio 4:3 DAN
+                                                 titik fokus yang sama. Kalau salah satunya beda,
+                                                 admin memilih foto berdasarkan bagian yang
+                                                 ternyata tidak terpajang. --}}
+                                            <img src="{{ $tautanGambar($foto['foto']) }}"
+                                                alt="{{ $foto['keterangan'] ?? '' }}"
+                                                style="object-position: {{ $foto['fokus_x'] ?? 50 }}% {{ $foto['fokus_y'] ?? 50 }}%">
 
                                             <span class="gal-nomor">{{ $foto['urutan'] ?? 0 }}</span>
 

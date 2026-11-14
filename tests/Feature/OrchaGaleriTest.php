@@ -20,6 +20,7 @@ function fotoGaleri(int $id, array $ubah = []): array
     return array_merge([
         'id' => $id, 'foto' => "https://orcha.test/storage/galeri/{$id}.webp",
         'keterangan' => null, 'urutan' => $id, 'tampil' => true,
+        'fokus_x' => 50, 'fokus_y' => 50,
     ], $ubah);
 }
 
@@ -287,6 +288,86 @@ test('unggahan diberi waktu lebih lama daripada permintaan biasa', function () {
      */
     expect((int) config('orcha.timeout_unggah'))
         ->toBeGreaterThan((int) config('orcha.timeout'));
+});
+
+test('potongan di admin memakai titik fokus yang tersimpan', function () {
+    palsukanGaleri([fotoGaleri(1, ['fokus_x' => 30, 'fokus_y' => 80])]);
+
+    /*
+     | Admin harus melihat potongan yang PERSIS akan dilihat pengunjung.
+     | Kalau ubinnya selalu dipotong dari tengah sementara beranda memakai
+     | titik fokus, admin menilai fotonya dari bagian yang ternyata tidak
+     | terpajang — dan baru tahu setelah membuka berandanya sendiri.
+     */
+    $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/galeri')
+        ->assertOk()
+        ->assertSee('object-position: 30% 80%', false);
+});
+
+test('penggeser titik fokus benar-benar tergambar saat menyunting', function () {
+    palsukanGaleri([fotoGaleri(1, ['fokus_x' => 30, 'fokus_y' => 80])]);
+
+    /*
+     | Penggesernya memakai @entangle, yang HANYA bisa dikompilasi di dalam
+     | komponen Livewire. Merendernya lewat view() biasa melempar "Undefined
+     | variable $__livewire" — jadi cabang formulir sunting ini tidak akan
+     | pernah teruji oleh pemeriksaan Blade biasa, dan galatnya baru muncul
+     | saat admin menekan tombol pensil di produksi.
+     */
+    $isi = Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->call('ubah', fotoGaleri(1, ['fokus_x' => 30, 'fokus_y' => 80]))
+        ->html();
+
+    expect($isi)->toContain('gal-fokus-kotak')
+        ->toContain('pointerdown')
+        // Nilai tersimpan jadi titik awal penggeser, bukan 50/50.
+        ->toContain('30')
+        ->toContain('80');
+});
+
+test('titik fokus ikut terkirim saat foto disimpan', function () {
+    palsukanGaleri([fotoGaleri(1)]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->call('ubah', fotoGaleri(1))
+        ->set('fokusX', 25)
+        ->set('fokusY', 75)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/galeri/1')
+        && (int) $p['fokus_x'] === 25
+        && (int) $p['fokus_y'] === 75);
+});
+
+test('menyembunyikan foto tidak menggeser titik fokusnya', function () {
+    palsukanGaleri([fotoGaleri(1, ['fokus_x' => 10, 'fokus_y' => 90])]);
+
+    // Jalur balikTampil mengirim ulang SELURUH baris ke Orcha. Kalau titik
+    // fokusnya tidak ikut, menyembunyikan satu foto diam-diam mengembalikan
+    // potongannya ke tengah — tanpa galat, dan tanpa admin menyadarinya.
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->call('balikTampil', fotoGaleri(1, ['fokus_x' => 10, 'fokus_y' => 90]));
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/galeri/1')
+        && (int) $p['fokus_x'] === 10
+        && (int) $p['fokus_y'] === 90);
+});
+
+test('titik fokus di luar 0-100 ditolak sebelum dikirim', function () {
+    palsukanGaleri([fotoGaleri(1)]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->call('ubah', fotoGaleri(1))
+        ->set('fokusY', 140)
+        ->call('simpan')
+        ->assertHasErrors('fokusY');
 });
 
 test('menyembunyikan foto tidak menghapus berkasnya', function () {

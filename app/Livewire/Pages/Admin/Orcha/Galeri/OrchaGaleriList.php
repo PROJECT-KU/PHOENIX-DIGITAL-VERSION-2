@@ -64,6 +64,23 @@ class OrchaGaleriList extends Component
     public bool $tampil = true;
 
     /**
+     * Titik fokus foto yang sedang disunting, dalam persen.
+     *
+     * Beranda memajang tiap foto dalam kotak 4:3, jadi foto tegak kehilangan
+     * atas dan bawahnya. Selama titiknya selalu di tengah, rombongan yang
+     * berdiri di bagian bawah terpotong kepalanya — dan satu-satunya jalan
+     * keluar bagi admin adalah memotong fotonya di luar aplikasi lalu
+     * mengunggah ulang.
+     *
+     * Yang disimpan POSISINYA, bukan hasil potongannya: berkasnya tidak
+     * pernah diubah, jadi titiknya boleh digeser berkali-kali tanpa mutunya
+     * menurun.
+     */
+    public int $fokusX = 50;
+
+    public int $fokusY = 50;
+
+    /**
      * Aturan berkas foto — SENGAJA tanpa batas ukuran.
      *
      * Yang disimpan Orcha bukan berkas yang dikirim admin: di sana ia diubah
@@ -160,6 +177,8 @@ class OrchaGaleriList extends Component
         $this->keterangan = (string) ($baris['keterangan'] ?? '');
         $this->urutan = (int) ($baris['urutan'] ?? 0);
         $this->tampil = (bool) ($baris['tampil'] ?? true);
+        $this->fokusX = (int) ($baris['fokus_x'] ?? 50);
+        $this->fokusY = (int) ($baris['fokus_y'] ?? 50);
         $this->resetValidation();
     }
 
@@ -168,6 +187,8 @@ class OrchaGaleriList extends Component
         $this->validate([
             'keterangan' => 'nullable|string|max:191',
             'urutan' => 'integer|min:0|max:9999',
+            'fokusX' => 'integer|min:0|max:100',
+            'fokusY' => 'integer|min:0|max:100',
         ]);
 
         $tersimpan = $this->kirimData(
@@ -176,6 +197,8 @@ class OrchaGaleriList extends Component
                 'keterangan' => $this->keterangan,
                 'urutan' => $this->urutan,
                 'tampil' => $this->tampil,
+                'fokus_x' => $this->fokusX,
+                'fokus_y' => $this->fokusY,
             ],
             'Foto diperbarui.',
         );
@@ -200,6 +223,10 @@ class OrchaGaleriList extends Component
                 'keterangan' => $baris['keterangan'] ?? '',
                 'urutan' => $baris['urutan'] ?? 0,
                 'tampil' => ! ($baris['tampil'] ?? true),
+                // Ikut dikirim supaya menyembunyikan foto tidak pernah
+                // tersangkut jadi "menggeser titik fokusnya ke tengah".
+                'fokus_x' => $baris['fokus_x'] ?? 50,
+                'fokus_y' => $baris['fokus_y'] ?? 50,
             ],
             ($baris['tampil'] ?? true) ? 'Foto disembunyikan dari beranda.' : 'Foto ditampilkan lagi di beranda.',
         );
@@ -212,7 +239,7 @@ class OrchaGaleriList extends Component
 
     public function batal(): void
     {
-        $this->reset(['sedangDiubah', 'keterangan', 'urutan', 'tampil']);
+        $this->reset(['sedangDiubah', 'keterangan', 'urutan', 'tampil', 'fokusX', 'fokusY']);
         $this->tampil = true;
         $this->resetValidation();
     }
