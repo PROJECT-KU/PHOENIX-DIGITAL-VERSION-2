@@ -265,6 +265,53 @@ Daftarkan Rombongan || lemon
                             @enderror
                         </div>
 
+                        {{-- Tanggal keberangkatan.
+
+                             Muncul hanya bila paketnya memang punya lebih dari satu
+                             rombongan; satu rombongan sudah terisi sendiri dan tidak
+                             perlu ditanyakan.
+
+                             Tanpa isian ini, Orcha menaruh rombongan di keberangkatan
+                             TERDEKAT milik paketnya — jadi rombongan yang sudah sepakat
+                             11–13 Desember lewat WhatsApp tercatat di 27–29 November,
+                             dan tanggal yang salah itu mengalir ke kuota, batas
+                             pelunasan, serta surat konfirmasinya. Tidak ada galat; yang
+                             salah cuma tanggalnya, dan itu baru ketahuan di hari
+                             keberangkatan. --}}
+                        @php $pilihanKb = $this->keberangkatanPaket(); @endphp
+
+                        @if (1 < count($pilihanKb))
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">
+                                    Tanggal keberangkatan <span class="text-danger">*</span>
+                                </label>
+                                <select wire:model.live="keberangkatanId"
+                                    class="form-select @error('keberangkatanId') is-invalid @enderror">
+                                    <option value="" @selected($this->keberangkatanId === '')>Pilih tanggal...</option>
+                                    @foreach ($pilihanKb as $kb)
+                                        <option value="{{ $kb['id'] }}"
+                                            @selected($this->keberangkatanId === (string) $kb['id'])>
+                                            {{ $kb['rentang_tanggal'] }}@if (! $kb['aktif'])
+                                                — ditutup
+                                            @elseif ($kb['penuh'])
+                                                — penuh
+                                            @elseif ($kb['sisa_kursi'] !== null)
+                                                — sisa {{ $kb['sisa_kursi'] }} kursi
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">
+                                    Paket ini punya {{ count($pilihanKb) }} rombongan. Pilih yang memang
+                                    disepakati — tanggal inilah yang dipakai kuota, batas pelunasan,
+                                    dan surat konfirmasinya.
+                                </div>
+                                @error('keberangkatanId')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+
                         <div class="col-12 col-lg-6">
                             <label class="form-label small fw-semibold">Nama pemesan <span class="text-danger">*</span></label>
                             <input type="text" wire:model="nama" maxlength="120" value="{{ $nama }}"

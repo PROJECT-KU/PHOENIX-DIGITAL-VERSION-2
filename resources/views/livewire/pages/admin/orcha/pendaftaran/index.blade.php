@@ -121,6 +121,28 @@ Pendaftaran Trip || lemon
                             </select>
                         </div>
 
+                        {{-- Saringan rombongan, satu tingkat di bawah paket.
+
+                             Muncul hanya sesudah paketnya dipilih dan memang punya
+                             lebih dari satu rombongan: menawarkan seluruh rombongan
+                             dari semua paket sekaligus menghasilkan daftar panjang
+                             yang tanggalnya tidak bisa dibedakan satu sama lain. --}}
+                        @php $pilihanKb = $this->keberangkatanPaket(); @endphp
+
+                        @if (1 < count($pilihanKb))
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="pd-rombongan">Rombongan</label>
+                                <select id="pd-rombongan" wire:model.live="filterKeberangkatan" class="dsb-isian">
+                                    <option value="" @selected($this->filterKeberangkatan === '')>Semua rombongan</option>
+                                    @foreach ($pilihanKb as $kb)
+                                        <option value="{{ $kb['id'] }}" @selected($this->filterKeberangkatan === (string) $kb['id'])>
+                                            {{ $kb['rentang_tanggal'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
                         <div class="dsb-medan pd-medan-aksi">
                             @if ($adaSaringan)
                                 <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">

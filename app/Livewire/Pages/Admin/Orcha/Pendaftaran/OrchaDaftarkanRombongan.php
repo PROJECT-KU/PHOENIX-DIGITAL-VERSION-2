@@ -32,6 +32,18 @@ class OrchaDaftarkanRombongan extends Component
 
     public string $paketId = '';
 
+    /**
+     * Rombongan mana yang diikuti — bukan sekadar paketnya.
+     *
+     * Tanpa ini, Orcha menaruh rombongan di keberangkatan TERDEKAT milik
+     * paketnya. Pada paket yang dijual untuk tiga tanggal, rombongan yang
+     * sudah sepakat 11–13 Desember lewat WhatsApp tercatat di 27–29 November
+     * — dan tanggal yang salah itu mengalir ke kuota, batas pelunasan, dan
+     * surat konfirmasinya. Tidak ada satu pun galat; yang salah cuma
+     * tanggalnya, dan itu baru ketahuan di hari keberangkatan.
+     */
+    public string $keberangkatanId = '';
+
     public string $nama = '';
 
     public string $whatsapp = '';
@@ -190,7 +202,9 @@ class OrchaDaftarkanRombongan extends Component
     {
         $this->validate([
             'berkasPeserta' => 'file|mimes:xlsx,xls,csv,txt|max:2048',
-        ], [], ['berkasPeserta' => 'berkas peserta']);
+        ], [
+            'keberangkatanId.required' => 'Paket ini punya beberapa tanggal — pilih dulu rombongan yang disepakati.',
+        ], ['berkasPeserta' => 'berkas peserta']);
 
         $baris = $this->bacaBerkasPeserta($this->berkasPeserta);
         $this->berkasPeserta = null;
@@ -243,10 +257,63 @@ class OrchaDaftarkanRombongan extends Component
         $this->jumlahPeserta = count($this->peserta);
     }
 
+    /**
+     * Rombongan yang bisa dipilih untuk paket yang sedang dipilih.
+     *
+     * Yang sudah DITUTUP ikut ditawarkan: admin kerap memasukkan rombongan
+     * yang kesepakatannya terjadi sebelum tanggalnya ditutup, dan menolaknya
+     * di sini berarti ia terpaksa membuka tanggalnya kembali untuk umum.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function keberangkatanPaket(): array
+    {
+        if ($this->paketId === '') {
+            return [];
+        }
+
+        $paket = collect($this->rujukan('paket_wisata'))
+            ->firstWhere('id', (int) $this->paketId);
+
+        return $paket['keberangkatan'] ?? [];
+    }
+
+    /**
+     * Pilihan yang tertinggal dari paket sebelumnya DIBUANG.
+     *
+     * Tanpa ini, mengganti paket meninggalkan id rombongan milik paket lama —
+     * dan Orcha menolaknya dengan "bukan milik paket ini", galat yang tidak
+     * ada hubungannya dengan apa yang baru saja dilakukan admin.
+     */
+    public function updatedPaketId(): void
+    {
+        $daftar = $this->keberangkatanPaket();
+
+        $masih = collect($daftar)->contains(fn ($k) => (string) $k['id'] === $this->keberangkatanId);
+
+        // Terisi sendiri bila memang cuma satu: memilih dari daftar berisi
+        // satu pilihan adalah pekerjaan yang tidak menambah apa pun.
+        $this->keberangkatanId = match (true) {
+            $masih => $this->keberangkatanId,
+            count($daftar) === 1 => (string) $daftar[0]['id'],
+            default => '',
+        };
+    }
+
     public function simpan(): void
     {
+        /*
+         | Tanggalnya WAJIB dipilih bila paketnya punya lebih dari satu.
+         |
+         | Dibiarkan kosong, Orcha menaruh rombongan ini di keberangkatan
+         | terdekat — pilihan yang kelihatan masuk akal dan karena itu tidak
+         | pernah dipertanyakan siapa pun.
+         */
+        $banyakTanggal = 1 < count($this->keberangkatanPaket());
+
         $this->validate([
             'paketId' => 'required',
+            'keberangkatanId' => $banyakTanggal ? 'required' : 'nullable',
             'nama' => 'required|string|min:3|max:120',
             'whatsapp' => 'required|string|min:8|max:32',
             'email' => 'nullable|email|max:150',
@@ -262,6 +329,7 @@ class OrchaDaftarkanRombongan extends Component
             'peserta.*.nama' => 'nullable|string|max:120',
         ], [], [
             'paketId' => 'paket',
+            'keberangkatanId' => 'tanggal keberangkatan',
             'nama' => 'nama pemesan',
             'whatsapp' => 'nomor WhatsApp',
             'jumlahPeserta' => 'jumlah peserta',
@@ -300,6 +368,7 @@ class OrchaDaftarkanRombongan extends Component
         try {
             $hasil = $this->orcha()->kirim('/pendaftaran', array_filter([
                 'travel_package_id' => (int) $this->paketId,
+                'keberangkatan_id' => $this->keberangkatanId !== '' ? (int) $this->keberangkatanId : null,
                 'nama' => $this->nama,
                 'whatsapp' => $this->whatsapp,
                 'email' => $this->email ?: null,
@@ -328,7 +397,7 @@ class OrchaDaftarkanRombongan extends Component
         // berkasPeserta ikut dikosongkan: berkas yang tertinggal akan terbaca
         // lagi saat Livewire menggambar ulang, dan daftar rombongan sebelumnya
         // muncul di rombongan berikutnya.
-        $this->reset(['paketId', 'nama', 'whatsapp', 'email', 'jumlahPeserta',
+        $this->reset(['paketId', 'keberangkatanId', 'nama', 'whatsapp', 'email', 'jumlahPeserta',
             'pendampingGratis', 'hargaJual', 'hargaModal', 'biayaTetap', 'titikJemput', 'catatan',
             'berkasPeserta', 'hasil']);
 

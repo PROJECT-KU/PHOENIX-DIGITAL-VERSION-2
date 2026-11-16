@@ -20,9 +20,51 @@ class OrchaPendaftaranList extends Component
      */
     public string $filterPaket = '';
 
+    /**
+     * Saringan per ROMBONGAN, satu tingkat lebih halus daripada paket.
+     *
+     * Sejak satu paket boleh dijual untuk beberapa tanggal, "satu
+     * keberangkatan = satu paket" tidak lagi benar. Manifes tour leader
+     * dibentuk dari daftar yang sedang tampil — saringan paket membuatnya
+     * memuat tiga rombongan sekaligus, dan kelebihannya baru ketahuan di
+     * parkiran.
+     */
+    #[\Livewire\Attributes\Url(as: 'rombongan', except: '')]
+    public string $filterKeberangkatan = '';
+
     public function updatedFilterPaket(): void
     {
+        // Rombongan milik paket sebelumnya dibuang: menyaring "paket A +
+        // rombongan milik paket B" memulangkan daftar kosong yang terbaca
+        // sebagai data yang hilang.
+        $this->filterKeberangkatan = '';
         $this->halaman = 1;
+    }
+
+    public function updatedFilterKeberangkatan(): void
+    {
+        $this->halaman = 1;
+    }
+
+    /**
+     * Rombongan yang bisa disaring untuk paket yang sedang dipilih.
+     *
+     * Kosong saat belum ada paket terpilih: menawarkan seluruh rombongan
+     * dari semua paket sekaligus menghasilkan daftar panjang yang tanggalnya
+     * tidak bisa dibedakan satu sama lain.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function keberangkatanPaket(): array
+    {
+        if ($this->filterPaket === '') {
+            return [];
+        }
+
+        $paket = collect($this->rujukan('paket_wisata'))
+            ->firstWhere('id', (int) $this->filterPaket);
+
+        return $paket['keberangkatan'] ?? [];
     }
 
     /**
@@ -116,7 +158,7 @@ class OrchaPendaftaranList extends Component
      */
     public function bersihkanSaringan(): void
     {
-        $this->reset(['cari', 'filterStatus', 'filterPaket', 'perluDitagih']);
+        $this->reset(['cari', 'filterStatus', 'filterPaket', 'filterKeberangkatan', 'perluDitagih']);
         // Tab ikut pulang ke "Semua": tombolnya menjanjikan membersihkan
         // semuanya, dan tab yang tetap menyala membuat daftarnya terlihat
         // masih tersaring padahal tidak.
@@ -127,7 +169,7 @@ class OrchaPendaftaranList extends Component
     public function adaSaringan(): bool
     {
         return $this->cari !== '' || $this->filterStatus !== '' || $this->filterPaket !== ''
-            || $this->perluDitagih;
+            || $this->filterKeberangkatan !== '' || $this->perluDitagih;
     }
 
     /** Saringan yang sedang berlaku — dipakai daftar maupun tautan manifes. */
@@ -137,6 +179,9 @@ class OrchaPendaftaranList extends Component
             'cari' => $this->cari,
             'status' => $this->filterStatus,
             'paket_id' => $this->filterPaket,
+            // Ikut ke tautan manifes: lembar yang dicetak harus memuat
+            // rombongan yang sama dengan yang sedang dilihat di layar.
+            'keberangkatan_id' => $this->filterKeberangkatan,
             // Dikirim hanya saat menyala. Mengirim 0 membuat Orcha membaca
             // parameternya ada, dan daftar biasa ikut tersaring.
             'perlu_ditagih' => $this->perluDitagih ? 1 : '',
@@ -152,6 +197,7 @@ class OrchaPendaftaranList extends Component
     {
         $hasil = $this->muat('/pendaftaran', $this->parameterDaftar(array_filter([
             'paket_id' => $this->filterPaket,
+            'keberangkatan_id' => $this->filterKeberangkatan,
             'perlu_ditagih' => $this->perluDitagih ? 1 : null,
         ], fn ($nilai) => $nilai !== null && $nilai !== '')));
 
