@@ -35,7 +35,8 @@
 
                             <div class="pb-kb-baris @if ($sedangDisunting) is-sunting @endif"
                                 wire:key="kb-{{ $kb['id'] }}">
-                                <span class="pb-kb-tanggal">{{ $kb['rentang_tanggal'] }}</span>
+                                <span class="pb-kb-isi">
+                                    <span class="pb-kb-tanggal">{{ $kb['rentang_tanggal'] }}</span>
 
                                 {{-- Kuncinya 'price', BUKAN 'harga'.
 
@@ -70,6 +71,7 @@
                                 @elseif (($kb['sisa_kursi'] ?? null) !== null)
                                     <span class="dsb-lencana is-hijau">sisa {{ $kb['sisa_kursi'] }} kursi</span>
                                 @endif
+                                </span>
 
                                 {{-- Tombol BERLABEL, bukan ikon telanjang.
 
@@ -78,33 +80,33 @@
                                      diberi tahu, dan itu bukan definisi tombol yang bisa
                                      dipakai. --}}
                                 <span class="pb-kb-aksi">
-                                    <button type="button" class="dsb-tabel-btn" style="--c: #7c3aed"
+                                    <button type="button" class="pb-kb-btn" style="--ikon: #7c3aed"
                                         wire:click="ubahKeberangkatan({{ $kb['id'] }})"
                                         title="Ubah tanggal, harga, atau kursinya">
-                                        <i class="bi bi-pencil"></i>
+                                        <i class="bi bi-pencil"></i><span>Ubah</span>
                                     </button>
 
-                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                                    <button type="button" class="pb-kb-btn" style="--ikon: #0284c7"
                                         wire:click="salinKeberangkatan({{ $kb['id'] }})"
                                         title="Buat tanggal baru dengan isi yang sama persis">
                                         <i class="bi bi-copy"></i><span>Salin</span>
                                     </button>
 
-                                    <button type="button" class="dsb-tombol is-lembut"
+                                    <button type="button" class="pb-kb-btn"
                                         style="--ikon: {{ $kb['aktif'] ? '#b45309' : '#16a34a' }}"
-                                        wire:click="alihkanKeberangkatan({{ $kb['id'] }}, {{ $kb['aktif'] ? 'true' : 'false' }})">
+                                        wire:click="alihkanKeberangkatan({{ $kb['id'] }}, {{ $kb['aktif'] ? 'true' : 'false' }})"
+                                        title="{{ $kb['aktif'] ? 'Tutup tanggal ini, tidak menerima pendaftar baru' : 'Buka lagi tanggal ini' }}">
                                         <i class="bi {{ $kb['aktif'] ? 'bi-lock' : 'bi-unlock' }}"></i>
                                         <span>{{ $kb['aktif'] ? 'Tutup' : 'Buka lagi' }}</span>
                                     </button>
 
-                                    <button type="button" class="dsb-tabel-btn pcek-konfirmasi"
-                                        style="--c: var(--dsb-bahaya)"
+                                    <button type="button" class="pb-kb-btn is-bahaya pcek-konfirmasi"
                                         data-action="hapusKeberangkatan" data-arg="{{ $kb['id'] }}"
                                         data-title="Hapus tanggal {{ $kb['rentang_tanggal'] }}?"
                                         data-text="Kalau tanggal ini sudah ada yang mendaftar, hapusnya akan ditolak. Tutup saja, supaya tidak menerima pendaftar baru."
                                         data-confirm="Ya, hapus" data-icon="warning"
                                         title="Hapus tanggal ini">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash"></i><span>Hapus</span>
                                     </button>
                                 </span>
                             </div>
@@ -116,18 +118,28 @@
                             </div>
                         @endforelse
 
-                        {{-- Baris isian: tambah baru, salin, atau sunting yang sudah ada. --}}
+                        {{-- Kotak isian: tambah baru, salin, atau sunting yang sudah ada.
+
+                             Judulnya BERGANTI mengikuti apa yang sedang dikerjakan.
+                             Tanpa itu, menekan "Ubah" pada salah satu baris tidak
+                             mengubah apa pun yang terlihat di kotak ini — isinya saja
+                             yang terisi — dan yang menekannya tidak tahu bahwa ia
+                             sedang menyunting, bukan menambah. --}}
                         <div class="pb-kb-borang">
-                            <div class="pb-kisi is-tiga">
+                            <span class="pb-kb-judul">
+                                @if ($kbUbahId)
+                                    <i class="bi bi-pencil-square"></i> Ubah tanggal yang dipilih
+                                @elseif ($kbSalinDari)
+                                    <i class="bi bi-copy"></i> Salin jadi tanggal baru
+                                @else
+                                    <i class="bi bi-plus-circle"></i> Tambah tanggal baru
+                                @endif
+                            </span>
+
+                            <div class="pb-kb-isian">
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="pb-kb-tanggal">
-                                        @if ($kbUbahId)
-                                            Tanggal berangkat
-                                        @elseif ($kbSalinDari)
-                                            Tanggal berangkat untuk salinannya
-                                        @else
-                                            Tanggal berangkat baru
-                                        @endif
+                                        Tanggal berangkat <span class="dsb-wajib">*</span>
                                     </label>
                                     <input id="pb-kb-tanggal" type="date" class="dsb-isian"
                                         wire:model="kbTanggal" value="{{ $kbTanggal }}">
@@ -144,36 +156,50 @@
 
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="pb-kb-kuota">
-                                        Jumlah kursi <span class="dsb-label-ket">(ikut paket bila kosong)</span>
+                                        Jumlah kursi <span class="dsb-label-ket">(ikut paket)</span>
                                     </label>
                                     <input id="pb-kb-kuota" type="number" min="1" class="dsb-isian"
                                         wire:model="kbKuota" placeholder="ikut paket">
                                 </div>
-                            </div>
 
-                            <div class="pb-kisi is-tiga mt-3">
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="pb-kb-harga">
-                                        Harga tanggal ini <span class="dsb-label-ket">(ikut paket bila kosong)</span>
+                                        Harga tanggal ini <span class="dsb-label-ket">(ikut paket)</span>
                                     </label>
-                                    {{-- orcha-uang & pembungkus orcha-rupiah: isian uang di
-                                         Orcha diformat sambil diketik lewat kelas itu. Tanpa
-                                         keduanya, angkanya baru bertitik setelah pindah kolom —
-                                         dan isian ini berdiri tepat di sebelah dua isian uang
-                                         lain yang berperilaku lain. --}}
+                                    {{-- orcha-uang & pembungkus orcha-rupiah: isian uang di Orcha
+                                         diformat sambil diketik lewat kelas itu. Tanpa keduanya
+                                         angkanya baru bertitik setelah pindah kolom, dan isian ini
+                                         berdiri tepat di sebelah dua isian uang lain yang
+                                         berperilaku lain. --}}
                                     <div class="orcha-rupiah">
                                         <input id="pb-kb-harga" type="text" inputmode="numeric"
                                             class="orcha-uang dsb-isian"
                                             wire:model.blur="kbHargaTeks" value="{{ $kbHargaTeks }}"
                                             placeholder="ikut paket">
                                     </div>
-                                    <span class="pb-ket">
-                                        Diisi hanya bila tanggal ini memang lain harganya — akhir
-                                        pekan, atau armada yang berbeda.
-                                    </span>
                                 </div>
+                            </div>
 
-                                <div class="dsb-medan" style="justify-content: flex-end">
+                            <div class="pb-kb-kaki">
+                                <span class="pb-kb-kaki-ket">
+                                    @if ($kbSalinDari)
+                                        Jumlah kursi, harga, dan catatannya ikut tersalin. Tanggal
+                                        pulang yang dikosongkan dihitung sendiri, selama trip yang
+                                        Anda salin.
+                                    @else
+                                        Kursi &amp; harga diisi hanya bila tanggal ini memang lain —
+                                        akhir pekan, atau armada yang berbeda.
+                                    @endif
+                                </span>
+
+                                <span class="pb-kb-kaki-tombol">
+                                    @if ($kbUbahId || $kbSalinDari)
+                                        <button type="button" class="dsb-tombol is-lembut"
+                                            wire:click="batalKeberangkatan">
+                                            <i class="bi bi-x-lg"></i><span>Batal</span>
+                                        </button>
+                                    @endif
+
                                     <button type="button" class="dsb-tombol is-utama"
                                         wire:click="simpanKeberangkatan"
                                         wire:loading.attr="disabled" wire:target="simpanKeberangkatan">
@@ -188,24 +214,8 @@
                                             @endif
                                         </span>
                                     </button>
-                                </div>
-
-                                <div class="dsb-medan" style="justify-content: flex-end">
-                                    @if ($kbUbahId || $kbSalinDari)
-                                        <button type="button" class="dsb-tombol is-lembut"
-                                            wire:click="batalKeberangkatan">
-                                            <i class="bi bi-x-lg"></i><span>Batal</span>
-                                        </button>
-                                    @endif
-                                </div>
+                                </span>
                             </div>
-
-                            @if ($kbSalinDari)
-                                <p class="pb-ket mt-2">
-                                    Jumlah kursi, harga, dan catatannya ikut tersalin. Tanggal pulang
-                                    yang dikosongkan dihitung sendiri, selama trip yang Anda salin.
-                                </p>
-                            @endif
                         </div>
                     </div>
                 </div>

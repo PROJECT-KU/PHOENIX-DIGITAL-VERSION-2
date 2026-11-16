@@ -335,3 +335,71 @@ test('centang yang datanya false tidak ikut tergambar', function () {
         test()->assertStringNotContainsString('checked', $tag, "Centang {$id} tergambar padahal datanya false.");
     }
 });
+
+test('empat tombol di baris tanggal sama tingginya', function () {
+    palsukanBorangPaket();
+
+    /*
+     | Terukur sebelumnya: ikon Ubah & Hapus setinggi 34px, sementara "Salin"
+     | dan "Tutup" memakai .dsb-tombol yang 44px — empat tombol bersebelahan
+     | dengan dua tinggi berbeda, dan garis bawahnya tidak pernah sejajar.
+     | Sewa Kendaraan pernah punya cacat yang sama persis.
+     |
+     | Tingginya DIPATOK sama lewat satu kelas, bukan diperiksa lewat nama
+     | kelasnya: nama yang sama tidak menjamin angka yang sama.
+     */
+    $isi = test()->actingAs(adminPeserta())
+        ->get('/admin/orcha/paket-wisata/7/ubah')->assertOk()->getContent();
+
+    $mulai = strpos($isi, 'class="pb-kb-aksi"');
+
+    expect($mulai)->not->toBeFalse('Deretan tombol tanggal tidak ditemukan.');
+
+    $deret = substr($isi, $mulai, strpos($isi, '</span>', strpos($isi, '</button>', $mulai)) - $mulai + 2000);
+    $deret = substr($deret, 0, strpos($deret, '</div>') ?: strlen($deret));
+
+    // Keempatnya memakai satu kelas yang sama; tidak ada .dsb-tombol yang
+    // menyelinap kembali dengan tinggi bawaannya sendiri.
+    expect(substr_count($deret, 'pb-kb-btn'))->toBe(4)
+        ->and($deret)->not->toContain('dsb-tombol');
+
+    // Dan kelas itu memang memaku tingginya.
+    preg_match('/\.pb-kb-btn\s*\{[^}]*?height:\s*(\d+)px/s', $isi, $tinggi);
+
+    expect($tinggi[1] ?? null)->not->toBeNull('Tinggi .pb-kb-btn tidak dipatok.');
+});
+
+test('lencana yang banyak tidak mendorong tombolnya turun', function () {
+    palsukanBorangPaket();
+
+    /*
+     | Sebagai satu baris flex yang melipat, baris yang lencananya banyak
+     | mendorong tombolnya ke baris kedua — sementara baris di atas dan di
+     | bawahnya tetap sebaris, sehingga deretan tombolnya bertingkat-tingkat.
+     | Dua kolom yang dipatok membuat lencananya melipat di dalam kolomnya
+     | sendiri; tombolnya tidak pernah pindah tempat.
+     */
+    $isi = test()->actingAs(adminPeserta())
+        ->get('/admin/orcha/paket-wisata/7/ubah')->assertOk()->getContent();
+
+    expect($isi)
+        ->toContain('class="pb-kb-isi"')
+        ->and($isi)->toMatch('/\.pb-kb-baris\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/s');
+});
+
+test('kotak isian menyebut apa yang sedang dikerjakan', function () {
+    palsukanBorangPaket();
+
+    // Menekan "Ubah" tanpa judul yang berganti tidak mengubah apa pun yang
+    // terlihat — isinya saja yang terisi — dan yang menekannya tidak tahu
+    // bahwa ia sedang menyunting, bukan menambah.
+    $uji = Livewire::actingAs(adminPeserta())->test(OrchaPaketForm::class, ['paket' => 7]);
+
+    $uji->assertSee('Tambah tanggal baru');
+
+    $uji->call('ubahKeberangkatan', 2)->assertSee('Ubah tanggal yang dipilih');
+
+    $uji->call('batalKeberangkatan')
+        ->call('salinKeberangkatan', 1)
+        ->assertSee('Salin jadi tanggal baru');
+});

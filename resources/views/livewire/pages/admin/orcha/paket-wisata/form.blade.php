@@ -45,15 +45,87 @@
 
         /* ===== Tanggal keberangkatan ===== */
         .pb-kb { border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 14px; overflow: hidden; }
+        /* DUA kolom yang dipatok, bukan satu baris flex yang melipat.
+
+           Sebagai flex-wrap, baris yang lencananya banyak mendorong tombolnya
+           turun ke baris kedua — sementara baris di atas dan di bawahnya
+           tetap sebaris. Deretan tombolnya jadi bertingkat-tingkat, dan yang
+           terbaca bukan "baris ini isinya lebih banyak" melainkan "layarnya
+           berantakan". Kini lencananya yang melipat di dalam kolomnya
+           sendiri; tombolnya tidak pernah pindah tempat. */
         .pb-kb-baris {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            display: grid; grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center; gap: 10px;
             padding: 12px 14px; border-top: 1px solid #f1f5f9;
         }
+        .pb-kb-isi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+        @media (max-width: 767.98px) {
+            .pb-kb-baris { grid-template-columns: minmax(0, 1fr); }
+            .pb-kb-aksi { margin-left: 0; }
+        }
         .pb-kb-baris:first-child { border-top: 0; }
-        .pb-kb-baris.is-sunting { background: #faf5ff; }
+        .pb-kb-baris.is-sunting { background: #faf5ff; box-shadow: inset 3px 0 0 #7c3aed; }
         .pb-kb-tanggal { font-weight: 800; color: var(--dsb-tinta, #1c1f26); }
-        .pb-kb-aksi { margin-left: auto; display: inline-flex; gap: 6px; flex-wrap: wrap; }
-        .pb-kb-borang { padding: 14px; background: #f8fafc; border-top: 1px solid #f1f5f9; }
+
+        /* Tombol baris: SEMUANYA setinggi 34px.
+
+           Sebelumnya tiga ukuran berdiri bersebelahan — ikon pensil & tong
+           sampah 34px, "Salin" & "Tutup" 44px bawaan .dsb-tombol — dan garis
+           bawah keduanya tidak pernah sejajar. Terbaca sebagai barisan yang
+           berantakan, bukan sebagai empat tombol yang setara. Sewa Kendaraan
+           pernah punya cacat yang sama persis. */
+        .pb-kb-aksi { margin-left: auto; display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .pb-kb-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            height: 34px; min-width: 34px; padding: 0 10px;
+            border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 10px; background: #fff;
+            font-size: .76rem; font-weight: 700; line-height: 1; color: #475569;
+            cursor: pointer; white-space: nowrap;
+            transition: border-color .18s ease, color .18s ease, background .18s ease;
+        }
+        .pb-kb-btn i.bi { font-size: .85rem; line-height: 1; color: var(--ikon, #7c3aed); }
+        .pb-kb-btn i.bi::before { display: block; line-height: 1; }
+        .pb-kb-btn:hover { border-color: #cbd5e1; color: #1c1f26; }
+        .pb-kb-btn.is-bahaya { color: #dc2626; border-color: #fecaca; }
+        .pb-kb-btn.is-bahaya i.bi { color: inherit; }
+        .pb-kb-btn.is-bahaya:hover { background: #dc2626; color: #fff; border-color: transparent; }
+
+        /* ===== Kotak isian tanggal ===== */
+        .pb-kb-borang { padding: 16px 14px; background: #f8fafc; border-top: 1px solid var(--dsb-tepi, #e2e8f0); }
+        .pb-kb-judul {
+            display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px;
+            font-size: .82rem; font-weight: 800; color: var(--dsb-tinta, #1c1f26);
+        }
+        .pb-kb-judul i.bi { color: #7c3aed; }
+
+        /* Empat isian sederajat dalam satu baris, bukan tiga di atas dan satu
+           menggantung di bawah. Keempatnya menggambarkan satu tanggal yang
+           sama; memecahnya jadi dua baris membuat yang di bawah terbaca
+           seperti bagian yang lain. */
+        .pb-kb-isian {
+            display: grid; gap: 12px; align-items: start;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        @media (max-width: 1199.98px) {
+            .pb-kb-isian { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 575.98px) {
+            .pb-kb-isian { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        /* Tombolnya punya barisnya sendiri dan rata kanan — bukan menumpang di
+           salah satu kolom isian, yang membuatnya mengambang tanpa segaris
+           dengan apa pun. */
+        .pb-kb-kaki {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+            margin-top: 14px; padding-top: 14px; border-top: 1px solid #e8edf3;
+        }
+        .pb-kb-kaki-ket { color: var(--dsb-redup, #64748b); font-size: .76rem; max-width: 56ch; }
+        .pb-kb-kaki-tombol { display: inline-flex; gap: 8px; margin-left: auto; }
+        @media (max-width: 575.98px) {
+            .pb-kb-kaki-tombol { width: 100%; }
+            .pb-kb-kaki-tombol .dsb-tombol { flex: 1 1 0; }
+        }
 
         /* ===== Jadwal kegiatan ===== */
         .pb-hari { border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
