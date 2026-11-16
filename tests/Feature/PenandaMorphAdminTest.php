@@ -36,6 +36,11 @@ function berkasPenandaAdmin(): array
         // terbukti sempat timpang tanpa ada yang melihat (14 Nov 2026).
         'orcha/rab/partials/*.blade.php',
         'orcha/partials/*.blade.php',
+        // Layar Paket Wisata: daftarnya dipindahkan ke bahasa rupa dasbor dan
+        // borangnya memikul pengelola tanggal keberangkatan — dua berkas yang
+        // penuh @if bersarang, dan keduanya tidak tercakup pola mana pun di
+        // atas sampai sekarang.
+        'orcha/paket-wisata/*.blade.php',
         'blog/*.blade.php',
         'blog/partials/*.blade.php',
         'message/*.blade.php',
