@@ -208,8 +208,13 @@ test('tanggal yang harga atau kuotanya sendiri terlihat berbeda', function () {
     $isi = test()->actingAs(adminPeserta())
         ->get('/admin/orcha/paket-wisata/7/ubah')->assertOk()->getContent();
 
-    $mulai = strpos($isi, 'Tanggal keberangkatan');
-    $kotak = substr($isi, $mulai, strpos($isi, 'Titik jemput', $mulai) - $mulai);
+    // Diiris dari kartunya sendiri. Batasnya nama kartu berikutnya, bukan
+    // label isian — label bisa pindah kartu, judul kartu tidak.
+    $mulai = strpos($isi, 'Tanggal Keberangkatan');
+
+    expect($mulai)->not->toBeFalse('Kartu Tanggal Keberangkatan tidak ditemukan.');
+
+    $kotak = substr($isi, $mulai, strpos($isi, 'Harga</h3>', $mulai) - $mulai);
 
     expect($kotak)
         ->toContain('1.450.000')

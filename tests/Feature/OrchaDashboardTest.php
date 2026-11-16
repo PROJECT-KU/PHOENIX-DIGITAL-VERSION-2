@@ -749,17 +749,34 @@ test('tarif armada juga bertitik', function () {
 });
 
 test('setiap isian uang ditandai supaya bisa diformat sambil diketik', function () {
-    $berkas = [
-        'resources/views/livewire/pages/admin/orcha/paket-wisata/form.blade.php',
-        'resources/views/livewire/pages/admin/orcha/armada/form.blade.php',
-    ];
+    /*
+     | Dicari dengan glob, bukan ditulis satu per satu.
+     |
+     | Borang paket dipecah jadi beberapa partial saat pindah ke bahasa rupa
+     | dasbor, dan isian uangnya ikut pindah ke sana. Daftar berkas yang
+     | ditulis tangan tetap HIJAU sesudah itu — ia memindai berkas yang sudah
+     | tidak berisi isian uang sama sekali — sehingga penjaganya berhenti
+     | menjaga apa pun tanpa ada yang tahu.
+     */
+    $berkas = array_map(
+        fn ($jalur) => str_replace(base_path().'/', '', $jalur),
+        array_merge(
+            glob(resource_path('views/livewire/pages/admin/orcha/paket-wisata/*.blade.php')) ?: [],
+            glob(resource_path('views/livewire/pages/admin/orcha/paket-wisata/partials/*.blade.php')) ?: [],
+            glob(resource_path('views/livewire/pages/admin/orcha/armada/*.blade.php')) ?: [],
+        )
+    );
+
+    // Berkas tanpa isian uang sama sekali dilewati; yang dijaga bentuk
+    // isiannya, bukan keberadaannya di tiap berkas.
+    $adaIsian = false;
 
     foreach ($berkas as $satu) {
         $isi = file_get_contents(base_path($satu));
 
         preg_match_all('/<input\b[^>]*wire:model\.blur="\w+Teks"[^>]*>/s', $isi, $isian);
 
-        expect($isian[0])->not->toBeEmpty();
+        $adaIsian = $adaIsian || $isian[0] !== [];
 
         foreach ($isian[0] as $satuIsian) {
             // Tanpa kelas ini, angkanya baru bertitik setelah pindah kolom.
@@ -768,6 +785,10 @@ test('setiap isian uang ditandai supaya bisa diformat sambil diketik', function 
             );
         }
     }
+
+    // Kalau glob-nya suatu saat tidak menemukan apa pun, penjaganya harus
+    // MERAH — bukan hijau karena tidak ada yang diperiksa.
+    expect($adaIsian)->toBeTrue('Tidak ada satu pun isian uang yang ditemukan untuk diperiksa.');
 });
 
 /* ------------------------ BUKTI PEMBAYARAN ------------------------ */

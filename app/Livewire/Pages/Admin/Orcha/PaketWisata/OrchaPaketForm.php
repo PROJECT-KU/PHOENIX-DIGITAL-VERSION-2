@@ -122,6 +122,33 @@ class OrchaPaketForm extends Component
     public string $fasilitasBaru = '';
 
     /**
+     * Lawan dari fasilitas: yang TIDAK didapat peserta.
+     *
+     * Daftarnya sendiri, bukan diselipkan jadi catatan: tiket masuk dan
+     * pengeluaran pribadi yang baru ketahuan di lokasi selalu berakhir jadi
+     * keluhan — bukan karena harganya, melainkan karena tidak pernah disebut.
+     *
+     * @var array<int, string>
+     */
+    public array $tidakTermasuk = [];
+
+    public string $tidakTermasukBaru = '';
+
+    /**
+     * Titik jemput sebagai DAFTAR, meski Orcha menyimpannya satu kalimat.
+     *
+     * Bentuk simpanannya dipertahankan karena belasan tempat lain membacanya
+     * begitu; yang berubah cuma cara mengisinya. Diketik bebas, "Jogja" dan
+     * "Yogyakarta" yang bermaksud sama jadi dua titik berbeda di daftar
+     * peserta, dan yang menemukannya cuma kebetulan.
+     *
+     * @var array<int, string>
+     */
+    public array $titikJemputDaftar = [];
+
+    public string $titikJemputBaru = '';
+
+    /**
      * Itinerary sebagai baris yang bisa ditambah:
      * [['nama' => 'Hari 1', 'agenda' => [['jam' => '07.00', 'kegiatan' => '...']]]]
      *
@@ -149,12 +176,56 @@ class OrchaPaketForm extends Component
     /** Keberangkatan yang sedang disalin; null berarti sedang menambah baru. */
     public ?int $kbSalinDari = null;
 
+    /**
+     * Harga & kuota untuk tanggal yang sedang diisi.
+     *
+     * KOSONG berarti ikut paket — itu yang paling sering benar, dan karena
+     * itu dibiarkan kosong alih-alih diisi angka paket. Angka yang disalin
+     * akan tertinggal diam-diam begitu harga paketnya diubah, dan selisihnya
+     * baru ketahuan saat ada yang membayar dengan angka lama.
+     *
+     * Sebelum ada dua isian ini, basis data sudah mendukung harga per
+     * tanggal dan keterangan di layar sudah menyebutnya — tetapi tidak ada
+     * satu pun kotak untuk mengisinya.
+     */
+    public string $kbHargaTeks = '';
+
+    public string $kbKuota = '';
+
+    /** Tanggal yang sedang disunting; null berarti tidak ada. */
+    public ?int $kbUbahId = null;
+
+    /* -------------------------------- GALERI -------------------------------- */
+
+    /**
+     * Foto galeri yang SUDAH tersimpan di Orcha, apa adanya.
+     *
+     * @var array<int, string>
+     */
+    public array $galeriLama = [];
+
+    /**
+     * Foto baru yang menunggu dikirim.
+     *
+     * @var array<int, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile>
+     */
+    public array $galeriBaru = [];
+
     public $gambar;
 
     public ?string $gambarLama = null;
 
     /** Tautan halaman paket di website, untuk memeriksa hasil hero-nya. */
     public ?string $tautanPublik = null;
+
+    /**
+     * Tautan pratinjau bertanda tangan dari Orcha.
+     *
+     * Dipakai tombol "Lihat halamannya" supaya paket yang belum tayang tetap
+     * bisa diperiksa rupanya. Tanpa ini tombol itu mati justru untuk paket
+     * yang paling perlu dilihat — yang belum selesai.
+     */
+    public ?string $tautanPratinjau = null;
 
     protected function rules(): array
     {
@@ -179,6 +250,16 @@ class OrchaPaketForm extends Component
             'hargaModal' => 'nullable|numeric|min:0',
             'diskonPersen' => 'nullable|numeric|min:0|max:100',
             'gambar' => 'nullable|image|max:4096',
+
+            // Galeri: batasnya lebih longgar daripada sampul karena fotonya
+            // memang foto perjalanan, bukan gambar kartu yang dipotong.
+            'galeriBaru' => 'nullable|array|max:12',
+            'galeriBaru.*' => 'image|max:8192',
+
+            'tidakTermasuk' => 'nullable|array',
+            'tidakTermasuk.*' => 'string|max:191',
+            'titikJemputDaftar' => 'nullable|array',
+            'titikJemputDaftar.*' => 'string|max:191',
         ];
     }
 
@@ -187,14 +268,17 @@ class OrchaPaketForm extends Component
         return [
             'nama' => 'nama paket',
             'minimalPeserta' => 'minimal peserta',
-            'kuota' => 'kuota kursi',
+            'kuota' => 'jumlah kursi',
             'tanggalBerangkat' => 'tanggal berangkat',
             'tanggalPulang' => 'tanggal pulang',
             'hargaAsli' => 'harga asli',
             'hargaModal' => 'modal per orang',
             'diskonPersen' => 'diskon',
-            'tayangMulai' => 'mulai tayang',
-            'tayangSampai' => 'berhenti tayang',
+            'tayangMulai' => 'mulai tampil',
+            'tayangSampai' => 'berhenti tampil',
+            'galeriBaru' => 'foto galeri',
+            'galeriBaru.*' => 'foto galeri',
+            'titikJemputDaftar' => 'titik jemput',
         ];
     }
 
@@ -262,6 +346,10 @@ class OrchaPaketForm extends Component
 
             'gambar.image' => 'Berkas yang dipilih bukan gambar. Pilih foto JPG, PNG, atau WebP.',
             'gambar.max' => 'Fotonya kebesaran — paling besar 4 MB. Perkecil dulu, lalu unggah lagi.',
+
+            'galeriBaru.max' => 'Paling banyak 12 foto sekali unggah.',
+            'galeriBaru.*.image' => 'Salah satu berkas yang dipilih bukan gambar. Pilih foto JPG, PNG, atau WebP.',
+            'galeriBaru.*.max' => 'Ada foto yang kebesaran — paling besar 8 MB per foto.',
         ];
     }
 
@@ -310,8 +398,12 @@ class OrchaPaketForm extends Component
         $this->pilihanTerbaik = (bool) ($isi['pilihan_terbaik'] ?? false);
         $this->destinasi = array_values($isi['destinasi'] ?? []);
         $this->fasilitas = array_values($isi['fasilitas'] ?? []);
+        $this->tidakTermasuk = array_values($isi['tidak_termasuk'] ?? []);
+        $this->titikJemputDaftar = $this->pecahTitikJemput($this->titikJemput);
+        $this->galeriLama = array_values($isi['foto_galeri'] ?? []);
         $this->gambarLama = $isi['sampul'] ?? null;
         $this->tautanPublik = $isi['tautan_publik'] ?? null;
+        $this->tautanPratinjau = $isi['tautan_pratinjau'] ?? null;
 
         $this->hari = $this->dariItinerary($isi['itinerary'] ?? []);
         $this->durasiOtomatis = $this->durasi === '' || $this->durasi === $this->durasiTerhitung();
@@ -340,8 +432,39 @@ class OrchaPaketForm extends Component
     public function batalKeberangkatan(): void
     {
         $this->kbSalinDari = null;
+        $this->kbUbahId = null;
         $this->kbTanggal = '';
         $this->kbTanggalPulang = '';
+        $this->kbHargaTeks = '';
+        $this->kbKuota = '';
+        $this->resetValidation('kbTanggal');
+    }
+
+    /**
+     * Membuka baris isian untuk MENYUNTING satu tanggal yang sudah ada.
+     *
+     * Sebelum ini, tanggal yang salah ketik hanya bisa dihapus lalu dibuat
+     * ulang — dan tanggal yang sudah punya pendaftar tidak bisa dihapus sama
+     * sekali, sehingga salah ketik di sana permanen.
+     */
+    public function ubahKeberangkatan(int $id): void
+    {
+        $kb = collect($this->keberangkatan)->firstWhere('id', $id);
+
+        if (! $kb) {
+            return;
+        }
+
+        $this->kbUbahId = $id;
+        $this->kbSalinDari = null;
+        $this->kbTanggal = (string) ($kb['tanggal_berangkat'] ?? '');
+        $this->kbTanggalPulang = (string) ($kb['tanggal_pulang'] ?? '');
+
+        // Angka MENTAHNYA, bukan yang terpakai: yang mentah membedakan
+        // "memang diisi segini" dari "ikut paket", dan yang terpakai tidak.
+        $this->kbHargaTeks = ($kb['price'] ?? null) === null ? '' : $this->keRupiah($kb['price']);
+        $this->kbKuota = ($kb['kuota'] ?? null) === null ? '' : (string) $kb['kuota'];
+
         $this->resetValidation('kbTanggal');
     }
 
@@ -362,14 +485,27 @@ class OrchaPaketForm extends Component
             return;
         }
 
-        $isi = array_filter([
+        /*
+         | Harga & kuota dikirim sebagai TEKS KOSONG saat tidak diisi, bukan
+         | dihilangkan dari muatan.
+         |
+         | Kosong di sini berarti "ikut paket", dan itu keputusan yang harus
+         | sampai ke Orcha — kunci yang tidak terkirim membuatnya mengira
+         | angkanya memang tidak disentuh, sehingga harga sendiri yang baru
+         | dihapus admin tetap menempel di tanggal itu.
+         */
+        $isi = [
             'tanggal_berangkat' => $this->kbTanggal,
-            'tanggal_pulang' => trim($this->kbTanggalPulang) ?: null,
-        ], fn ($v) => $v !== null);
+            'tanggal_pulang' => trim($this->kbTanggalPulang) ?: '',
+            'price' => $this->kbHargaTeks === '' ? '' : $this->angkaDari($this->kbHargaTeks),
+            'kuota' => trim($this->kbKuota) === '' ? '' : (int) $this->kbKuota,
+        ];
 
-        $jalur = $this->kbSalinDari
-            ? "/paket-wisata/{$this->paketId}/keberangkatan/{$this->kbSalinDari}/salin"
-            : "/paket-wisata/{$this->paketId}/keberangkatan";
+        $jalur = match (true) {
+            $this->kbUbahId !== null => "/paket-wisata/{$this->paketId}/keberangkatan/{$this->kbUbahId}",
+            $this->kbSalinDari !== null => "/paket-wisata/{$this->paketId}/keberangkatan/{$this->kbSalinDari}/salin",
+            default => "/paket-wisata/{$this->paketId}/keberangkatan",
+        };
 
         if (! $this->kirimData($jalur, $isi, 'Tanggal keberangkatan disimpan.')) {
             return;
@@ -584,15 +720,36 @@ class OrchaPaketForm extends Component
     /* ------------------------- DESTINASI & FASILITAS ------------------------- */
 
     /** Klik pada saran: masuk kalau belum ada, keluar kalau sudah. */
+    /**
+     * Jenis isian berdaftar-pilihan, beserta properti yang menampungnya.
+     *
+     * Dulu jungkit/tambah/buang memakai tiga rangkaian ternary "destinasi
+     * atau fasilitas". Begitu jenis ketiga dan keempat masuk, bentuk itu
+     * berubah dari ringkas jadi jebakan: satu ternary yang terlewat membuat
+     * isian jatuh ke daftar yang salah TANPA galat — "Tiket masuk" masuk ke
+     * Fasilitas, dan paketnya menjanjikan apa yang justru tidak termasuk.
+     *
+     * @var array<string, array{0: string, 1: string}>  jenis => [properti, properti isian baru]
+     */
+    private const MEDAN_DAFTAR = [
+        'destinasi' => ['destinasi', 'destinasiBaru'],
+        'fasilitas' => ['fasilitas', 'fasilitasBaru'],
+        'tidak_termasuk' => ['tidakTermasuk', 'tidakTermasukBaru'],
+        'titik_jemput' => ['titikJemputDaftar', 'titikJemputBaru'],
+    ];
+
     public function jungkit(string $jenis, string $nama): void
     {
-        $terpilih = $jenis === 'destinasi' ? $this->destinasi : $this->fasilitas;
+        if (! isset(self::MEDAN_DAFTAR[$jenis])) {
+            return;
+        }
 
-        $terpilih = in_array($nama, $terpilih, true)
+        [$medan] = self::MEDAN_DAFTAR[$jenis];
+        $terpilih = $this->{$medan};
+
+        $this->{$medan} = in_array($nama, $terpilih, true)
             ? array_values(array_diff($terpilih, [$nama]))
             : [...$terpilih, $nama];
-
-        $jenis === 'destinasi' ? $this->destinasi = $terpilih : $this->fasilitas = $terpilih;
     }
 
     /**
@@ -601,36 +758,52 @@ class OrchaPaketForm extends Component
      */
     public function tambah(string $jenis): void
     {
-        $nama = trim($jenis === 'destinasi' ? $this->destinasiBaru : $this->fasilitasBaru);
+        if (! isset(self::MEDAN_DAFTAR[$jenis])) {
+            return;
+        }
+
+        [$medan, $medanBaru] = self::MEDAN_DAFTAR[$jenis];
+        $nama = trim((string) $this->{$medanBaru});
 
         if ($nama === '') {
             return;
         }
 
-        $terpilih = $jenis === 'destinasi' ? $this->destinasi : $this->fasilitas;
-
-        if (! in_array($nama, $terpilih, true)) {
-            $terpilih[] = $nama;
-            $jenis === 'destinasi' ? $this->destinasi = $terpilih : $this->fasilitas = $terpilih;
+        if (! in_array($nama, $this->{$medan}, true)) {
+            $this->{$medan} = [...$this->{$medan}, $nama];
         }
 
         $this->kirimData('/saran', ['jenis' => $jenis, 'nama' => $nama], 'Masuk daftar pilihan.');
 
-        $jenis === 'destinasi' ? $this->destinasiBaru = '' : $this->fasilitasBaru = '';
+        $this->{$medanBaru} = '';
     }
 
     /** Keluarkan dari paket ini — daftar pilihannya tidak tersentuh. */
     public function buang(string $jenis, int $urutan): void
     {
-        if ($jenis === 'destinasi') {
-            unset($this->destinasi[$urutan]);
-            $this->destinasi = array_values($this->destinasi);
-
+        if (! isset(self::MEDAN_DAFTAR[$jenis])) {
             return;
         }
 
-        unset($this->fasilitas[$urutan]);
-        $this->fasilitas = array_values($this->fasilitas);
+        [$medan] = self::MEDAN_DAFTAR[$jenis];
+        $isi = $this->{$medan};
+        unset($isi[$urutan]);
+
+        $this->{$medan} = array_values($isi);
+    }
+
+    /**
+     * "Jogja, Klaten, Surakarta" jadi tiga potong.
+     *
+     * Potongan kosong dibuang: koma menggantung di ujung kalimat adalah hal
+     * paling lumrah yang diketik orang, dan tanpa penyaringan ini ia jadi
+     * satu titik jemput bernama kosong di daftar peserta.
+     *
+     * @return array<int, string>
+     */
+    private function pecahTitikJemput(string $kalimat): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', $kalimat))));
     }
 
     /**
@@ -642,6 +815,35 @@ class OrchaPaketForm extends Component
     public function hapusSaran(int $id): void
     {
         $this->hapusData("/saran/{$id}", 'Dihapus dari daftar pilihan.');
+    }
+
+    /** Harga per tanggal ikut dirapikan jadi bertitik, sama seperti harga paket. */
+    public function updatedKbHargaTeks(): void
+    {
+        $this->kbHargaTeks = $this->kbHargaTeks === '' ? '' : $this->keRupiah($this->angkaDari($this->kbHargaTeks));
+    }
+
+    /* -------------------------------- GALERI -------------------------------- */
+
+    /**
+     * Membuang satu foto galeri yang SUDAH tersimpan.
+     *
+     * Hanya dicoret dari daftar di layar; penghapusan berkasnya terjadi di
+     * Orcha saat paketnya disimpan, dan hanya untuk yang memang tidak lagi
+     * disebut. Menghapusnya di sini seketika berarti membatalkan borang
+     * meninggalkan foto yang sudah hilang.
+     */
+    public function buangGaleriLama(int $urutan): void
+    {
+        unset($this->galeriLama[$urutan]);
+        $this->galeriLama = array_values($this->galeriLama);
+    }
+
+    /** Membatalkan satu foto yang baru dipilih, sebelum terkirim. */
+    public function buangGaleriBaru(int $urutan): void
+    {
+        unset($this->galeriBaru[$urutan]);
+        $this->galeriBaru = array_values($this->galeriBaru);
     }
 
     /* ------------------------------ ITINERARY ------------------------------ */
@@ -674,6 +876,121 @@ class OrchaPaketForm extends Component
         if ($this->hari[$urutanHari]['agenda'] === []) {
             $this->hari[$urutanHari]['agenda'] = [['jam' => '', 'kegiatan' => '']];
         }
+    }
+
+    /**
+     * Menukar satu hari dengan tetangganya.
+     *
+     * Sebelum ini jadwal hanya bisa ditambah dan dihapus, jadi menyisipkan
+     * satu hari di tengah berarti mengetik ulang seluruh hari sesudahnya.
+     *
+     * Nomor hari di layar dihitung dari urutannya, jadi menukar isinya sudah
+     * cukup — tidak ada nomor tersimpan yang perlu ikut diperbaiki.
+     */
+    public function pindahHari(int $urutan, int $arah): void
+    {
+        $tujuan = $urutan + $arah;
+
+        if (! isset($this->hari[$urutan], $this->hari[$tujuan])) {
+            return;
+        }
+
+        [$this->hari[$urutan], $this->hari[$tujuan]] = [$this->hari[$tujuan], $this->hari[$urutan]];
+    }
+
+    /**
+     * Menggandakan satu hari beserta seluruh kegiatannya.
+     *
+     * Hari ke-2 yang isinya mirip hari ke-1 — jam yang sama, kegiatan yang
+     * bergeser sedikit — adalah bentuk paling lumrah sebuah trip, dan selama
+     * ini satu-satunya cara membuatnya adalah mengetik ulang sepuluh baris.
+     *
+     * Salinannya disisipkan TEPAT DI BAWAH asalnya, bukan di ujung daftar:
+     * yang menyalin hari ke-2 bermaksud menaruhnya jadi hari ke-3.
+     */
+    public function salinHari(int $urutan): void
+    {
+        if (! isset($this->hari[$urutan])) {
+            return;
+        }
+
+        $salinan = $this->hari[$urutan];
+        $salinan['nama'] = 'Hari '.($urutan + 2);
+
+        array_splice($this->hari, $urutan + 1, 0, [$salinan]);
+
+        // Nama hari sesudahnya ikut bergeser — tetapi HANYA yang masih
+        // bernama bawaan. Hari yang sudah diberi nama sendiri oleh admin
+        // ("Puncak Ijen") tidak boleh ditimpa jadi "Hari 4".
+        foreach ($this->hari as $i => $satu) {
+            if (preg_match('/^(Hari|Day)\s*\d+$/i', trim((string) $satu['nama']))) {
+                $this->hari[$i]['nama'] = 'Hari '.($i + 1);
+            }
+        }
+    }
+
+    /** Menukar satu kegiatan dengan tetangganya di hari yang sama. */
+    public function pindahAgenda(int $urutanHari, int $urutanAgenda, int $arah): void
+    {
+        $tujuan = $urutanAgenda + $arah;
+
+        if (! isset($this->hari[$urutanHari]['agenda'][$urutanAgenda], $this->hari[$urutanHari]['agenda'][$tujuan])) {
+            return;
+        }
+
+        [$this->hari[$urutanHari]['agenda'][$urutanAgenda], $this->hari[$urutanHari]['agenda'][$tujuan]]
+            = [$this->hari[$urutanHari]['agenda'][$tujuan], $this->hari[$urutanHari]['agenda'][$urutanAgenda]];
+    }
+
+    /**
+     * Merapikan jam yang diketik bebas jadi satu bentuk: "07.00".
+     *
+     * Satu paket bisa memuat "7:00", "07:00", dan "07.00" sekaligus tanpa
+     * ada yang menegur, dan ketiganya tampil apa adanya di halaman publik —
+     * terbaca sebagai jadwal yang disusun asal-asalan. Yang tidak terbaca
+     * sebagai jam dibiarkan apa adanya, bukan dibuang: ia mungkin memang
+     * bukan jam ("Menyesuaikan").
+     */
+    public function updatedHari($nilai, ?string $kunci = null): void
+    {
+        /*
+         | $kunci BOLEH null, dan itu bukan kasus pinggiran.
+         |
+         | Livewire memanggil kait ini tanpa kunci ketika SELURUH senarai
+         | diganti sekaligus — yang persis terjadi saat borangnya diisi dari
+         | Orcha, dan saat uji memakai ->set('hari', [...]). Dengan tanda
+         | tangan yang menuntut string, panggilan itu melempar TypeError dan
+         | menjatuhkan seluruh halaman: borang paket tidak bisa dibuka sama
+         | sekali.
+         */
+        if ($kunci === null || ! str_ends_with($kunci, '.jam')) {
+            return;
+        }
+
+        /*
+         | Kuncinya RELATIF terhadap propertinya: "0.agenda.0.jam", bukan
+         | "hari.0.agenda.0.jam". Memakainya apa adanya pada $this akan
+         | menulis ke properti bernama "0" — tidak ada galat, dan jamnya
+         | tidak pernah berubah.
+         */
+        $kunci = preg_replace('/^hari\./', '', $kunci);
+
+        $teks = trim((string) $nilai);
+
+        if ($teks === '' || ! preg_match('/^(\d{1,2})[.:,]?(\d{2})$/', $teks, $cocok)) {
+            return;
+        }
+
+        $jam = (int) $cocok[1];
+        $menit = (int) $cocok[2];
+
+        if (23 < $jam || 59 < $menit) {
+            return;
+        }
+
+        $rapi = $this->hari;
+        data_set($rapi, $kunci, sprintf('%02d.%02d', $jam, $menit));
+        $this->hari = $rapi;
     }
 
     private function hariKosong(int $nomor): array
@@ -751,7 +1068,9 @@ class OrchaPaketForm extends Component
             'durasi' => $this->durasi,
             'tanggal_berangkat' => $this->tanggalBerangkat,
             'tanggal_pulang' => $this->tanggalPulang,
-            'titik_jemput' => $this->titikJemput,
+            // Disatukan lagi jadi satu kalimat: bentuk simpanannya tidak
+            // berubah, cuma cara mengisinya.
+            'titik_jemput' => implode(', ', array_values($this->titikJemputDaftar)),
             'minimal_peserta' => $this->minimalPeserta,
             'kuota' => $this->kuota === '' ? null : $this->kuota,
             'catatan_promo' => $this->catatanPromo,
@@ -765,14 +1084,38 @@ class OrchaPaketForm extends Component
             'pilihan_terbaik' => $this->pilihanTerbaik,
             'destinasi' => array_values($this->destinasi),
             'fasilitas' => array_values($this->fasilitas),
+            'tidak_termasuk' => array_values($this->tidakTermasuk),
             'itinerary_teks' => $this->keTeksItinerary(),
+
+            /*
+             | Galeri dikirim sebagai daftar yang DIPERTAHANKAN, bukan daftar
+             | yang dihapus.
+             |
+             | Orcha membuang berkas yang tidak lagi disebut. Mengirim "yang
+             | dihapus" berarti dua tempat harus sepakat soal isi galerinya,
+             | dan begitu keduanya berselisih — satu tab lama, satu simpanan
+             | yang terlambat — yang hilang adalah foto yang tidak pernah
+             | diminta hilang.
+             */
+            'galeri_tetap' => array_values($this->galeriLama),
+
+            // Penanda eksplisit: perataan multipart membuang senarai kosong,
+            // jadi borang yang menghapus SEMUA foto akan terbaca di Orcha
+            // seperti borang yang tidak menyinggung galeri sama sekali.
+            'galeri_disentuh' => true,
         ];
 
         // Tujuan diteruskan supaya pemberitahuan sukses tampil utuh dulu di
         // halaman ini, baru berpindah ke daftar setelah popupnya menutup.
+        // Foto galeri yang baru ikut sebagai berkas tambahan, terpisah dari
+        // sampulnya — keduanya tidak boleh saling menimpa.
+        $berkasLain = $this->galeriBaru === []
+            ? []
+            : ['galeri_baru' => array_values($this->galeriBaru)];
+
         $this->ubah
-            ? $this->kirimData("/paket-wisata/{$this->paketId}", $data, 'Paket wisata diperbarui.', $this->gambar, route('admin.orcha.paket'))
-            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, route('admin.orcha.paket'));
+            ? $this->kirimData("/paket-wisata/{$this->paketId}", $data, 'Paket wisata diperbarui.', $this->gambar, route('admin.orcha.paket'), $berkasLain)
+            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, route('admin.orcha.paket'), $berkasLain);
     }
 
     /** Cerminan aturan tayang di Orcha, supaya akibat pilihan langsung terlihat. */
@@ -814,6 +1157,8 @@ class OrchaPaketForm extends Component
             'statusTayangLabel' => $this->rujukan('status_tayang')[$statusTayang] ?? 'Tayang',
             'saranDestinasi' => $saran['destinasi'] ?? [],
             'saranFasilitas' => $saran['fasilitas'] ?? [],
+            'saranTidakTermasuk' => $saran['tidak_termasuk'] ?? [],
+            'saranTitikJemput' => $saran['titik_jemput'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

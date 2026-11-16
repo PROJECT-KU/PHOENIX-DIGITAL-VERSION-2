@@ -3,452 +3,360 @@
 @stop
 
 <div>
+    {{-- Bahasa rupa dsb-* milik dasbor lemon, sama dengan daftar paketnya dan
+         dengan Pesanan Toko. Kelas orcha-* hanya untuk yang memang khas Orcha:
+         lencana penayangan dan angka untung. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-    <div class="container-fluid">
-        @include('livewire.pages.admin.orcha.partials.kepala', [
-            'judul' => $ubah ? 'Ubah Paket Wisata' : 'Tambah Paket Wisata',
-            'keterangan' => 'Begitu disimpan, perubahannya langsung tampil di website Orcha — termasuk fotonya.',
-        ])
+    @php
+        $margin = $this->marginPerOrang();
+        $lihatUrl = $tautanPratinjau ?: $tautanPublik;
+    @endphp
 
-        <form wire:submit="simpan" class="orcha-form">
-            <div class="row g-4">
-                <div class="col-12 col-xl-8">
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">Keterangan Paket</h6>
+    <style>
+        /* Gaya khusus borang Paket Wisata. Dasarnya partials/dasbor-gaya;
+           di sini hanya yang tidak ada di sana. Inline, bukan lewat Vite:
+           public/build masuk .gitignore dan tidak ikut ter-deploy. */
 
-                            <div class="row g-3">
-                                <div class="col-12 col-md-8">
-                                    <label class="form-label small fw-semibold">Nama paket <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model="nama" value="{{ $nama }}" placeholder="Open Trip Banyuwangi">
-                                    @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        .pb-kisi { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pb-kisi.is-tiga { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .pb-kisi.is-satu { grid-template-columns: minmax(0, 1fr); }
+        @media (max-width: 767.98px) {
+            .pb-kisi, .pb-kisi.is-tiga { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        .pb-ket { color: var(--dsb-redup, #64748b); font-size: .76rem; line-height: 1.45; }
+        .pb-galat { color: #b91c1c; font-size: .76rem; font-weight: 600; }
+
+        /* ===== Cip pilihan (tempat, fasilitas, tidak termasuk, titik jemput) ===== */
+        .pb-cip-deret { display: flex; flex-wrap: wrap; gap: 7px; }
+        .pb-cip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 10px; border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 999px;
+            background: #fff; font-size: .78rem; font-weight: 600; color: #475569;
+        }
+        .pb-cip.is-terpilih { background: #ede9fe; border-color: #ddd6fe; color: #5b21b6; }
+        .pb-cip-tombol { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .pb-cip-buang { border: 0; background: none; padding: 0; color: #94a3b8; cursor: pointer; line-height: 1; }
+        .pb-cip-buang:hover { color: #b91c1c; }
+        .pb-tambah { display: flex; gap: 8px; margin-top: 10px; }
+        .pb-tambah .dsb-isian { flex: 1 1 auto; }
+
+        /* ===== Tanggal keberangkatan ===== */
+        .pb-kb { border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 14px; overflow: hidden; }
+        .pb-kb-baris {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            padding: 12px 14px; border-top: 1px solid #f1f5f9;
+        }
+        .pb-kb-baris:first-child { border-top: 0; }
+        .pb-kb-baris.is-sunting { background: #faf5ff; }
+        .pb-kb-tanggal { font-weight: 800; color: var(--dsb-tinta, #1c1f26); }
+        .pb-kb-aksi { margin-left: auto; display: inline-flex; gap: 6px; flex-wrap: wrap; }
+        .pb-kb-borang { padding: 14px; background: #f8fafc; border-top: 1px solid #f1f5f9; }
+
+        /* ===== Jadwal kegiatan ===== */
+        .pb-hari { border: 1px solid var(--dsb-tepi, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+        .pb-hari-kepala { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .pb-hari-nomor {
+            width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #ede9fe; color: #6d28d9; font-weight: 800; font-size: .82rem;
+        }
+        .pb-hari-aksi { margin-left: auto; display: inline-flex; gap: 6px; }
+        .pb-agenda {
+            display: grid; gap: 8px; align-items: center; margin-bottom: 8px;
+            grid-template-columns: 96px minmax(0, 1fr) auto;
+        }
+        @media (max-width: 575.98px) {
+            .pb-agenda { grid-template-columns: 80px minmax(0, 1fr) auto; }
+        }
+        .pb-agenda-aksi { display: inline-flex; gap: 4px; }
+
+        /* ===== Foto ===== */
+        .pb-sampul { position: relative; border-radius: 14px; overflow: hidden; background: #f1f5f9; aspect-ratio: 16 / 10; }
+        .pb-sampul img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .pb-sampul-label {
+            position: absolute; left: 10px; bottom: 10px;
+            padding: 3px 9px; border-radius: 999px;
+            background: rgba(15, 23, 42, .72); color: #fff; font-size: .68rem; font-weight: 700;
+        }
+        .pb-galeri { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .pb-galeri-kotak { position: relative; border-radius: 12px; overflow: hidden; background: #f1f5f9; aspect-ratio: 4 / 3; }
+        .pb-galeri-kotak img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .pb-galeri-buang {
+            position: absolute; top: 5px; right: 5px; z-index: 2;
+            width: 24px; height: 24px; border: 0; border-radius: 50%;
+            background: rgba(15, 23, 42, .72); color: #fff; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; font-size: .7rem;
+        }
+        .pb-galeri-buang:hover { background: #b91c1c; }
+
+        /* ===== Bilah tindakan ===== */
+        .pb-bilah { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+        .pb-bilah .dsb-tombol { min-width: 150px; }
+        @media (max-width: 575.98px) {
+            .pb-bilah .dsb-tombol { flex: 1 1 100%; }
+        }
+    </style>
+
+    <div class="dsb">
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
+                <h1 class="dsb-salam">{{ $ubah ? 'Ubah Paket Wisata' : 'Tambah Paket Wisata' }}</h1>
+                <p class="dsb-hero-ket">
+                    Begitu disimpan, perubahannya langsung tampil di website Orcha —
+                    termasuk fotonya.
+                </p>
+
+                <div class="dsb-chip-deret mt-2">
+                    <span class="badge orcha-lencana-{{ $statusTayang }}">{{ $statusTayangLabel }}</span>
+
+                    @if ($margin === null)
+                        <span class="dsb-chip" style="--c: #d97706">
+                            <i class="bi bi-exclamation-triangle-fill"></i> modal belum diisi
+                        </span>
+                    @elseif ($margin < 0)
+                        <span class="dsb-chip" style="--c: #dc2626">
+                            <i class="bi bi-graph-down-arrow"></i>
+                            rugi Rp {{ number_format(abs($margin), 0, ',', '.') }}/orang
+                        </span>
+                    @else
+                        <span class="dsb-chip" style="--c: #16a34a">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            untung Rp {{ number_format($margin, 0, ',', '.') }}/orang
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Tindakan di KEPALA halaman, bukan cuma di kaki.
+
+                 Borang ini panjang — jadwal kegiatan saja bisa puluhan baris —
+                 dan tombol Simpan yang hanya ada di ujung bawah berarti tiap
+                 perubahan kecil menuntut menggulir seluruh halaman dulu. Di
+                 ponsel jaraknya paling terasa. Tombolnya tetap diulang di kaki
+                 untuk yang memang sedang berada di sana. --}}
+            <div class="dsb-hero-aksi">
+                @if ($ubah && $lihatUrl)
+                    <a href="{{ $lihatUrl }}" target="_blank" rel="noopener"
+                        class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                        title="{{ $statusTayang === 'tayang'
+                            ? 'Buka halamannya di website Orcha'
+                            : 'Lihat pratinjaunya — paket ini belum tampil di website' }}">
+                        <i class="bi bi-box-arrow-up-right"></i><span>Lihat halamannya</span>
+                    </a>
+                @endif
+
+                <button type="button" wire:click="simpan" class="dsb-tombol is-utama"
+                    wire:loading.attr="disabled" wire:target="simpan">
+                    <i class="bi bi-check-lg"></i>
+                    <span>{{ $ubah ? 'Simpan Perubahan' : 'Tambah Paket' }}</span>
+                </button>
+            </div>
+        </header>
+
+        @include('livewire.pages.admin.orcha.partials.galat-dsb')
+
+        <form wire:submit="simpan">
+            {{-- ================== KETERANGAN & PENAYANGAN ================== --}}
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-8">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-map"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Keterangan Paket</h3>
+                                    <span class="dsb-kartu-sub">Nama, jenis, dan lamanya trip</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dsb-kartu-isi">
+                            <div class="pb-kisi">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-nama">
+                                        Nama paket <span class="dsb-wajib">*</span>
+                                    </label>
+                                    <input id="pb-nama" type="text" class="dsb-isian" wire:model="nama"
+                                        value="{{ $nama }}" placeholder="Open Trip Banyuwangi">
+                                    @error('nama') <span class="pb-galat">{{ $message }}</span> @enderror
                                 </div>
 
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold">Kategori <span class="text-danger">*</span></label>
-                                    <select class="form-select" wire:model="kategori">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-kategori">
+                                        Kategori <span class="dsb-wajib">*</span>
+                                    </label>
+                                    <select id="pb-kategori" class="dsb-isian" wire:model="kategori">
                                         @foreach ($pilihanKategori as $kunci => $label)
                                             <option value="{{ $kunci }}" @selected((string) $this->kategori === (string) $kunci)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
+                            </div>
 
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold d-flex align-items-center gap-2">
-                                        <span>Lama trip</span>
+                            {{-- Tanggal paket & lama trip.
+
+                                 Keterangannya menyebut hubungan kedua tempat ini
+                                 dengan daftar Tanggal Keberangkatan di bawahnya.
+                                 Tanpa itu, dua tempat yang sama-sama meminta
+                                 tanggal terbaca seperti salah satunya keliru. --}}
+                            <div class="pb-kisi is-tiga mt-3">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-durasi">
+                                        Lama trip
                                         @if ($durasiOtomatis)
-                                            <span class="badge orcha-otomatis">otomatis</span>
+                                            <span class="dsb-lencana is-abu">otomatis</span>
                                         @else
-                                            <button type="button" class="orcha-hitung-ulang"
-                                                wire:click="hitungDurasi" title="Kembalikan ke hasil hitungan">
+                                            <button type="button" class="pb-cip-tombol" wire:click="hitungDurasi"
+                                                title="Kembalikan ke hasil hitungan">
                                                 <i class="bi bi-arrow-repeat"></i> hitung ulang
                                             </button>
                                         @endif
                                     </label>
-                                    <input type="text" class="form-control" wire:model.blur="durasi"
+                                    <input id="pb-durasi" type="text" class="dsb-isian" wire:model.blur="durasi"
                                         value="{{ $durasi }}" placeholder="3 Hari 2 Malam">
-                                    <div class="form-text">
-                                        @if ($durasiOtomatis)
-                                            Terisi sendiri dari tanggal berangkat &amp; pulang. Boleh Anda ganti.
-                                        @else
-                                            Anda tulis sendiri, tidak lagi ikut tanggal.
-                                        @endif
-                                    </div>
+                                    <span class="pb-ket">
+                                        {{ $durasiOtomatis
+                                            ? 'Terisi sendiri dari tanggal di sebelah. Boleh Anda ganti.'
+                                            : 'Anda tulis sendiri, tidak lagi ikut tanggal.' }}
+                                    </span>
                                 </div>
 
-                                <div class="col-6 col-md-4">
-                                    <label class="form-label small fw-semibold">Tanggal berangkat</label>
-                                    <input type="date" class="form-control @error('tanggalBerangkat') is-invalid @enderror"
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-berangkat">Tanggal berangkat</label>
+                                    <input id="pb-berangkat" type="date" class="dsb-isian"
                                         wire:model.live="tanggalBerangkat" value="{{ $tanggalBerangkat }}">
-                                    @error('tanggalBerangkat') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    @error('tanggalBerangkat') <span class="pb-galat">{{ $message }}</span> @enderror
                                 </div>
 
-                                <div class="col-6 col-md-4">
-                                    <label class="form-label small fw-semibold">Tanggal pulang</label>
-                                    <input type="date" class="form-control @error('tanggalPulang') is-invalid @enderror"
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-pulang">Tanggal pulang</label>
+                                    <input id="pb-pulang" type="date" class="dsb-isian"
                                         wire:model.live="tanggalPulang" value="{{ $tanggalPulang }}">
-                                    @error('tanggalPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                </div>
-
-                                {{-- ============ TANGGAL KEBERANGKATAN ============
-
-                                     Satu paket boleh dijual untuk beberapa tanggal dengan isi
-                                     yang SAMA — itinerary, destinasi, fasilitas, dan fotonya
-                                     dipakai bersama. Sebelum ada ini, tiga tanggal berarti
-                                     tiga paket: tiga kali mengetik itinerary, dan tiga tempat
-                                     yang harus diubah saat satu kegiatan bergeser.
-
-                                     Baru muncul SESUDAH paketnya tersimpan: tanggal menempel
-                                     pada paket, dan paket yang belum punya id belum punya
-                                     tempat untuk ditempeli. --}}
-                                @if ($ubah)
-                                    <div class="col-12">
-                                        <div class="p-3 border rounded-4" style="background:#faf9ff;border-color:#ddd6fe !important">
-                                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-                                                <div>
-                                                    <strong class="small">Tanggal keberangkatan</strong>
-                                                    <div class="text-muted" style="font-size:.78rem">
-                                                        Satu paket boleh dijual untuk beberapa tanggal. Jadwal
-                                                        kegiatan, foto, fasilitas, dan harganya sama — yang berbeda
-                                                        hanya tanggalnya.
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            @forelse ($keberangkatan as $kb)
-                                                <div class="d-flex flex-wrap align-items-center gap-2 py-2 border-top" wire:key="kb-{{ $kb['id'] }}">
-                                                    <span class="fw-semibold">{{ $kb['rentang_tanggal'] }}</span>
-
-                                                    {{-- Kuncinya 'price', BUKAN 'harga'.
-
-                                                         Orcha mengirim angka mentahnya sebagai price dan nilai
-                                                         terpakainya sebagai harga_dipakai; 'harga' tidak pernah
-                                                         ada. Akibatnya lencana ini tidak pernah tergambar sama
-                                                         sekali — tanggal yang harganya memang berbeda terlihat
-                                                         persis sama dengan yang ikut harga paket, dan satu-satunya
-                                                         cara melihatnya hilang tanpa satu pun galat. --}}
-                                                    @if (! empty($kb['price']))
-                                                        <span class="badge bg-light text-dark">
-                                                            Rp {{ number_format($kb['harga_dipakai'], 0, ',', '.') }}
-                                                            <span class="text-muted fw-normal">harga sendiri</span>
-                                                        </span>
-                                                    @endif
-
-                                                    @if (! empty($kb['kuota']))
-                                                        <span class="badge bg-light text-dark">
-                                                            {{ $kb['kuota'] }} kursi
-                                                            <span class="text-muted fw-normal">kuota sendiri</span>
-                                                        </span>
-                                                    @endif
-
-                                                    @if (! $kb['aktif'])
-                                                        <span class="badge bg-secondary">Ditutup</span>
-                                                    @elseif ($kb['penuh'])
-                                                        {{-- Hijau, bukan merah: terjual habis itu kabar baik.
-                                                             Daftar paket sudah memakai warna itu, dan dua layar
-                                                             yang mewarnai keadaan sama dengan warna berlawanan
-                                                             membuat salah satunya pasti salah dibaca. --}}
-                                                        <span class="badge bg-success-subtle text-success-emphasis">Terisi penuh</span>
-                                                    @elseif ($kb['sisa_kursi'] !== null)
-                                                        <span class="badge bg-success-subtle text-success-emphasis">sisa {{ $kb['sisa_kursi'] }} kursi</span>
-                                                    @endif
-
-                                                    <span class="ms-auto d-inline-flex gap-1">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                                            wire:click="salinKeberangkatan({{ $kb['id'] }})"
-                                                            title="Buat tanggal baru dengan isi yang sama persis">
-                                                            <i class="bi bi-copy"></i> Salin
-                                                        </button>
-
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                            wire:click="alihkanKeberangkatan({{ $kb['id'] }}, {{ $kb['aktif'] ? 'true' : 'false' }})"
-                                                            title="{{ $kb['aktif'] ? 'Tutup tanggal ini, tidak menerima pendaftar baru' : 'Buka lagi tanggal ini' }}">
-                                                            <i class="bi {{ $kb['aktif'] ? 'bi-lock' : 'bi-unlock' }}"></i>
-                                                        </button>
-
-                                                        {{-- Konfirmasinya lewat SweetAlert bersama, bukan
-                                                             wire:confirm bawaan peramban. --}}
-                                                        <button type="button" class="btn btn-sm btn-outline-danger pcek-konfirmasi"
-                                                            data-action="hapusKeberangkatan" data-arg="{{ $kb['id'] }}"
-                                                            data-title="Hapus tanggal {{ $kb['rentang_tanggal'] }}?"
-                                                            data-text="Kalau tanggal ini sudah ada yang mendaftar, hapusnya akan ditolak. Tutup saja, supaya tidak menerima pendaftar baru."
-                                                            data-confirm="Ya, hapus" data-icon="warning">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </span>
-                                                </div>
-                                            @empty
-                                                <div class="text-muted small py-2 border-top">
-                                                    Belum ada tanggal. Tambahkan satu, supaya pengunjung bisa mendaftar.
-                                                </div>
-                                            @endforelse
-
-                                            {{-- Baris isian: tambah baru, atau salinan dari satu baris.
-                                                 Yang diminta cuma tanggalnya. --}}
-                                            <div class="d-flex flex-wrap align-items-end gap-2 pt-3 border-top">
-                                                <div>
-                                                    <label class="form-label small fw-semibold mb-1">
-                                                        {{ $kbSalinDari ? 'Tanggal berangkat untuk salinannya' : 'Tanggal berangkat baru' }}
-                                                    </label>
-                                                    <input type="date" class="form-control form-control-sm @error('kbTanggal') is-invalid @enderror"
-                                                        wire:model="kbTanggal" value="{{ $kbTanggal }}">
-                                                    @error('kbTanggal') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label class="form-label small fw-semibold mb-1">
-                                                        Tanggal pulang
-                                                        <span class="text-muted fw-normal">(boleh kosong)</span>
-                                                    </label>
-                                                    <input type="date" class="form-control form-control-sm"
-                                                        wire:model="kbTanggalPulang" value="{{ $kbTanggalPulang }}">
-                                                </div>
-
-                                                <button type="button" class="btn btn-sm btn-primary"
-                                                    wire:click="simpanKeberangkatan" wire:loading.attr="disabled" wire:target="simpanKeberangkatan">
-                                                    <i class="bi {{ $kbSalinDari ? 'bi-copy' : 'bi-plus-lg' }}"></i>
-                                                    {{ $kbSalinDari ? 'Simpan salinan' : 'Tambah tanggal' }}
-                                                </button>
-
-                                                @if ($kbSalinDari)
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" wire:click="batalKeberangkatan">
-                                                        Batal
-                                                    </button>
-                                                @endif
-                                            </div>
-
-                                            @if ($kbSalinDari)
-                                                <div class="text-muted mt-2" style="font-size:.78rem">
-                                                    Jumlah kursi, harga, dan catatannya ikut tersalin. Tanggal
-                                                    pulang yang dikosongkan dihitung sendiri, selama trip yang
-                                                    Anda salin.
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endif
-
-                                <div class="col-12 col-md-8">
-                                    <label class="form-label small fw-semibold">Titik jemput</label>
-                                    <input type="text" class="form-control" wire:model="titikJemput" value="{{ $titikJemput }}"
-                                        placeholder="Jogja, Klaten, Surakarta">
-                                </div>
-
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold">Minimal peserta <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('minimalPeserta') is-invalid @enderror"
-                                        wire:model="minimalPeserta" value="{{ $minimalPeserta }}" min="1">
-                                    @error('minimalPeserta') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text small">Kalau pendaftarnya kurang dari ini, tripnya tidak jadi berangkat.</div>
-                                </div>
-
-                                {{-- Batas ATAS, berbeda dari minimal peserta di sebelahnya.
-
-                                     Sebelumnya tidak ada di mana pun, sehingga yang menahan
-                                     pendaftaran melewati daya angkut armada cuma ingatan admin —
-                                     dan ingatan itu bekerja paling buruk justru saat pendaftaran
-                                     ramai. --}}
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold">Jumlah kursi</label>
-                                    <input type="number" class="form-control @error('kuota') is-invalid @enderror"
-                                        wire:model="kuota" min="1" placeholder="Kosongkan kalau belum tahu">
-                                    @error('kuota') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text small">
-                                        Dikosongkan berarti <strong>belum ditentukan</strong>: pendaftaran tidak
-                                        akan pernah ditutup sendiri. Diisi berarti pendaftaran berhenti otomatis
-                                        begitu kursinya habis, dan pengunjung bisa melihat sisa kursinya.
-                                    </div>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label small fw-semibold">Catatan promo</label>
-                                    <input type="text" class="form-control" wire:model="catatanPromo" value="{{ $catatanPromo }}"
-                                        placeholder="Harga khusus sampai akhir bulan">
+                                    @error('tanggalPulang') <span class="pb-galat">{{ $message }}</span> @enderror
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {{-- Destinasi & fasilitas: dipilih dari daftar bersama yang
-                         tumbuh sendiri. Dua kartu ini bentuknya sama persis, jadi
-                         ditulis sekali lewat perulangan. --}}
-                    @foreach ([['destinasi', 'Tempat yang Dikunjungi', $saranDestinasi, $destinasi, 'destinasiBaru', 'Tempat lain, misalnya Pantai Pulau Merah'], ['fasilitas', 'Fasilitas yang Didapat', $saranFasilitas, $fasilitas, 'fasilitasBaru', 'Fasilitas lain, misalnya Tiket kapal']] as [$jenis, $judulKartu, $saran, $terpilih, $medanBaru, $contoh])
-                        <div class="card border-0 shadow-sm rounded-4 mb-4">
-                            <div class="card-body p-4">
-                                <div class="orcha-kepala-kartu">
-                                    <h6 class="fw-bold mb-0">{{ $judulKartu }}</h6>
-                                    <span class="badge orcha-hitung">{{ count($terpilih) }} dipilih</span>
-                                </div>
-                                <p class="orcha-petunjuk">
-                                    Klik untuk memasukkannya ke paket ini. Tanda
-                                    <i class="bi bi-x-lg"></i> di daftar bawah menghapusnya dari pilihan
-                                    <strong>semua</strong> paket, bukan cuma paket ini.
+                            @if ($ubah)
+                                <p class="pb-ket mt-2">
+                                    <i class="bi bi-info-circle"></i>
+                                    Dua tanggal ini yang dipakai <strong>kartu katalog dan PDF</strong>.
+                                    Tanggal yang bisa <strong>dipilih pendaftar</strong> diatur di
+                                    kotak “Tanggal Keberangkatan” di bawah.
                                 </p>
+                            @endif
 
-                                @if ($terpilih)
-                                    <div class="orcha-terpilih">
-                                        @foreach ($terpilih as $urutan => $item)
-                                            <span class="orcha-cip orcha-cip-aktif" wire:key="pilih-{{ $jenis }}-{{ $urutan }}">
-                                                <span>{{ $item }}</span>
-                                                <button type="button" class="orcha-cip-buang"
-                                                    wire:click="buang('{{ $jenis }}', {{ $urutan }})"
-                                                    title="Keluarkan dari paket ini">
-                                                    <i class="bi bi-x"></i>
-                                                </button>
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <p class="orcha-kosong">Belum ada yang dipilih.</p>
-                                @endif
+                            {{-- Minimal peserta & jumlah kursi BERSEBELAHAN.
 
-                                <div class="orcha-saran">
-                                    @forelse ($saran as $item)
-                                        @php $sudah = in_array($item['nama'], $terpilih, true); @endphp
-                                        <span class="orcha-cip {{ $sudah ? 'orcha-cip-sudah' : '' }}"
-                                            wire:key="saran-{{ $jenis }}-{{ $item['id'] }}">
-                                            <button type="button" class="orcha-cip-pilih"
-                                                wire:click="jungkit('{{ $jenis }}', @js($item['nama']))"
-                                                title="{{ $sudah ? 'Keluarkan dari paket ini' : 'Masukkan ke paket ini' }}">
-                                                <i class="bi {{ $sudah ? 'bi-check2' : 'bi-plus' }}"></i>
-                                                {{ $item['nama'] }}
-                                            </button>
-                                            <button type="button" class="orcha-cip-hapus pcek-konfirmasi"
-                                                data-action="hapusSaran" data-arg="{{ $item['id'] }}"
-                                                data-title="Hapus dari daftar pilihan?"
-                                                data-text="{{ addslashes($item['nama']) }} tidak lagi muncul sebagai pilihan cepat. Paket yang sudah tersimpan tidak berubah."
-                                                data-confirm="Ya, hapus" data-icon="warning"
-                                                title="Hapus dari daftar pilihan">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </span>
-                                    @empty
-                                        <span class="orcha-kosong mb-0">
-                                            Daftar masih kosong. Tambahkan lewat kotak di bawah.
-                                        </span>
-                                    @endforelse
+                                 Keduanya saling memvalidasi — kursi yang lebih
+                                 sedikit daripada minimal peserta berarti tripnya
+                                 tidak akan pernah berangkat — dan dulu berdiri di
+                                 dua sudut kartu yang berbeda, sehingga hubungan
+                                 itu tidak pernah terlihat saat mengisinya. --}}
+                            <div class="pb-kisi mt-3">
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-minimal">
+                                        Minimal peserta <span class="dsb-wajib">*</span>
+                                    </label>
+                                    <input id="pb-minimal" type="number" min="1" class="dsb-isian"
+                                        wire:model="minimalPeserta" value="{{ $minimalPeserta }}">
+                                    <span class="pb-ket">Kurang dari ini, tripnya tidak jadi berangkat.</span>
+                                    @error('minimalPeserta') <span class="pb-galat">{{ $message }}</span> @enderror
                                 </div>
 
-                                <div class="orcha-tambah">
-                                    <input type="text" class="form-control" wire:model="{{ $medanBaru }}"
-                                        wire:keydown.enter.prevent="tambah('{{ $jenis }}')"
-                                        placeholder="{{ $contoh }}">
-                                    <button type="button" class="btn btn-primary rounded-3"
-                                        wire:click="tambah('{{ $jenis }}')" wire:loading.attr="disabled">
-                                        <i class="bi bi-plus-lg"></i> Tambah
-                                    </button>
-                                </div>
-                                <div class="form-text">
-                                    Yang Anda tambahkan di sini langsung masuk daftar pilihan, jadi paket
-                                    berikutnya tinggal diklik.
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pb-kuota">Jumlah kursi</label>
+                                    <input id="pb-kuota" type="number" min="1" class="dsb-isian"
+                                        wire:model="kuota" placeholder="Kosongkan kalau belum tahu">
+                                    <span class="pb-ket">
+                                        Dikosongkan: pendaftaran tidak pernah ditutup sendiri.
+                                        Diisi: berhenti otomatis saat kursinya habis.
+                                    </span>
+                                    @error('kuota') <span class="pb-galat">{{ $message }}</span> @enderror
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
 
-                    {{-- Itinerary: baris per agenda, bukan mengetik format sendiri --}}
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <div class="orcha-kepala-kartu">
-                                <h6 class="fw-bold mb-0">Jadwal Kegiatan</h6>
-                                <span class="badge orcha-hitung">{{ count($hari) }} hari</span>
+                            <div class="dsb-medan mt-3">
+                                <label class="dsb-label" for="pb-promo">Catatan promo</label>
+                                <input id="pb-promo" type="text" class="dsb-isian" wire:model="catatanPromo"
+                                    value="{{ $catatanPromo }}" placeholder="Harga khusus sampai akhir bulan">
                             </div>
-                            <p class="orcha-petunjuk">
-                                Tulis jam dan kegiatannya, satu baris satu kegiatan. Baris yang kegiatannya
-                                dikosongkan tidak ikut tersimpan.
-                            </p>
-
-                            @foreach ($hari as $urutanHari => $satuHari)
-                                <div class="orcha-hari" wire:key="hari-{{ $urutanHari }}">
-                                    <div class="d-flex align-items-center gap-2 mb-3">
-                                        <span class="orcha-nomor-hari">{{ $urutanHari + 1 }}</span>
-                                        <input type="text" class="form-control form-control-lg fw-semibold"
-                                            wire:model="hari.{{ $urutanHari }}.nama" value="{{ $satuHari['nama'] }}"
-                                            placeholder="Hari 1">
-
-                                        @if (count($hari) > 1)
-                                            <button type="button" class="btn orcha-bahaya"
-                                                wire:click="buangHari({{ $urutanHari }})" title="Hapus seluruh hari ini beserta kegiatannya">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        @endif
-                                    </div>
-
-                                    @foreach ($satuHari['agenda'] as $urutanAgenda => $agenda)
-                                        <div class="orcha-baris-agenda" wire:key="agenda-{{ $urutanHari }}-{{ $urutanAgenda }}">
-                                            <input type="text" class="form-control form-control-lg orcha-jam"
-                                                wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.jam"
-                                                value="{{ $agenda['jam'] }}" placeholder="07.00">
-                                            <input type="text" class="form-control form-control-lg"
-                                                wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.kegiatan"
-                                                value="{{ $agenda['kegiatan'] }}"
-                                                placeholder="Penjemputan di titik kumpul">
-                                            <button type="button" class="btn orcha-bahaya"
-                                                wire:click="buangAgenda({{ $urutanHari }}, {{ $urutanAgenda }})"
-                                                title="Hapus baris">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
-                                    @endforeach
-
-                                    <button type="button" class="orcha-tambah-baris mt-1"
-                                        wire:click="tambahAgenda({{ $urutanHari }})">
-                                        <i class="bi bi-plus-lg"></i>
-                                        <span>Tambah kegiatan</span>
-                                    </button>
-                                </div>
-                            @endforeach
-
-                            <button type="button" class="orcha-tambah-baris orcha-tambah-hari"
-                                wire:click="tambahHari">
-                                <i class="bi bi-calendar-plus"></i>
-                                <span>Tambah Hari</span>
-                            </button>
                         </div>
                     </div>
-                </div>
 
-                <div class="col-12 col-xl-4">
-                    <div class="orcha-lengket">
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <div class="orcha-kepala-kartu">
-                                <h6 class="fw-bold mb-0">Tampil di Website</h6>
-                                <span class="badge orcha-lencana-{{ $statusTayang }}">{{ $statusTayangLabel }}</span>
+                    {{-- ================== TAMPIL DI WEBSITE ================== --}}
+                    <div class="dsb-kartu k-4">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-broadcast"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Tampil di Website</h3>
+                                    <span class="dsb-kartu-sub">Diatur lewat tanggal, bukan tombol</span>
+                                </div>
                             </div>
-                            <p class="orcha-petunjuk">
-                                Diatur lewat tanggal, bukan tombol. Paketnya muncul dan berhenti
-                                sendiri, jadi tidak ada yang perlu Anda ingat-ingat.
+                        </div>
+
+                        <div class="dsb-kartu-isi">
+                            <p class="pb-ket">
+                                Paketnya muncul dan berhenti sendiri, jadi tidak ada yang
+                                perlu Anda ingat-ingat.
                             </p>
 
-                            <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
-                            <select class="form-select mb-3" wire:model.live="status">
-                                @foreach ($pilihanStatusPaket as $kunci => $label)
-                                    <option value="{{ $kunci }}" @selected((string) $this->status === (string) $kunci)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-
-                            <label class="form-label small fw-semibold">Mulai tampil</label>
-                            <input type="datetime-local" class="form-control mb-1 @error('tayangMulai') is-invalid @enderror"
-                                wire:model.live="tayangMulai" value="{{ $tayangMulai }}">
-                            @error('tayangMulai') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                            <div class="form-text mb-3">Dikosongkan berarti langsung tampil begitu statusnya Terbit.</div>
-
-                            <label class="form-label small fw-semibold">Berhenti tampil</label>
-                            <input type="datetime-local" class="form-control mb-1 @error('tayangSampai') is-invalid @enderror"
-                                wire:model.live="tayangSampai" value="{{ $tayangSampai }}">
-                            @error('tayangSampai') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                            <div class="form-text mb-3">Dikosongkan berarti tampil terus, tanpa batas waktu.</div>
-
-                            {{-- Ikut promo rombongan?
-
-                                 Ditaruh berdampingan dengan penayangan, bukan di dekat
-                                 harga: keduanya keputusan tentang BAGAIMANA paket ini
-                                 dijual, bukan berapa harganya. Yang mengubah harga per
-                                 orang ada di kotak harga; yang ini menentukan apakah
-                                 potongan rombongan boleh menumpang di atasnya. --}}
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="promo-rombongan"
-                                    wire:model.live="promoRombongan">
-                                <label class="form-check-label small" for="promo-rombongan">
-                                    Ikut promo rombongan
+                            <div class="dsb-medan mt-3">
+                                <label class="dsb-label" for="pb-status">
+                                    Status <span class="dsb-wajib">*</span>
                                 </label>
-                                <div class="form-text">
+                                <select id="pb-status" class="dsb-isian" wire:model.live="status">
+                                    @foreach ($pilihanStatusPaket as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected((string) $this->status === (string) $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan mt-3">
+                                <label class="dsb-label" for="pb-tayang-mulai">Mulai tampil</label>
+                                <input id="pb-tayang-mulai" type="datetime-local" class="dsb-isian"
+                                    wire:model.live="tayangMulai" value="{{ $tayangMulai }}">
+                                <span class="pb-ket">Dikosongkan berarti langsung tampil begitu statusnya Terbit.</span>
+                                @error('tayangMulai') <span class="pb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="dsb-medan mt-3">
+                                <label class="dsb-label" for="pb-tayang-sampai">Berhenti tampil</label>
+                                <input id="pb-tayang-sampai" type="datetime-local" class="dsb-isian"
+                                    wire:model.live="tayangSampai" value="{{ $tayangSampai }}">
+                                <span class="pb-ket">Dikosongkan berarti tampil terus, tanpa batas waktu.</span>
+                                @error('tayangSampai') <span class="pb-galat">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="form-check mt-3">
+                                {{-- @checked() WAJIB, bukan cuma wire:model.
+
+                                     wire:model TIDAK menulis atribut checked saat
+                                     halamannya pertama digambar: kotaknya tampil kosong
+                                     meski datanya sudah true, dan admin membacanya sebagai
+                                     "paket ini belum ikut promo" lalu mencentangnya —
+                                     yang justru MEMATIKANNYA. --}}
+                                <input class="form-check-input" type="checkbox" id="pb-rombongan"
+                                    wire:model.live="promoRombongan" @checked($promoRombongan)>
+                                <label class="form-check-label small" for="pb-rombongan">Ikut promo rombongan</label>
+                                <span class="pb-ket d-block">
                                     Potongan harga menurut jumlah peserta, diatur di halaman
                                     <a href="{{ route('admin.orcha.promo') }}" wire:navigate>Promo Rombongan</a>.
                                     Matikan kalau untung paket ini sudah tipis.
-                                </div>
+                                </span>
                             </div>
 
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="berakhir-otomatis"
-                                    wire:model.live="berakhirOtomatis">
-                                <label class="form-check-label small" for="berakhir-otomatis">
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="pb-berakhir"
+                                    wire:model.live="berakhirOtomatis" @checked($berakhirOtomatis)>
+                                <label class="form-check-label small" for="pb-berakhir">
                                     Tutup pendaftaran saat hari keberangkatan
                                 </label>
-                                <div class="form-text">
+                                <span class="pb-ket d-block">
                                     @if ($tanggalBerangkat)
                                         Berhenti tampil
                                         <strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->locale('id')->translatedFormat('j M Y') }}</strong>.
@@ -456,178 +364,56 @@
                                         Berhenti tampil pada tanggal berangkat.
                                     @endif
                                     Matikan kalau tanggalnya cuma contoh.
-                                </div>
+                                </span>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">Harga</h6>
-
-                            <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>
-                            <div class="orcha-rupiah mb-3">
-                                <input type="text" inputmode="numeric"
-                                    class="orcha-uang form-control @error('harga') is-invalid @enderror"
-                                    wire:model.blur="hargaTeks" value="{{ $hargaTeks }}" placeholder="1.430.000">
-                            </div>
-                            @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-
-                            <label class="form-label small fw-semibold">Modal per orang</label>
-                            <div class="orcha-rupiah mb-1">
-                                <input type="text" inputmode="numeric"
-                                    class="orcha-uang form-control @error('hargaModal') is-invalid @enderror"
-                                    wire:model.blur="hargaModalTeks" value="{{ $hargaModalTeks }}"
-                                    placeholder="1.400.000">
-                            </div>
-                            @error('hargaModal') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                            <div class="form-text">
-                                Biaya kita sendiri untuk satu peserta: transport, penginapan, tiket,
-                                dan tim. Kosongkan kalau belum dihitung — jangan diisi nol.
-                            </div>
-
-                            {{-- Untung per peserta langsung terlihat di sini, bukan setelah
-                                 tutup buku. Paket yang ternyata dijual di bawah modal
-                                 ketahuan saat masih bisa diperbaiki. --}}
-                            @php $margin = $this->marginPerOrang(); @endphp
-                            <div class="orcha-margin {{ $margin === null ? 'kosong' : ($margin < 0 ? 'rugi' : '') }} mb-3">
-                                @if ($margin === null)
-                                    <i class="bi bi-question-circle"></i>
-                                    <span>Untungnya belum bisa dihitung, karena modalnya belum diisi.</span>
-                                @elseif ($margin < 0)
-                                    <i class="bi bi-exclamation-triangle-fill"></i>
-                                    <span>
-                                        <strong>Rugi Rp {{ number_format(abs($margin), 0, ',', '.') }}</strong>
-                                        per peserta. Harga jualnya di bawah modal.
-                                    </span>
-                                @else
-                                    <i class="bi bi-graph-up-arrow"></i>
-                                    <span>
-                                        Untung <strong>Rp {{ number_format($margin, 0, ',', '.') }}</strong>
-                                        per peserta
-                                        @if ($this->marginPersen() !== null)
-                                            <span class="text-muted">({{ $this->marginPersen() }}% dari harga jual)</span>
-                                        @endif
-                                    </span>
-                                @endif
-                            </div>
-
-                            <label class="form-label small fw-semibold">Harga sebelum diskon</label>
-                            <div class="orcha-rupiah mb-1">
-                                <input type="text" inputmode="numeric" class="orcha-uang form-control"
-                                    wire:model.blur="hargaAsliTeks" value="{{ $hargaAsliTeks }}"
-                                    placeholder="1.700.000">
-                            </div>
-                            <div class="form-text mb-3">Kosongkan kalau tidak ada harga coret.</div>
-
-                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
-                                <span>Diskon (%)</span>
-                                @if ($diskonOtomatis)
-                                    <span class="badge orcha-otomatis">otomatis</span>
-                                @else
-                                    <button type="button" class="orcha-hitung-ulang" wire:click="hitungDiskon"
-                                        title="Kembalikan ke hasil hitungan">
-                                        <i class="bi bi-arrow-repeat"></i> hitung ulang
-                                    </button>
-                                @endif
-                            </label>
-                            <input type="number" class="form-control mb-1" wire:model.blur="diskonPersen"
-                                value="{{ $diskonPersen }}" min="0" max="100">
-                            <div class="form-text mb-3">
-                                @if ($diskonOtomatis)
-                                    Dihitung sendiri dari selisih kedua harga di atas, dibulatkan ke bawah.
-                                @else
-                                    Anda tulis sendiri, tidak lagi ikut selisih harga.
-                                @endif
-                            </div>
-
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="paket-terbaik"
-                                    wire:model="pilihanTerbaik">
-                                <label class="form-check-label small" for="paket-terbaik">
-                                    Tandai sebagai pilihan terbaik di website
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <div class="orcha-kepala-kartu">
-                                <h6 class="fw-bold mb-0">Foto Sampul</h6>
-                                @if ($ubah && $tautanPublik)
-                                    <a href="{{ $tautanPublik }}" target="_blank" rel="noopener"
-                                        class="small text-decoration-none">Lihat halamannya</a>
-                                @endif
-                            </div>
-                            <p class="orcha-petunjuk">
-                                Foto ini yang tampil di kartu paket, di halaman daftar website.
-                                Ukuran paling pas <strong>1200 × 750</strong> piksel (paling kecil 800 × 500).
-                            </p>
-
-                            @php
-                                $asalOrcha = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
-                                $pratinjau = $gambar
-                                    ? \App\Support\PratinjauUnggahan::url($gambar)
-                                    : ($gambarLama
-                                        ? (str_starts_with($gambarLama, 'http') ? $gambarLama : $asalOrcha . $gambarLama)
-                                        : null);
-                            @endphp
-
-                            @if ($pratinjau)
-                                {{-- Perbandingannya disamakan dengan pita hero di website,
-                                     jadi potongannya kelihatan sebelum disimpan. --}}
-                                <div class="orcha-pratinjau-kartu mb-2">
-                                    <img src="{{ $pratinjau }}" alt="Pratinjau kartu">
-                                    <span class="orcha-pratinjau-label">Kira-kira begini di kartu</span>
-                                </div>
-                            @endif
-
-                            <input type="file" class="form-control @error('gambar') is-invalid @enderror"
-                                wire:model="gambar" accept="image/*">
-                            @error('gambar') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            <div class="form-text">
-                                Paling besar 4 MB. Dibiarkan kosong berarti foto lama tetap dipakai;
-                                kalau memang belum ada fotonya, kartunya memakai gambar buatan
-                                sistem.
-                            </div>
-
-                            <div wire:loading wire:target="gambar" class="text-muted small mt-2">
-                                Sedang mengunggah foto…
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary rounded-3" wire:loading.attr="disabled"
-                            wire:target="simpan">
-                            <span wire:loading.remove wire:target="simpan">
-                                {{ $ubah ? 'Simpan Perubahan' : 'Tambah Paket' }}
-                            </span>
-                            {{-- Pemintal, bukan sekadar tulisan yang berganti.
-
-                                 Menyimpan di sini menembak Orcha, jadi jedanya
-                                 terasa — dan tombol yang hanya berganti kalimat
-                                 masih terlihat diam. Yang menekannya cenderung
-                                 menekan lagi, dan paket yang terkirim dua kali
-                                 bukan perkara tampilan.
-
-                                 Pemintalnya disembunyikan lewat aturan gaya di
-                                 partial gaya, bukan hanya oleh skrip Livewire,
-                                 supaya ia tidak tergambar sebelum tombolnya
-                                 ditekan. --}}
-                            <span wire:loading wire:target="simpan">
-                                <span class="spinner-border spinner-border-sm me-2"
-                                    role="status" aria-hidden="true"></span>Menyimpan ke Orcha…
-                            </span>
-                        </button>
-                        <a href="{{ route('admin.orcha.paket') }}" wire:navigate class="btn orcha-bahaya">
-                            <i class="bi bi-x-lg"></i> Batal
-                        </a>
-                    </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            @include('livewire.pages.admin.orcha.paket-wisata.partials.keberangkatan')
+
+            @include('livewire.pages.admin.orcha.paket-wisata.partials.harga-foto')
+
+            @include('livewire.pages.admin.orcha.paket-wisata.partials.daftar-pilihan')
+
+            @include('livewire.pages.admin.orcha.paket-wisata.partials.jadwal')
+
+            {{-- ================== BILAH TINDAKAN ================== --}}
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-isi">
+                            <div class="pb-bilah">
+                                <a href="{{ route('admin.orcha.paket') }}" wire:navigate
+                                    class="dsb-tombol is-bahaya">
+                                    <i class="bi bi-x-lg"></i><span>Batal</span>
+                                </a>
+
+                                <button type="submit" class="dsb-tombol is-utama"
+                                    wire:loading.attr="disabled" wire:target="simpan">
+                                    <span wire:loading.remove wire:target="simpan">
+                                        <i class="bi bi-check-lg"></i>
+                                        {{ $ubah ? 'Simpan Perubahan' : 'Tambah Paket' }}
+                                    </span>
+
+                                    {{-- Pemintal, bukan sekadar tulisan yang berganti.
+
+                                         Menyimpan di sini menembak Orcha, jadi jedanya
+                                         terasa — dan tombol yang hanya berganti kalimat
+                                         masih terlihat diam. Yang menekannya cenderung
+                                         menekan lagi, dan paket yang terkirim dua kali
+                                         bukan perkara tampilan. --}}
+                                    <span wire:loading wire:target="simpan">
+                                        <span class="spinner-border spinner-border-sm me-2"
+                                            role="status" aria-hidden="true"></span>Menyimpan ke Orcha…
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </form>
     </div>
 

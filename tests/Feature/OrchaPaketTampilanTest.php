@@ -13,7 +13,16 @@ require_once __DIR__.'/OrchaLengkapiPesertaTest.php';
  * hilang di desktop, judul kolom yang tidak ikut rata kanan, dan garis
  * kemajuan yang menghitung kuota kosong sebagai nol.
  */
-function paketUji(array $ubah = []): array
+/**
+ * Satu baris paket dari API, siap dipalsukan.
+ *
+ * Namanya BUKAN paketUji(): nama itu sudah dipakai PaketBundlingDetailTest
+ * untuk hal yang sama sekali lain. Penolong uji hidup di ruang nama global
+ * di Pest, jadi dua berkas yang kebetulan senama membuat SELURUH rangkaian
+ * berhenti dengan "Cannot redeclare" — dan berkas yang dijalankan sendirian
+ * dengan --filter tidak akan pernah menangkapnya.
+ */
+function barisPaketUji(array $ubah = []): array
 {
     return array_merge([
         'id' => 7,
@@ -40,6 +49,8 @@ function paketUji(array $ubah = []): array
         'pilihan_terbaik' => false,
         'jumlah_pendaftar' => 3,
         'tautan_publik' => 'https://orchajourney.com/paket/0d37d7a7-a189-40c5-ba1c-197bfc0d29f7',
+        'tautan_pratinjau' => 'https://orchajourney.com/paket/0d37d7a7-a189-40c5-ba1c-197bfc0d29f7?signature=abc',
+        'jumlah_keberangkatan' => 1,
     ], $ubah);
 }
 
@@ -100,7 +111,7 @@ function tabelPaket(string $isi): string
 }
 
 test('daftar paket memakai bahasa rupa dasbor, bukan kartu lama', function () {
-    $isi = halamanPaket([paketUji()]);
+    $isi = halamanPaket([barisPaketUji()]);
 
     /*
      | Patokannya layar Pesanan Toko: kepala hero, kartu dsb, dan tabel dsb.
@@ -120,7 +131,7 @@ test('daftar paket memakai bahasa rupa dasbor, bukan kartu lama', function () {
 });
 
 test('judul kolom yang isinya rata kanan ikut rata kanan', function () {
-    $isi = halamanPaket([paketUji()]);
+    $isi = halamanPaket([barisPaketUji()]);
 
     // Kalau hanya selnya yang dirata-kanan, judul dan angkanya berdiri di dua
     // garis yang berbeda — terbaca sebagai kolom yang melenceng.
@@ -131,7 +142,7 @@ test('judul kolom yang isinya rata kanan ikut rata kanan', function () {
 });
 
 test('kolom tidak disembunyikan lewat nomor urutnya', function () {
-    $isi = halamanPaket([paketUji()]);
+    $isi = halamanPaket([barisPaketUji()]);
 
     /*
      | Nomor kolom adalah patokan yang diam-diam berubah arti: begitu satu
@@ -147,7 +158,7 @@ test('kolom tidak disembunyikan lewat nomor urutnya', function () {
 });
 
 test('keterangan yang tidak punya kolom lain tidak disamarkan', function () {
-    $isi = halamanPaket([paketUji([
+    $isi = halamanPaket([barisPaketUji([
         'status_tayang' => 'terjadwal',
         'status_tayang_label' => 'Terjadwal',
         'tayang_mulai' => '2026-12-03T08:00',
@@ -181,7 +192,7 @@ test('keterangan yang tidak punya kolom lain tidak disamarkan', function () {
 });
 
 test('kuota kosong tidak digambar sebagai garis penuh', function () {
-    $isi = halamanPaket([paketUji([
+    $isi = halamanPaket([barisPaketUji([
         'kuota' => null,
         'kursi_terpakai' => 0,
         'sisa_kursi' => null,
@@ -203,7 +214,7 @@ test('kuota kosong tidak digambar sebagai garis penuh', function () {
 });
 
 test('kursi penuh berwarna hijau, bukan merah', function () {
-    $isi = halamanPaket([paketUji(['kursi_terpakai' => 20, 'sisa_kursi' => 0])]);
+    $isi = halamanPaket([barisPaketUji(['kursi_terpakai' => 20, 'sisa_kursi' => 0])]);
 
     // Penuh itu kabar BAIK bagi admin — tripnya terjual habis. Merah di layar
     // ini dipakai untuk yang salah, bukan untuk yang berhasil.
@@ -218,8 +229,8 @@ test('kursi penuh berwarna hijau, bukan merah', function () {
 
 test('paket tanpa modal ditandai di baris dan dihitung di kepala', function () {
     $isi = halamanPaket([
-        paketUji(),
-        paketUji(['id' => 8, 'nama' => 'Private Trip Baluran', 'margin_per_orang' => null, 'margin_per_orang_teks' => null]),
+        barisPaketUji(),
+        barisPaketUji(['id' => 8, 'nama' => 'Private Trip Baluran', 'margin_per_orang' => null, 'margin_per_orang_teks' => null]),
     ]);
 
     /*
@@ -241,7 +252,7 @@ test('cip kepala hanya menyebut yang memang ada', function () {
     // Cip "0 sedang tayang" yang selalu berdiri membuat mata berhenti
     // membacanya, dan pada hari yang benar-benar ada masalahnya ia tidak lagi
     // menarik perhatian siapa pun.
-    $isi = halamanPaket([paketUji(['status_tayang' => 'arsip', 'status_tayang_label' => 'Arsip'])]);
+    $isi = halamanPaket([barisPaketUji(['status_tayang' => 'arsip', 'status_tayang_label' => 'Arsip'])]);
 
     expect($isi)
         ->toContain('1 paket')

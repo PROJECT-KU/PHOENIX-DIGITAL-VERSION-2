@@ -41,6 +41,10 @@ function berkasPenandaAdmin(): array
         // penuh @if bersarang, dan keduanya tidak tercakup pola mana pun di
         // atas sampai sekarang.
         'orcha/paket-wisata/*.blade.php',
+        // Borangnya dipecah jadi empat partial saat pindah ke bahasa rupa
+        // dasbor; pola di atas TIDAK mencakup subfolder, dan di partial
+        // itulah seluruh perulangan dan percabangannya sekarang hidup.
+        'orcha/paket-wisata/partials/*.blade.php',
         'blog/*.blade.php',
         'blog/partials/*.blade.php',
         'message/*.blade.php',

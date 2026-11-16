@@ -12,7 +12,12 @@ Paket Wisata Orcha || lemon
 
     @php
         $jumlah = (int) ($meta['total'] ?? count($daftar));
-        $adaSaringan = trim((string) $cari) !== '' || (string) $filterStatus !== '';
+        // Dibaca dari komponennya, bukan dirakit ulang di sini: dua tempat
+        // yang menghitung "ada saringan?" sendiri-sendiri pasti berbeda
+        // jawabannya begitu saringan ketiga ditambahkan — dan yang keliru
+        // adalah tombol "Tampilkan semua lagi" yang tidak muncul saat
+        // dibutuhkan.
+        $adaSaringan = $this->adaSaringan();
 
         $sedangTayang = collect($daftar)->where('status_tayang', 'tayang')->count();
 
@@ -34,9 +39,31 @@ Paket Wisata Orcha || lemon
            .gitignore dan tidak ikut ter-deploy. */
 
         /* ===== Saringan ===== */
-        .pw-saring { display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-        @media (max-width: 767.98px) {
+        .pw-saring {
+            display: grid; gap: 12px;
+            grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+        }
+        @media (max-width: 1199.98px) {
+            .pw-saring { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        }
+        @media (max-width: 575.98px) {
             .pw-saring { grid-template-columns: minmax(0, 1fr); }
+        }
+        .pw-saring-kaki {
+            display: flex; justify-content: flex-end; margin-top: 12px;
+        }
+
+        /* Cip kepala yang BISA DIKLIK untuk menyaring.
+
+           Angka di kepala halaman selama ini cuma bacaan: "2 tampil di
+           website" tidak bisa ditekan, dan menemukan kedua paket itu berarti
+           membaca lencana tiap baris satu per satu. Dibuat tombol, dan yang
+           sedang aktif diberi cincin supaya terlihat bahwa daftarnya memang
+           sedang disaring — daftar yang terpotong tanpa penanda terbaca
+           sebagai data yang hilang. */
+        button.dsb-chip { border: 0; cursor: pointer; font: inherit; }
+        button.dsb-chip.is-aktif {
+            box-shadow: 0 0 0 2px var(--c, #7c3aed) inset;
         }
 
         /* ===== Tabel ===== */
@@ -169,16 +196,26 @@ Paket Wisata Orcha || lemon
                     </span>
 
                     @if ($sedangTayang)
-                        <span class="dsb-chip" style="--c: #16a34a">
+                        {{-- Bisa diklik: menyaring daftarnya ke yang sedang tampil. --}}
+                        <button type="button" wire:click="saringTampil('tayang')"
+                            @class(['dsb-chip', 'is-aktif' => $filterTampil === 'tayang'])
+                            style="--c: #16a34a"
+                            title="Tampilkan hanya paket yang sedang tampil di website">
                             <i class="bi bi-broadcast"></i> {{ $sedangTayang }} tampil di website
-                        </span>
+                        </button>
                     @endif
 
                     @if ($tanpaModal)
                         {{-- Disebut hanya saat ada. Cip "0 tanpa modal" yang
                              selalu berdiri membuat mata berhenti membacanya,
                              dan pada hari yang benar-benar ada masalahnya ia
-                             tidak lagi menarik perhatian siapa pun. --}}
+                             tidak lagi menarik perhatian siapa pun.
+
+                             TIDAK bisa diklik: "modal belum diisi" bukan
+                             keadaan yang bisa disaring Orcha — ia dihitung di
+                             sini, dari halaman yang sedang tampil saja.
+                             Tombol yang menyaring separuh data lebih buruk
+                             daripada tulisan yang jujur. --}}
                         <span class="dsb-chip" style="--c: #d97706">
                             <i class="bi bi-exclamation-triangle-fill"></i> {{ $tanpaModal }} modal belum diisi
                         </span>
@@ -216,7 +253,42 @@ Paket Wisata Orcha || lemon
                                     @endforeach
                                 </select>
                             </div>
+
+                            {{-- Saringan keadaan penayangan.
+
+                                 Dihitung di Orcha, bukan di sini: menyaring
+                                 sesudah data sampai berarti halaman kedua bisa
+                                 kosong padahal datanya ada. --}}
+                            <div class="dsb-medan">
+                                <select wire:model.live="filterTampil" class="dsb-isian"
+                                    aria-label="Saring menurut keadaan di website">
+                                    <option value="" @selected($this->filterTampil === '')>Semua keadaan</option>
+                                    @foreach ($pilihanTampil as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected($this->filterTampil === (string) $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <select wire:model.live="urut" class="dsb-isian"
+                                    aria-label="Urutkan daftar">
+                                    @foreach ($pilihanUrut as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected($this->urut === (string) $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
+
+                        @if ($adaSaringan)
+                            {{-- Jalan kembali yang SELALU terlihat saat ada saringan.
+                                 Daftar yang terpotong tanpa jalan keluar membuat admin
+                                 mengira datanya hilang. --}}
+                            <div class="pw-saring-kaki">
+                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
+                                    <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua lagi</span>
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -323,6 +395,11 @@ Paket Wisata Orcha || lemon
 
                                             $margin = $baris['margin_per_orang'] ?? null;
                                             $diskon = (int) ($baris['diskon_persen'] ?? 0);
+
+                                            // Berapa tanggal yang dijual paket ini. Tanpa angka
+                                            // ini layar hanya melihat tanggal lama milik paket
+                                            // dan membacanya sebagai satu tanggal saja.
+                                            $jmlTanggal = (int) ($baris['jumlah_keberangkatan'] ?? 0);
                                         @endphp
                                         <tr wire:key="paket-{{ $baris['id'] }}"
                                             @class(['is-tanda' => $margin === null])
@@ -368,6 +445,19 @@ Paket Wisata Orcha || lemon
 
                                             <td class="k-sedang" data-judul="Jadwal">
                                                 <span class="dsb-tabel-angka">{{ $baris['jadwal_label'] ?: '—' }}</span>
+
+                                                @if (1 < $jmlTanggal)
+                                                    {{-- Satu paket, beberapa tanggal.
+
+                                                         Tanggal di atas cuma yang pertama; tanpa
+                                                         penanda ini admin membacanya sebagai
+                                                         satu-satunya keberangkatan dan mengira
+                                                         dua rombongan lain belum dibuat. --}}
+                                                    <span class="dsb-lencana is-nila">
+                                                        <i class="bi bi-calendar2-week"></i>{{ $jmlTanggal }} tanggal
+                                                    </span>
+                                                @endif
+
                                                 @if ($baris['batas_pelunasan'])
                                                     <span class="pw-ket">
                                                         lunas paling lambat {{ $tgl($baris['batas_pelunasan']) }}
@@ -429,9 +519,20 @@ Paket Wisata Orcha || lemon
 
                                             <td style="text-align: right;">
                                                 <span class="dsb-tabel-aksi">
-                                                    <a href="{{ $baris['tautan_publik'] }}" target="_blank" rel="noopener"
+                                                    {{-- Tautan PRATINJAU, bukan alamat publik mentah.
+
+                                                         Paket draf atau yang sudah berakhir menjawab
+                                                         404 di alamat publiknya, jadi tombol ini dulu
+                                                         mati justru untuk paket yang paling perlu
+                                                         dilihat — yang belum selesai. Tautan
+                                                         pratinjau bertanda tangan membukanya tanpa
+                                                         menerbitkannya lebih dulu. --}}
+                                                    <a href="{{ $baris['tautan_pratinjau'] ?? $baris['tautan_publik'] }}"
+                                                        target="_blank" rel="noopener"
                                                         class="dsb-tabel-btn" style="--c: #0284c7"
-                                                        title="Buka halaman paket ini di website Orcha">
+                                                        title="{{ $statusTayang === 'tayang'
+                                                            ? 'Buka halaman paket ini di website Orcha'
+                                                            : 'Lihat pratinjaunya — paket ini belum tampil di website' }}">
                                                         <i class="bi bi-box-arrow-up-right"></i>
                                                     </a>
 
@@ -440,6 +541,20 @@ Paket Wisata Orcha || lemon
                                                         title="Ubah paket ini">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+
+                                                    {{-- Duplikat seluruh paket. Dikonfirmasi lebih
+                                                         dulu: satu tekanan tak sengaja menambah
+                                                         paket baru ke daftar, dan yang menekannya
+                                                         belum tentu sadar sudah melakukannya. --}}
+                                                    <button type="button" class="dsb-tabel-btn pcek-konfirmasi"
+                                                        style="--c: #0f766e"
+                                                        data-action="salin" data-arg="{{ $baris['id'] }}"
+                                                        data-title="Duplikat paket ini?"
+                                                        data-text="Salinannya dibuat sebagai draf, belum tampil di website. Tanggal, jadwal tayang, dan pendaftarnya tidak ikut."
+                                                        data-confirm="Ya, duplikat" data-icon="question"
+                                                        title="Duplikat paket ini">
+                                                        <i class="bi bi-copy"></i>
+                                                    </button>
 
                                                     <button type="button" class="dsb-tabel-btn pcek-konfirmasi"
                                                         style="--c: var(--dsb-bahaya)"
