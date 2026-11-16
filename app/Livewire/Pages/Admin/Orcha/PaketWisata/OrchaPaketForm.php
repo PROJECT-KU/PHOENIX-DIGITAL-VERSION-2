@@ -123,7 +123,7 @@ class OrchaPaketForm extends Component
 
     /**
      * Itinerary sebagai baris yang bisa ditambah:
-     * [['nama' => 'Day 1', 'agenda' => [['jam' => '07.00', 'kegiatan' => '...']]]]
+     * [['nama' => 'Hari 1', 'agenda' => [['jam' => '07.00', 'kegiatan' => '...']]]]
      *
      * @var array<int, array{nama: string, agenda: array<int, array{jam: string, kegiatan: string}>}>
      */
@@ -195,6 +195,73 @@ class OrchaPaketForm extends Component
             'diskonPersen' => 'diskon',
             'tayangMulai' => 'mulai tayang',
             'tayangSampai' => 'berhenti tayang',
+        ];
+    }
+
+    /**
+     * Pesan galat dalam Bahasa Indonesia.
+     *
+     * Tanpa ini Laravel memakai pesan bawaannya, dan karena APP_LOCALE=en di
+     * server, yang terbaca admin adalah "The nama paket field is required."
+     * Admin yang memakai layar ini bukan orang teknis: kalimat Inggris pada
+     * saat mereka sedang salah justru membuat mereka berhenti, bukan
+     * memperbaiki. Tidak ada folder lang/ di proyek ini, jadi pesannya
+     * ditulis di tempat yang memakainya.
+     *
+     * Kalimatnya menyebut APA YANG HARUS DILAKUKAN, bukan aturan mana yang
+     * dilanggar — "paling banyak 255 huruf", bukan "max:255".
+     *
+     * @return array<string, string>
+     */
+    protected function messages(): array
+    {
+        return [
+            'nama.required' => 'Nama paketnya belum diisi.',
+            'nama.max' => 'Nama paketnya kepanjangan — paling banyak 255 huruf.',
+
+            'kategori.required' => 'Kategorinya belum dipilih.',
+            'status.required' => 'Statusnya belum dipilih.',
+
+            'tayangMulai.date' => 'Tanggal "Mulai tampil" belum benar. Pilih lewat kotak tanggalnya.',
+            'tayangSampai.date' => 'Tanggal "Berhenti tampil" belum benar. Pilih lewat kotak tanggalnya.',
+            'tayangSampai.after_or_equal' => 'Tanggal berhenti tampil tidak boleh lebih awal daripada tanggal mulai tampil.',
+
+            'durasi.max' => 'Lama tripnya kepanjangan — paling banyak 60 huruf.',
+
+            'tanggalBerangkat.date' => 'Tanggal berangkatnya belum benar. Pilih lewat kotak tanggalnya.',
+            'tanggalPulang.date' => 'Tanggal pulangnya belum benar. Pilih lewat kotak tanggalnya.',
+            'tanggalPulang.after_or_equal' => 'Tanggal pulang tidak boleh lebih awal daripada tanggal berangkat.',
+
+            'titikJemput.max' => 'Titik jemputnya kepanjangan — paling banyak 191 huruf.',
+
+            'minimalPeserta.required' => 'Minimal pesertanya belum diisi.',
+            'minimalPeserta.integer' => 'Minimal peserta harus berupa angka, tanpa titik atau koma.',
+            'minimalPeserta.min' => 'Minimal peserta paling sedikit 1 orang.',
+            'minimalPeserta.max' => 'Minimal peserta paling banyak 200 orang.',
+
+            'kuota.integer' => 'Jumlah kursi harus berupa angka, tanpa titik atau koma.',
+            'kuota.min' => 'Jumlah kursi paling sedikit 1.',
+            'kuota.max' => 'Jumlah kursi paling banyak 500.',
+            'kuota.gte' => 'Jumlah kursi tidak boleh lebih sedikit daripada minimal peserta — kalau begitu tripnya tidak akan pernah bisa berangkat.',
+
+            'catatanPromo.max' => 'Catatan promonya kepanjangan — paling banyak 191 huruf.',
+
+            'harga.required' => 'Harga jualnya belum diisi.',
+            'harga.numeric' => 'Harga jualnya harus berupa angka.',
+            'harga.min' => 'Harga jual tidak boleh minus.',
+
+            'hargaAsli.numeric' => 'Harga sebelum diskon harus berupa angka.',
+            'hargaAsli.min' => 'Harga sebelum diskon tidak boleh minus.',
+
+            'hargaModal.numeric' => 'Modal per orang harus berupa angka.',
+            'hargaModal.min' => 'Modal per orang tidak boleh minus.',
+
+            'diskonPersen.numeric' => 'Diskonnya harus berupa angka.',
+            'diskonPersen.min' => 'Diskon paling kecil 0 persen.',
+            'diskonPersen.max' => 'Diskon paling besar 100 persen.',
+
+            'gambar.image' => 'Berkas yang dipilih bukan gambar. Pilih foto JPG, PNG, atau WebP.',
+            'gambar.max' => 'Fotonya kebesaran — paling besar 4 MB. Perkecil dulu, lalu unggah lagi.',
         ];
     }
 
@@ -611,7 +678,11 @@ class OrchaPaketForm extends Component
 
     private function hariKosong(int $nomor): array
     {
-        return ['nama' => "Day {$nomor}", 'agenda' => [['jam' => '', 'kegiatan' => '']]];
+        // "Hari 1", bukan "Day 1": nama ini bukan cuma label di layar admin —
+        // ia ikut tersimpan dan TERBACA PENGUNJUNG di halaman paket. Paket yang
+        // sudah terlanjur bernama "Day 1" tidak ikut berubah; ganti sendiri di
+        // borangnya bila mau.
+        return ['nama' => "Hari {$nomor}", 'agenda' => [['jam' => '', 'kegiatan' => '']]];
     }
 
     /** Bentuk dari API ('hari' + 'agenda') jadi bentuk isian di layar. */
@@ -627,7 +698,7 @@ class OrchaPaketForm extends Component
             }
 
             $hasil[] = [
-                'nama' => $satuHari['hari'] ?? ('Day '.($nomor + 1)),
+                'nama' => $satuHari['hari'] ?? ('Hari '.($nomor + 1)),
                 'agenda' => $agenda ?: [['jam' => '', 'kegiatan' => '']],
             ];
         }

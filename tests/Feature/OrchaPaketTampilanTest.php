@@ -164,11 +164,11 @@ test('keterangan yang tidak punya kolom lain tidak disamarkan', function () {
     $tabel = tabelPaket($isi);
 
     expect($tabel)
-        ->toContain('mulai 03 Des 2026, 08:00')
-        ->toContain('pelunasan sd 20 Nov 2026')
-        ->toContain('3 pendaftar · min 4');
+        ->toContain('baru tampil 03 Des 2026, 08:00')
+        ->toContain('lunas paling lambat 20 Nov 2026')
+        ->toContain('3 pendaftar · minimal 4');
 
-    foreach (['mulai 03 Des 2026, 08:00', 'pelunasan sd 20 Nov 2026', '3 pendaftar · min 4'] as $teks) {
+    foreach (['baru tampil 03 Des 2026, 08:00', 'lunas paling lambat 20 Nov 2026', '3 pendaftar · minimal 4'] as $teks) {
         $potongan = substr($tabel, max(0, strpos($tabel, $teks) - 160), 160);
 
         expect($potongan)->toContain('pw-ket')

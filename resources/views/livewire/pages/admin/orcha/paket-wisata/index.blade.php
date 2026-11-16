@@ -159,7 +159,8 @@ Paket Wisata Orcha || lemon
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
                 <h1 class="dsb-salam">Paket Wisata</h1>
                 <p class="dsb-hero-ket">
-                    Paket yang tayang di website Orcha — open trip, private trip, dan study tour.
+                    Semua paket yang dijual di website Orcha. Yang Anda ubah di sini langsung
+                    dilihat pengunjung.
                 </p>
 
                 <div class="dsb-chip-deret mt-2">
@@ -169,7 +170,7 @@ Paket Wisata Orcha || lemon
 
                     @if ($sedangTayang)
                         <span class="dsb-chip" style="--c: #16a34a">
-                            <i class="bi bi-broadcast"></i> {{ $sedangTayang }} sedang tayang
+                            <i class="bi bi-broadcast"></i> {{ $sedangTayang }} tampil di website
                         </span>
                     @endif
 
@@ -230,7 +231,7 @@ Paket Wisata Orcha || lemon
                             <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-map"></i></span>
                             <div>
                                 <h3 class="dsb-kartu-judul">Daftar Paket</h3>
-                                <span class="dsb-kartu-sub">Satu baris = satu paket · kursi terisi ada di kolomnya sendiri</span>
+                                <span class="dsb-kartu-sub">Satu baris satu paket. Klik namanya untuk mengubah.</span>
                             </div>
                         </div>
                     </div>
@@ -243,8 +244,8 @@ Paket Wisata Orcha || lemon
                             </p>
                             <p class="dsb-kosong-ket">
                                 {{ $adaSaringan
-                                    ? 'Coba ubah kata kunci atau kategorinya.'
-                                    : 'Paket yang Anda tambahkan di sini akan tayang di website Orcha.' }}
+                                    ? 'Coba ganti kata kuncinya, atau pilih Semua kategori.'
+                                    : 'Paket yang Anda tambahkan di sini akan tampil di website Orcha.' }}
                             </p>
                         </div>
                     @else
@@ -253,7 +254,7 @@ Paket Wisata Orcha || lemon
                                 <thead>
                                     <tr>
                                         <th>Paket</th>
-                                        <th>Penayangan</th>
+                                        <th>Di website</th>
                                         <th class="k-sedang">Jadwal</th>
                                         <th style="text-align: right;">Harga</th>
                                         <th class="k-sedang">Kursi</th>
@@ -354,13 +355,13 @@ Paket Wisata Orcha || lemon
                                                 </a>
                                             </td>
 
-                                            <td data-judul="Penayangan">
+                                            <td data-judul="Di website">
                                                 <span class="badge orcha-lencana-{{ $statusTayang }}">
                                                     {{ $baris['status_tayang_label'] ?? '—' }}
                                                 </span>
                                                 @if ($statusTayang === 'terjadwal' && $baris['tayang_mulai'])
                                                     <span class="pw-ket">
-                                                        mulai {{ $tgl($baris['tayang_mulai'], 'd M Y, H:i') }}
+                                                        baru tampil {{ $tgl($baris['tayang_mulai'], 'd M Y, H:i') }}
                                                     </span>
                                                 @endif
                                             </td>
@@ -369,7 +370,7 @@ Paket Wisata Orcha || lemon
                                                 <span class="dsb-tabel-angka">{{ $baris['jadwal_label'] ?: '—' }}</span>
                                                 @if ($baris['batas_pelunasan'])
                                                     <span class="pw-ket">
-                                                        pelunasan sd {{ $tgl($baris['batas_pelunasan']) }}
+                                                        lunas paling lambat {{ $tgl($baris['batas_pelunasan']) }}
                                                     </span>
                                                 @endif
                                             </td>
@@ -407,7 +408,7 @@ Paket Wisata Orcha || lemon
                                                     @endif
 
                                                     <span class="pw-ket">
-                                                        {{ $pendaftar }} pendaftar · min {{ $minimal }}
+                                                        {{ $pendaftar }} pendaftar · minimal {{ $minimal }}
                                                     </span>
 
                                                     @if ($penuh)
@@ -430,7 +431,7 @@ Paket Wisata Orcha || lemon
                                                 <span class="dsb-tabel-aksi">
                                                     <a href="{{ $baris['tautan_publik'] }}" target="_blank" rel="noopener"
                                                         class="dsb-tabel-btn" style="--c: #0284c7"
-                                                        title="Lihat halamannya di website Orcha">
+                                                        title="Buka halaman paket ini di website Orcha">
                                                         <i class="bi bi-box-arrow-up-right"></i>
                                                     </a>
 
@@ -444,7 +445,7 @@ Paket Wisata Orcha || lemon
                                                         style="--c: var(--dsb-bahaya)"
                                                         data-action="hapus" data-arg="{{ $baris['id'] }}"
                                                         data-title="Hapus paket ini?"
-                                                        data-text="{{ $baris['nama'] }} akan hilang dari website Orcha."
+                                                        data-text="{{ $baris['nama'] }} akan hilang dari website Orcha dan tidak bisa dikembalikan."
                                                         data-confirm="Ya, hapus" data-icon="warning"
                                                         title="Hapus paket ini">
                                                         <i class="bi bi-trash"></i>
