@@ -767,6 +767,27 @@ Pendaftaran Trip || lemon
                                                     <i class="bi bi-person-lines-fill"></i>
                                                 </a>
 
+                                                {{-- Bagi kursi & kamar, LANGSUNG dari baris ini.
+
+                                                     Pembagiannya milik rombongan, bukan milik satu
+                                                     pemesanan — tetapi admin selalu tiba di sini
+                                                     lewat orangnya, bukan lewat tanggalnya. Sebelum
+                                                     tombol ini ada, ia harus membuka detail satu
+                                                     pendaftaran dulu hanya untuk sampai ke papan
+                                                     pembagian rombongannya.
+
+                                                     Baris yang belum punya rombongan tidak punya
+                                                     satuan untuk dibagi, jadi tombolnya memang tidak
+                                                     ada — penandanya sudah ada di kolom Berangkat. --}}
+                                                @if (! empty($baris['keberangkatan_id']))
+                                                    <a wire:navigate
+                                                        href="{{ route('admin.orcha.pembagian', $baris['keberangkatan_id']) }}"
+                                                        class="dsb-tabel-btn" style="--c: #0284c7"
+                                                        title="Bagi tempat duduk & kamar rombongan {{ $baris['keberangkatan']['rentang_tanggal'] ?? '' }}">
+                                                        <i class="bi bi-grid-3x3-gap"></i>
+                                                    </a>
+                                                @endif
+
                                                 @if ($bolehKesehatan && ($baris['jumlah_riwayat_kesehatan'] ?? 0) > 0)
                                                     <a wire:navigate href="{{ route('admin.orcha.pendaftaran.kesehatan', $baris['id']) }}"
                                                         class="dsb-tabel-btn pd-btn-sehat"

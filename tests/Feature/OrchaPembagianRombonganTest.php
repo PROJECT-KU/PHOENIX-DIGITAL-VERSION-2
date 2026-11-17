@@ -273,9 +273,16 @@ test('peringatan ikut berubah oleh susunan yang BELUM disimpan', function () {
      */
     $layar = Livewire::actingAs(adminPembagian())
         ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
-        // Sri belum diisi jenis kelaminnya; menaruhnya di kamar memunculkan
-        // peringatan SEBELUM apa pun dikirim ke Orcha.
-        ->assertDontSee('jenis kelaminnya belum diisi.')
+        /*
+         | Sri belum diisi jenis kelaminnya; menaruhnya di kamar memunculkan
+         | peringatan SEBELUM apa pun dikirim ke Orcha.
+         |
+         | Prasyaratnya diperiksa lewat KARTU peringatannya, bukan lewat
+         | kalimatnya: kalimat "jenis kelaminnya belum diisi" juga dipakai di
+         | judul kartu angka, jadi memeriksanya akan merah sejak awal karena
+         | alasan yang tidak ada hubungannya.
+         */
+        ->assertDontSee('Perlu Diperiksa')
         ->call('pilih', '8:0')
         ->call('tempatkanKamar', '201');
 

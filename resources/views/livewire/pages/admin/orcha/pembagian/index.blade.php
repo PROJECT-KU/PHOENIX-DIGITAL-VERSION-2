@@ -10,6 +10,11 @@ Bagi Kursi & Kamar || lemon
          terbuka 200 dengan isi yang benar dan rupa yang hilang seluruhnya —
          galat yang tidak pernah muncul di log. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
+    {{-- Kartu angka memakai bahasa rupa yang SAMA dengan Pesanan Toko
+         (.pt-kartu-tab). Empat kotak .dsb-stat selebar layar penuh — bentuk
+         lama layar ini — menyisakan petak putih sepanjang separuh layar untuk
+         empat angka yang masing-masing dua digit. --}}
+    @include('livewire.pages.admin.partials.kartu-tab-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
     {{-- <style> telanjang: layout templateindex tidak punya satu pun stack,
@@ -26,7 +31,29 @@ Bagi Kursi & Kamar || lemon
            Dua ketukan, bukan seret-lepas: pilih orangnya, lalu ketuk kursi atau
            kamarnya. Seret-lepas tidak bisa dipakai di ponsel, dan pembagian ini
            justru sering dikerjakan sambil berdiri. */
-        .pbg-orang-deret { display: flex; flex-wrap: wrap; gap: 8px; }
+        /* Tingginya DIBATASI, lalu bergulir sendiri.
+
+           Rombongan enam puluh orang membuat kolom ini menjulang jauh di atas
+           petak kursinya, dan bahasa rupa dasbor menyamakan tinggi kartu yang
+           bersebelahan — petaknya lalu duduk di pojok kiri atas sebuah kartu
+           setinggi dua layar. Bergulir sendiri juga menjaga kepala kartunya
+           ("Ketuk satu nama…") tetap terlihat sambil memilih. */
+        .pbg-orang-deret {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            max-height: 340px; overflow-y: auto; padding-right: 4px;
+        }
+
+        /* Ringkasan armada & kamar saat panelnya tertutup. */
+        .pbg-fasil-ringkas { display: flex; flex-wrap: wrap; gap: 7px; }
+        .pbg-fasil-cip {
+            --c: #64748b;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 11px; border-radius: 999px;
+            background: color-mix(in srgb, var(--c) 7%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 28%, #fff);
+            color: var(--c); font-size: .78rem; font-weight: 700;
+        }
+        .pbg-fasil-cip small { font-weight: 500; opacity: .8; }
 
         .pbg-orang {
             display: inline-flex; align-items: center; gap: 8px;
@@ -145,10 +172,28 @@ Bagi Kursi & Kamar || lemon
         .pbg-petak-gulir { overflow-x: auto; padding-bottom: 6px; }
 
         /* Keterangan warna, sekali per kendaraan. */
+        /* Ditambat ke DASAR kartunya: kartu petak duduk bersebelahan dengan
+           daftar peserta yang lebih tinggi, dan keterangan yang menempel tepat
+           di bawah petak meninggalkan petak putih di bawahnya sendiri. */
         .pbg-kunci-warna {
-            display: flex; flex-wrap: wrap; gap: 13px; margin-top: 10px;
+            display: flex; flex-wrap: wrap; gap: 13px;
+            margin-top: auto; padding-top: 12px;
             font-size: .74rem; color: var(--dsb-redup);
         }
+        /* Isi kartu petak memanjang mengisi tinggi kartunya, supaya
+           margin-top:auto di atas punya ruang untuk mendorong.
+
+           Kendaraan TERAKHIR ikut dijadikan flex. margin-top:auto hanya
+           berlaku di dalam wadah flex atau grid; keterangan warnanya bersarang
+           di dalam .pbg-kendaraan yang blok biasa, jadi tanpa baris kedua ini
+           ia diam di tempat dan petak putih di bawahnya tetap ada — persis
+           yang mau dihilangkan. */
+        .pbg-kartu-petak .dsb-kartu-isi { display: flex; flex-direction: column; flex: 1; }
+        .pbg-kartu-petak .pbg-kendaraan:last-child { display: flex; flex-direction: column; flex: 1; }
+
+        /* Daftar peserta yang bergulir diberi jalur bilah gulir yang tetap,
+           supaya kepingan di tepi kanan tidak bergeser saat bilahnya muncul. */
+        .pbg-orang-deret { scrollbar-gutter: stable; }
         .pbg-kunci-warna span { display: inline-flex; align-items: center; gap: 5px; }
         .pbg-titik {
             width: 11px; height: 11px; border-radius: 3px; display: inline-block;
@@ -352,52 +397,71 @@ Bagi Kursi & Kamar || lemon
 
         {{-- ===== ANGKA RINGKAS =====
 
-             Yang paling penting di antaranya "belum diisi jenis kelamin": ia
-             satu-satunya yang MENGHALANGI pembagian kamar. Tanpa angkanya di
-             muka, admin baru tahu setelah menekan bagi otomatis dan mendapat
-             hasil separuh. --}}
-        <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-12">
-                <div class="dsb-kartu-isi">
-                    <div class="dsb-deret pbg-angka">
-                        <div class="dsb-stat">
-                            <span class="dsb-stat-label">Peserta</span>
-                            <span class="dsb-stat-nilai">{{ $ringkasan['total_peserta'] }}</span>
-                            <span class="dsb-stat-ket">dari semua pemesanan rombongan ini</span>
-                        </div>
+             Lima kartu dalam SATU baris, sebentuk dengan kartu tab Pesanan
+             Toko. Bentuk sebelumnya empat kotak .dsb-stat selebar layar penuh
+             yang menumpuk ke bawah: empat angka dua digit memakan tinggi
+             separuh layar, dan angka yang harus dibandingkan satu sama lain
+             ("8 dari 22 kursi") tidak pernah terlihat bersamaan.
 
-                        <div class="dsb-stat">
-                            <span class="dsb-stat-label">Laki-laki / Perempuan</span>
-                            <span class="dsb-stat-nilai">{{ $ringkasan['laki'] }} / {{ $ringkasan['perempuan'] }}</span>
-                            <span class="dsb-stat-ket">
-                                @if ($ringkasan['belum_jenis_kelamin'] > 0)
-                                    <strong>{{ $ringkasan['belum_jenis_kelamin'] }} belum diisi</strong> —
-                                    kamarnya belum bisa dibagi otomatis
-                                @else
-                                    semuanya sudah diisi
-                                @endif
+             "Belum diisi L/P" diberi warna merah saat ada isinya: ia
+             satu-satunya angka di baris ini yang MENGHALANGI pekerjaan. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="k-12">
+                    <div class="pt-kartu-deret pbg-angka-deret" style="--n: 6">
+                        <span class="pt-kartu-tab" style="--c: #16a34a">
+                            <span class="pt-kartu-ikon"><i class="bi bi-people-fill"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['total_peserta'] }}</span>
+                                <span class="pt-kartu-label">Peserta</span>
                             </span>
-                        </div>
+                        </span>
 
-                        <div class="dsb-stat">
-                            <span class="dsb-stat-label">Sudah dapat kursi</span>
-                            <span class="dsb-stat-nilai">{{ $ringkasan['sudah_kursi'] }}</span>
-                            <span class="dsb-stat-ket">
-                                {{ $ringkasan['jumlah_kursi_tersedia'] }} kursi disiapkan
+                        <span class="pt-kartu-tab" style="--c: #0284c7">
+                            <span class="pt-kartu-ikon"><i class="bi bi-gender-male"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['laki'] }}</span>
+                                <span class="pt-kartu-label">Laki-laki</span>
                             </span>
-                        </div>
+                        </span>
 
-                        <div class="dsb-stat">
-                            <span class="dsb-stat-label">Sudah dapat kamar</span>
-                            <span class="dsb-stat-nilai">{{ $ringkasan['sudah_kamar'] }}</span>
-                            <span class="dsb-stat-ket">
-                                {{ $ringkasan['daya_tampung_kamar'] }} tempat tidur disiapkan
+                        <span class="pt-kartu-tab" style="--c: #db2777">
+                            <span class="pt-kartu-ikon"><i class="bi bi-gender-female"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['perempuan'] }}</span>
+                                <span class="pt-kartu-label">Perempuan</span>
                             </span>
-                        </div>
+                        </span>
+
+                        <span class="pt-kartu-tab {{ $ringkasan['belum_jenis_kelamin'] === 0 ? 'is-nol' : 'is-aktif' }}"
+                            style="--c: #dc2626"
+                            title="Pembagian kamar otomatis tidak bisa jalan untuk peserta yang jenis kelaminnya belum diisi.">
+                            <span class="pt-kartu-ikon"><i class="bi bi-gender-ambiguous"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['belum_jenis_kelamin'] }}</span>
+                                <span class="pt-kartu-label">Belum diisi L/P</span>
+                            </span>
+                        </span>
+
+                        <span class="pt-kartu-tab" style="--c: #7c3aed">
+                            <span class="pt-kartu-ikon"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['sudah_kursi'] }}<small>/{{ $ringkasan['jumlah_kursi_tersedia'] }}</small></span>
+                                <span class="pt-kartu-label">Kursi terisi</span>
+                            </span>
+                        </span>
+
+                        <span class="pt-kartu-tab" style="--c: #b45309">
+                            <span class="pt-kartu-ikon"><i class="bi bi-door-closed-fill"></i></span>
+                            <span class="pt-kartu-teks">
+                                <span class="pt-kartu-angka">{{ $ringkasan['sudah_kamar'] }}<small>/{{ $ringkasan['daya_tampung_kamar'] }}</small></span>
+                                <span class="pt-kartu-label">Kamar terisi</span>
+                            </span>
+                        </span>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
         {{-- ===== PERINGATAN ===== --}}
         @if ($peringatan !== [])
@@ -543,10 +607,17 @@ Bagi Kursi & Kamar || lemon
              Jalan pulang. Satu tekanan "Bagi Otomatis" dengan centang timpa
              menghapus satu jam penyusunan tangan, dan hasilnya tetap berupa
              pembagian yang rapi — jadi tanpa ini, kesalahannya baru ketahuan
-             di hari keberangkatan. --}}
+             di hari keberangkatan.
+
+             Berdampingan dengan kartu Kendaraan & Kamar dalam SATU rak: dua
+             panel yang sama-sama tertutup secara bawaan, dan masing-masing
+             selebar layar penuh berarti dua baris kepala kartu yang isinya
+             cuma judul. Lebarnya ikut berubah bila yang satu tidak ada —
+             kartu k-6 yang berdiri sendiri menyisakan separuh layar kosong,
+             yaitu persis yang mau dihindari. --}}
+        <div class="dsb-rak dsb-bagian">
         @if ($riwayat !== [])
-            <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-6">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #64748b"><i class="bi bi-clock-history"></i></span>
@@ -597,7 +668,6 @@ Bagi Kursi & Kamar || lemon
                         </div>
                     </div>
                 </div>
-            </div>
         @endif
 
         {{-- ===== KENDARAAN & KAMAR YANG DISIAPKAN =====
@@ -605,8 +675,7 @@ Bagi Kursi & Kamar || lemon
              Dipisahkan dari penempatan orangnya. Armada dan blok kamar
              ditentukan sekali saat dipesan ke vendor; penempatan orangnya
              berubah sampai hari terakhir. --}}
-        <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-12">
+            <div class="dsb-kartu {{ $riwayat !== [] ? 'k-6' : 'k-12' }}">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #0f766e"><i class="bi bi-sliders"></i></span>
@@ -627,6 +696,44 @@ Bagi Kursi & Kamar || lemon
                         <span>{{ $bukaFasilitas ? 'Tutup' : 'Atur' }}</span>
                     </button>
                 </div>
+
+                {{-- Tertutup pun badannya TERISI.
+
+                     Kartu ini berdampingan dengan kartu riwayat yang lebih
+                     tinggi, dan bahasa rupa dasbor menyamakan tinggi kartu
+                     yang bersebelahan — badan kosong berarti petak putih
+                     setinggi kartu sebelahnya. Yang ditaruh di sini bukan
+                     pengisi: daftar armada & blok kamar adalah hal pertama
+                     yang ditanya admin sebelum membagi ("busnya berapa?"). --}}
+                @if (! $bukaFasilitas)
+                    <div class="dsb-kartu-isi">
+                        @if ($kendaraan === [] && $kamar === [])
+                            <p class="orcha-kosong mb-0">
+                                Belum ada kendaraan maupun kamar. Tekan <strong>Atur</strong> untuk
+                                mendaftarkannya — petak kursi dan papan kamar di bawah baru bisa
+                                terisi setelah itu.
+                            </p>
+                        @else
+                            <div class="pbg-fasil-ringkas">
+                                @foreach ($kendaraan as $satu)
+                                    <span class="pbg-fasil-cip" style="--c: #0284c7">
+                                        <i class="bi bi-bus-front"></i>
+                                        {{ $satu['nama'] ?? '—' }}
+                                        <small>{{ (int) ($satu['jumlah_kursi'] ?? 0) }} kursi · {{ $satu['tata'] ?? '' }}</small>
+                                    </span>
+                                @endforeach
+
+                                @foreach ($kamar as $satu)
+                                    <span class="pbg-fasil-cip" style="--c: #db2777">
+                                        <i class="bi bi-door-closed"></i>
+                                        {{ $satu['nama'] ?? '—' }}
+                                        <small>{{ (int) ($satu['kapasitas'] ?? 0) }} orang</small>
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 @if ($bukaFasilitas)
                     <div class="dsb-kartu-isi">
@@ -745,15 +852,21 @@ Bagi Kursi & Kamar || lemon
             </div>
         </div>
 
-        {{-- ===== PESERTA =====
+        {{-- ===== PESERTA & TEMPAT DUDUK, BERDAMPINGAN =====
 
              Semua peserta ada di daftar ini, yang sudah ditempatkan maupun
              belum — bukan hanya yang belum. Memindahkan orang yang sudah
              ditempatkan adalah separuh pekerjaannya ("tukar kursi Budi dan
              Agus"), dan daftar yang menyembunyikannya memaksa admin mencarinya
-             di dalam petak. --}}
+             di dalam petak.
+
+             Berdampingan dengan petak kursinya, bukan di atasnya. Cara
+             memakainya dua ketukan — pilih nama, lalu ketuk kursinya — dan
+             dengan daftar nama di atas petak, kedua ketukan itu berjarak satu
+             layar penuh: admin memilih nama, menggulir ke bawah, lalu lupa
+             siapa yang sedang dipegangnya. --}}
         <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-12">
+            <div class="dsb-kartu k-5">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-people-fill"></i></span>
@@ -869,11 +982,8 @@ Bagi Kursi & Kamar || lemon
                     @endif
                 </div>
             </div>
-        </div>
 
-        {{-- ===== PETAK KURSI ===== --}}
-        <div class="dsb-rak dsb-bagian">
-            <div class="dsb-kartu k-12">
+            <div class="dsb-kartu k-7 pbg-kartu-petak">
                 <div class="dsb-kartu-kepala">
                     <div class="dsb-kartu-kepala-kiri">
                         <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-bus-front"></i></span>

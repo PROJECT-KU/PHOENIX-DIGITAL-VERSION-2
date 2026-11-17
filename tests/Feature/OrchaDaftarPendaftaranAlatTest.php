@@ -355,3 +355,30 @@ test('tautan daftar tunggu membawa tanggal rombongan saat ada yang disaring', fu
         // membuat uji ini merah pada perubahan yang tidak ada hubungannya.
         ->assertSee('tawarkan=11', false);
 });
+
+test('tiap baris punya tombol bagi kursi & kamar, tanpa membuka detailnya dulu', function () {
+    /*
+     | Pembagiannya milik rombongan, bukan milik satu pemesanan — tetapi admin
+     | selalu tiba di sini lewat orangnya, bukan lewat tanggalnya. Sebelum
+     | tombol ini ada, ia harus membuka detail satu pendaftaran dulu hanya
+     | untuk sampai ke papan pembagian rombongannya.
+     */
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        // Baris 1 punya rombongan 11.
+        ->assertSee('/rombongan/11/pembagian', false);
+});
+
+test('baris tanpa rombongan tidak diberi tombol yang pasti gagal', function () {
+    /*
+     | Baris 2 adalah pendaftaran lama tanpa keberangkatan_id — tidak punya
+     | satuan untuk dibagi. Tombol yang membuka halaman kosong lebih buruk
+     | daripada tombol yang tidak ada; penandanya sudah ada di kolom Berangkat.
+     */
+    $html = Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->html();
+
+    // Hanya SATU tautan pembagian dari badan tabel, bukan dua.
+    expect(substr_count($html, '/pembagian'))->toBe(1);
+});
