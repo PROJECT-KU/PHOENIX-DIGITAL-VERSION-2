@@ -294,6 +294,38 @@ class OrchaPembagianRombongan extends Component
      * satu sebelum memutuskan. Yang bisa diperiksa justru HASILNYA — dan untuk
      * itu ia harus sudah tergambar di petak dan papan kamar.
      */
+    /**
+     * Mengembalikan pembagian ke potret sebelumnya.
+     *
+     * Yang dikembalikan penempatannya, bukan daftar siapa yang ikut: peserta
+     * yang pendaftarannya dibatalkan sesudah potret dibuat tidak dihidupkan
+     * lagi oleh ini.
+     */
+    public function kembalikan(int $urutan): void
+    {
+        if ($this->ubahan !== []) {
+            $this->dispatch('toast-error',
+                message: 'Simpan atau buang dulu perubahan yang belum tersimpan.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim(
+                "/keberangkatan/{$this->keberangkatanId}/pembagian/kembalikan",
+                ['urutan' => $urutan],
+            );
+
+            $this->data = array_merge($this->data, $balasan['data'] ?? []);
+            $this->laporan = [];
+            $this->terpilih = '';
+
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Pembagian dikembalikan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
     public function bagiOtomatis(string $apa): void
     {
         if ($this->ubahan !== []) {
@@ -503,6 +535,7 @@ class OrchaPembagianRombongan extends Component
             'peserta' => $this->peserta(),
             'ringkasan' => $this->ringkasan(),
             'peringatan' => $this->peringatan(),
+            'riwayat' => $this->data['riwayat'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

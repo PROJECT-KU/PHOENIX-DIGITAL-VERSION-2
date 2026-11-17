@@ -86,6 +86,21 @@
                                         <i class="bi bi-pencil"></i><span>Ubah</span>
                                     </button>
 
+                                    {{-- Jalan ke pembagian kursi & kamar rombongan ini.
+
+                                         Dari sinilah tanggal keberangkatan
+                                         dikelola, jadi di sinilah pertanyaan
+                                         "bus dan kamarnya sudah dibagi belum?"
+                                         muncul. Sebelumnya layar itu hanya bisa
+                                         dicapai lewat salah satu pendaftaran —
+                                         yang harus dicari dulu. --}}
+                                    <a class="pb-kb-btn" style="--ikon: #16a34a"
+                                        href="{{ route('admin.orcha.pembagian', $kb['id']) }}" wire:navigate
+                                        title="Bagi tempat duduk bus dan kamar hotel untuk rombongan ini">
+                                        <i class="bi bi-grid-3x3-gap"></i>
+                                        <span>Bagi kursi</span>
+                                    </a>
+
                                     <button type="button" class="pb-kb-btn" style="--ikon: #0284c7"
                                         wire:click="salinKeberangkatan({{ $kb['id'] }})"
                                         title="Buat tanggal baru dengan isi yang sama persis">

@@ -169,6 +169,8 @@ class OrchaPendaftaranList extends Component
          */
         $this->dipilih = [];
         $this->bukaPesanMassal = false;
+        $this->bukaGabung = false;
+        $this->keadaanMassal = '';
         // Tab ikut pulang ke "Semua": tombolnya menjanjikan membersihkan
         // semuanya, dan tab yang tetap menyala membuat daftarnya terlihat
         // masih tersaring padahal tidak.
@@ -245,6 +247,17 @@ class OrchaPendaftaranList extends Component
         'peserta_sedikit' => ['Peserta tersedikit', 'bi-person'],
         'uang_masuk_kecil' => ['Uang masuk paling sedikit', 'bi-cash-coin'],
         'uang_masuk_besar' => ['Uang masuk paling banyak', 'bi-cash-stack'],
+        /*
+         | Sisa tagihan, akhirnya bisa diurut.
+         |
+         | Dulu tidak ada di daftar ini karena totalnya dihitung PHP, dan
+         | menulis ulang hitungan itu sebagai SQL berarti dua hitungan untuk
+         | satu angka uang. Sekarang angkanya DISALIN ke kolom total_tagihan
+         | oleh kait saved pada modelnya di Orcha — aturannya tetap satu, yang
+         | ada di SQL cuma pengurangan uang yang sudah diterima.
+         */
+        'sisa_besar' => ['Sisa tagihan terbesar', 'bi-exclamation-diamond'],
+        'sisa_kecil' => ['Sisa tagihan terkecil', 'bi-check2-circle'],
     ];
 
     #[\Livewire\Attributes\Url(as: 'urut', except: 'terbaru')]
@@ -330,7 +343,127 @@ class OrchaPendaftaranList extends Component
     {
         $this->dipilih = [];
         $this->bukaPesanMassal = false;
+        $this->bukaGabung = false;
+        $this->keadaanMassal = '';
         $this->pesanMassal = '';
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Menandai beberapa sekaligus
+     |--------------------------------------------------------------------------
+     |
+     | Mengabari dua puluh pendaftar lalu menandai semuanya "sudah dihubungi"
+     | sebelumnya berarti membuka dua puluh halaman. Yang bisa lewat sini cuma
+     | penandaan — "Batal" sengaja tidak ditawarkan, karena membatalkan melepas
+     | kursi dan mengabari daftar tunggu, dan dua puluh pembatalan dari satu
+     | salah klik tidak bisa dibatalkan.
+     */
+    public string $keadaanMassal = '';
+
+    public function ubahKeadaanMassal(): void
+    {
+        if ($this->dipilih === []) {
+            $this->dispatch('toast-error', message: 'Belum ada pendaftaran yang dicentang.');
+
+            return;
+        }
+
+        if ($this->keadaanMassal === '') {
+            $this->dispatch('toast-error', message: 'Pilih dulu keadaan yang mau diberikan.');
+
+            return;
+        }
+
+        $this->kirimPerubahan('/pendaftaran/status-massal', [
+            'id' => collect($this->dipilih)->map(fn ($id) => (int) $id)->all(),
+            'status' => $this->keadaanMassal,
+        ], 'Keadaan pendaftaran yang dicentang diperbarui.');
+
+        $this->dipilih = [];
+        $this->keadaanMassal = '';
+        $this->bukaPesanMassal = false;
+    }
+
+    /**
+     * Keadaan yang boleh diberikan ke banyak baris sekaligus.
+     *
+     * "Batal" dibuang di SINI juga, bukan hanya di Orcha. Penjaga di sana yang
+     * berwenang; yang di sini supaya pilihannya tidak pernah terlihat — tombol
+     * yang ditawarkan lalu ditolak membuat admin mengira aplikasinya rusak.
+     *
+     * @return array<string, string>
+     */
+    public function pilihanKeadaanMassal(): array
+    {
+        return collect($this->rujukan('status_pendaftaran'))
+            ->reject(fn ($label, $kunci) => $kunci === 'batal')
+            ->all();
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Gabungkan dua pendaftaran
+     |--------------------------------------------------------------------------
+     |
+     | Terjadi tiap kali pemesan mengisi borang dua kali — sekali untuk
+     | dirinya, sekali untuk sisa keluarganya. Menghapus salah satunya bukan
+     | jalan keluar begitu uangnya sudah masuk, dan biasanya memang sudah.
+     */
+
+    public bool $bukaGabung = false;
+
+    public function bukaFormulirGabung(): void
+    {
+        if (count($this->dipilih) !== 2) {
+            $this->dispatch('toast-error',
+                message: 'Centang TEPAT DUA pendaftaran yang mau digabungkan.');
+
+            return;
+        }
+
+        $this->bukaGabung = true;
+    }
+
+    public function tutupFormulirGabung(): void
+    {
+        $this->bukaGabung = false;
+    }
+
+    /**
+     * Menggabungkan dua baris yang dicentang.
+     *
+     * $tujuan menentukan mana yang BERTAHAN — kode pemesanannya yang dipakai
+     * seterusnya. Admin memilihnya sendiri, tidak ditebak dari yang lebih tua
+     * atau yang lebih banyak pesertanya: yang menentukan biasanya kwitansi mana
+     * yang sudah terlanjur dikirim ke pemesan, dan itu tidak terbaca dari data.
+     */
+    public function gabungkan(int $tujuan): void
+    {
+        $sumber = collect($this->dipilih)
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === $tujuan)
+            ->first();
+
+        if (! $sumber) {
+            $this->dispatch('toast-error', message: 'Pilihannya tidak lengkap.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim("/pendaftaran/{$sumber}/gabungkan", ['ke' => $tujuan]);
+
+            cache()->forget('orcha.perlu-ditindak');
+            \App\Support\HitunganOrcha::lupakanSemua();
+
+            $this->dipilih = [];
+            $this->bukaGabung = false;
+            $this->dispatch('order-updated',
+                message: $balasan['pesan'] ?? 'Pendaftaran digabungkan.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
     }
 
     public function bukaKirimMassal(): void
@@ -414,6 +547,7 @@ class OrchaPendaftaranList extends Component
              */
             'jumlahTab' => $meta['jumlah_tab'] ?? [],
             'pilihanUrut' => self::URUT,
+            'pilihanKeadaanMassal' => $this->pilihanKeadaanMassal(),
             /*
              | Id baris yang SEDANG TAMPIL, untuk kotak "centang semua".
              |

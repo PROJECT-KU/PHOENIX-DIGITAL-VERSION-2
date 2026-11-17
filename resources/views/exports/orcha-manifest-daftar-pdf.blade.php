@@ -51,6 +51,14 @@
                    untuk tahu orang ini naik bus mana adalah pekerjaan yang
                    akhirnya dilewati, dan pembagiannya kembali ke ingatan. */
                 'bus' => trim($orang['bus'] ?? '') ?: null,
+                /* Nomor kursi ikut, bukan cuma nama busnya.
+
+                   Dulu hanya bus dan kamar yang tercetak, sehingga nomor
+                   kursi — satu-satunya hal yang menentukan siapa duduk di
+                   mana — tidak pernah sampai ke kertas yang dibawa tour
+                   leader. Pembagiannya ada di layar, dan tour leader tetap
+                   mengatur tempat duduk dengan tangan di parkiran. */
+                'kursi' => trim((string) ($orang['kursi'] ?? '')) ?: null,
                 'kamar' => trim($orang['kamar'] ?? '') ?: null,
             ];
             $totalPeserta++;
@@ -235,9 +243,9 @@
                              tahu orang ini naik bus mana adalah pekerjaan yang
                              akhirnya dilewati, dan pembagiannya kembali ke ingatan. --}}
                         <td width="10%" style="font-size:10px;">
-                            @if ($satu['bus'] || $satu['kamar'])
+                            @if ($satu['bus'] || $satu['kamar'] || $satu['kursi'])
                                 {{ collect([
-                                    $satu['bus'],
+                                    trim(($satu['bus'] ?? '').($satu['kursi'] ? ' k'.$satu['kursi'] : '')),
                                     $satu['kamar'] ? 'kmr '.$satu['kamar'] : null,
                                 ])->filter()->implode(' · ') }}
                             @else

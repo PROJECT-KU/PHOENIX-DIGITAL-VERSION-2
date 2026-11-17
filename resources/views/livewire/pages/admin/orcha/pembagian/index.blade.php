@@ -72,20 +72,62 @@ Bagi Kursi & Kamar || lemon
 
            Lebar kolomnya ditulis di atribut style tiap kendaraan, karena posisi
            lorongnya berbeda antara tata 2-2 dan 2-3. */
-        .pbg-petak { display: grid; gap: 6px; justify-content: start; }
+        /* Lebar kursi & lorong didefinisikan SEKALI, di sini.
 
+           Sebelumnya angkanya ada di dua tempat: CSS untuk kotak kursinya, dan
+           PHP yang merakit grid-template-columns petaknya. Saat kursinya
+           dilebarkan, yang kedua tertinggal — kolomnya tetap sempit, kursinya
+           melimpah ke kursi sebelah, dan nama yang tertimpa terbaca sebagai
+           nama yang terpotong. Tidak ada galat; yang salah cuma apa yang
+           terbaca di petak. */
+        .pbg-petak {
+            --pbg-kursi-w: 84px;
+            --pbg-lorong-w: 22px;
+            display: grid; gap: 6px; justify-content: start;
+        }
+
+        /* 72px, bukan 54px.
+
+           Pada 54px nama terpotong di huruf kedelapan ("Budi S…", "Hendra…"),
+           dan dua peserta yang nama depannya sama tidak bisa dibedakan dari
+           petak — padahal membedakan mereka justru gunanya. Dua barisnya juga
+           dibolehkan, supaya "Rina Wulandari" terbaca utuh. */
         .pbg-kursi {
-            width: 54px; height: 44px; border-radius: 9px; cursor: pointer;
+            width: var(--pbg-kursi-w); min-height: 54px; border-radius: 9px; cursor: pointer;
             background: #fff; border: 1px dashed #cbd5e1; color: #94a3b8;
-            font-size: .7rem; line-height: 1.15; padding: 3px;
+            font-size: .7rem; line-height: 1.15; padding: 4px 3px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            overflow: hidden;
+            gap: 2px; overflow: hidden;
         }
-        .pbg-kursi-nomor { font-weight: 700; font-size: .66rem; }
+        .pbg-kursi-nomor {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-weight: 700; font-size: .66rem;
+        }
+        .pbg-kursi-nomor i.bi { font-size: .6rem; opacity: .55; }
         .pbg-kursi-nama {
-            display: block; max-width: 100%; font-size: .62rem; font-weight: 600;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            /* width, bukan max-width.
+
+               Kotak -webkit-box menentukan lebarnya sendiri dari isi
+               terpanjang (max-content) dan mengabaikan max-width, jadi nama
+               sepanjang "Doni Saputra" meluber MELEWATI tepi kursinya ke kursi
+               sebelah alih-alih turun ke baris kedua — dan yang terbaca di
+               petak lalu nama yang salah. Yang lebih panjang lagi kebetulan
+               terbungkus, sehingga cacatnya terlihat acak. */
+            width: 100%; min-width: 0; font-size: .6rem; font-weight: 600;
+            white-space: normal;
+            overflow: hidden; text-align: center;
+            /* break-word memenggal DI TENGAH KATA lebih dulu: "Budi Santoso"
+               jadi "Budi Santos" + "o", dan baris keduanya terpotong clamp
+               sehingga yang terbaca cuma nama yang salah eja. normal +
+               overflow-wrap memenggal di spasi dulu, dan baru memotong kata
+               yang memang tidak muat sendirian. */
+            word-break: normal; overflow-wrap: break-word;
         }
+        /* Kursi jendela hanya ditandai tipis di sisi luarnya. Pewarnaan penuh
+           akan bersaing dengan warna jenis kelamin, dan dua arti pada satu
+           warna membuat keduanya berhenti terbaca. */
+        .pbg-kursi.is-jendela { box-shadow: inset 2px 0 0 #cbd5e1; }
         .pbg-kursi.is-isi { border-style: solid; }
         .pbg-kursi.is-laki { border-color: #7dd3fc; background: #e0f2fe; color: #075985; }
         .pbg-kursi.is-perempuan { border-color: #f9a8d4; background: #fce7f3; color: #9d174d; }
@@ -93,7 +135,28 @@ Bagi Kursi & Kamar || lemon
         .pbg-kursi.is-bentrok { border-color: #f87171; background: #fee2e2; color: #991b1b; }
         /* Lorong: ruang kosong, BUKAN kursi kosong. Dua hal yang tidak boleh
            terbaca sama — yang satu bisa diisi orang, yang lain tidak. */
-        .pbg-lorong { width: 22px; }
+        .pbg-lorong { width: var(--pbg-lorong-w); }
+
+        /* Wadah bergulir untuk petaknya saja.
+
+           Tata 2-3 selebar enam kolom tidak muat di ponsel. Tanpa wadah ini
+           yang bergeser SELURUH halaman, dan halaman yang bisa digeser ke
+           samping membuat tombol di tepi kanan hilang dari layar. */
+        .pbg-petak-gulir { overflow-x: auto; padding-bottom: 6px; }
+
+        /* Keterangan warna, sekali per kendaraan. */
+        .pbg-kunci-warna {
+            display: flex; flex-wrap: wrap; gap: 13px; margin-top: 10px;
+            font-size: .74rem; color: var(--dsb-redup);
+        }
+        .pbg-kunci-warna span { display: inline-flex; align-items: center; gap: 5px; }
+        .pbg-titik {
+            width: 11px; height: 11px; border-radius: 3px; display: inline-block;
+            border: 1px solid #cbd5e1;
+        }
+        .pbg-titik.is-laki { background: #e0f2fe; border-color: #7dd3fc; }
+        .pbg-titik.is-perempuan { background: #fce7f3; border-color: #f9a8d4; }
+        .pbg-titik.is-belum { background: #fef3c7; border-color: #fcd34d; }
 
         @media (hover: hover) and (pointer: fine) {
             .pbg-kursi:hover { border-color: #7c3aed; color: #5b21b6; }
@@ -135,7 +198,43 @@ Bagi Kursi & Kamar || lemon
             .pbg-kamar:hover { border-color: #a78bfa; }
         }
 
-        /* ===== Bilah belum tersimpan ===== */
+        /* ===== Bilah belum tersimpan, menempel di DASAR layar =====
+
+           Papan kamar ada di bagian paling bawah halaman. Dengan tombol Simpan
+           yang tinggal di kepala, admin yang baru memindahkan orang harus
+           menggulir balik ke atas — dan di situlah ia paling mudah lupa. */
+        .pbg-simpan-tempel {
+            position: sticky; bottom: 12px; z-index: 30; margin: 16px 0 4px;
+        }
+        .pbg-simpan-tempel .pbg-simpan-bilah {
+            box-shadow: 0 10px 30px rgba(15, 23, 42, .18);
+        }
+        /* Halaman diberi ruang di dasarnya supaya bilah yang menempel tidak
+           menutupi baris terakhir papan kamar. */
+        .pbg-layar { padding-bottom: 86px; }
+
+        /* ===== Peringatan yang diringkas ===== */
+        .pbg-awas-lipat {
+            padding: 10px 12px; border-radius: 11px;
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+            font-size: .82rem; line-height: 1.5;
+        }
+        .pbg-awas-lipat > summary { cursor: pointer; font-weight: 600; list-style: none; }
+        .pbg-awas-lipat > summary::-webkit-details-marker { display: none; }
+        .pbg-awas-lipat > summary i.bi { margin-right: 6px; }
+        .pbg-awas-lipat[open] > summary { margin-bottom: 4px; }
+
+        /* ===== Riwayat pembagian ===== */
+        .pbg-riwayat { display: flex; flex-direction: column; gap: 8px; }
+        .pbg-riwayat-baris {
+            display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+            padding: 10px 13px; border-radius: 12px;
+            background: #fff; border: 1px solid var(--dsb-tepi); font-size: .82rem;
+        }
+        .pbg-riwayat-teks { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .pbg-riwayat-teks > strong { font-size: .84rem; color: var(--dsb-tinta); }
+        .pbg-riwayat-teks > span { font-size: .74rem; color: var(--dsb-redup); }
+
         .pbg-simpan-bilah {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
             padding: 12px 15px; border-radius: 13px;
@@ -191,6 +290,25 @@ Bagi Kursi & Kamar || lemon
                     <i class="bi bi-arrow-left"></i><span>Daftar Pendaftaran</span>
                 </a>
 
+                {{-- Dua berkas untuk dua tangan yang berbeda.
+
+                     Denah kursi dibawa sopir dan tour leader; daftar kamar
+                     diserahkan ke resepsionis hotel. Sebelum ada keduanya,
+                     seluruh pembagian ini berakhir di satu tab peramban —
+                     dan tour leader tetap berdiri di parkiran dengan catatan
+                     tangan. --}}
+                <a href="{{ route('admin.orcha.pembagian.kursi', $keberangkatanId) }}"
+                    class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                    title="Denah tempat duduk untuk sopir dan tour leader">
+                    <i class="bi bi-filetype-pdf"></i><span>Cetak Denah Kursi</span>
+                </a>
+
+                <a href="{{ route('admin.orcha.pembagian.kamar', $keberangkatanId) }}"
+                    class="dsb-tombol is-lembut" style="--ikon: #db2777"
+                    title="Daftar kamar untuk diserahkan ke hotel">
+                    <i class="bi bi-filetype-pdf"></i><span>Cetak Daftar Kamar</span>
+                </a>
+
                 <button type="button" class="dsb-tombol {{ $this->adaUbahan() ? 'is-utama' : 'is-lembut is-mati' }}"
                     wire:click="simpan" @disabled(! $this->adaUbahan())>
                     <i class="bi bi-check2-circle"></i><span>Simpan Pembagian</span>
@@ -200,33 +318,33 @@ Bagi Kursi & Kamar || lemon
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        {{-- ===== BILAH BELUM TERSIMPAN =====
+        {{-- ===== BILAH BELUM TERSIMPAN, MENEMPEL DI DASAR LAYAR =====
 
              Perubahan ditahan di layar sampai Simpan ditekan — menyimpan setiap
              ketukan berarti satu panggilan ke Orcha per orang untuk pekerjaan
-             yang menyentuh seratus orang. Yang tidak boleh adalah admin menutup
-             tab dan kehilangan satu jam kerja tanpa pernah tahu ia belum
-             menyimpan, jadi keadaannya dinyatakan sejelas mungkin. --}}
+             yang menyentuh seratus orang.
+
+             Menempel di dasar, bukan ikut menggulir. Papan kamar ada di bagian
+             paling bawah halaman; dengan tombol Simpan yang tinggal di kepala,
+             admin yang baru memindahkan orang harus menggulir balik ke atas —
+             dan di situlah ia paling mudah lupa, lalu menutup tab dan
+             kehilangan satu jam kerja tanpa pernah tahu ia belum menyimpan. --}}
         @if ($this->adaUbahan())
-            <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-isi">
-                        <div class="pbg-simpan-bilah">
-                            <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-exclamation-triangle-fill"></i></span>
-                            <div class="pbg-simpan-teks">
-                                <strong>{{ count($ubahan) }} orang dipindahkan tetapi BELUM tersimpan.</strong>
-                                Kalau halaman ini ditutup sekarang, pembagiannya kembali seperti semula.
-                            </div>
-                            <div class="pbg-simpan-aksi">
-                                <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
-                                    wire:click="batalkanUbahan">
-                                    <i class="bi bi-arrow-counterclockwise"></i><span>Buang perubahan</span>
-                                </button>
-                                <button type="button" class="dsb-tombol is-utama" wire:click="simpan">
-                                    <i class="bi bi-check2-circle"></i><span>Simpan sekarang</span>
-                                </button>
-                            </div>
-                        </div>
+            <div class="pbg-simpan-tempel">
+                <div class="pbg-simpan-bilah">
+                    <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                    <div class="pbg-simpan-teks">
+                        <strong>{{ count($ubahan) }} orang dipindahkan tetapi BELUM tersimpan.</strong>
+                        Kalau halaman ini ditutup sekarang, pembagiannya kembali seperti semula.
+                    </div>
+                    <div class="pbg-simpan-aksi">
+                        <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                            wire:click="batalkanUbahan">
+                            <i class="bi bi-arrow-counterclockwise"></i><span>Buang</span>
+                        </button>
+                        <button type="button" class="dsb-tombol is-utama" wire:click="simpan">
+                            <i class="bi bi-check2-circle"></i><span>Simpan sekarang</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -295,13 +413,58 @@ Bagi Kursi & Kamar || lemon
                         </div>
                     </div>
                     <div class="dsb-kartu-isi">
+                        {{-- Diringkas dulu, baru bisa dibuka.
+
+                             Rombongan enam puluh orang dengan tiga puluh kamar
+                             tercampur menghasilkan tiga puluh baris kuning, dan
+                             daftar sepanjang itu berhenti dibaca pada baris
+                             kelima — termasuk baris merah yang terselip di
+                             antaranya. Yang merah karenanya dihitung terpisah
+                             dan disebut lebih dulu. --}}
+                        @php
+                            $awasMerah = collect($peringatan)->where('jenis', 'kursi_kembar')->values();
+                            $awasKuning = collect($peringatan)->where('jenis', '!=', 'kursi_kembar')->values();
+                        @endphp
+
                         <div class="pbg-awas">
-                            @foreach ($peringatan as $satu)
-                                <div class="pbg-awas-baris {{ $satu['jenis'] === 'kursi_kembar' ? 'is-merah' : 'is-kuning' }}">
-                                    <i class="bi {{ $satu['jenis'] === 'kursi_kembar' ? 'bi-x-octagon-fill' : 'bi-exclamation-triangle-fill' }}"></i>
-                                    <span>{{ $satu['pesan'] }}</span>
-                                </div>
-                            @endforeach
+                            @if ($awasMerah->isNotEmpty())
+                                {{-- Bentrokan kursi SELALU dibentangkan.
+
+                                     Tidak ada keadaan sah di mana dua orang
+                                     menempati satu kursi, jadi ini bukan hal
+                                     yang perlu ditimbang admin — dan jumlahnya
+                                     tidak pernah banyak. --}}
+                                @foreach ($awasMerah as $satu)
+                                    <div class="pbg-awas-baris is-merah">
+                                        <i class="bi bi-x-octagon-fill"></i>
+                                        <span>{{ $satu['pesan'] }}</span>
+                                    </div>
+                                @endforeach
+                            @endif
+
+                            @if ($awasKuning->count() > 3)
+                                <details class="pbg-awas-lipat">
+                                    <summary>
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        {{ $awasKuning->count() }} kamar perlu diperiksa — ketuk untuk melihat daftarnya
+                                    </summary>
+                                    <div class="pbg-awas mt-2">
+                                        @foreach ($awasKuning as $satu)
+                                            <div class="pbg-awas-baris is-kuning">
+                                                <i class="bi bi-dot"></i>
+                                                <span>{{ $satu['pesan'] }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            @else
+                                @foreach ($awasKuning as $satu)
+                                    <div class="pbg-awas-baris is-kuning">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span>{{ $satu['pesan'] }}</span>
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -374,6 +537,68 @@ Bagi Kursi & Kamar || lemon
                 </div>
             </div>
         </div>
+
+        {{-- ===== RIWAYAT PEMBAGIAN =====
+
+             Jalan pulang. Satu tekanan "Bagi Otomatis" dengan centang timpa
+             menghapus satu jam penyusunan tangan, dan hasilnya tetap berupa
+             pembagian yang rapi — jadi tanpa ini, kesalahannya baru ketahuan
+             di hari keberangkatan. --}}
+        @if ($riwayat !== [])
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #64748b"><i class="bi bi-clock-history"></i></span>
+                            <span>
+                                <h2 class="dsb-kartu-judul">Kembalikan ke Pembagian Sebelumnya</h2>
+                                <span class="dsb-kartu-sub">
+                                    Sepuluh perubahan terakhir. Yang dikembalikan penempatannya —
+                                    peserta yang sudah batal tidak ikut dihidupkan lagi.
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="pbg-riwayat">
+                            @foreach ($riwayat as $potret)
+                                <div class="pbg-riwayat-baris" wire:key="potret-{{ $potret['urutan'] }}">
+                                    <span class="dsb-lencana is-abu">
+                                        {{ $potret['sebab'] }}
+                                    </span>
+
+                                    <div class="pbg-riwayat-teks">
+                                        <strong>
+                                            {{ ! empty($potret['pada'])
+                                                ? \Carbon\Carbon::parse($potret['pada'])->locale('id')->translatedFormat('d F Y, H:i').' WIB'
+                                                : 'waktu tidak tercatat' }}
+                                        </strong>
+                                        <span>
+                                            {{ $potret['sudah_kursi'] }} dapat kursi &middot;
+                                            {{ $potret['sudah_kamar'] }} dapat kamar
+                                            @if (! empty($potret['oleh']))
+                                                &middot; oleh {{ $potret['oleh'] }}
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                        x-data="{ tanya: @js('Pembagian dikembalikan ke keadaan sebelum "'.$potret['sebab'].'". Yang sekarang ikut dipotret dulu, jadi langkah ini juga bisa dibatalkan.') }"
+                                        x-on:click="
+                                            if (await window.orchaKonfirmasi(tanya, { judul: 'Kembalikan?', tombol: 'Ya, kembalikan' })) {
+                                                $wire.kembalikan({{ (int) $potret['urutan'] }});
+                                            }
+                                        ">
+                                        <i class="bi bi-arrow-counterclockwise"></i><span>Kembalikan</span>
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         {{-- ===== KENDARAAN & KAMAR YANG DISIAPKAN =====
 
@@ -571,6 +796,11 @@ Bagi Kursi & Kamar || lemon
                                             ? trim(($satu['bus'] ?? '').' kursi '.$satu['kursi'])
                                             : null,
                                         filled($satu['kamar'] ?? null) ? 'kamar '.$satu['kamar'] : null,
+                                        // Titik jemput ikut terbaca di sini: yang
+                                        // dibutuhkan sopir justru keduanya
+                                        // bersamaan — siapa naik di mana, duduk
+                                        // di mana.
+                                        filled($satu['titik_jemput'] ?? null) ? $satu['titik_jemput'] : null,
                                     ])->filter()->implode(' · ');
                                 @endphp
 
@@ -708,11 +938,27 @@ Bagi Kursi & Kamar || lemon
                                        bangku belakang yang seluruh sisanya null. */
                                     $posisiLorong = array_search(null, $kendaraanPetak['baris'][0] ?? [], true);
 
+                                    /* Lebarnya dibaca dari peubah CSS, bukan
+                                       diketik ulang sebagai angka. Angka yang
+                                       ditulis di dua tempat pasti berbeda suatu
+                                       hari — dan saat itu terjadi, kursinya
+                                       melimpah ke kursi sebelah tanpa satu pun
+                                       galat. */
                                     $kolomPetak = collect(range(0, max(0, ($kendaraanPetak['lebar'] ?? 5) - 1)))
-                                        ->map(fn ($i) => $i === $posisiLorong ? '22px' : '54px')
+                                        ->map(fn ($i) => $i === $posisiLorong
+                                            ? 'var(--pbg-lorong-w)'
+                                            : 'var(--pbg-kursi-w)')
                                         ->implode(' ');
                                 @endphp
 
+                                {{-- Wadah bergulir.
+
+                                     Tata 2-3 selebar 6 kolom tidak muat di
+                                     ponsel; tanpa wadah ini yang bergeser
+                                     SELURUH halaman, bukan petaknya saja —
+                                     dan halaman yang bisa digeser ke samping
+                                     membuat tombol di tepi kanan hilang. --}}
+                                <div class="pbg-petak-gulir">
                                 <div class="pbg-petak" style="grid-template-columns: {{ $kolomPetak }}">
                                     @foreach ($kendaraanPetak['baris'] as $baris)
                                             @foreach ($baris as $sel)
@@ -720,6 +966,15 @@ Bagi Kursi & Kamar || lemon
                                                     <span class="pbg-lorong"></span>
                                                 @else
                                                     @php
+                                                        /* Kursi jendela: kolom paling kiri dan paling
+                                                           kanan. Permintaan yang paling sering datang —
+                                                           "ibu saya minta dekat jendela" — sebelumnya
+                                                           hanya bisa dijawab dengan menghitung kolom
+                                                           pakai jari. */
+                                                        $kolomIni = $loop->index;
+                                                        $jendela = $kolomIni === 0
+                                                            || $kolomIni === count($baris) - 1;
+
                                                         $isi = $penghuniKursi[$kendaraanPetak['nama'].'|'.$sel] ?? [];
                                                         $orang = $isi[0] ?? null;
                                                         $bentrok = count($isi) > 1;
@@ -731,12 +986,14 @@ Bagi Kursi & Kamar || lemon
                                                     @endphp
 
                                                     <button type="button"
-                                                        class="pbg-kursi {{ $rupaKursi }}"
+                                                        class="pbg-kursi {{ $rupaKursi }} {{ $jendela ? 'is-jendela' : '' }}"
                                                         wire:click="tempatkanKursi(@js($kendaraanPetak['nama']), @js($sel))"
                                                         title="{{ $orang
                                                             ? $orang['nama'].' — '.$orang['pemesan'].' ('.$orang['kode'].')'
                                                             : 'Kursi '.$sel.' masih kosong' }}">
-                                                        <span class="pbg-kursi-nomor">{{ $sel }}</span>
+                                                        <span class="pbg-kursi-nomor">
+                                                            {{ $sel }}@if ($jendela)<i class="bi bi-window"></i>@endif
+                                                        </span>
                                                         @if ($orang)
                                                             <span class="pbg-kursi-nama">{{ $orang['nama'] }}</span>
                                                         @endif
@@ -744,6 +1001,20 @@ Bagi Kursi & Kamar || lemon
                                                 @endif
                                             @endforeach
                                     @endforeach
+                                </div>
+                                </div>
+
+                                {{-- Keterangan warna, sekali per kendaraan.
+
+                                     Petak berwarna tanpa keterangan menuntut
+                                     admin menebak artinya dari isi kursinya —
+                                     dan tebakan itu salah persis pada kursi
+                                     yang jenis kelaminnya belum diisi. --}}
+                                <div class="pbg-kunci-warna">
+                                    <span><i class="pbg-titik is-laki"></i> Laki-laki</span>
+                                    <span><i class="pbg-titik is-perempuan"></i> Perempuan</span>
+                                    <span><i class="pbg-titik is-belum"></i> L/P belum diisi</span>
+                                    <span><i class="bi bi-window"></i> kursi jendela</span>
                                 </div>
                             </div>
                         @endforeach

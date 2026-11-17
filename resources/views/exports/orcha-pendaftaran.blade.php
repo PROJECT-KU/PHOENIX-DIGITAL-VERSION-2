@@ -29,43 +29,50 @@
 @endphp
 
 <table>
-    <tr><th colspan="8" style="{{ $judulUtama }}">DATA PENDAFTARAN OPEN TRIP — {{ $pendaftaran['kode'] }}</th></tr>
-    <tr><td colspan="8" style="color:#94A3B8;">Diunduh {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB oleh {{ auth()->user()->name ?? '-' }} · rahasia internal</td></tr>
-    <tr><td colspan="8"></td></tr>
+    <tr><th colspan="10" style="{{ $judulUtama }}">DATA PENDAFTARAN OPEN TRIP — {{ $pendaftaran['kode'] }}</th></tr>
+    <tr><td colspan="10" style="color:#94A3B8;">Diunduh {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB oleh {{ auth()->user()->name ?? '-' }} · rahasia internal</td></tr>
+    <tr><td colspan="10"></td></tr>
 
-    <tr><th colspan="8" style="{{ $judulBagian }}">PEMESAN</th></tr>
-    <tr><td style="{{ $labelBaris }}">Kode</td><td colspan="7">{{ $pendaftaran['kode'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Nama</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['nama'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">WhatsApp</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['whatsapp'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Email</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['email'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Mendaftar</td><td colspan="7" style="{{ $isiBaris }}">{{ $tanggal($pendaftaran['dibuat_pada'] ?? null, 'd/m/Y H:i') }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Status</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['status_label'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Catatan pemesan</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['catatan'] }}</td></tr>
-    <tr><td colspan="8"></td></tr>
+    <tr><th colspan="10" style="{{ $judulBagian }}">PEMESAN</th></tr>
+    <tr><td style="{{ $labelBaris }}">Kode</td><td colspan="9">{{ $pendaftaran['kode'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Nama</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['nama'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">WhatsApp</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['whatsapp'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Email</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['email'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Mendaftar</td><td colspan="9" style="{{ $isiBaris }}">{{ $tanggal($pendaftaran['dibuat_pada'] ?? null, 'd/m/Y H:i') }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Status</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['status_label'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Catatan pemesan</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['catatan'] }}</td></tr>
+    <tr><td colspan="10"></td></tr>
 
-    <tr><th colspan="8" style="{{ $judulBagian }}">PERJALANAN</th></tr>
-    <tr><td style="{{ $labelBaris }}">Paket</td><td colspan="7" style="{{ $isiBaris }}">{{ data_get($pendaftaran, 'paket.nama') }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Tanggal berangkat</td><td colspan="7" style="{{ $isiBaris }}">{{ $tanggal($pendaftaran['tanggal_berangkat'] ?? null, 'l, d F Y') }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Jumlah peserta</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['jumlah_peserta'] }}</td></tr>
-    <tr><td style="{{ $labelBaris }}">Titik jemput</td><td colspan="7" style="{{ $isiBaris }}">{{ $pendaftaran['titik_jemput'] }}</td></tr>
-    <tr><td colspan="8"></td></tr>
+    <tr><th colspan="10" style="{{ $judulBagian }}">PERJALANAN</th></tr>
+    <tr><td style="{{ $labelBaris }}">Paket</td><td colspan="9" style="{{ $isiBaris }}">{{ data_get($pendaftaran, 'paket.nama') }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Tanggal berangkat</td><td colspan="9" style="{{ $isiBaris }}">{{ $tanggal($pendaftaran['tanggal_berangkat'] ?? null, 'l, d F Y') }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Jumlah peserta</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['jumlah_peserta'] }}</td></tr>
+    <tr><td style="{{ $labelBaris }}">Titik jemput</td><td colspan="9" style="{{ $isiBaris }}">{{ $pendaftaran['titik_jemput'] }}</td></tr>
+    <tr><td colspan="10"></td></tr>
 
     @if ($tagihan)
-        <tr><th colspan="8" style="{{ $judulBagian }}">TAGIHAN</th></tr>
-        <tr><td style="{{ $labelBaris }}">Total</td><td colspan="7" style="{{ $isiBaris }}">{{ $tagihan['total'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Sudah dibayar</td><td colspan="7" style="{{ $isiBaris }}">{{ $tagihan['sudah'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Sisa</td><td colspan="7" style="{{ $isiBaris }}">{{ $tagihan['sisa'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Lunas</td><td colspan="7" style="{{ $isiBaris }}">{{ ($tagihan['lunas'] ?? false) ? 'Ya' : 'Belum' }}</td></tr>
-        <tr><td colspan="8"></td></tr>
+        <tr><th colspan="10" style="{{ $judulBagian }}">TAGIHAN</th></tr>
+        <tr><td style="{{ $labelBaris }}">Total</td><td colspan="9" style="{{ $isiBaris }}">{{ $tagihan['total'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Sudah dibayar</td><td colspan="9" style="{{ $isiBaris }}">{{ $tagihan['sudah'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Sisa</td><td colspan="9" style="{{ $isiBaris }}">{{ $tagihan['sisa'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Lunas</td><td colspan="9" style="{{ $isiBaris }}">{{ ($tagihan['lunas'] ?? false) ? 'Ya' : 'Belum' }}</td></tr>
+        <tr><td colspan="10"></td></tr>
     @endif
 
     {{-- ============ PESERTA & RIWAYAT KESEHATAN ============
          Satu baris satu peserta, kolomnya tetap — bentuk yang bisa disaring
          dan dihitung, bukan dibaca seperti cerita. --}}
-    <tr><th colspan="8" style="{{ $judulBagian }}">PESERTA &amp; RIWAYAT KESEHATAN</th></tr>
+    <tr><th colspan="10" style="{{ $judulBagian }}">PESERTA &amp; RIWAYAT KESEHATAN</th></tr>
     <tr>
         <th style="{{ $kepalaKolom }}">Nama</th>
         <th style="{{ $kepalaKolom }}">Titik jemput</th>
+        {{-- Bus, kursi, dan kamar ikut di lembar yang sama.
+
+             Lembar ini yang dipakai kantor untuk menyaring dan menghitung;
+             pembagian yang hanya ada di layar tidak bisa dicocokkan dengan
+             apa pun — termasuk dengan tagihan hotel yang datang kemudian. --}}
+        <th style="{{ $kepalaKolom }}">Bus &amp; kursi</th>
+        <th style="{{ $kepalaKolom }}">Kamar</th>
         <th style="{{ $kepalaKolom }}">Kesehatan diisi</th>
         <th style="{{ $kepalaKolom }}">Tingkat perhatian</th>
         <th style="{{ $kepalaKolom }}">Usia</th>
@@ -78,17 +85,23 @@
         <tr>
             <td>{{ $satu['nama'] }}</td>
             <td>{{ $satu['titik_jemput'] }}</td>
+            <td>{{ trim(($satu['bus'] ?? '').(filled($satu['kursi'] ?? null) ? ' kursi '.$satu['kursi'] : '')) }}</td>
+            <td>{{ $satu['kamar'] ?? '' }}</td>
             <td>{{ $k ? 'Sudah' : 'Belum' }}</td>
             <td>{{ $k['tingkat_perhatian'] ?? '' }}</td>
             <td>{{ $k['usia'] ?? '' }}</td>
-            <td>{{ $k['jenis_kelamin'] ?? '' }}</td>
+            {{-- Dibaca dari baris pesertanya DULU, baru dari riwayat
+                 kesehatan: yang pertama diisi pemesan di borang pendaftaran
+                 dan selalu ada, yang kedua hanya ada kalau pesertanya sempat
+                 mengisi formulir kesehatan. --}}
+            <td>{{ $satu['jenis_kelamin'] ?? ($k['jenis_kelamin'] ?? '') }}</td>
             <td>{{ $k['golongan_darah'] ?? '' }}</td>
             <td>{{ $k['tinggi_badan'] ?? '' }}</td>
         </tr>
     @endforeach
-    <tr><td colspan="8"></td></tr>
+    <tr><td colspan="10"></td></tr>
 
-    <tr><th colspan="8" style="{{ $judulBagian }}">RINCIAN KESEHATAN</th></tr>
+    <tr><th colspan="10" style="{{ $judulBagian }}">RINCIAN KESEHATAN</th></tr>
     <tr>
         <th style="{{ $kepalaKolom }}">Nama</th>
         <th style="{{ $kepalaKolom }}">Kondisi khusus</th>
@@ -113,11 +126,11 @@
                 {{ data_get($satu, 'kontak_darurat.hp') }}</td>
         </tr>
     @empty
-        <tr><td colspan="8">Belum ada peserta yang mengisi riwayat kesehatan.</td></tr>
+        <tr><td colspan="10">Belum ada peserta yang mengisi riwayat kesehatan.</td></tr>
     @endforelse
-    <tr><td colspan="8"></td></tr>
+    <tr><td colspan="10"></td></tr>
 
-    <tr><th colspan="8" style="{{ $judulBagian }}">BUKTI PEMBAYARAN</th></tr>
+    <tr><th colspan="10" style="{{ $judulBagian }}">BUKTI PEMBAYARAN</th></tr>
     <tr>
         <th style="{{ $kepalaKolom }}">Tanggal transfer</th>
         <th style="{{ $kepalaKolom }}">Jenis</th>
@@ -140,17 +153,17 @@
             <td>{{ $tanggal($bayar['dibuat_pada'] ?? null, 'd/m/Y H:i') }}</td>
         </tr>
     @empty
-        <tr><td colspan="8">Belum ada bukti pembayaran.</td></tr>
+        <tr><td colspan="10">Belum ada bukti pembayaran.</td></tr>
     @endforelse
 
     @if ($pembatalan)
-        <tr><td colspan="8"></td></tr>
-        <tr><th colspan="8" style="{{ $judulBagian }}">PENGAJUAN PEMBATALAN</th></tr>
-        <tr><td style="{{ $labelBaris }}">Pemohon</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['nama_pemohon'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Alasan</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['alasan_label'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Penjelasan</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['penjelasan'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Peserta dibatalkan</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['jumlah_dibatalkan'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Rekening pengembalian</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['rekening'] }}</td></tr>
-        <tr><td style="{{ $labelBaris }}">Status</td><td colspan="7" style="{{ $isiBaris }}">{{ $pembatalan['status'] }}</td></tr>
+        <tr><td colspan="10"></td></tr>
+        <tr><th colspan="10" style="{{ $judulBagian }}">PENGAJUAN PEMBATALAN</th></tr>
+        <tr><td style="{{ $labelBaris }}">Pemohon</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['nama_pemohon'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Alasan</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['alasan_label'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Penjelasan</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['penjelasan'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Peserta dibatalkan</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['jumlah_dibatalkan'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Rekening pengembalian</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['rekening'] }}</td></tr>
+        <tr><td style="{{ $labelBaris }}">Status</td><td colspan="9" style="{{ $isiBaris }}">{{ $pembatalan['status'] }}</td></tr>
     @endif
 </table>

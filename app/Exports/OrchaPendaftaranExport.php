@@ -49,7 +49,9 @@ class OrchaPendaftaranExport implements FromView, ShouldAutoSize, WithEvents, Wi
             AfterSheet::class => function (AfterSheet $kejadian) {
                 $lembar = $kejadian->sheet->getDelegate();
 
-                foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H'] as $kolom) {
+                // Dua kolom bertambah (bus & kursi, kamar) sejak pembagian
+                // rombongan ikut tercetak di lembar ini.
+                foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as $kolom) {
                     $lembar->getColumnDimension($kolom)->setAutoSize(false)->setWidth(24);
                 }
 
@@ -67,7 +69,7 @@ class OrchaPendaftaranExport implements FromView, ShouldAutoSize, WithEvents, Wi
                 // peserta" dan "Nominal" melompat ke kanan sementara tetangganya
                 // tetap di kiri. Lembar begini dibaca menurun kolom demi kolom,
                 // dan tepi kiri yang lurus itulah yang menuntun mata.
-                $lembar->getStyle('A1:H'.$lembar->getHighestRow())
+                $lembar->getStyle('A1:J'.$lembar->getHighestRow())
                     ->getAlignment()
                     ->setWrapText(true)
                     ->setHorizontal(Alignment::HORIZONTAL_LEFT)

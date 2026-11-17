@@ -188,8 +188,21 @@ Detail Pendaftaran || lemon
     .pd-kaki-bayar .is-kurang strong { color: #b45309; }
     .pd-kaki-bayar .baris + .baris:last-child { border-top: 1px dashed #e2e8f0; padding-top: 8px; }
 
-    /* ===== Bilah loncat ke bagian ===== */
-    .pd-loncat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    /* ===== Bilah loncat ke bagian, menempel di atas ===== */
+    .pd-loncat-tempel {
+        position: sticky; top: 0; z-index: 25;
+        margin: 0 0 18px; padding: 10px 0;
+        background: linear-gradient(#f6f7fb 72%, rgba(246, 247, 251, 0));
+    }
+    .pd-loncat {
+        display: flex; align-items: center; gap: 8px;
+        overflow-x: auto; padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Bergulir mendatar, bukan membungkus ke baris kedua: bilah yang
+       menempel dan setinggi dua baris memakan seperempat layar ponsel,
+       dan yang tertutup olehnya justru kartu yang baru saja dituju. */
+    .pd-loncat > * { flex-shrink: 0; }
     .pd-loncat-label {
         display: inline-flex; align-items: center; gap: 6px;
         font-size: .76rem; font-weight: 700; letter-spacing: .04em;
@@ -579,19 +592,21 @@ Detail Pendaftaran || lemon
                 ])->filter(fn ($satu) => $satu[3])->values();
             @endphp
 
+            {{-- MENEMPEL di atas saat halaman digulung.
+
+                 Halaman ini lebih dari dua ribu baris markah. Bilah yang ikut
+                 menggulir hanya berguna sebelum admin mulai membaca — begitu
+                 ia sampai di kartu angsuran, satu-satunya jalan ke kartu lain
+                 adalah menggulir balik ke puncak. --}}
             @if ($bagian->count() > 3)
-                <div class="dsb-rak dsb-bagian">
-                    <div class="dsb-kartu k-12">
-                        <div class="dsb-kartu-isi">
-                            <div class="pd-loncat">
-                                <span class="pd-loncat-label"><i class="bi bi-list-ul"></i> Loncat ke</span>
-                                @foreach ($bagian as $satu)
-                                    <a class="pd-loncat-tautan" href="#{{ $satu[0] }}">
-                                        <i class="bi {{ $satu[2] }}"></i><span>{{ $satu[1] }}</span>
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
+                <div class="pd-loncat-tempel">
+                    <div class="pd-loncat">
+                        <span class="pd-loncat-label"><i class="bi bi-list-ul"></i> Loncat ke</span>
+                        @foreach ($bagian as $satu)
+                            <a class="pd-loncat-tautan" href="#{{ $satu[0] }}">
+                                <i class="bi {{ $satu[2] }}"></i><span>{{ $satu[1] }}</span>
+                            </a>
+                        @endforeach
                     </div>
                 </div>
             @endif

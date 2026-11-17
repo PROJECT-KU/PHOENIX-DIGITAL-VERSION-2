@@ -336,7 +336,7 @@ test('centang yang datanya false tidak ikut tergambar', function () {
     }
 });
 
-test('empat tombol di baris tanggal sama tingginya', function () {
+test('semua tombol di baris tanggal sama tingginya', function () {
     palsukanBorangPaket();
 
     /*
@@ -358,9 +358,16 @@ test('empat tombol di baris tanggal sama tingginya', function () {
     $deret = substr($isi, $mulai, strpos($isi, '</span>', strpos($isi, '</button>', $mulai)) - $mulai + 2000);
     $deret = substr($deret, 0, strpos($deret, '</div>') ?: strlen($deret));
 
-    // Keempatnya memakai satu kelas yang sama; tidak ada .dsb-tombol yang
-    // menyelinap kembali dengan tinggi bawaannya sendiri.
-    expect(substr_count($deret, 'pb-kb-btn'))->toBe(4)
+    /*
+     | Jumlahnya tidak dipaku — yang dijaga adalah SATU KELAS untuk semuanya.
+     |
+     | Tombolnya memang bertambah sejalan dengan fiturnya (kini ada "Bagi
+     | kursi" di sampingnya). Memaku angkanya membuat uji ini merah tiap kali
+     | ada tombol baru, padahal yang diperiksanya bukan jumlah melainkan
+     | tingginya; dan uji yang merah karena alasan yang salah akan dilonggarkan
+     | orang berikutnya, lalu tidak menjaga apa pun.
+     */
+    expect(substr_count($deret, 'pb-kb-btn'))->toBeGreaterThanOrEqual(4)
         ->and($deret)->not->toContain('dsb-tombol');
 
     // Dan kelas itu memang memaku tingginya.

@@ -246,3 +246,112 @@ test('tautan berkas ikut membawa saringan rombongan dan urutan', function () {
     expect($saringan['urut'])->toBe('berangkat_dekat');
     expect($saringan['paket_id'])->toBe('5');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Keadaan massal & gabung
+|--------------------------------------------------------------------------
+*/
+
+test('sisa tagihan sekarang ada di daftar urutan', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->assertSee('Sisa tagihan terbesar')
+        ->set('urut', 'sisa_besar');
+
+    expect(parameterDaftarTerakhir()['urut'] ?? null)->toBe('sisa_besar');
+});
+
+test('menandai keadaan beberapa sekaligus menolak tanpa centangan', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('keadaanMassal', 'dihubungi')
+        ->call('ubahKeadaanMassal')
+        ->assertDispatched('toast-error');
+});
+
+test('menandai keadaan beberapa sekaligus mengirim id yang dicentang', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('dipilih', ['1', '2'])
+        ->set('keadaanMassal', 'dihubungi')
+        ->call('ubahKeadaanMassal')
+        ->assertSet('dipilih', [])
+        ->assertDispatched('order-updated');
+
+    $terkirim = collect(Http::recorded())
+        ->map(fn ($pasang) => $pasang[0])
+        ->first(fn ($p) => str_contains($p->url(), 'status-massal'));
+
+    expect($terkirim->data()['id'])->toBe([1, 2]);
+    expect($terkirim->data()['status'])->toBe('dihubungi');
+});
+
+test('batal tidak pernah ditawarkan sebagai keadaan massal', function () {
+    /*
+     | Membatalkan melepas kursi dan mengabari daftar tunggu. Dua puluh
+     | pembatalan dari satu salah klik tidak bisa dibatalkan, dan tidak ada
+     | layar yang bisa menjelaskan apa yang baru saja terjadi.
+     */
+    $layar = Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class);
+
+    expect(array_keys($layar->instance()->pilihanKeadaanMassal()))
+        ->not->toContain('batal');
+});
+
+test('gabung menuntut tepat dua centangan', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('dipilih', ['1'])
+        ->call('bukaFormulirGabung')
+        ->assertDispatched('toast-error')
+        ->assertSet('bukaGabung', false);
+});
+
+test('panel gabung menawarkan dua kode, dan yang ditekan jadi yang bertahan', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('dipilih', ['1', '2'])
+        ->call('bukaFormulirGabung')
+        ->assertSet('bukaGabung', true)
+        ->assertSee('Pilih pendaftaran yang BERTAHAN')
+        ->assertSee('OT-1711-A1')
+        ->assertSee('OT-1711-A2');
+});
+
+test('gabung mengirim yang satunya sebagai sumber', function () {
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('dipilih', ['1', '2'])
+        ->call('bukaFormulirGabung')
+        // Yang dipilih bertahan adalah 2, jadi yang dikirim sebagai sumber 1.
+        ->call('gabungkan', 2)
+        ->assertSet('dipilih', [])
+        ->assertDispatched('order-updated');
+
+    $terkirim = collect(Http::recorded())
+        ->map(fn ($pasang) => $pasang[0])
+        ->first(fn ($p) => str_contains($p->url(), 'gabungkan'));
+
+    expect($terkirim->url())->toContain('/pendaftaran/1/gabungkan');
+    expect($terkirim->data()['ke'])->toBe(2);
+});
+
+test('tautan daftar tunggu membawa tanggal rombongan saat ada yang disaring', function () {
+    /*
+     | Saat yang orang teringat daftar tunggu adalah saat ia baru membatalkan
+     | satu pendaftaran dan satu kursi menganggur — dan yang ia butuhkan pada
+     | saat itu bukan daftar antrean, melainkan kalimat yang siap dikirim
+     | lengkap dengan tanggalnya.
+     */
+    Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('filterPaket', '5')
+        ->set('filterKeberangkatan', '12')
+        ->assertSee('Tawarkan ke Daftar Tunggu')
+        // Tanggalnya ikut di kueri. Potongannya pendek dengan sengaja:
+        // route() menyandikan spasi sebagai %20, dan memaku sandi lengkapnya
+        // membuat uji ini merah pada perubahan yang tidak ada hubungannya.
+        ->assertSee('tawarkan=11', false);
+});

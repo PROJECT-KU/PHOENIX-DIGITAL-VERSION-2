@@ -47,12 +47,28 @@ Pendaftaran Trip || lemon
                      daftar tunggu adalah saat ia baru membatalkan satu
                      pendaftaran dan satu kursi menganggur. Saringannya ikut
                      dibawa supaya yang terbuka antrean rombongan yang sama. --}}
+                {{-- Tanggal rombongan ikut dibawa saat ada yang disaring.
+
+                     Saat yang orang teringat daftar tunggu adalah saat ia baru
+                     membatalkan satu pendaftaran dan satu kursi menganggur —
+                     dan yang ia butuhkan pada saat itu bukan daftar antrean,
+                     melainkan kalimat yang siap dikirim lengkap dengan
+                     tanggalnya. --}}
+                @php
+                    $rombonganTerpilih = collect($this->keberangkatanPaket())
+                        ->firstWhere('id', (int) $this->filterKeberangkatan);
+                @endphp
+
                 <a href="{{ route('admin.orcha.daftar-tunggu', array_filter([
                         'paket_id' => $this->filterPaket,
+                        'tawarkan' => $rombonganTerpilih['rentang_tanggal'] ?? null,
                     ])) }}" wire:navigate
                     class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
-                    title="Orang yang menunggu kursi — tawarkan ke mereka begitu ada yang membatalkan">
-                    <i class="bi bi-hourglass-split"></i><span>Daftar Tunggu</span>
+                    title="{{ $rombonganTerpilih
+                        ? 'Tawarkan kursi rombongan '.$rombonganTerpilih['rentang_tanggal'].' ke yang mengantre'
+                        : 'Orang yang menunggu kursi — tawarkan ke mereka begitu ada yang membatalkan' }}">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span>{{ $rombonganTerpilih ? 'Tawarkan ke Daftar Tunggu' : 'Daftar Tunggu' }}</span>
                 </a>
 
                 {{-- Pembagian kursi & kamar, muncul hanya setelah satu
@@ -296,11 +312,99 @@ Pendaftaran Trip || lemon
                                     wire:click="kosongkanPilihan">
                                     <i class="bi bi-x-circle"></i><span>Kosongkan</span>
                                 </button>
+
+                                {{-- Menggabungkan menuntut TEPAT DUA.
+
+                                     Tombolnya tetap terlihat di luar itu supaya
+                                     admin tahu fiturnya ada — yang ditolak
+                                     adalah penekanannya, lengkap dengan
+                                     sebabnya. Tombol yang baru muncul pada
+                                     jumlah centangan tertentu tidak pernah
+                                     ditemukan orang yang tidak mencarinya. --}}
+                                @if (count($dipilih) === 2)
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                        wire:click="bukaFormulirGabung"
+                                        title="Satukan dua pemesanan yang sebenarnya satu rombongan">
+                                        <i class="bi bi-union"></i><span>Gabungkan</span>
+                                    </button>
+                                @endif
+
                                 <button type="button" class="dsb-tombol is-aman" wire:click="bukaKirimMassal">
                                     <i class="bi bi-whatsapp"></i><span>Siapkan pesan WhatsApp</span>
                                 </button>
                             </div>
                         </div>
+
+                        {{-- Menandai keadaan beberapa sekaligus.
+
+                             "Batal" tidak ada di daftar ini: membatalkan melepas
+                             kursi dan mengabari daftar tunggu, dan dua puluh
+                             pembatalan dari satu salah klik tidak bisa
+                             dibatalkan. Yang itu tetap satu per satu. --}}
+                        @if ($pilihanKeadaanMassal !== [])
+                            <div class="pd-massal-keadaan">
+                                <span><i class="bi bi-tag"></i> Tandai semuanya sebagai</span>
+
+                                <select wire:model="keadaanMassal" class="dsb-isian">
+                                    <option value="" @selected($keadaanMassal === '')>— pilih keadaan —</option>
+                                    @foreach ($pilihanKeadaanMassal as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected($this->keadaanMassal === $kunci)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+
+                                <button type="button" class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
+                                    x-data="{ tanya: @js('Keadaan '.count($dipilih).' pendaftaran yang dicentang akan diubah.') }"
+                                    x-on:click="
+                                        if (await window.orchaKonfirmasi(tanya, { judul: 'Tandai sekaligus?', tombol: 'Ya, tandai' })) {
+                                            $wire.ubahKeadaanMassal();
+                                        }
+                                    ">
+                                    <i class="bi bi-check2-all"></i><span>Terapkan</span>
+                                </button>
+                            </div>
+                        @endif
+
+                        {{-- Panel gabung: admin memilih mana yang BERTAHAN.
+
+                             Tidak ditebak dari yang lebih tua atau yang lebih
+                             banyak pesertanya — yang menentukan biasanya
+                             kwitansi mana yang sudah terlanjur dikirim ke
+                             pemesan, dan itu tidak terbaca dari data. --}}
+                        @if ($bukaGabung && count($barisDipilih) === 2)
+                            <div class="pd-massal-panel">
+                                <div class="orcha-bagian-kepala">
+                                    <div class="orcha-bagian-nomor"><i class="bi bi-union"></i></div>
+                                    <div>
+                                        <div class="orcha-bagian-judul">Pilih pendaftaran yang BERTAHAN</div>
+                                        <div class="orcha-bagian-sub">
+                                            Kode pemesanannya yang dipakai seterusnya. Pembayaran, riwayat
+                                            kesehatan, dan nama peserta dari yang satunya dipindahkan ke sini,
+                                            lalu barisnya dihapus. Kode yang hilang dicatat di catatan internal.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pd-gabung-pilih">
+                                    @foreach ($barisDipilih as $satu)
+                                        <button type="button" class="pd-gabung-kartu"
+                                            x-data="{ tanya: @js('Pendaftaran yang satunya digabungkan ke '.$satu['kode'].' ('.$satu['nama'].'), lalu barisnya dihapus. Ini tidak bisa dibatalkan.') }"
+                                            x-on:click="
+                                                if (await window.orchaKonfirmasi(tanya, { judul: 'Gabungkan?', tombol: 'Ya, gabungkan' })) {
+                                                    $wire.gabungkan({{ (int) $satu['id'] }});
+                                                }
+                                            ">
+                                            <span class="orcha-kode">{{ $satu['kode'] }}</span>
+                                            <strong>{{ $satu['nama'] }}</strong>
+                                            <span>pakai kode ini</span>
+                                        </button>
+                                    @endforeach
+                                </div>
+
+                                <button type="button" class="dsb-tautan mt-2" wire:click="tutupFormulirGabung">
+                                    <i class="bi bi-x"></i> Batal menggabungkan
+                                </button>
+                            </div>
+                        @endif
 
                         @if ($bukaPesanMassal)
                             <div class="pd-massal-panel">
@@ -746,6 +850,33 @@ Pendaftaran Trip || lemon
         .pd-massal-teks > strong { font-size: .9rem; color: #5b21b6; }
         .pd-massal-teks > span { font-size: .78rem; line-height: 1.5; color: #6d28d9; }
         .pd-massal-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+        .pd-massal-keadaan {
+            display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+            margin-top: 10px; padding: 10px 12px;
+            border-radius: 12px; background: #fff; border: 1px solid var(--dsb-tepi);
+            font-size: .82rem; color: var(--dsb-redup);
+        }
+        .pd-massal-keadaan .dsb-isian { width: auto; min-width: 170px; }
+
+        /* Dua kartu berdampingan, dan yang ditekan menentukan kode mana yang
+           bertahan. Bukan pemilih: dua pilihan yang akibatnya berbeda jauh
+           pantas terlihat berdampingan dengan ukuran yang sama, bukan
+           bersembunyi di dalam daftar yang harus dibuka dulu. */
+        .pd-gabung-pilih {
+            display: grid; gap: 10px; margin-top: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+        .pd-gabung-kartu {
+            display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+            padding: 12px 14px; border-radius: 13px; cursor: pointer; text-align: left;
+            background: #fff; border: 1px solid var(--dsb-tepi);
+        }
+        .pd-gabung-kartu strong { font-size: .9rem; color: var(--dsb-tinta); }
+        .pd-gabung-kartu > span:last-child { font-size: .76rem; color: #7c3aed; font-weight: 600; }
+        @media (hover: hover) and (pointer: fine) {
+            .pd-gabung-kartu:hover { border-color: #7c3aed; background: #faf5ff; }
+        }
 
         .pd-massal-panel {
             margin-top: 11px; padding: 14px;

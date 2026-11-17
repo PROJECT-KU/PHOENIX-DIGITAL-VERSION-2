@@ -106,6 +106,84 @@ class OrchaEksporController extends Controller
         );
     }
 
+    /**
+     * Denah tempat duduk kendaraan, untuk dibawa sopir dan tour leader.
+     *
+     * Berbentuk PETAK, bukan daftar nomor. Yang dipakai di lapangan adalah
+     * bentuk busnya: tour leader berdiri di depan lorong dan membaca ke
+     * belakang, dan daftar "1. Budi, 2. Siti, 3. Agus" tidak bisa dipakai
+     * begitu — ia harus menerjemahkannya sendiri jadi posisi, sambil berdiri.
+     *
+     * Tidak memuat data kesehatan, jadi tidak menuntut izin itu: isinya nama,
+     * nomor kursi, dan titik jemput.
+     */
+    public function denahKursi(Request $request, int $keberangkatan)
+    {
+        $data = $this->pembagian($keberangkatan);
+
+        abort_if(($data['petak'] ?? []) === [], 404,
+            'Rombongan ini belum punya kendaraan yang didaftarkan.');
+
+        return Pdf::loadView('exports.orcha-denah-kursi-pdf', [
+            'keberangkatan' => $data['keberangkatan'] ?? [],
+            'petak' => $data['petak'] ?? [],
+            'peserta' => $data['peserta'] ?? [],
+        ])->setPaper('a4')->download(
+            'DENAH-KURSI-'.$this->namaRombongan($data).'.pdf'
+        );
+    }
+
+    /**
+     * Daftar kamar, untuk diserahkan ke resepsionis hotel.
+     *
+     * Jenis kelamin ikut tercetak — itulah yang dicocokkan resepsionis saat
+     * menyerahkan kunci, dan daftar tanpa keterangan itu membuatnya menebak
+     * dari nama. Nomor WhatsApp pemesan ikut satu baris di kepala, supaya
+     * hotel punya satu orang untuk dihubungi dan tidak menelepon peserta satu
+     * per satu.
+     */
+    public function daftarKamar(Request $request, int $keberangkatan)
+    {
+        $data = $this->pembagian($keberangkatan);
+
+        abort_if(($data['kamar'] ?? []) === [], 404,
+            'Rombongan ini belum punya kamar yang didaftarkan.');
+
+        return Pdf::loadView('exports.orcha-daftar-kamar-pdf', [
+            'keberangkatan' => $data['keberangkatan'] ?? [],
+            'kamar' => $data['kamar'] ?? [],
+            'peserta' => $data['peserta'] ?? [],
+        ])->setPaper('a4')->download(
+            'DAFTAR-KAMAR-'.$this->namaRombongan($data).'.pdf'
+        );
+    }
+
+    /** Keadaan pembagian satu rombongan, dari Orcha. */
+    private function pembagian(int $keberangkatan): array
+    {
+        try {
+            return $this->orcha->ambil("/keberangkatan/{$keberangkatan}/pembagian")['data'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            abort(503, $e->getMessage());
+        }
+    }
+
+    /**
+     * Nama berkas yang bisa dibedakan saat beberapa terbuka bersamaan.
+     *
+     * Memakai rentang tanggalnya, bukan nomor keberangkatan: yang membuka
+     * folder unduhan mengenali rombongan dari tanggalnya, dan "DENAH-KURSI-11"
+     * tidak memberi tahu rombongan mana.
+     */
+    private function namaRombongan(array $data): string
+    {
+        $rentang = trim((string) ($data['keberangkatan']['rentang_tanggal'] ?? ''));
+
+        return $rentang !== ''
+            ? \Illuminate\Support\Str::slug($rentang)
+            : now()->format('Ymd-Hi');
+    }
+
     public function excel(Request $request, int $pendaftaran)
     {
         [$data, $riwayat] = $this->ambil($request, $pendaftaran);

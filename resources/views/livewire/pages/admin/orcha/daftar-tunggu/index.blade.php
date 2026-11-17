@@ -140,11 +140,17 @@ Daftar Tunggu || lemon
                         <tbody>
                             @forelse ($daftar as $baris)
                                 @php
+                                    /* Pesannya dirakit di komponen, bukan di sini.
+
+                                       Saat admin datang dari layar Pendaftaran
+                                       karena satu kursi baru kosong, kalimatnya
+                                       harus sudah menyebut TANGGALNYA — pesan
+                                       tanpa tanggal menghasilkan percakapan
+                                       bolak-balik tentang satu keterangan yang
+                                       sudah ada di tangan admin sejak awal. */
                                     $wa = 'https://api.whatsapp.com/send?phone='
                                         . preg_replace('/^0/', '62', preg_replace('/\D/', '', $baris['whatsapp']))
-                                        . '&text=' . rawurlencode(
-                                            'Halo ' . $baris['nama'] . ', ada kabar soal '
-                                            . ($baris['paket'] ?? 'trip yang Anda tunggu') . '.');
+                                        . '&text=' . rawurlencode($this->pesanTawaran($baris));
                                 @endphp
 
                                 <tr wire:key="tunggu-{{ $baris['id'] }}">

@@ -55,6 +55,47 @@ class OrchaDaftarTungguList extends Component
      * yang sudah terjadi. Yang hilang hanya penandanya, dan itu bisa dipasang
      * lagi dengan menekan tombol yang sama.
      */
+    /*
+     |--------------------------------------------------------------------------
+     | Menawarkan kursi yang baru kosong
+     |--------------------------------------------------------------------------
+     |
+     | Datang dari layar Pendaftaran lewat ?tawarkan=<rentang tanggal>. Saat
+     | yang orang teringat daftar tunggu adalah saat ia baru membatalkan satu
+     | pendaftaran dan satu kursi menganggur — dan pada saat itu yang ia
+     | butuhkan bukan daftar antrean, melainkan kalimat yang siap dikirim
+     | lengkap dengan TANGGALNYA.
+     |
+     | Pesan tanpa tanggal ("ada kabar soal trip yang Anda tunggu") menghasilkan
+     | percakapan bolak-balik yang seluruhnya tentang satu keterangan yang
+     | sudah ada di tangan admin sejak awal.
+     */
+    #[\Livewire\Attributes\Url(as: 'tawarkan', except: '')]
+    public string $tawarkan = '';
+
+    /**
+     * Pesan tawaran yang sudah terisi tanggalnya.
+     *
+     * Kosong bila tidak sedang menawarkan apa pun — layar daftar tunggu juga
+     * dipakai untuk pekerjaan lain, dan kalimat tawaran yang selalu terpasang
+     * akan terkirim pada hari tidak ada kursi yang kosong.
+     */
+    public function pesanTawaran(array $baris): string
+    {
+        $paket = trim((string) ($baris['paket'] ?? ''));
+
+        if ($this->tawarkan === '') {
+            return 'Halo '.$baris['nama'].', ada kabar soal '
+                .($paket !== '' ? $paket : 'trip yang Anda tunggu').'.';
+        }
+
+        return 'Halo '.$baris['nama'].', ada kursi yang baru kosong untuk '
+            .($paket !== '' ? $paket.' ' : '')
+            .'keberangkatan '.$this->tawarkan.'. '
+            .'Untuk '.(int) ($baris['jumlah_peserta'] ?? 1).' orang seperti yang Bapak/Ibu tunggu. '
+            .'Masih berminat? Kursinya kami tahan dulu sampai nanti sore.';
+    }
+
     public function tandaiDihubungi(int $id): void
     {
         try {

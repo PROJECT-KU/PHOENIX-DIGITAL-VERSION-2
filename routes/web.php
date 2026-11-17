@@ -662,6 +662,23 @@ Route::middleware('permission:akses_orcha')->group(function () {
         ->whereNumber('keberangkatan')
         ->name('admin.orcha.pembagian');
 
+    /*
+     | Dua berkas untuk dua tangan yang berbeda.
+     |
+     | Denah kursi dibawa sopir dan tour leader; daftar kamar diserahkan ke
+     | resepsionis hotel. Keduanya TIDAK memuat data kesehatan, jadi tidak
+     | menuntut izin itu — isinya nama, nomor kursi, kamar, dan titik jemput.
+     */
+    Route::get('/admin/orcha/rombongan/{keberangkatan}/denah-kursi',
+        [OrchaEksporController::class, 'denahKursi'])
+        ->whereNumber('keberangkatan')
+        ->name('admin.orcha.pembagian.kursi');
+
+    Route::get('/admin/orcha/rombongan/{keberangkatan}/daftar-kamar',
+        [OrchaEksporController::class, 'daftarKamar'])
+        ->whereNumber('keberangkatan')
+        ->name('admin.orcha.pembagian.kamar');
+
     Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
     Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');

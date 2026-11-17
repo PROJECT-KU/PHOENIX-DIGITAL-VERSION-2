@@ -84,6 +84,7 @@ function keadaanPembagian(array $ubah = []): array
         'peserta' => $peserta,
         'ringkasan' => [],
         'peringatan' => [],
+        'riwayat' => $ubah['riwayat'] ?? [],
     ];
 }
 
@@ -415,4 +416,105 @@ test('tanpa peserta, layar menyebut sebab yang mungkin', function () {
         ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
         ->assertSee('Belum ada peserta di rombongan ini')
         ->assertSee('nama pesertanya belum didata');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Riwayat, cetak, dan rupa petak
+|--------------------------------------------------------------------------
+*/
+
+test('panel riwayat menawarkan pengembalian beserta sebab tiap potret', function () {
+    config()->set('uji.pbg.keadaan', ['riwayat' => [
+        ['urutan' => 0, 'pada' => now()->subMinutes(5)->toIso8601String(), 'oleh' => 'Admin Uji',
+            'sebab' => 'bagi otomatis (menimpa)', 'jumlah_peserta' => 6, 'sudah_kursi' => 4, 'sudah_kamar' => 4],
+    ]]);
+
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('Kembalikan ke Pembagian Sebelumnya')
+        ->assertSee('bagi otomatis (menimpa)')
+        ->assertSee('4 dapat kursi');
+});
+
+test('pengembalian ditahan selama masih ada perubahan yang belum disimpan', function () {
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->call('pilih', '7:0')
+        ->call('tempatkanKursi', 'Bus 1', '3')
+        ->call('kembalikan', 0)
+        ->assertDispatched('toast-error');
+});
+
+test('tombol cetak denah kursi dan daftar kamar ada di kepala layar', function () {
+    /*
+     | Tanpa keduanya, seluruh pembagian ini berakhir di satu tab peramban —
+     | dan tour leader tetap berdiri di parkiran dengan catatan tangan.
+     */
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('Cetak Denah Kursi')
+        ->assertSee('Cetak Daftar Kamar')
+        ->assertSee('/rombongan/11/denah-kursi', false)
+        ->assertSee('/rombongan/11/daftar-kamar', false);
+});
+
+test('petak dibungkus wadah bergulir dan menandai kursi jendela', function () {
+    /*
+     | Tata 2-3 selebar enam kolom tidak muat di ponsel; tanpa wadah bergulir
+     | yang bergeser SELURUH halaman, dan tombol di tepi kanan hilang dari
+     | layar. Penanda jendela menjawab permintaan yang paling sering datang.
+     */
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('pbg-petak-gulir')
+        ->assertSee('is-jendela')
+        ->assertSee('kursi jendela');
+});
+
+test('titik jemput ikut terbaca di kepingan peserta', function () {
+    // Yang dibutuhkan sopir justru keduanya bersamaan: siapa naik di mana,
+    // duduk di mana.
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('Terminal');
+});
+
+test('peringatan kamar yang banyak diringkas jadi satu baris yang bisa dibuka', function () {
+    /*
+     | Rombongan enam puluh orang dengan tiga puluh kamar tercampur
+     | menghasilkan tiga puluh baris kuning, dan daftar sepanjang itu berhenti
+     | dibaca pada baris kelima — termasuk baris merah yang terselip.
+     */
+    $peserta = [];
+
+    foreach (range(0, 7) as $i) {
+        $peserta[] = orangPembagian('7:'.$i, 'Orang '.$i, [
+            'jenis_kelamin' => $i % 2 ? 'Perempuan' : 'Laki-laki',
+            'kamar' => (string) (201 + intdiv($i, 2)),
+        ]);
+    }
+
+    config()->set('uji.pbg.keadaan', ['peserta' => $peserta, 'kamar' => [
+        ['nama' => '201', 'kapasitas' => 2], ['nama' => '202', 'kapasitas' => 2],
+        ['nama' => '203', 'kapasitas' => 2], ['nama' => '204', 'kapasitas' => 2],
+    ]]);
+
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        // Empat kamar tercampur → diringkas, bukan dibentangkan.
+        ->assertSee('4 kamar perlu diperiksa');
+});
+
+test('bilah simpan menempel di dasar layar', function () {
+    /*
+     | Papan kamar ada di bagian paling bawah halaman. Dengan tombol Simpan
+     | yang tinggal di kepala, admin yang baru memindahkan orang harus
+     | menggulir balik ke atas — dan di situlah ia paling mudah lupa.
+     */
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->call('pilih', '7:0')
+        ->call('tempatkanKursi', 'Bus 1', '3')
+        ->assertSee('pbg-simpan-tempel');
 });
