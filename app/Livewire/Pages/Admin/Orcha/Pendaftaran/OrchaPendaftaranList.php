@@ -546,6 +546,15 @@ class OrchaPendaftaranList extends Component
              | masih berguna — sedangkan halaman yang mati karenanya tidak.
              */
             'jumlahTab' => $meta['jumlah_tab'] ?? [],
+            /*
+             | Ringkasan satu rombongan: kursi terjual, uang masuk, sisa.
+             |
+             | Hanya ikut saat daftar disaring per rombongan — Orcha yang
+             | memutuskannya, dan di luar itu kuncinya memang tidak dikirim.
+             | Angkanya dipakai tiap kali rombongan diputuskan jadi berangkat
+             | atau tidak, dan sebelum ini dirakit admin sendiri dari daftar.
+             */
+            'ringkasanRombongan' => $meta['rombongan'] ?? null,
             'pilihanUrut' => self::URUT,
             'pilihanKeadaanMassal' => $this->pilihanKeadaanMassal(),
             /*

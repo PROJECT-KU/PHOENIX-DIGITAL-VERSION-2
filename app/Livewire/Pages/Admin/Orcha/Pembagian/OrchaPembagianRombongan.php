@@ -227,6 +227,41 @@ class OrchaPembagianRombongan extends Component
         $this->catatUbahan($kunci, ['jenis_kelamin' => $kelamin ?: null]);
     }
 
+    /**
+     * Menyimpan jenis kelamin yang datang dari borang riwayat kesehatan.
+     *
+     * Layar sudah MENAMPILKAN nilai itu — Orcha menggabungkannya saat memuat —
+     * tetapi yang tersimpan di baris pesertanya masih kosong. Selama begitu,
+     * pembagiannya bergantung pada kaitan lewat NAMA: begitu ejaan nama
+     * diperbaiki, jenis kelaminnya hilang lagi dan kamar yang sudah dibagi
+     * terbaca sebagai "belum diisi".
+     *
+     * Sekali tekan untuk seluruh rombongan. Tanpa ini, satu-satunya jalan
+     * adalah menekan L atau P enam puluh kali untuk data yang sudah ada.
+     */
+    public function ambilKelaminDariKesehatan(): void
+    {
+        $dari = collect($this->peserta())
+            ->filter(fn ($satu) => ($satu['kelamin_dari_kesehatan'] ?? false)
+                && filled($satu['jenis_kelamin'] ?? null));
+
+        if ($dari->isEmpty()) {
+            $this->dispatch('toast-error',
+                message: 'Tidak ada yang bisa diambil — tidak ada peserta yang jenis kelaminnya '
+                    .'hanya diketahui dari formulir kesehatan.');
+
+            return;
+        }
+
+        foreach ($dari as $satu) {
+            $this->catatUbahan((string) $satu['kunci'], ['jenis_kelamin' => $satu['jenis_kelamin']]);
+        }
+
+        $this->dispatch('order-updated',
+            message: $dari->count().' jenis kelamin diambil dari formulir kesehatan. '
+                .'Tekan Simpan supaya tidak hilang lagi saat nama diperbaiki.');
+    }
+
     /** @param  array<string, ?string>  $medan */
     private function catatUbahan(string $kunci, array $medan): void
     {

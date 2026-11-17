@@ -27,6 +27,31 @@ Bagi Kursi & Kamar || lemon
            ("8 dari 22 kursi") tidak pernah terlihat bersamaan. */
         .pbg-angka { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 
+        /* ===== Tiga langkah =====
+           Penunjuk urutan, bukan tab: isinya memang perlu terlihat bersamaan
+           saat membagi. Yang sudah beres menyala hijau sendiri. */
+        .pbg-langkah {
+            display: grid; gap: 10px; margin: 0; padding: 0; list-style: none;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        }
+        .pbg-langkah > li {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 13px 15px; border-radius: 14px;
+            background: #fff; border: 1px solid var(--dsb-tepi);
+        }
+        .pbg-langkah strong { display: block; font-size: .88rem; color: var(--dsb-tinta); }
+        .pbg-langkah small { display: block; margin-top: 2px; font-size: .76rem; line-height: 1.5; color: var(--dsb-redup); }
+        .pbg-langkah-no {
+            flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #f1f5f9; color: #94a3b8; font-size: .8rem; font-weight: 800;
+        }
+        .pbg-langkah > li.is-kini { border-color: #a78bfa; background: #faf5ff; }
+        .pbg-langkah > li.is-kini .pbg-langkah-no { background: #7c3aed; color: #fff; }
+        .pbg-langkah > li.is-beres { border-color: #bbf7d0; background: #f0fdf4; }
+        .pbg-langkah > li.is-beres .pbg-langkah-no { background: #16a34a; color: #fff; }
+        .pbg-langkah > li.is-beres strong { color: #15803d; }
+
         /* ===== Daftar peserta: kepingan yang bisa dipilih =====
            Dua ketukan, bukan seret-lepas: pilih orangnya, lalu ketuk kursi atau
            kamarnya. Seret-lepas tidak bisa dipakai di ponsel, dan pembagian ini
@@ -80,6 +105,12 @@ Bagi Kursi & Kamar || lemon
            warnanya sudah dipakai jenis kelamin, dan dua arti pada satu warna
            membuat keduanya berhenti terbaca. */
         .pbg-belum-simpan { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+
+        /* Nama yang juga terdaftar di rombongan lain. Merah, bukan kuning:
+           kuning sudah dipakai "belum diisi L/P", dan dua arti pada satu warna
+           membuat keduanya berhenti terbaca. */
+        .pbg-ganda { color: #dc2626; font-size: .8rem; flex-shrink: 0; }
+        .pbg-orang.is-terpilih .pbg-ganda { color: #fecaca; }
 
         /* ===== Petak kursi ===== */
         .pbg-kendaraan { margin-bottom: 20px; }
@@ -459,6 +490,61 @@ Bagi Kursi & Kamar || lemon
                             </span>
                         </span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- ===== TIGA LANGKAH =====
+
+             Layar ini punya tujuh kartu dan tujuh belas tombol. Yang tahu
+             urutannya hanya orang yang pernah mengerjakannya; yang baru
+             pertama kali membuka melihat semuanya setara dan tidak tahu harus
+             mulai dari mana.
+
+             Ketiganya bukan tab — isinya memang perlu terlihat bersamaan saat
+             membagi. Ini penunjuk urutan, dan tandanya menyala sendiri
+             mengikuti keadaan: langkah yang sudah beres jadi hijau. --}}
+        @php
+            $langkahSiap = $ringkasan['jumlah_kursi_tersedia'] > 0 || $ringkasan['daya_tampung_kamar'] > 0;
+            $langkahBagi = $ringkasan['sudah_kursi'] > 0 || $ringkasan['sudah_kamar'] > 0;
+        @endphp
+
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="k-12">
+                    <ol class="pbg-langkah">
+                        <li class="{{ $langkahSiap ? 'is-beres' : 'is-kini' }}">
+                            <span class="pbg-langkah-no">{{ $langkahSiap ? '✓' : '1' }}</span>
+                            <span>
+                                <strong>Siapkan bus &amp; kamar</strong>
+                                <small>
+                                    {{ $langkahSiap
+                                        ? collect($kendaraan)->sum('jumlah_kursi').' kursi · '.count($kamar).' kamar sudah didaftarkan'
+                                        : 'Belum ada. Tekan Atur di kartu "Kendaraan & Kamar" di bawah.' }}
+                                </small>
+                            </span>
+                        </li>
+
+                        <li class="{{ $langkahBagi ? 'is-beres' : ($langkahSiap ? 'is-kini' : '') }}">
+                            <span class="pbg-langkah-no">{{ $langkahBagi ? '✓' : '2' }}</span>
+                            <span>
+                                <strong>Bagi pesertanya</strong>
+                                <small>
+                                    {{ $langkahBagi
+                                        ? $ringkasan['sudah_kursi'].' dapat kursi · '.$ringkasan['sudah_kamar'].' dapat kamar'
+                                        : 'Tekan "Bagi Kursi & Kamar", atau ketuk nama lalu ketuk kursinya.' }}
+                                </small>
+                            </span>
+                        </li>
+
+                        <li class="{{ $langkahBagi ? 'is-kini' : '' }}">
+                            <span class="pbg-langkah-no">3</span>
+                            <span>
+                                <strong>Cetak untuk tour leader</strong>
+                                <small>Denah kursi untuk sopir, daftar kamar untuk hotel — tombolnya di atas.</small>
+                            </span>
+                        </li>
+                    </ol>
                 </div>
             </div>
         </section>
@@ -924,6 +1010,17 @@ Bagi Kursi & Kamar || lemon
                                     @if ($satu['berubah'])
                                         <span class="pbg-belum-simpan" title="Belum tersimpan"></span>
                                     @endif
+
+                                    {{-- Nama ini juga terdaftar di rombongan lain
+                                         yang belum berangkat.
+
+                                         Keduanya terhitung di kuota, keduanya
+                                         dapat kursi, dan yang satu pasti tidak
+                                         datang. --}}
+                                    @if (! empty($satu['juga_di']))
+                                        <i class="bi bi-exclamation-diamond-fill pbg-ganda"
+                                            title="Nama ini juga ada di rombongan {{ $satu['juga_di'] }} — periksa, mungkin terdaftar dua kali."></i>
+                                    @endif
                                     <span>
                                         <span class="pbg-orang-nama">{{ $satu['nama'] }}</span>
                                         <span class="pbg-orang-meta">
@@ -946,6 +1043,38 @@ Bagi Kursi & Kamar || lemon
                                 fn ($satu) => ! in_array($satu['jenis_kelamin'] ?? null, ['Laki-laki', 'Perempuan'], true)
                             );
                         @endphp
+
+                        {{-- Yang jenis kelaminnya hanya diketahui dari formulir
+                             kesehatan: sekali tekan untuk seluruh rombongan.
+
+                             Layar sudah MENAMPILKAN nilainya, tetapi yang
+                             tersimpan di baris pesertanya masih kosong —
+                             dan selama begitu, pembagiannya bergantung pada
+                             kaitan lewat NAMA. Begitu ejaan nama diperbaiki,
+                             kamarnya terbaca "belum diisi" lagi. --}}
+                        @php
+                            $dariKesehatan = collect($peserta)
+                                ->filter(fn ($satu) => ($satu['kelamin_dari_kesehatan'] ?? false)
+                                    && filled($satu['jenis_kelamin'] ?? null));
+                        @endphp
+
+                        @if ($dariKesehatan->isNotEmpty())
+                            <div class="pbg-awas mt-3">
+                                <div class="pbg-awas-baris is-kuning">
+                                    <i class="bi bi-clipboard-heart"></i>
+                                    <span class="flex-grow-1">
+                                        <strong>{{ $dariKesehatan->count() }} jenis kelamin masih menumpang
+                                        di formulir kesehatan.</strong>
+                                        Kalau ejaan namanya nanti dibetulkan, isian itu hilang dan
+                                        kamarnya terbaca belum dibagi. Simpan sekarang supaya menempel.
+                                    </span>
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                        wire:click="ambilKelaminDariKesehatan">
+                                        <i class="bi bi-download"></i><span>Ambil semuanya</span>
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
 
                         @if ($belumKelamin->isNotEmpty())
                             <div class="pbg-awas mt-3">

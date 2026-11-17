@@ -60,6 +60,12 @@
                    mengatur tempat duduk dengan tangan di parkiran. */
                 'kursi' => trim((string) ($orang['kursi'] ?? '')) ?: null,
                 'kamar' => trim($orang['kamar'] ?? '') ?: null,
+                /* Jenis kelamin dipakai ringkasan kamar di akhir lembar untuk
+                   menandai kamar yang berisi L dan P sekaligus. Resepsionis
+                   hotel yang menyerahkan kunci tidak tahu mana yang disengaja
+                   (pasangan suami-istri) dan mana yang salah ketik — yang ia
+                   butuhkan cuma tanda untuk bertanya. */
+                'lp' => trim((string) ($orang['jenis_kelamin'] ?? '')) ?: null,
             ];
             $totalPeserta++;
         }
@@ -274,6 +280,88 @@
                 &nbsp;&middot;&nbsp; Diperiksa oleh: <span class="garis-isi">&nbsp;</span>
             </div>
         @endforeach
+
+        {{-- ===== RINGKASAN BUS & KAMAR, DI AKHIR =====
+
+             Supaya satu lembar ini cukup dibawa.
+
+             Daftar di atas menjawab "siapa naik di mana" — urutan kerja di
+             titik jemput. Dua pertanyaan berikutnya datang belakangan dan di
+             tempat lain: berapa orang per bus (saat menghitung kepala sebelum
+             berangkat) dan siapa sekamar dengan siapa (saat menyerahkan kunci
+             di hotel). Tanpa ringkasan ini, keduanya hanya bisa dijawab dengan
+             memindai ulang seluruh lembar.
+
+             Berupa ringkasan, bukan tabel baru: yang panjang sudah ada di
+             atas, dan mengulanginya utuh membuat lembarnya dua kali lipat
+             untuk keterangan yang sama. --}}
+        @php
+            $semuaOrang = collect($perTitik)->flatten(1);
+
+            $perBus = $semuaOrang->filter(fn ($o) => filled($o['bus'] ?? null))
+                ->groupBy(fn ($o) => $o['bus'])->sortKeys();
+
+            $perKamar = $semuaOrang->filter(fn ($o) => filled($o['kamar'] ?? null))
+                ->groupBy(fn ($o) => $o['kamar'])->sortKeys();
+        @endphp
+
+        @if ($perBus->isNotEmpty() || $perKamar->isNotEmpty())
+            <div style="margin-top:22px;">
+                <div class="bagian">Ringkasan Bus &amp; Kamar</div>
+                <div class="rule"></div>
+            </div>
+
+            @if ($perBus->isNotEmpty())
+                <table width="100%" cellpadding="0" cellspacing="0" class="orang" style="margin-top:10px;">
+                    <tr class="tajuk-orang">
+                        <td width="18%">Kendaraan</td>
+                        <td width="8%">Orang</td>
+                        <td width="74%">Nomor kursi yang terisi</td>
+                    </tr>
+                    @foreach ($perBus as $bus => $isi)
+                        <tr>
+                            <td width="18%"><strong>{{ $bus }}</strong></td>
+                            <td width="8%">{{ $isi->count() }}</td>
+                            <td width="74%" style="font-size:10px;">
+                                {{ $isi->filter(fn ($o) => filled($o['kursi'] ?? null))
+                                    ->sortBy(fn ($o) => (int) $o['kursi'])
+                                    ->map(fn ($o) => $o['kursi'])
+                                    ->implode(', ') ?: 'nomor kursinya belum dibagi' }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </table>
+            @endif
+
+            @if ($perKamar->isNotEmpty())
+                <table width="100%" cellpadding="0" cellspacing="0" class="orang" style="margin-top:10px;">
+                    <tr class="tajuk-orang">
+                        <td width="18%">Kamar</td>
+                        <td width="8%">Isi</td>
+                        <td width="74%">Penghuni</td>
+                    </tr>
+                    @foreach ($perKamar as $kamar => $isi)
+                        @php
+                            // Kamar yang berisi dua jenis kelamin ditandai —
+                            // resepsionis hotel yang menyerahkan kunci tidak
+                            // tahu mana yang disengaja (pasangan) dan mana yang
+                            // salah ketik.
+                            $campur = $isi->pluck('lp')->filter()->unique()->count() > 1;
+                        @endphp
+                        <tr>
+                            <td width="18%"><strong>{{ $kamar }}</strong></td>
+                            <td width="8%">{{ $isi->count() }}</td>
+                            <td width="74%" style="font-size:10px;">
+                                {{ $isi->pluck('nama')->implode(', ') }}
+                                @if ($campur)
+                                    <span style="color:#b45309;font-size:9px;"> — L &amp; P satu kamar, mohon dicek</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </table>
+            @endif
+        @endif
 
     </div>
 

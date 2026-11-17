@@ -137,15 +137,23 @@ beforeEach(function () {
     });
 });
 
-test('tombol ubah data, pindah rombongan, dan catatan internal ada di bilah perkakas', function () {
+test('mengubah data, pindah tanggal, dan catatan internal ada di laci Ubah', function () {
+    /*
+     | Bilah perkakas sempat memuat sepuluh tombol sejajar — dan sepuluh
+     | pilihan setara berarti sepuluh hal yang harus dibaca sebelum menekan
+     | satu. Sekarang yang dipakai tiap hari tinggal di luar, sisanya di dua
+     | laci berlabel.
+     */
     Livewire::actingAs(adminUbahDaftar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 9])
-        ->assertSee('Ubah Data')
-        ->assertSee('Pindah Rombongan')
-        ->assertSee('Catatan Internal');
+        ->assertSee('Betulkan data pemesan')
+        ->assertSee('Pindah ke tanggal lain')
+        ->assertSee('Catatan internal')
+        // Tombol harian tetap di luar laci.
+        ->assertSee('Catat Uang Masuk');
 });
 
-test('tombol pindah rombongan tidak muncul kalau paketnya hanya punya satu tanggal', function () {
+test('pindah tanggal tidak ditawarkan kalau paketnya hanya punya satu tanggal', function () {
     /*
      | Dikendalikan lewat config, bukan dengan memasang Http::fake kedua.
      |
@@ -159,7 +167,7 @@ test('tombol pindah rombongan tidak muncul kalau paketnya hanya punya satu tangg
 
     Livewire::actingAs(adminUbahDaftar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 9])
-        ->assertDontSee('Pindah Rombongan');
+        ->assertDontSee('Pindah ke tanggal lain');
 });
 
 test('formulir ubah terisi dari data yang ada', function () {
@@ -282,19 +290,27 @@ test('angka kesehatan di kepala kartu menghitung peserta terdata, bukan baris ri
         ->assertSee('tanpa nama yang cocok');
 });
 
-test('bilah loncat hanya menawarkan bagian yang benar-benar tergambar', function () {
+test('halaman dipecah jadi tiga tab, bukan satu gulungan panjang', function () {
     /*
-     | Tautan ke kartu angsuran pada pesanan yang tidak punya angsuran mendarat
-     | di tempat kosong, dan satu kali begitu membuat seluruh bilah ini berhenti
-     | dipercaya.
+     | Bilah "loncat ke" sebelumnya hanya memindahkan mata; isinya tetap
+     | seluruhnya terpampang, dan admin yang mencari satu angka harus melewati
+     | enam kartu yang tidak ia perlukan. Untuk orang yang tidak setiap hari
+     | memakai aplikasi, halaman sepanjang itu terbaca sebagai "banyak sekali
+     | yang harus saya mengerti".
+     |
+     | Dipakai x-show (display:none), BUKAN opacity: panel yang disembunyikan
+     | dengan opacity tetap memakan tinggi, dan halamannya tidak pernah
+     | memendek.
      */
-    Livewire::actingAs(adminUbahDaftar())
-        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 9])
-        ->assertSee('Loncat ke')
-        ->assertSee('#bg-uang', false)
-        ->assertSee('#bg-peserta', false)
-        // Pendaftaran contoh tidak punya angsuran, pembatalan, atau penggantian.
-        ->assertDontSee('#bg-angsuran', false)
-        ->assertDontSee('#bg-pembatalan', false)
-        ->assertDontSee('#bg-penggantian', false);
+    $layar = Livewire::actingAs(adminUbahDaftar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 9]);
+
+    $layar->assertSee('pd-tab-deret')
+        ->assertSee('Pemesan &amp; Catatan', false)
+        ->assertSee("x-show=\"tab === 'uang'\"", false)
+        ->assertSee("x-show=\"tab === 'peserta'\"", false)
+        ->assertSee("x-show=\"tab === 'pemesan'\"", false);
+
+    // Tidak ada lagi bilah loncat berbasis jangkar.
+    $layar->assertDontSee('Loncat ke');
 });

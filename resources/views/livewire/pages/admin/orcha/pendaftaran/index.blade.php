@@ -86,21 +86,51 @@ Pendaftaran Trip || lemon
                     </a>
                 @endif
 
-                {{-- Rekap kantor, bukan manifes lapangan. Tidak memuat data
-                     kesehatan, jadi tidak ikut dijaga izin itu. --}}
-                <a href="{{ route('admin.orcha.pendaftaran.rekap', $this->saringanTampil()) }}"
-                    class="dsb-tombol is-lembut" style="--ikon: #16a34a"
-                    title="Satu baris per pemesanan berisi angka uang — untuk rekap di kantor">
-                    <i class="bi bi-file-earmark-spreadsheet"></i><span>Unduh Rekap (Excel)</span>
-                </a>
+                {{-- ===== BERKAS YANG BISA DIUNDUH, DALAM SATU LACI =====
 
-                @if ($bolehKesehatan)
-                    <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
-                        class="dsb-tombol is-utama"
-                        title="Unduh daftar peserta untuk tour leader — isinya mengikuti yang sedang tampil">
-                        <i class="bi bi-filetype-pdf"></i><span>Unduh Daftar Peserta</span>
-                    </a>
-                @endif
+                     Tiga tombol unduh berjajar di kepala halaman berarti tiga
+                     hal yang harus dibaca sebelum menekan satu — dan ketiganya
+                     berbunyi mirip. Dikelompokkan, dengan kalimat yang menyebut
+                     UNTUK SIAPA berkasnya, bukan nama berkasnya. --}}
+                <details class="pd-laci">
+                    <summary class="dsb-tombol is-lembut" style="--ikon: #0284c7">
+                        <i class="bi bi-download"></i><span>Unduh</span>
+                        <i class="bi bi-chevron-down" style="font-size:.7rem"></i>
+                    </summary>
+
+                    <div class="pd-laci-isi">
+                        @if ($bolehKesehatan)
+                            <span class="pd-laci-judul">Untuk tour leader di lapangan</span>
+
+                            <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}">
+                                <i class="bi bi-filetype-pdf" style="color:#dc2626"></i>
+                                {{-- "Manifes" kata kami, bukan kata admin.
+
+                                     Yang mencari berkas ini admin yang tidak
+                                     setiap hari memakai aplikasi, dan ia
+                                     mencari "daftar peserta". Yang memakainya
+                                     tour leader — jadi disebut untuk siapa. --}}
+                                Unduh Daftar Peserta untuk tour leader (PDF)
+                                <small>dibawa berdiri — dikelompokkan per titik jemput</small>
+                            </a>
+
+                            <a href="{{ route('admin.orcha.pendaftaran.manifes.excel', $this->saringanTampil()) }}">
+                                <i class="bi bi-file-earmark-spreadsheet" style="color:#16a34a"></i>
+                                Unduh Daftar Peserta untuk tour leader (Excel)
+                                <small>isinya sama persis — untuk disaring di laptop</small>
+                            </a>
+                        @endif
+
+                        <span class="pd-laci-judul">Untuk kantor</span>
+
+                        <a href="{{ route('admin.orcha.pendaftaran.rekap', $this->saringanTampil()) }}">
+                            <i class="bi bi-cash-stack" style="color:#0284c7"></i>
+                            Rekap uang per pemesanan (Excel)
+                            <small>tanpa data kesehatan</small>
+                        </a>
+                    </div>
+                </details>
+
             </div>
         </header>
 
@@ -257,6 +287,53 @@ Pendaftaran Trip || lemon
                         </span>
                     </div>
                 </div>
+
+                {{-- ===== RINGKASAN ROMBONGAN =====
+
+                     Muncul hanya saat satu rombongan sedang disaring. Inilah
+                     angka yang dipakai memutuskan rombongan jadi berangkat
+                     atau tidak — dan sebelum ini admin merakitnya sendiri dari
+                     daftar, satu baris demi satu baris. --}}
+                @if ($ringkasanRombongan)
+                    <div class="dsb-kartu-isi pb-0">
+                        <div class="pd-ringkas">
+                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-calendar-event"></i></span>
+
+                            <div class="pd-ringkas-judul">
+                                <strong>Rombongan {{ $ringkasanRombongan['rentang_tanggal'] }}</strong>
+                                <span>{{ $ringkasanRombongan['pendaftaran'] }} pemesanan</span>
+                            </div>
+
+                            <div class="pd-ringkas-angka">
+                                <span>
+                                    <small>Peserta</small>
+                                    <b>{{ $ringkasanRombongan['peserta'] }}@if ($ringkasanRombongan['kuota'])<i>/{{ $ringkasanRombongan['kuota'] }}</i>@endif</b>
+                                </span>
+
+                                @if ($ringkasanRombongan['sisa_kursi'] !== null)
+                                    <span>
+                                        <small>Kursi sisa</small>
+                                        <b class="{{ $ringkasanRombongan['sisa_kursi'] === 0 ? 'is-penuh' : '' }}">
+                                            {{ $ringkasanRombongan['sisa_kursi'] }}
+                                        </b>
+                                    </span>
+                                @endif
+
+                                <span>
+                                    <small>Sudah masuk</small>
+                                    <b class="is-hijau">Rp {{ number_format($ringkasanRombongan['masuk'], 0, ',', '.') }}</b>
+                                </span>
+
+                                <span>
+                                    <small>Masih kurang</small>
+                                    <b class="{{ $ringkasanRombongan['kurang'] > 0 ? 'is-kurang' : 'is-hijau' }}">
+                                        Rp {{ number_format($ringkasanRombongan['kurang'], 0, ',', '.') }}
+                                    </b>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Urutan yang DITIMPA oleh tab pekerjaan.
 
@@ -845,6 +922,59 @@ Pendaftaran Trip || lemon
             padding: 9px 11px; border-radius: 10px; font-size: .8rem; line-height: 1.5;
             background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
         }
+
+        /* ===== Laci berkas unduhan =====
+           Bentuknya sama dengan laci di halaman detail; gayanya disalin karena
+           tiap layar membawa <style>-nya sendiri. */
+        .pd-laci { position: relative; }
+        .pd-laci > summary { list-style: none; cursor: pointer; }
+        .pd-laci > summary::-webkit-details-marker { display: none; }
+        .pd-laci-isi {
+            position: absolute; z-index: 40; top: calc(100% + 6px); right: 0;
+            min-width: 310px; padding: 8px; border-radius: 14px;
+            background: #fff; border: 1px solid var(--dsb-tepi);
+            box-shadow: 0 18px 36px -12px rgba(15, 23, 42, .28);
+            display: flex; flex-direction: column; gap: 2px; text-align: left;
+        }
+        .pd-laci-judul {
+            padding: 7px 10px 3px; font-size: .68rem; font-weight: 700;
+            letter-spacing: .05em; text-transform: uppercase; color: #94a3b8;
+        }
+        .pd-laci-isi > a {
+            display: grid; grid-template-columns: 20px 1fr; gap: 3px 9px;
+            padding: 9px 11px; border-radius: 10px; text-decoration: none;
+            color: #334155; font-size: .84rem; font-weight: 600;
+        }
+        .pd-laci-isi > a i.bi { grid-row: span 2; font-size: .95rem; padding-top: 2px; }
+        .pd-laci-isi > a small {
+            grid-column: 2; font-size: .74rem; font-weight: 500; color: var(--dsb-redup);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .pd-laci-isi > a:hover { background: #f1f5f9; }
+        }
+
+        /* ===== Ringkasan rombongan ===== */
+        .pd-ringkas {
+            display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+            padding: 13px 15px; border-radius: 14px;
+            background: #f0f9ff; border: 1px solid #bae6fd;
+        }
+        .pd-ringkas-judul { display: flex; flex-direction: column; gap: 1px; }
+        .pd-ringkas-judul > strong { font-size: .9rem; color: #0c4a6e; }
+        .pd-ringkas-judul > span { font-size: .76rem; color: #0369a1; }
+        .pd-ringkas-angka {
+            display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto;
+        }
+        .pd-ringkas-angka > span { display: flex; flex-direction: column; gap: 1px; }
+        .pd-ringkas-angka small {
+            font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: #0369a1;
+        }
+        .pd-ringkas-angka b { font-size: .95rem; color: #0c4a6e; font-variant-numeric: tabular-nums; }
+        .pd-ringkas-angka b i { font-style: normal; font-weight: 600; opacity: .55; }
+        .pd-ringkas-angka b.is-hijau { color: #15803d; }
+        .pd-ringkas-angka b.is-kurang { color: #b45309; }
+        .pd-ringkas-angka b.is-penuh { color: #b91c1c; }
 
         /* ===== Kolom centang =====
            Lebarnya dipatok. Kolom centang yang ikut melebar bersama nama

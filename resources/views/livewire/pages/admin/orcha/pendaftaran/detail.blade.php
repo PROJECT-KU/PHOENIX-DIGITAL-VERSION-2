@@ -188,44 +188,70 @@ Detail Pendaftaran || lemon
     .pd-kaki-bayar .is-kurang strong { color: #b45309; }
     .pd-kaki-bayar .baris + .baris:last-child { border-top: 1px dashed #e2e8f0; padding-top: 8px; }
 
-    /* ===== Bilah loncat ke bagian, menempel di atas ===== */
-    .pd-loncat-tempel {
+    /* ===== Tab halaman detail =====
+
+       Tiga tab, dan namanya kata sehari-hari. Menempel di atas supaya tetap
+       terjangkau dari bagian mana pun. */
+    .pd-tab-bilah {
         position: sticky; top: 0; z-index: 25;
-        margin: 0 0 18px; padding: 10px 0;
-        background: linear-gradient(#f6f7fb 72%, rgba(246, 247, 251, 0));
+        margin: 0 0 18px; padding: 10px 0 12px;
+        background: linear-gradient(#f6f7fb 78%, rgba(246, 247, 251, 0));
     }
-    .pd-loncat {
-        display: flex; align-items: center; gap: 8px;
-        overflow-x: auto; padding-bottom: 2px;
+    .pd-tab-deret {
+        display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;
         -webkit-overflow-scrolling: touch;
     }
-    /* Bergulir mendatar, bukan membungkus ke baris kedua: bilah yang
-       menempel dan setinggi dua baris memakan seperempat layar ponsel,
-       dan yang tertutup olehnya justru kartu yang baru saja dituju. */
-    .pd-loncat > * { flex-shrink: 0; }
-    .pd-loncat-label {
-        display: inline-flex; align-items: center; gap: 6px;
-        font-size: .76rem; font-weight: 700; letter-spacing: .04em;
-        text-transform: uppercase; color: var(--dsb-redup);
-    }
-    .pd-loncat-tautan {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 11px; border-radius: 999px; text-decoration: none;
+    .pd-tab-deret > * { flex-shrink: 0; }
+    .pd-tab {
+        display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+        padding: 10px 18px; border-radius: 999px;
         background: #fff; border: 1px solid var(--dsb-tepi);
-        color: #475569; font-size: .78rem; font-weight: 600;
+        color: #475569; font-size: .88rem; font-weight: 700;
+        transition: background .15s ease, border-color .15s ease, color .15s ease;
     }
-    .pd-loncat-tautan i.bi { color: #7c3aed; font-size: .82rem; }
+    .pd-tab i.bi { color: #94a3b8; font-size: .95rem; }
+    .pd-tab.is-aktif {
+        background: #7c3aed; border-color: transparent; color: #fff;
+        box-shadow: 0 8px 18px rgba(124, 58, 237, .26);
+    }
+    .pd-tab.is-aktif i.bi { color: #fff; }
     @media (hover: hover) and (pointer: fine) {
-        .pd-loncat-tautan:hover { border-color: #a78bfa; color: #1c1f26; }
+        .pd-tab:not(.is-aktif):hover { border-color: #a78bfa; color: #1c1f26; }
     }
 
-    /* Sasaran loncatan diberi ruang di atasnya.
+    /* x-cloak: tanpa ini SELURUH tab tergambar sekejap sebelum Alpine
+       menyalakan x-show — halaman berkedip panjang lalu memendek, dan yang
+       melihatnya mengira sesuatu hilang. */
+    [x-cloak] { display: none !important; }
 
-       Tanpa ini, kepala kartu yang dituju berhenti tepat di tepi atas layar
-       dan sebagian tertutup bilah navigasi lemon yang menempel di sana —
-       admin mendarat di kartu yang benar lalu mengira ia mendarat di tengah
-       kartu sebelumnya. */
-    [id^="bg-"] { scroll-margin-top: 86px; }
+    /* ===== Tombol yang dikelompokkan =====
+
+       Bilah perkakas sempat memuat sepuluh tombol sejajar. Untuk orang yang
+       tidak setiap hari memakai aplikasi, sepuluh pilihan setara berarti
+       sepuluh hal yang harus dibaca sebelum menekan satu. Yang sering dipakai
+       tinggal di luar; sisanya masuk ke dua laci berlabel. */
+    .pd-laci { position: relative; }
+    .pd-laci > summary {
+        list-style: none; cursor: pointer;
+    }
+    .pd-laci > summary::-webkit-details-marker { display: none; }
+    .pd-laci-isi {
+        position: absolute; z-index: 40; top: calc(100% + 6px); left: 0;
+        min-width: 230px; padding: 7px; border-radius: 14px;
+        background: #fff; border: 1px solid var(--dsb-tepi);
+        box-shadow: 0 18px 36px -12px rgba(15, 23, 42, .28);
+        display: flex; flex-direction: column; gap: 3px;
+    }
+    .pd-laci-isi > a, .pd-laci-isi > button {
+        display: flex; align-items: center; gap: 9px; width: 100%;
+        padding: 9px 11px; border-radius: 10px; border: 0; cursor: pointer;
+        background: none; text-align: left; text-decoration: none;
+        color: #334155; font-size: .84rem; font-weight: 600;
+    }
+    .pd-laci-isi i.bi { font-size: .95rem; width: 18px; text-align: center; }
+    @media (hover: hover) and (pointer: fine) {
+        .pd-laci-isi > a:hover, .pd-laci-isi > button:hover { background: #f1f5f9; }
+    }
 
     /* ===== Catatan internal =====
        Ungu, bukan kuning atau abu-abu. Kuning sudah berarti "ada yang perlu
@@ -310,7 +336,7 @@ Detail Pendaftaran || lemon
     }
     </style>
 
-    <div class="dsb pd-detail">
+    <div class="dsb pd-detail" x-data="{ tab: 'uang' }">
 
         @if ($galat)
             <div class="alert alert-warning border-0 rounded-4">{{ $galat }}</div>
@@ -408,107 +434,15 @@ Detail Pendaftaran || lemon
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi pd-perkakas">
                         <div class="pd-perkakas-kiri">
-                            {{-- Jaring pengaman saat surat tidak sampai: admin bisa
-                                 mengunduh kwitansi yang sama persis dengan yang
-                                 dikirim ke pelanggan, lalu meneruskannya lewat
-                                 WhatsApp. Tidak menuntut izin data kesehatan —
-                                 isinya biaya. --}}
-                            <a href="{{ route('admin.orcha.pendaftaran.kwitansi', $pendaftaranId) }}"
-                                class="dsb-tombol is-lembut" style="--ikon: #0284c7"
-                                title="Bukti pembayaran yang sama dengan yang dikirim ke pelanggan">
-                                <i class="bi bi-receipt"></i><span>Bukti Pembayaran</span>
-                            </a>
+                            {{-- Dua tombol yang dipakai TIAP HARI tinggal di
+                                 luar; sisanya masuk ke dua laci berlabel.
 
-                            {{-- Dua berkas untuk dua pembaca: Excel untuk kantor,
-                                 PDF untuk tour leader di lapangan. Keduanya memuat
-                                 data kesehatan, jadi ikut dijaga izin yang sama. --}}
-                            @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
-                                <a href="{{ route('admin.orcha.pendaftaran.pdf', $pendaftaranId) }}"
-                                    class="dsb-tombol is-lembut" style="--ikon: #dc2626"
-                                    title="Daftar peserta untuk dibawa tour leader di lapangan">
-                                    <i class="bi bi-filetype-pdf"></i><span>Daftar Peserta (PDF)</span>
-                                </a>
-                                <a href="{{ route('admin.orcha.pendaftaran.excel', $pendaftaranId) }}"
-                                    class="dsb-tombol is-lembut" style="--ikon: #16a34a"
-                                    title="Data lengkap untuk diolah di kantor">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i><span>Data Lengkap (Excel)</span>
-                                </a>
-                            @endif
-
-                            {{-- Jalan ke jejak pesanan INI, bukan ke seluruh jejak.
-                                 Pertanyaan "siapa yang mengubah nominalnya?" muncul
-                                 saat admin sedang menatap pesanan yang bermasalah,
-                                 bukan saat ia kebetulan membuka halaman audit. --}}
-                            <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $pendaftaran['kode']]) }}"
-                                class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
-                                title="Siapa mengubah apa pada pendaftaran ini">
-                                <i class="bi bi-clock-history"></i><span>Riwayat Perubahan</span>
-                            </a>
-
-                            {{-- Membetulkan data pemesan.
-
-                                 Sebelum ini tidak ada jalannya: nomor WhatsApp
-                                 yang salah satu angka atau jumlah peserta yang
-                                 berubah hanya bisa diselesaikan dengan
-                                 membatalkan lalu mendaftar ulang — dan itu
-                                 membuang kode pemesanan, riwayat pembayaran,
-                                 angsuran, serta riwayat kesehatan yang sudah
-                                 diisi peserta. --}}
-                            <button type="button" wire:click="bukaFormulirUbah"
-                                class="dsb-tombol is-lembut" style="--ikon: #0f766e"
-                                title="Betulkan nama, nomor WhatsApp, email, jumlah peserta, dan titik jemput">
-                                <i class="bi bi-pencil-square"></i><span>Ubah Data</span>
-                            </button>
-
-                            {{-- Pindah rombongan. Muncul hanya bila paketnya
-                                 memang punya tanggal lain — tombol yang
-                                 membuka daftar berisi satu pilihan yang sudah
-                                 terpilih tidak menawarkan apa pun. --}}
-                            @if (count($this->pilihanRombongan()) > 1)
-                                <button type="button" wire:click="bukaFormulirPindah"
-                                    class="dsb-tombol is-lembut" style="--ikon: #b45309"
-                                    title="Pindahkan pemesanan ini ke tanggal keberangkatan lain pada paket yang sama">
-                                    <i class="bi bi-arrow-left-right"></i><span>Pindah Rombongan</span>
-                                </button>
-                            @endif
-
-                            {{-- Jalan ke pembagian kursi & kamar SELURUH rombongan.
-
-                                 Bukan pembagian pendaftaran ini saja: satu bus
-                                 mengangkut peserta dari banyak pemesanan
-                                 sekaligus, dan satu kamar twin diisi dua orang
-                                 yang bisa mendaftar terpisah. Membaginya per
-                                 pemesanan membuat dua admin sama-sama menaruh
-                                 orangnya di "Bus 1 kursi 5" tanpa bisa melihat
-                                 bentrokannya.
-
-                                 Muncul hanya bila pendaftaran ini sudah
-                                 terhubung ke sebuah rombongan — yang belum
-                                 tidak punya satuan untuk dibagi. --}}
-                            @if (! empty($pendaftaran['keberangkatan_id']))
-                                <a href="{{ route('admin.orcha.pembagian', $pendaftaran['keberangkatan_id']) }}"
-                                    wire:navigate class="dsb-tombol is-lembut" style="--ikon: #0284c7"
-                                    title="Bagi tempat duduk bus dan kamar hotel untuk seluruh rombongan {{ $pendaftaran['keberangkatan']['rentang_tanggal'] ?? '' }}">
-                                    <i class="bi bi-grid-3x3-gap"></i><span>Bagi Kursi &amp; Kamar</span>
-                                </a>
-                            @endif
-
-                            {{-- Catatan internal. Titiknya menyala bila sudah
-                                 ada isinya: catatan yang tidak terlihat sama
-                                 saja dengan catatan yang tidak ada, dan admin
-                                 kedua menelepon orang yang sama di hari yang
-                                 sama. --}}
-                            <button type="button" wire:click="bukaFormulirCatatan"
-                                class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
-                                title="Catatan yang hanya dibaca admin — tidak pernah tercetak di kwitansi">
-                                <i class="bi {{ filled($pendaftaran['catatan_internal'] ?? null) ? 'bi-sticky-fill' : 'bi-sticky' }}"></i>
-                                <span>Catatan Internal{{ filled($pendaftaran['catatan_internal'] ?? null) ? ' •' : '' }}</span>
-                            </button>
-
-                            {{-- Mencatat pembayaran adalah TINDAKAN, bukan keterangan
-                                 yang menempel pada ringkasan biaya. Disembunyikan saat
-                                 sudah lunas atau batal: mencatat pembayaran pada
-                                 pesanan yang selesai hampir selalu salah orang. --}}
+                                 Bilah ini sempat memuat sepuluh tombol
+                                 sejajar — dan sepuluh pilihan setara berarti
+                                 sepuluh hal yang harus dibaca sebelum menekan
+                                 satu. Untuk admin yang tidak setiap hari
+                                 memakai aplikasi, itu yang membuat orang
+                                 berhenti menekan apa pun. --}}
                             @if (! $lunas && ($pendaftaran['status'] ?? '') !== 'batal')
                                 <button type="button" wire:click="bukaFormulirBayar"
                                     class="dsb-tombol is-utama"
@@ -516,6 +450,78 @@ Detail Pendaftaran || lemon
                                     <i class="bi bi-cash-coin"></i><span>Catat Uang Masuk</span>
                                 </button>
                             @endif
+
+                            @if (! empty($pendaftaran['keberangkatan_id']))
+                                <a href="{{ route('admin.orcha.pembagian', $pendaftaran['keberangkatan_id']) }}"
+                                    wire:navigate class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                                    title="Bagi tempat duduk bus dan kamar hotel untuk seluruh rombongan">
+                                    <i class="bi bi-grid-3x3-gap"></i><span>Bagi Kursi &amp; Kamar</span>
+                                </a>
+                            @endif
+
+                            {{-- Laci 1: mengubah data. --}}
+                            <details class="pd-laci">
+                                <summary class="dsb-tombol is-lembut" style="--ikon: #0f766e">
+                                    <i class="bi bi-pencil-square"></i><span>Ubah</span>
+                                    <i class="bi bi-chevron-down" style="font-size:.7rem"></i>
+                                </summary>
+
+                                <div class="pd-laci-isi">
+                                    <button type="button" wire:click="bukaFormulirUbah">
+                                        <i class="bi bi-person-vcard" style="color:#0f766e"></i>
+                                        Betulkan data pemesan
+                                    </button>
+
+                                    @if (count($this->pilihanRombongan()) > 1)
+                                        <button type="button" wire:click="bukaFormulirPindah">
+                                            <i class="bi bi-arrow-left-right" style="color:#b45309"></i>
+                                            Pindah ke tanggal lain
+                                        </button>
+                                    @endif
+
+                                    <button type="button" wire:click="bukaFormulirCatatan">
+                                        <i class="bi {{ filled($pendaftaran['catatan_internal'] ?? null) ? 'bi-sticky-fill' : 'bi-sticky' }}"
+                                            style="color:#7c3aed"></i>
+                                        Catatan internal{{ filled($pendaftaran['catatan_internal'] ?? null) ? ' •' : '' }}
+                                    </button>
+
+                                    <a href="{{ route('admin.orcha.pendaftaran.peserta', $pendaftaranId) }}" wire:navigate>
+                                        <i class="bi bi-people" style="color:#16a34a"></i>
+                                        Daftar nama peserta
+                                    </a>
+                                </div>
+                            </details>
+
+                            {{-- Laci 2: berkas yang bisa diunduh. --}}
+                            <details class="pd-laci">
+                                <summary class="dsb-tombol is-lembut" style="--ikon: #0284c7">
+                                    <i class="bi bi-download"></i><span>Unduh</span>
+                                    <i class="bi bi-chevron-down" style="font-size:.7rem"></i>
+                                </summary>
+
+                                <div class="pd-laci-isi">
+                                    <a href="{{ route('admin.orcha.pendaftaran.kwitansi', $pendaftaranId) }}">
+                                        <i class="bi bi-receipt" style="color:#0284c7"></i>
+                                        Bukti pembayaran (kwitansi)
+                                    </a>
+
+                                    @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
+                                        <a href="{{ route('admin.orcha.pendaftaran.pdf', $pendaftaranId) }}">
+                                            <i class="bi bi-filetype-pdf" style="color:#dc2626"></i>
+                                            Daftar peserta untuk tour leader
+                                        </a>
+                                        <a href="{{ route('admin.orcha.pendaftaran.excel', $pendaftaranId) }}">
+                                            <i class="bi bi-file-earmark-spreadsheet" style="color:#16a34a"></i>
+                                            Data lengkap untuk kantor (Excel)
+                                        </a>
+                                    @endif
+
+                                    <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $pendaftaran['kode']]) }}">
+                                        <i class="bi bi-clock-history" style="color:#7c3aed"></i>
+                                        Siapa mengubah apa di sini
+                                    </a>
+                                </div>
+                            </details>
                         </div>
 
                         {{-- Keadaan di ujung kanan, berlabel. Satu kotak putih
@@ -568,48 +574,40 @@ Detail Pendaftaran || lemon
                 </div>
             </div>
 
-            {{-- ============ LONCAT KE BAGIAN ============
+            {{-- ============ TAB ============
 
-                 Halaman ini lebih dari dua ribu baris markah dan tumbuh terus.
-                 Untuk mencatat satu pembayaran, admin menggulir melewati
-                 seluruh kartu pemesan dan daftar peserta — dan di layar ponsel
-                 itu belasan kali usapan.
+                 Satu bagian di layar, bukan gulungan dua ribu baris.
 
-                 Yang ditawarkan hanya bagian yang BENAR-BENAR tergambar:
-                 tautan ke kartu angsuran pada pesanan yang tidak punya
-                 angsuran mendarat di tempat kosong, dan satu kali begitu
-                 membuat seluruh bilah ini berhenti dipercaya. --}}
+                 Bilah "loncat ke" sebelumnya hanya memindahkan mata; isinya
+                 tetap seluruhnya terpampang, dan admin yang mencari satu angka
+                 harus melewati enam kartu yang tidak ia perlukan. Untuk orang
+                 yang tidak setiap hari memakai aplikasi, halaman sepanjang itu
+                 terbaca sebagai "banyak sekali yang harus saya mengerti".
+
+                 Tiga tab saja, dan namanya kata sehari-hari — bukan nama
+                 bagian di basis data. Ditandai lewat x-show (display:none),
+                 BUKAN opacity: panel yang disembunyikan dengan opacity tetap
+                 memakan tinggi, dan halamannya tidak pernah memendek. --}}
             @php
-                $bagian = collect([
-                    ['bg-uang', 'Ringkasan Uang', 'bi-receipt', (bool) $tagihan],
-                    ['bg-pembatalan', 'Pembatalan', 'bi-x-octagon', (bool) $pembatalan],
-                    ['bg-pemesan', 'Pemesan', 'bi-person-vcard', true],
-                    ['bg-peserta', 'Peserta', 'bi-people', true],
-                    ['bg-pembayaran', 'Uang Masuk', 'bi-cash-stack', true],
-                    ['bg-angsuran', 'Angsuran', 'bi-calendar2-week', (bool) ($angsuran['rencana'] ?? null)],
-                    ['bg-penggantian', 'Penggantian Peserta', 'bi-arrow-left-right',
-                        filled($pendaftaran['riwayat_penggantian'] ?? [])],
+                $tabDetail = collect([
+                    ['uang', 'Uang', 'bi-cash-coin', true],
+                    ['peserta', 'Peserta', 'bi-people-fill', true],
+                    ['pemesan', 'Pemesan & Catatan', 'bi-person-vcard', true],
                 ])->filter(fn ($satu) => $satu[3])->values();
             @endphp
 
-            {{-- MENEMPEL di atas saat halaman digulung.
-
-                 Halaman ini lebih dari dua ribu baris markah. Bilah yang ikut
-                 menggulir hanya berguna sebelum admin mulai membaca — begitu
-                 ia sampai di kartu angsuran, satu-satunya jalan ke kartu lain
-                 adalah menggulir balik ke puncak. --}}
-            @if ($bagian->count() > 3)
-                <div class="pd-loncat-tempel">
-                    <div class="pd-loncat">
-                        <span class="pd-loncat-label"><i class="bi bi-list-ul"></i> Loncat ke</span>
-                        @foreach ($bagian as $satu)
-                            <a class="pd-loncat-tautan" href="#{{ $satu[0] }}">
-                                <i class="bi {{ $satu[2] }}"></i><span>{{ $satu[1] }}</span>
-                            </a>
-                        @endforeach
-                    </div>
+            <div class="pd-tab-bilah">
+                <div class="pd-tab-deret" role="tablist">
+                    @foreach ($tabDetail as $satu)
+                        <button type="button" class="pd-tab" role="tab"
+                            x-bind:class="{ 'is-aktif': tab === '{{ $satu[0] }}' }"
+                            x-bind:aria-selected="tab === '{{ $satu[0] }}'"
+                            x-on:click="tab = '{{ $satu[0] }}'">
+                            <i class="bi {{ $satu[2] }}"></i><span>{{ $satu[1] }}</span>
+                        </button>
+                    @endforeach
                 </div>
-            @endif
+            </div>
 
             {{-- ============ PANEL UBAH DATA ============
 
@@ -846,7 +844,7 @@ Detail Pendaftaran || lemon
 
             {{-- ============ RINGKASAN UANG ============ --}}
             @if ($tagihan)
-            <div class="dsb-rak dsb-bagian">
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'uang'" x-cloak>
                 <div class="dsb-kartu k-12" id="bg-uang">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
@@ -1107,7 +1105,7 @@ Detail Pendaftaran || lemon
                 $sudahDikirim = ($pembatalan['status'] ?? '') === 'dana_dikirim';
             @endphp
 
-            <div class="dsb-rak dsb-bagian">
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'pemesan'" x-cloak>
                 <div class="dsb-kartu k-12 pd-kartu-batal" id="bg-pembatalan">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
@@ -1218,7 +1216,7 @@ Detail Pendaftaran || lemon
                  masing-masing terlalu pendek untuk berdiri sendiri — kartu yang
                  isinya empat baris pada kolom setinggi daftar peserta meninggalkan
                  petak putih sepanjang setengah layar. --}}
-            <div class="dsb-rak dsb-bagian">
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'pemesan'" x-cloak>
                 <div class="dsb-kartu k-12" id="bg-pemesan">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
@@ -1395,11 +1393,12 @@ Detail Pendaftaran || lemon
 
             {{-- ============ PESERTA & PEMBAYARAN ============
 
-                 Berdampingan pada satu kisi, jadi kedua kartu sama tinggi dan
-                 tepi bawahnya segaris. Tombol peserta ditambat ke dasar kartunya
-                 (is-tegak) supaya tidak menggantung di tengah. --}}
-            <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-7" id="bg-peserta">
+                 Dipisah raknya sejak halaman ini bertab: Peserta masuk tab
+                 "Peserta", Uang Masuk masuk tab "Uang". Dua kartu yang
+                 berdampingan tetapi berada di tab berbeda akan menyisakan
+                 separuh kisi kosong di kedua tab sekaligus. --}}
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'peserta'" x-cloak>
+                <div class="dsb-kartu k-12" id="bg-peserta">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-people-fill"></i></span>
@@ -1555,7 +1554,10 @@ Detail Pendaftaran || lemon
                     </div>
                     </div>
                 </div>
-                <div class="dsb-kartu k-5" id="bg-pembayaran">
+            </div>
+
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'uang'" x-cloak>
+                <div class="dsb-kartu k-12" id="bg-pembayaran">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-cash-stack"></i></span>
@@ -1855,7 +1857,7 @@ Detail Pendaftaran || lemon
                 </div>
             @else
 
-            <div class="dsb-rak dsb-bagian">
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'uang'" x-cloak>
                 <div class="dsb-kartu k-12" id="bg-angsuran">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
@@ -2103,7 +2105,7 @@ Detail Pendaftaran || lemon
                 $jumlahGanti = count($riwayat);
             @endphp
 
-            <div class="dsb-rak dsb-bagian">
+            <div class="dsb-rak dsb-bagian" x-show="tab === 'pemesan'" x-cloak>
                 <div class="dsb-kartu k-12" id="bg-penggantian">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">

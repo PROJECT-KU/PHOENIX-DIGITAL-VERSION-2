@@ -160,3 +160,26 @@ test('manifes tour leader akhirnya memuat nomor kursinya', function () {
 
     expect($isi)->toContain("'kursi' => trim((string) (\$orang['kursi'] ?? ''))");
 });
+
+test('denah kursi menjawab "di titik ini siapa saja yang naik"', function () {
+    /*
+     | Pertanyaan yang ditanyakan sopir di titik jemput ketiga. Daftar per
+     | kursi tidak bisa menjawabnya — mata harus melompat dua puluh baris
+     | sambil berdiri di pinggir jalan.
+     */
+    $keadaan = keadaanCetak();
+    $keadaan['peserta'][2]['bus'] = 'Bus 1';
+    $keadaan['peserta'][2]['kursi'] = '3';
+
+    $html = view('exports.orcha-denah-kursi-pdf', [
+        'keberangkatan' => $keadaan['keberangkatan'],
+        'petak' => $keadaan['petak'],
+        'peserta' => $keadaan['peserta'],
+    ])->render();
+
+    expect($html)->toContain('Titik jemput — Bus 1');
+    expect($html)->toContain('Terminal Giwangan');
+    expect($html)->toContain('Janti');
+    // Nama beserta nomor kursinya, bukan nama saja.
+    expect($html)->toContain('Budi Santoso (1)');
+});

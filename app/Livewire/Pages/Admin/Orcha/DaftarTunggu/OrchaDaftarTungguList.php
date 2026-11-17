@@ -96,6 +96,66 @@ class OrchaDaftarTungguList extends Component
             .'Masih berminat? Kursinya kami tahan dulu sampai nanti sore.';
     }
 
+    /**
+     * Menahan kursi satu rombongan untuk orang ini.
+     *
+     * Dicatat sesaat SEBELUM admin membuka WhatsApp, bukan sesudah balasannya
+     * datang: yang menahan admin kedua menawarkan kursi yang sama adalah
+     * catatan niatnya, dan menunggu balasan justru membuat jendela bentroknya
+     * selebar waktu menunggu.
+     */
+    public function tahanKursi(int $id, int $keberangkatan): void
+    {
+        $this->kirimLewatPos("/daftar-tunggu/{$id}/tawarkan", [
+            'keberangkatan_id' => $keberangkatan,
+            'tahan_jam' => 6,
+        ]);
+    }
+
+    public function lepasTahanan(int $id): void
+    {
+        if ($this->hapusData("/daftar-tunggu/{$id}/tawarkan",
+            'Tawaran dilepas. Kursinya boleh ditawarkan ke yang lain.')) {
+            // Tidak ada yang perlu dikerjakan: daftar digambar ulang sendiri.
+        }
+    }
+
+    /**
+     * Rombongan yang masih bisa ditawarkan untuk paket orang ini.
+     *
+     * Hanya yang BELUM berangkat dan masih dibuka — menawarkan kursi
+     * rombongan yang sudah jalan bukan kekeliruan kecil, dan daftar pilihan
+     * yang memuatnya membuat kekeliruan itu tinggal satu ketukan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function rombonganPaket(int $paketId): array
+    {
+        $paket = collect($this->rujukan('paket_wisata'))->firstWhere('id', $paketId);
+
+        return collect($paket['keberangkatan'] ?? [])
+            ->filter(fn ($kb) => ($kb['aktif'] ?? false)
+                && ! empty($kb['tanggal_berangkat'])
+                && $kb['tanggal_berangkat'] >= now()->toDateString())
+            ->values()
+            ->all();
+    }
+
+    /** Pengirim POST sederhana; MemanggilOrcha hanya punya PATCH & POST berkas. */
+    private function kirimLewatPos(string $jalur, array $data): void
+    {
+        try {
+            $balasan = $this->orcha()->kirim($jalur, $data);
+
+            cache()->forget('orcha.perlu-ditindak');
+            \App\Support\HitunganOrcha::lupakanSemua();
+
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Tersimpan.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
     public function tandaiDihubungi(int $id): void
     {
         try {

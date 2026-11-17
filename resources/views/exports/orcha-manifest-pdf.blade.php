@@ -26,6 +26,14 @@
     $kesehatan = collect($riwayat)->keyBy(fn ($satu) => mb_strtolower(trim($satu['nama_peserta'] ?? '')));
     $cari = fn ($nama) => $kesehatan[mb_strtolower(trim($nama ?? ''))] ?? null;
 
+    /* Baris peserta dicari menurut NAMA, karena daftar per titik jemput di
+       bawah berisi nama — bukan barisnya. Di situlah bus, kursi, kamar, dan
+       jenis kelaminnya tersimpan. */
+    $barisPeserta = collect($pendaftaran['peserta'] ?? [])
+        ->keyBy(fn ($satu) => mb_strtolower(trim((string) ($satu['nama'] ?? ''))));
+
+    $cariBaris = fn ($nama) => $barisPeserta[mb_strtolower(trim((string) $nama))] ?? [];
+
     $perluPerhatian = collect($riwayat)->filter(fn ($s) => ($s['tingkat_perhatian'] ?? '') === 'tinggi');
     $belumIsi = $pendaftaran['peserta_belum_isi'] ?? [];
 @endphp
@@ -223,16 +231,26 @@
 
             <table width="100%" cellpadding="0" cellspacing="0" class="orang">
                 <tr class="tajuk-orang">
+                    {{-- Tempat duduk & kamar ikut di lembar ini.
+
+                         Dulu lembar untuk tour leader tidak memuatnya sama
+                         sekali: pembagiannya ada di layar admin, dan yang
+                         berdiri di parkiran tetap mengatur tempat duduk dengan
+                         tangan. Dua kolom sempit sudah cukup — yang dibaca di
+                         lapangan nomornya, bukan kalimatnya. --}}
                     <td width="6%" align="center">Naik</td>
                     <td width="4%">No</td>
-                    <td width="28%">Nama peserta</td>
-                    <td width="24%">Kesehatan</td>
-                    <td width="24%">Kontak darurat</td>
-                    <td width="14%"></td>
+                    <td width="24%">Nama peserta</td>
+                    <td width="13%">Bus &amp; kursi</td>
+                    <td width="8%">Kamar</td>
+                    <td width="21%">Kesehatan</td>
+                    <td width="20%">Kontak darurat</td>
+                    <td width="4%"></td>
                 </tr>
                 @foreach ($orang as $nama)
                     @php
                         $k = $cari($nama);
+                        $p = $cariBaris($nama);
                         $awas = ($k['tingkat_perhatian'] ?? '') === 'tinggi';
                     @endphp
                     <tr class="{{ $awas ? 'awas' : '' }}">
@@ -242,8 +260,27 @@
                             </table>
                         </td>
                         <td width="4%">{{ $loop->iteration }}.</td>
-                        <td width="28%"><strong style="color:{{ $navy }};">{{ $nama }}</strong></td>
-                        <td width="24%" style="font-size:10px;">
+                        <td width="24%">
+                            <strong style="color:{{ $navy }};">{{ $nama }}</strong>
+                            @php $lp = $p['jenis_kelamin'] ?? ($k['jenis_kelamin'] ?? null); @endphp
+                            @if (filled($lp))
+                                <span style="font-size:9px;color:#64748b;"> ({{ mb_substr($lp, 0, 1) }})</span>
+                            @endif
+                        </td>
+                        <td width="13%" style="font-size:10px;">
+                            @if (filled($p['kursi'] ?? null))
+                                <strong style="color:{{ $navy }};">{{ $p['bus'] }} &middot; {{ $p['kursi'] }}</strong>
+                            @elseif (filled($p['bus'] ?? null))
+                                {{ $p['bus'] }}
+                            @else
+                                <span style="color:#94a3b8;">belum dibagi</span>
+                            @endif
+                        </td>
+                        <td width="8%" style="font-size:10px;">
+                            {{ $p['kamar'] ?? '' }}
+                            @if (blank($p['kamar'] ?? null))<span style="color:#94a3b8;">—</span>@endif
+                        </td>
+                        <td width="21%" style="font-size:10px;">
                             @if ($k)
                                 {{ collect([
                                     ($k['usia'] ?? null) ? $k['usia'] . ' th' : null,
@@ -254,7 +291,7 @@
                                 <span style="color:#94a3b8;">data kesehatan belum diisi</span>
                             @endif
                         </td>
-                        <td width="24%" style="font-size:10px;">
+                        <td width="20%" style="font-size:10px;">
                             @if (data_get($k, 'kontak_darurat.hp'))
                                 {{ data_get($k, 'kontak_darurat.nama') }}
                                 {{ data_get($k, 'kontak_darurat.hp') }}
@@ -262,7 +299,7 @@
                                 <span style="color:#94a3b8;">—</span>
                             @endif
                         </td>
-                        <td width="14%" align="right">
+                        <td width="4%" align="right">
                             @if ($awas)
                                 <span class="cap-awas">PERHATIAN</span>
                             @elseif (($k['tingkat_perhatian'] ?? '') === 'sedang')

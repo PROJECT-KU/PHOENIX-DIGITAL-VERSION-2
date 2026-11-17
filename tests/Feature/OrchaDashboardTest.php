@@ -2873,15 +2873,18 @@ test('ekspor ditolak untuk akun tanpa izin data kesehatan', function () {
 test('tombol unduh hanya tampil untuk akun berizin', function () {
     Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
 
-    // Tombolnya menyebut APA yang didapat, bukan nama berkasnya: "manifes"
-    // kata kami, dan admin yang awam mencari "daftar peserta".
+    /*
+     | Tombolnya menyebut APA yang didapat DAN UNTUK SIAPA — bukan nama
+     | berkasnya. "Manifes" kata kami; yang mencarinya admin awam, dan yang
+     | memakainya tour leader.
+     */
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7')
-        ->assertDontSee('Daftar Peserta (PDF)');
+        ->assertDontSee('Daftar peserta untuk tour leader');
 
     $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran/7')
-        ->assertSee('Daftar Peserta (PDF)');
+        ->assertSee('Daftar peserta untuk tour leader');
 });
 
 test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
@@ -4612,19 +4615,25 @@ test('bilah perkakas detail pendaftaran seukuran pemilih statusnya', function ()
      | berbeda-beda tinggi terbaca seperti kumpulan tombol yang kebetulan
      | bersebelahan.
      */
-    // Daftar peserta (PDF) dan Excel memuat data kesehatan, jadi keduanya hanya
-    // tergambar untuk akun berizin — dan itulah tampilan yang dilihat admin Orcha.
+    // Berkas yang memuat data kesehatan hanya tergambar untuk akun berizin —
+    // dan itulah tampilan yang dilihat admin Orcha.
     $isi = tanpaGaya($this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
         ->get('/admin/orcha/pendaftaran/8')->assertOk()->getContent());
 
-    // Empat berkas/tindakan di bilahnya: Bukti Pembayaran, Daftar Peserta (PDF),
-    // Data Lengkap (Excel), Riwayat Perubahan.
+    /*
+     | Berkasnya kini di dalam laci "Unduh", bukan berjajar di bilahnya.
+     |
+     | Sepuluh tombol sejajar berarti sepuluh hal yang harus dibaca sebelum
+     | menekan satu — dan untuk admin yang tidak setiap hari memakai aplikasi,
+     | itu yang membuat orang berhenti menekan apa pun. Yang dijaga uji ini
+     | tetap sama: isinya ada, dan bentuk tombolnya satu.
+     */
     expect(substr_count($isi, 'dsb-tombol'))->toBeGreaterThanOrEqual(4);
     expect($isi)
-        ->toContain('Bukti Pembayaran')
-        ->toContain('Daftar Peserta (PDF)')
-        ->toContain('Data Lengkap (Excel)')
-        ->toContain('Riwayat Perubahan');
+        ->toContain('Bukti pembayaran (kwitansi)')
+        ->toContain('Daftar peserta untuk tour leader')
+        ->toContain('Data lengkap untuk kantor (Excel)')
+        ->toContain('Siapa mengubah apa di sini');
 
     // Pemilih statusnya memakai isian dasbor yang sama dengan isian lain di layar ini.
     expect($isi)->toContain('dsb-isian pd-pilih-status');

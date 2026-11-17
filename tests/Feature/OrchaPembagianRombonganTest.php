@@ -525,3 +525,61 @@ test('bilah simpan menempel di dasar layar', function () {
         ->call('tempatkanKursi', 'Bus 1', '3')
         ->assertSee('pbg-simpan-tempel');
 });
+
+test('layar menunjukkan tiga langkah, dan menandai yang sudah beres', function () {
+    /*
+     | Layar ini punya tujuh kartu dan tujuh belas tombol. Yang tahu urutannya
+     | hanya orang yang pernah mengerjakannya; yang baru pertama kali membuka
+     | melihat semuanya setara dan tidak tahu harus mulai dari mana.
+     */
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('Siapkan bus &amp; kamar', false)
+        ->assertSee('Bagi pesertanya')
+        ->assertSee('Cetak untuk tour leader')
+        // Kendaraan & kamar sudah ada di fixture → langkah 1 beres.
+        ->assertSee('is-beres');
+});
+
+test('jenis kelamin yang menumpang di formulir kesehatan bisa diambil sekali tekan', function () {
+    /*
+     | Layar sudah MENAMPILKAN nilainya, tetapi yang tersimpan di baris
+     | pesertanya masih kosong — dan selama begitu, pembagiannya bergantung
+     | pada kaitan lewat NAMA. Begitu ejaan nama diperbaiki, kamarnya terbaca
+     | "belum diisi" lagi.
+     */
+    config()->set('uji.pbg.keadaan', ['peserta' => [
+        orangPembagian('7:0', 'Siti Aminah', [
+            'jenis_kelamin' => 'Perempuan', 'kelamin_dari_kesehatan' => true,
+        ]),
+        orangPembagian('7:1', 'Budi', ['jenis_kelamin' => 'Laki-laki']),
+    ]]);
+
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('masih menumpang')
+        ->call('ambilKelaminDariKesehatan')
+        ->assertSet('ubahan.7:0.jenis_kelamin', 'Perempuan')
+        // Yang sudah tersimpan sendiri tidak ikut disentuh.
+        ->assertSet('ubahan', fn ($u) => ! array_key_exists('7:1', $u));
+});
+
+test('tombol ambil menolak kalau tidak ada yang bisa diambil', function () {
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->call('ambilKelaminDariKesehatan')
+        ->assertDispatched('toast-error');
+});
+
+test('nama yang juga terdaftar di rombongan lain ditandai di kepingannya', function () {
+    config()->set('uji.pbg.keadaan', ['peserta' => [
+        orangPembagian('7:0', 'Budi Santoso', [
+            'jenis_kelamin' => 'Laki-laki', 'juga_di' => '11 – 13 Des 2026',
+        ]),
+    ]]);
+
+    Livewire::actingAs(adminPembagian())
+        ->test(OrchaPembagianRombongan::class, ['keberangkatan' => 11])
+        ->assertSee('pbg-ganda')
+        ->assertSee('juga ada di rombongan 11 – 13 Des 2026', false);
+});

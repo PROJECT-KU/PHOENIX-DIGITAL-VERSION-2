@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\OrchaTidakTerjangkau;
+use App\Exports\OrchaManifesExport;
 use App\Exports\OrchaPendaftaranExport;
 use App\Exports\OrchaPendaftaranRekapExport;
 use App\Exports\OrchaTemplatPesertaExport;
@@ -249,6 +250,53 @@ class OrchaEksporController extends Controller
 
         $saringan = array_merge($this->saringanDari($request), ['per_halaman' => 100]);
 
+        [$daftar, $kesehatan] = $this->bahanManifes($saringan);
+
+        return Pdf::loadView('exports.orcha-manifest-daftar-pdf', [
+            'daftar' => $daftar,
+            'kesehatan' => $kesehatan,
+            'saringan' => $saringan,
+        ])->setPaper('a4')->download('MANIFES-ROMBONGAN-'.now()->format('Ymd-Hi').'.pdf');
+    }
+
+    /**
+     * Manifes yang SAMA, dalam bentuk Excel.
+     *
+     * Bahannya diambil lewat satu penolong yang sama dengan versi PDF-nya —
+     * bukan dua pengambilan yang kebetulan mirip. Dua berkas yang menjawab
+     * pertanyaan yang sama tetapi berbeda isinya adalah asal perselisihan di
+     * parkiran: yang satu dipegang tour leader, yang satu dibuka panitia di
+     * laptop, dan tidak ada yang bisa menjelaskan mengapa jumlahnya beda.
+     *
+     * Bentuknya memang berbeda, dan itu gunanya: PDF dibawa berdiri, Excel
+     * disaring dan dihitung.
+     */
+    public function manifesExcel(Request $request)
+    {
+        abort_unless($request->user()?->hasPermission('view_orcha_kesehatan'), 403);
+
+        $saringan = array_merge($this->saringanDari($request), ['per_halaman' => 100]);
+
+        [$daftar, $kesehatan] = $this->bahanManifes($saringan);
+
+        return Excel::download(
+            new OrchaManifesExport($daftar, $kesehatan, $saringan),
+            'MANIFES-ROMBONGAN-'.now()->format('Ymd-Hi').'.xlsx'
+        );
+    }
+
+    /**
+     * Bahan manifes: daftar pendaftaran beserta riwayat kesehatannya.
+     *
+     * Satu penolong untuk PDF dan Excel. Dua pengambilan terpisah akan
+     * menyimpang suatu hari — batasnya diubah di satu tempat, saringannya di
+     * tempat lain — dan yang menyimpang adalah daftar nama yang dibawa orang
+     * ke lapangan.
+     *
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, mixed>}
+     */
+    private function bahanManifes(array $saringan): array
+    {
         try {
             $daftar = $this->orcha->ambil('/pendaftaran', $saringan)['data'] ?? [];
 
@@ -267,11 +315,7 @@ class OrchaEksporController extends Controller
 
         abort_if($daftar === [], 404, 'Tidak ada pendaftaran yang cocok dengan saringan ini.');
 
-        return Pdf::loadView('exports.orcha-manifest-daftar-pdf', [
-            'daftar' => $daftar,
-            'kesehatan' => $kesehatan,
-            'saringan' => $saringan,
-        ])->setPaper('a4')->download('MANIFES-ROMBONGAN-'.now()->format('Ymd-Hi').'.pdf');
+        return [$daftar, $kesehatan];
     }
 
     /**

@@ -220,11 +220,38 @@ test('pendaftaran tanpa rombongan ditandai di daftar', function () {
         ->assertSee('belum punya rombongan');
 });
 
-test('tombol rekap dan daftar tunggu ada di kepala halaman', function () {
+test('berkas unduhan dikelompokkan per PEMBACANYA, bukan per nama berkas', function () {
+    /*
+     | Tiga tombol unduh berjajar berarti tiga hal yang harus dibaca sebelum
+     | menekan satu — dan ketiganya berbunyi mirip. Kalimatnya menyebut untuk
+     | SIAPA berkasnya, bukan nama berkasnya.
+     |
+     | Manifes PDF dan Excel harus berpasangan: yang satu dibawa berdiri di
+     | parkiran, yang satu disaring di laptop, dan isinya sama persis.
+     */
     Livewire::actingAs(adminAlatDaftar())
         ->test(OrchaPendaftaranList::class)
-        ->assertSee('Unduh Rekap (Excel)')
+        ->assertSee('Untuk tour leader di lapangan')
+        ->assertSee('Unduh Daftar Peserta untuk tour leader (PDF)')
+        ->assertSee('Unduh Daftar Peserta untuk tour leader (Excel)')
+        ->assertSee('isinya sama persis')
+        ->assertSee('Untuk kantor')
+        ->assertSee('Rekap uang per pemesanan (Excel)')
         ->assertSee('Daftar Tunggu');
+});
+
+test('manifes PDF dan Excel membawa saringan yang sama', function () {
+    /*
+     | Dua berkas yang menjawab pertanyaan yang sama tetapi berbeda isinya
+     | adalah asal perselisihan di parkiran.
+     */
+    $html = Livewire::actingAs(adminAlatDaftar())
+        ->test(OrchaPendaftaranList::class)
+        ->set('filterPaket', '5')
+        ->set('filterKeberangkatan', '12')
+        ->html();
+
+    expect(substr_count($html, 'keberangkatan_id=12'))->toBeGreaterThanOrEqual(2);
 });
 
 test('tautan berkas ikut membawa saringan rombongan dan urutan', function () {

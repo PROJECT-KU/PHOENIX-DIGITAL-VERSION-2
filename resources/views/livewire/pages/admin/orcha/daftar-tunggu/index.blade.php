@@ -5,6 +5,38 @@ Daftar Tunggu || lemon
 <div>
     @include('livewire.pages.admin.orcha.partials.gaya')
 
+    {{-- <style> telanjang: layout templateindex tidak punya satu pun stack,
+         jadi gaya yang didorong ke sana tidak pernah ikut tergambar. --}}
+    <style>
+        /* Laci pilihan rombongan pada tombol tahan kursi.
+
+           <details>, bukan menu ber-JS: layar ini tidak memuat Alpine untuk
+           apa pun yang lain, dan satu menu yang menuntut skrip hidup berarti
+           satu tombol yang diam saat skripnya tidak sempat termuat. */
+        .dt-laci { position: relative; display: inline-block; }
+        .dt-laci > summary { list-style: none; cursor: pointer; }
+        .dt-laci > summary::-webkit-details-marker { display: none; }
+        .dt-laci-isi {
+            position: absolute; z-index: 40; right: 0; top: calc(100% + 6px);
+            min-width: 240px; padding: 8px; border-radius: 13px; text-align: left;
+            background: #fff; border: 1px solid #e3e8ef;
+            box-shadow: 0 18px 36px -12px rgba(15, 23, 42, .28);
+        }
+        .dt-laci-judul {
+            display: block; padding: 2px 8px 6px;
+            font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: #94a3b8;
+        }
+        .dt-laci-isi > button {
+            display: flex; align-items: center; gap: 8px; width: 100%;
+            padding: 8px 10px; border: 0; border-radius: 9px; cursor: pointer;
+            background: none; text-align: left; color: #334155;
+            font-size: .83rem; font-weight: 600;
+        }
+        .dt-laci-isi > button small { margin-left: auto; font-weight: 500; color: #94a3b8; }
+        .dt-laci-isi > button:hover { background: #f1f5f9; }
+    </style>
+
     <div class="container-fluid">
         @include('livewire.pages.admin.orcha.partials.kepala', [
             'judul' => 'Daftar Tunggu',
@@ -183,6 +215,32 @@ Daftar Tunggu || lemon
                                              tergambar hijau "Dikabari 2 jam lalu". Layarnya
                                              mengatakan kebalikan dari kenyataan, tepat untuk
                                              orang yang paling membutuhkan admin. --}}
+                                        {{-- Keadaan TAWARAN didahulukan.
+
+                                             Kursi yang sedang ditahan untuk orang ini adalah hal
+                                             paling penting di barisnya — ia menahan admin lain
+                                             menawarkan kursi yang sama. Penanda "sudah dihubungi"
+                                             di bawah menjawab pertanyaan yang lain dan boleh
+                                             menyusul. --}}
+                                        @if (($baris['keadaan_tawaran'] ?? 'belum') === 'ditahan')
+                                            <span class="badge bg-primary-subtle text-primary-emphasis d-block mb-1">
+                                                <i class="bi bi-bookmark-check"></i>
+                                                Kursi {{ $baris['rombongan'] }} ditahan
+                                                @if ($baris['ditahan_sampai'] ?? null)
+                                                    sampai {{ \Carbon\Carbon::parse($baris['ditahan_sampai'])->locale('id')->translatedFormat('d M, H:i') }}
+                                                @endif
+                                            </span>
+                                        @elseif (($baris['keadaan_tawaran'] ?? 'belum') === 'lewat')
+                                            {{-- Tahanannya habis dan orangnya tidak membalas.
+                                                 Kursinya boleh ditawarkan ke yang berikutnya —
+                                                 dan tanpa keadaan ketiga ini, ia menggantung
+                                                 selamanya atas nama orang yang diam. --}}
+                                            <span class="badge bg-warning-subtle text-warning-emphasis d-block mb-1">
+                                                <i class="bi bi-hourglass-bottom"></i>
+                                                Tahanan kursi {{ $baris['rombongan'] }} sudah lewat
+                                            </span>
+                                        @endif
+
                                         @if ($baris['dihubungi_pada'] ?? null)
                                             <span class="badge bg-success-subtle text-success-emphasis">
                                                 Sudah dihubungi
@@ -230,6 +288,52 @@ Daftar Tunggu || lemon
                                              dipakai halaman Pesan Kontak; bentuk pembungkusnya pun
                                              disalin dari sana supaya jaraknya sama. --}}
                                         <div class="d-flex gap-2 justify-content-end">
+                                            {{-- Menahan kursi satu rombongan untuk orang ini.
+
+                                                 Dicatat SEBELUM WhatsApp dibuka, bukan sesudah
+                                                 balasannya datang: yang menahan admin kedua
+                                                 menawarkan kursi yang sama adalah catatan
+                                                 niatnya, dan menunggu balasan justru membuat
+                                                 jendela bentroknya selebar waktu menunggu. --}}
+                                            @php
+                                                $rombonganBisa = $this->rombonganPaket((int) $baris['paket_id']);
+                                            @endphp
+
+                                            @if (($baris['keadaan_tawaran'] ?? 'belum') !== 'belum')
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
+                                                    wire:click="lepasTahanan({{ $baris['id'] }})"
+                                                    title="Lepas tahanannya supaya kursinya boleh ditawarkan ke orang lain">
+                                                    <i class="bi bi-bookmark-x"></i>
+                                                </button>
+                                            @elseif (count($rombonganBisa) === 1)
+                                                {{-- Satu tanggal: langsung, tanpa memilih. --}}
+                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-paku"
+                                                    wire:click="tahanKursi({{ $baris['id'] }}, {{ $rombonganBisa[0]['id'] }})"
+                                                    title="Tahan kursi {{ $rombonganBisa[0]['rentang_tanggal'] }} untuk {{ $baris['nama'] }} selama 6 jam">
+                                                    <i class="bi bi-bookmark-plus"></i>
+                                                </button>
+                                            @elseif (count($rombonganBisa) > 1)
+                                                <details class="dt-laci">
+                                                    <summary class="btn btn-sm orcha-aksi orcha-aksi-paku"
+                                                        title="Tahan kursi salah satu rombongan untuk orang ini">
+                                                        <i class="bi bi-bookmark-plus"></i>
+                                                    </summary>
+                                                    <div class="dt-laci-isi">
+                                                        <span class="dt-laci-judul">Tahan kursi rombongan</span>
+                                                        @foreach ($rombonganBisa as $kb)
+                                                            <button type="button"
+                                                                wire:click="tahanKursi({{ $baris['id'] }}, {{ $kb['id'] }})">
+                                                                <i class="bi bi-calendar-event"></i>
+                                                                {{ $kb['rentang_tanggal'] }}
+                                                                @if (($kb['sisa_kursi'] ?? null) !== null)
+                                                                    <small>sisa {{ $kb['sisa_kursi'] }}</small>
+                                                                @endif
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
+                                                </details>
+                                            @endif
+
                                             {{-- Menekan tombol ini SEKALIGUS menandai bahwa
                                                  orangnya sudah dihubungi.
 

@@ -96,9 +96,14 @@ test('tombolnya ada di bilah perkakas selama belum lunas', function () {
      | batang kemajuan pembayaran, ia berada di tempat mata membaca angka lalu
      | berhenti.
      */
+    /*
+     | Urutannya berubah sejak bilah perkakas dikelompokkan: "Catat Uang
+     | Masuk" kini tombol PERTAMA — ia yang dipakai tiap hari — sedangkan
+     | berkas unduhan pindah ke laci di sebelahnya.
+     */
     Livewire::actingAs(adminBayar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->assertSeeInOrder(['Excel', 'Catat Uang Masuk', 'Total tagihan']);
+        ->assertSeeInOrder(['Catat Uang Masuk', 'Excel', 'Total tagihan']);
 });
 
 test('tombolnya hilang begitu lunas', function () {

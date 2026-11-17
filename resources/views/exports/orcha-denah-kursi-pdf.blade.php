@@ -122,6 +122,43 @@
             </table>
         @endforeach
 
+        {{-- Siapa naik di mana, per bus.
+
+             Pertanyaan yang ditanyakan sopir di titik jemput ketiga: "di Janti
+             nanti siapa saja yang naik?". Daftar per kursi di atas tidak bisa
+             menjawabnya — mata harus melompat dua puluh baris sambil berdiri
+             di pinggir jalan. --}}
+        @foreach ($petak as $bus)
+            @php
+                $naikDiSini = collect($penghuni)
+                    ->filter(fn ($o) => ($o['bus'] ?? '') === $bus['nama'])
+                    ->groupBy(fn ($o) => trim((string) ($o['titik_jemput'] ?? '')) ?: 'Belum ditentukan')
+                    ->sortKeys();
+            @endphp
+
+            @if ($naikDiSini->isNotEmpty())
+                <p class="bus-nama" style="margin-top:12px">Titik jemput — {{ $bus['nama'] }}</p>
+                <table class="daftar">
+                    <tr>
+                        <th style="width:160px">Naik di</th>
+                        <th style="width:40px">Orang</th>
+                        <th>Nama (nomor kursi)</th>
+                    </tr>
+                    @foreach ($naikDiSini as $titik => $orang)
+                        <tr>
+                            <td><strong>{{ $titik }}</strong></td>
+                            <td>{{ $orang->count() }}</td>
+                            <td>
+                                {{ $orang->sortBy(fn ($o) => (int) $o['kursi'])
+                                    ->map(fn ($o) => $o['nama'].' ('.$o['kursi'].')')
+                                    ->implode(', ') }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </table>
+            @endif
+        @endforeach
+
         {{-- Yang belum dapat kursi DISEBUT, bukan dihilangkan dari lembarnya.
 
              Lembar yang hanya memuat yang sudah ditempatkan terbaca sebagai

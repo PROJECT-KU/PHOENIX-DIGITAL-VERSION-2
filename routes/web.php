@@ -591,6 +591,15 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pendaftaran-manifes', [OrchaEksporController::class, 'manifesDaftar'])->name('admin.orcha.pendaftaran.manifes');
 
     /*
+     | Manifes yang SAMA dalam bentuk Excel.
+     |
+     | PDF dibawa berdiri di parkiran; Excel disaring dan dihitung di laptop.
+     | Bahannya satu penolong yang sama, supaya isinya tidak pernah berbeda.
+     */
+    Route::get('/admin/orcha/pendaftaran-manifes-excel', [OrchaEksporController::class, 'manifesExcel'])
+        ->name('admin.orcha.pendaftaran.manifes.excel');
+
+    /*
      | Rekap daftar pendaftaran untuk kantor — bukan manifes tour leader.
      |
      | Dua berkas untuk dua pembaca. Manifes di atas berisi nama peserta dan
