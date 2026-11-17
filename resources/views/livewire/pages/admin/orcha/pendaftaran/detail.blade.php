@@ -838,6 +838,19 @@ Detail Pendaftaran || lemon
                                             ? $berangkat->locale('id')->translatedFormat('l, d F Y')
                                                 . ($sisaHari > 0 ? ' · ' . $sisaHari . ' hari lagi' : ($sisaHari === 0 ? ' · hari ini' : ''))
                                             : 'Menyusul', 'bi-calendar-event'],
+                                        /*
+                                         | Rombongan mana, disebut terpisah dari hari berangkatnya.
+                                         |
+                                         | Baris di atas menjawab "kapan dia berangkat"; baris ini
+                                         | menjawab "ikut rombongan yang mana" — dua pertanyaan
+                                         | berbeda sejak satu paket dijual untuk beberapa tanggal.
+                                         | Disebut HANYA bila ada: pendaftaran lama tidak punya
+                                         | rombongan, dan baris bertuliskan "—" cuma menambah benda
+                                         | yang harus diabaikan mata.
+                                         */
+                                        ...(($pendaftaran['keberangkatan']['rentang_tanggal'] ?? null)
+                                            ? [['Rombongan', $pendaftaran['keberangkatan']['rentang_tanggal'], 'bi-people']]
+                                            : []),
                                         ['Titik jemput rombongan', $pendaftaran['titik_jemput'] ?: 'Dikonfirmasi tim', 'bi-geo-alt'],
                                     ] as [$label, $nilai, $ikon])
                                         <div class="d-flex gap-3">

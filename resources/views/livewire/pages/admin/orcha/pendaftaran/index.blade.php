@@ -312,7 +312,22 @@ Pendaftaran Trip || lemon
                                         <td data-judul="Berangkat">
                                             @if ($berangkat)
                                                 <span class="dsb-tabel-teks">
-                                                    <span class="dsb-tabel-angka">{{ $berangkat->locale('id')->translatedFormat('d M Y') }}</span>
+                                                    {{-- RENTANGNYA, bukan satu tanggal.
+
+                                                         "11 Des 2026" tidak memberi tahu tripnya sampai
+                                                         kapan, dan pada paket yang menjual beberapa
+                                                         rombongan berdekatan dua baris bertanggal mirip
+                                                         terbaca seperti salah satunya salah ketik.
+                                                         Kalimat yang dipakai sama persis dengan yang
+                                                         dibaca pelanggan di website dan yang tertulis di
+                                                         borang paket — satu rombongan, satu sebutan.
+
+                                                         Pendaftaran lama yang belum punya keberangkatan
+                                                         tetap memakai tanggalnya sendiri. --}}
+                                                    <span class="dsb-tabel-angka">
+                                                        {{ $baris['keberangkatan']['rentang_tanggal']
+                                                            ?? $berangkat->locale('id')->translatedFormat('d M Y') }}
+                                                    </span>
                                                     {{-- Hitungan mundur, bukan tanggal saja: yang
                                                          menentukan tindakan hari ini adalah jarak ke
                                                          keberangkatan, dan menghitungnya sendiri dari

@@ -188,3 +188,99 @@ test('bersihkan saringan ikut melepas rombongan', function () {
         ->assertSet('filterKeberangkatan', '')
         ->assertSet('filterPaket', '');
 });
+
+/* ============ TANGGAL YANG TERGAMBAR DI DAFTAR ============ */
+
+/** Satu baris pendaftaran hasil pendaftaran publik, siap dipalsukan. */
+function barisPendaftaranUji(array $ubah = []): array
+{
+    return array_merge([
+        'id' => 999, 'kode' => 'OT-1711-UV3XZ3', 'nama' => 'Bu Rina',
+        'whatsapp' => '081234567890', 'email' => null, 'jumlah_peserta' => 1,
+        'nama_paket' => 'Open Trip Banyuwangi',
+        'paket' => ['id' => 7, 'nama' => 'Open Trip Banyuwangi', 'titik_jemput' => ['Terminal Jombor Jogja']],
+        'keberangkatan_id' => 2,
+        'keberangkatan' => ['id' => 2, 'rentang_tanggal' => '11 – 13 Desember 2026', 'aktif' => true],
+        'tanggal_berangkat' => '2026-12-11',
+        'hari_ke_berangkat' => 24,
+        'titik_jemput' => 'Terminal Jombor Jogja',
+        'status' => 'baru', 'status_label' => 'Baru',
+        'kesehatan_terisi' => 0, 'kesehatan_lengkap' => false, 'peserta_belum_isi' => ['Bu Rina'],
+        'dibuat_pada' => '2026-11-17T09:00:00+07:00',
+    ], $ubah);
+}
+
+/**
+ * Nama berawalan 'Rombongan', BUKAN palsukanDaftarPendaftaran().
+ *
+ * Nama itu sudah dipakai OrchaManifesPaketTest. Penolong uji Pest hidup di
+ * ruang nama global, jadi dua berkas senama menjatuhkan SELURUH rangkaian
+ * dengan "Cannot redeclare" — dan berkas yang dijalankan sendirian dengan
+ * --filter tidak akan pernah menangkapnya.
+ */
+function palsukanDaftarRombongan(array $baris): void
+{
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'status_pendaftaran' => ['baru' => 'Baru', 'dp_masuk' => 'DP Masuk'],
+            'paket_wisata' => [[
+                'id' => 7, 'nama' => 'Open Trip Banyuwangi', 'kategori' => 'open_trip',
+                'tanggal_berangkat' => '2026-11-27', 'keberangkatan' => tigaRombongan(),
+            ]],
+        ]]),
+        '*/pendaftaran*' => Http::response(['data' => $baris, 'meta' => ['total' => count($baris)]]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    cache()->forget('orcha.rujukan');
+}
+
+test('kolom Berangkat menulis rentang rombongan, bukan satu tanggal', function () {
+    palsukanDaftarRombongan([barisPendaftaranUji()]);
+
+    /*
+     | "11 Des 2026" tidak memberi tahu tripnya sampai kapan, dan pada paket
+     | yang menjual beberapa rombongan berdekatan, dua baris bertanggal mirip
+     | terbaca seperti salah satunya salah ketik. Kalimatnya kini sama persis
+     | dengan yang dibaca pelanggan di website.
+     */
+    $isi = Livewire::actingAs(adminPeserta())
+        ->test(OrchaPendaftaranList::class)
+        ->html();
+
+    expect($isi)->toContain('11 – 13 Desember 2026');
+
+    // Hitungan mundurnya tetap ada — itu yang menentukan tindakan hari ini.
+    expect($isi)->toContain('hari lagi');
+});
+
+test('pendaftaran lama tanpa rombongan tetap menampilkan tanggalnya', function () {
+    // Jalur mundur: pendaftaran yang masuk sebelum tabel keberangkatan ada
+    // tidak boleh kehilangan tanggalnya hanya karena tidak punya rombongan.
+    palsukanDaftarRombongan([barisPendaftaranUji([
+        'keberangkatan_id' => null,
+        'keberangkatan' => null,
+        'tanggal_berangkat' => '2026-09-25',
+    ])]);
+
+    $isi = Livewire::actingAs(adminPeserta())
+        ->test(OrchaPendaftaranList::class)
+        ->html();
+
+    expect($isi)
+        ->toContain('25 Sep 2026')
+        ->not->toContain('tanggalnya belum ditentukan');
+});
+
+test('tanpa tanggal sama sekali, layarnya menyebutkannya apa adanya', function () {
+    palsukanDaftarRombongan([barisPendaftaranUji([
+        'keberangkatan_id' => null, 'keberangkatan' => null,
+        'tanggal_berangkat' => null, 'hari_ke_berangkat' => null,
+    ])]);
+
+    $isi = Livewire::actingAs(adminPeserta())
+        ->test(OrchaPendaftaranList::class)
+        ->html();
+
+    expect($isi)->toContain('tanggalnya belum ditentukan');
+});
