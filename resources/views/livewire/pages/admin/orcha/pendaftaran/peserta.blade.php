@@ -484,18 +484,58 @@ Daftar Peserta || lemon
                                 @endif
                             </div>
 
-                            {{-- Bus dan kamar, hanya saat pembagian dinyalakan.
+                            {{-- Jenis kelamin — SELALU tampil, bukan ikut sakelar
+                                 "bagi bus & kamar".
+
+                                 Pembagian kamar baru dikerjakan seminggu sebelum
+                                 berangkat, tetapi medan ini harus sudah terisi jauh
+                                 sebelum itu: pembagian otomatis tidak menebak jenis
+                                 kelamin dari nama, dan rombongan yang baru diisi pada
+                                 hari H berarti pembagiannya dikerjakan tangan juga.
+
+                                 Terisi sendiri dari borang riwayat kesehatan bila
+                                 pesertanya sudah mengisi. Yang tampil karenanya bukan
+                                 kotak kosong yang harus diisi 120 kali, melainkan
+                                 beberapa yang tersisa. --}}
+                            <div class="col-12 col-md-2">
+                                <select class="dsb-isian pst-kelamin"
+                                    wire:model="barisPeserta.{{ $urutan }}.jenis_kelamin"
+                                    title="Dipakai membagi kamar. Perempuan tidak pernah disatukan dengan laki-laki oleh pembagian otomatis.">
+                                    <option value="" @selected(($baris['jenis_kelamin'] ?? '') === '')>L / P?</option>
+                                    @foreach ($pilihanKelamin as $pilihan)
+                                        <option value="{{ $pilihan }}"
+                                            @selected(($baris['jenis_kelamin'] ?? '') === $pilihan)>
+                                            {{ $pilihan }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Bus, kursi, dan kamar, hanya saat pembagian dinyalakan.
 
                                  Untuk open trip berlima, dua kolom yang selalu kosong
                                  hanya menyempitkan kolom nama dan menambah benda yang
                                  harus diabaikan mata. Untuk study tour 120 orang,
                                  inilah yang dikerjakan seminggu sebelum berangkat. --}}
                             @if ($bagiKelompok)
-                                <div class="col-12 col-md-2">
+                                <div class="col-6 col-md-2">
                                     <input type="text" class="dsb-isian"
                                         wire:model="barisPeserta.{{ $urutan }}.bus"
                                         value="{{ $baris['bus'] ?? '' }}"
                                         maxlength="60" placeholder="Bus">
+                                </div>
+
+                                {{-- Nomor kursi, terpisah dari nama busnya.
+
+                                     Digabung jadi satu teks ("Bus 1 kursi 12"),
+                                     keduanya tidak bisa dipakai lagi: yang satu
+                                     dipakai memanggil kelompok di parkiran, yang
+                                     lain menggambar petak tempat duduk. --}}
+                                <div class="col-6 col-md-1">
+                                    <input type="text" inputmode="numeric" class="dsb-isian"
+                                        wire:model="barisPeserta.{{ $urutan }}.kursi"
+                                        value="{{ $baris['kursi'] ?? '' }}"
+                                        maxlength="10" placeholder="Kursi">
                                 </div>
 
                                 <div class="col-12 col-md-2">

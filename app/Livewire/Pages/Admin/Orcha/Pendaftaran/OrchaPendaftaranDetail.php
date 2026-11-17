@@ -625,6 +625,282 @@ class OrchaPendaftaranDetail extends Component
         );
     }
 
+    /*
+     |--------------------------------------------------------------------------
+     | Membetulkan data pendaftaran
+     |--------------------------------------------------------------------------
+     |
+     | Sebelum ini tidak ada jalannya sama sekali. Nomor WhatsApp yang salah
+     | satu angka, nama yang salah ketik, atau jumlah peserta yang berubah dari
+     | tiga jadi lima hanya bisa diselesaikan dengan membatalkan lalu mendaftar
+     | ulang — dan itu membuang kode pemesanan, riwayat pembayaran, angsuran,
+     | serta riwayat kesehatan yang sudah diisi peserta.
+     */
+
+    public bool $bukaUbah = false;
+
+    /** @var array<string, string> */
+    public array $ubah = [];
+
+    public function bukaFormulirUbah(): void
+    {
+        $this->ubah = [
+            'nama' => (string) ($this->data['nama'] ?? ''),
+            'whatsapp' => (string) ($this->data['whatsapp'] ?? ''),
+            'email' => (string) ($this->data['email'] ?? ''),
+            'jumlah_peserta' => (string) ($this->data['jumlah_peserta'] ?? ''),
+            'pendamping_gratis' => (string) ($this->data['pendamping_gratis'] ?? 0),
+            'titik_jemput' => (string) ($this->data['titik_jemput'] ?? ''),
+            'catatan' => (string) ($this->data['catatan'] ?? ''),
+        ];
+
+        $this->bukaUbah = true;
+        $this->resetValidation();
+    }
+
+    public function tutupFormulirUbah(): void
+    {
+        $this->bukaUbah = false;
+        $this->ubah = [];
+        $this->resetValidation();
+    }
+
+    public function simpanUbah(): void
+    {
+        $this->validate([
+            'ubah.nama' => 'required|string|max:120',
+            'ubah.whatsapp' => 'required|string|max:30',
+            'ubah.email' => 'nullable|email|max:191',
+            'ubah.jumlah_peserta' => 'required|integer|min:1|max:200',
+            'ubah.pendamping_gratis' => 'nullable|integer|min:0|max:200',
+            'ubah.titik_jemput' => 'nullable|string|max:191',
+            'ubah.catatan' => 'nullable|string|max:2000',
+        ], [], [
+            'ubah.nama' => 'nama pemesan',
+            'ubah.whatsapp' => 'nomor WhatsApp',
+            'ubah.email' => 'email',
+            'ubah.jumlah_peserta' => 'jumlah peserta',
+            'ubah.pendamping_gratis' => 'pendamping gratis',
+            'ubah.titik_jemput' => 'titik jemput',
+            'ubah.catatan' => 'catatan pemesan',
+        ]);
+
+        /*
+         | Pendamping gratis TIDAK boleh melebihi jumlah peserta.
+         |
+         | Kalau lewat, peserta yang ditagih jadi angka negatif — dan tagihan
+         | negatif tidak ditolak di mana pun, ia cuma muncul sebagai total
+         | minus di kwitansi yang sudah dikirim ke sekolah.
+         */
+        if ((int) ($this->ubah['pendamping_gratis'] ?? 0) >= (int) $this->ubah['jumlah_peserta']) {
+            $this->addError('ubah.pendamping_gratis',
+                'Pendamping gratis harus lebih sedikit daripada jumlah peserta — kalau tidak, tidak ada yang ditagih.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->ubah("/pendaftaran/{$this->pendaftaranId}", [
+                'nama' => trim($this->ubah['nama']),
+                'whatsapp' => trim($this->ubah['whatsapp']),
+                'email' => trim($this->ubah['email'] ?? '') ?: null,
+                'jumlah_peserta' => (int) $this->ubah['jumlah_peserta'],
+                'pendamping_gratis' => (int) ($this->ubah['pendamping_gratis'] ?? 0),
+                'titik_jemput' => trim($this->ubah['titik_jemput'] ?? '') ?: null,
+                'catatan' => trim($this->ubah['catatan'] ?? '') ?: null,
+            ]);
+
+            \App\Support\HitunganOrcha::lupakanSemua();
+            cache()->forget('orcha.perlu-ditindak');
+
+            $this->bukaUbah = false;
+            $this->dispatch('order-updated',
+                message: $balasan['pesan'] ?? 'Data pendaftaran tersimpan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Pindah rombongan
+     |--------------------------------------------------------------------------
+     */
+
+    public bool $bukaPindah = false;
+
+    public string $rombonganTujuan = '';
+
+    /**
+     * Pesan dari Orcha saat kuota tujuannya tidak cukup.
+     *
+     * Disimpan supaya tombol "lanjutkan saja" bisa muncul bersama ALASANNYA.
+     * Tombol paksa tanpa angka yang disebut membuat admin menekannya tanpa
+     * tahu ia sedang menjual kursi ke-41 dari bus 40 kursi.
+     */
+    public string $peringatanKuota = '';
+
+    public function bukaFormulirPindah(): void
+    {
+        $this->rombonganTujuan = (string) ($this->data['keberangkatan_id'] ?? '');
+        $this->peringatanKuota = '';
+        $this->bukaPindah = true;
+    }
+
+    public function tutupFormulirPindah(): void
+    {
+        $this->bukaPindah = false;
+        $this->rombonganTujuan = '';
+        $this->peringatanKuota = '';
+    }
+
+    /**
+     * Rombongan lain milik paket yang sama.
+     *
+     * Hanya paket yang sama: pindah paket berarti harga dan isi perjalanan
+     * yang berbeda, jadi yang benar adalah pemesanan baru — bukan baris lama
+     * yang tagihannya dihitung dari harga paket yang sudah tidak dipakainya.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function pilihanRombongan(): array
+    {
+        $paketId = (int) ($this->data['paket']['id'] ?? 0);
+
+        if ($paketId === 0) {
+            return [];
+        }
+
+        $paket = collect($this->rujukan('paket_wisata'))->firstWhere('id', $paketId);
+
+        return collect($paket['keberangkatan'] ?? [])->values()->all();
+    }
+
+    public function pindahRombongan(bool $paksa = false): void
+    {
+        if ($this->rombonganTujuan === '') {
+            $this->dispatch('toast-error', message: 'Pilih dulu rombongan tujuannya.');
+
+            return;
+        }
+
+        if ((int) $this->rombonganTujuan === (int) ($this->data['keberangkatan_id'] ?? 0)) {
+            $this->dispatch('toast-error', message: 'Rombongannya sudah yang itu.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->ubah("/pendaftaran/{$this->pendaftaranId}", array_filter([
+                'keberangkatan_id' => (int) $this->rombonganTujuan,
+                'paksa' => $paksa ?: null,
+            ], fn ($nilai) => $nilai !== null));
+
+            \App\Support\HitunganOrcha::lupakanSemua();
+            cache()->forget('orcha.perlu-ditindak');
+
+            $this->tutupFormulirPindah();
+            $this->dispatch('order-updated',
+                message: $balasan['pesan'] ?? 'Rombongannya dipindahkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            /*
+             | Penolakan kuota TIDAK diperlakukan sebagai kegagalan biasa.
+             |
+             | Ia satu-satunya penolakan yang masih bisa dilanjutkan admin, dan
+             | menampilkannya sebagai toast merah yang hilang sendiri membuat
+             | pilihan itu tidak pernah terlihat — yang terjadi berikutnya
+             | adalah admin mencoba lagi dengan cara yang sama lalu menyerah.
+             */
+            if ($e->butuhPaksa()) {
+                $this->peringatanKuota = $e->getMessage();
+
+                return;
+            }
+
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Catatan internal
+     |--------------------------------------------------------------------------
+     |
+     | Terpisah dari catatan pemesan, yang ikut tercetak di kwitansi. Satu
+     | kolom untuk keduanya berarti "nomornya tidak aktif, sudah ditelepon 2x"
+     | berpeluang tercetak di dokumen yang diserahkan ke orangnya sendiri.
+     */
+
+    public bool $bukaCatatan = false;
+
+    public string $catatanInternal = '';
+
+    public function bukaFormulirCatatan(): void
+    {
+        $this->catatanInternal = (string) ($this->data['catatan_internal'] ?? '');
+        $this->bukaCatatan = true;
+        $this->resetValidation();
+    }
+
+    public function tutupFormulirCatatan(): void
+    {
+        $this->bukaCatatan = false;
+        $this->catatanInternal = '';
+    }
+
+    public function simpanCatatanInternal(): void
+    {
+        $this->validate(
+            ['catatanInternal' => 'nullable|string|max:2000'],
+            [],
+            ['catatanInternal' => 'catatan internal'],
+        );
+
+        try {
+            $this->orcha()->ubah("/pendaftaran/{$this->pendaftaranId}", [
+                'catatan_internal' => trim($this->catatanInternal) ?: null,
+            ]);
+
+            $this->bukaCatatan = false;
+            $this->dispatch('order-updated', message: 'Catatan internal tersimpan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Hapus pendaftaran
+     |--------------------------------------------------------------------------
+     */
+
+    /**
+     * Menghapus pendaftaran — untuk kiriman ganda dan salah masuk.
+     *
+     * Penjaganya ada di Orcha, bukan di sini: yang uangnya sudah masuk ditolak
+     * di sana lengkap dengan nominalnya, dan penolakan itu ditampilkan apa
+     * adanya. Memeriksanya DUA KALI di dua aplikasi berarti dua aturan yang
+     * cepat atau lambat berbeda — dan yang di layar ini yang akan salah,
+     * karena ia membaca data yang sudah berumur sepanjang halaman terbuka.
+     */
+    public function hapusPendaftaran(): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/pendaftaran/{$this->pendaftaranId}");
+
+            \App\Support\HitunganOrcha::lupakanSemua();
+            cache()->forget('orcha.perlu-ditindak');
+
+            $this->dispatch(
+                'orcha-sukses-pindah',
+                message: $balasan['pesan'] ?? 'Pendaftaran dihapus.',
+                url: route('admin.orcha.pendaftaran'),
+            );
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
     public function render()
     {
         $hasil = $this->muat("/pendaftaran/{$this->pendaftaranId}");

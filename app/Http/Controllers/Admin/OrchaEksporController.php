@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Exports\OrchaPendaftaranExport;
+use App\Exports\OrchaPendaftaranRekapExport;
 use App\Exports\OrchaTemplatPesertaExport;
 use App\Http\Controllers\Controller;
 use App\Services\OrchaClient;
@@ -25,6 +26,85 @@ use Maatwebsite\Excel\Facades\Excel;
 class OrchaEksporController extends Controller
 {
     public function __construct(private OrchaClient $orcha) {}
+
+    /**
+     * Medan saringan yang diteruskan ke Orcha — SATU daftar untuk semua ekspor.
+     *
+     * Dulu tiap ekspor menyusun daftarnya sendiri, dan manifes rombongan
+     * tertinggal: ia membaca cari, status, dan paket_id saja. Sejak satu paket
+     * boleh dijual untuk beberapa tanggal, layar menyaring per ROMBONGAN —
+     * saringan yang tidak dibaca di sini. Tour leader yang menyaring "4–6 Des"
+     * lalu menekan Unduh mendapat ketiga rombongan sekaligus, tanpa satu pun
+     * tanda bahwa saringannya tidak ikut: lembarnya terbit, isinya banyak, dan
+     * kelebihannya baru ketahuan di parkiran.
+     *
+     * Medan baru ditambahkan DI SINI, sekali. Lihat
+     * OrchaPendaftaranList::saringanTampil() di sisi yang mengirimnya.
+     *
+     * @return array<string, mixed>
+     */
+    private function saringanDari(Request $request): array
+    {
+        return array_filter([
+            'cari' => $request->string('cari')->toString(),
+            'status' => $request->string('status')->toString(),
+            'paket_id' => $request->string('paket_id')->toString(),
+            'keberangkatan_id' => $request->string('keberangkatan_id')->toString(),
+            // Dikirim hanya bila menyala: mengirim 0 membuat Orcha membaca
+            // parameternya ada, dan daftar biasa ikut tersaring.
+            'perlu_ditagih' => $request->boolean('perlu_ditagih') ? 1 : '',
+            'urut' => $request->string('urut')->toString(),
+        ], fn ($nilai) => $nilai !== '' && $nilai !== null);
+    }
+
+    /**
+     * Rekap daftar pendaftaran, mengikuti saringan yang sedang tampil.
+     *
+     * Berbeda pembaca dari dua berkas di atas. Yang ini untuk REKAP KANTOR —
+     * satu baris per pendaftaran, berisi angka uang dan keadaannya. Sebelumnya
+     * satu-satunya ekspor berbentuk daftar adalah manifes tour leader, yang
+     * isinya nama peserta dan titik jemput; rekap bulanan karenanya disalin
+     * tangan dari layar, satu baris demi satu baris.
+     *
+     * TIDAK memuat data kesehatan, jadi tidak menuntut izin itu: isinya nama
+     * pemesan, nomor, paket, tanggal, dan uang.
+     */
+    public function pendaftaranRekap(Request $request)
+    {
+        $saringan = array_merge($this->saringanDari($request), ['per_halaman' => 100]);
+
+        try {
+            /*
+             | Halamannya dirangkai sampai habis, dengan batas atas.
+             |
+             | Rekap yang berhenti di 100 baris pertama tanpa memberi tahu
+             | adalah rekap yang angkanya salah — dan salahnya tidak kelihatan,
+             | karena lembarnya terbit penuh. Batas 20 halaman (2.000 baris)
+             | menjaga satu klik tidak berubah jadi dua puluh ribu panggilan;
+             | kalau sampai mentok, jumlahnya disebut di lembarnya.
+             */
+            $baris = [];
+            $halaman = 1;
+            $total = null;
+
+            do {
+                $hasil = $this->orcha->ambil('/pendaftaran', $saringan + ['page' => $halaman]);
+                $baris = array_merge($baris, $hasil['data'] ?? []);
+                $total ??= (int) ($hasil['meta']['total'] ?? 0);
+                $terakhir = (int) ($hasil['meta']['halaman_terakhir'] ?? 1);
+                $halaman++;
+            } while ($halaman <= $terakhir && $halaman <= 20);
+        } catch (OrchaTidakTerjangkau $e) {
+            abort(503, $e->getMessage());
+        }
+
+        abort_if($baris === [], 404, 'Tidak ada pendaftaran yang cocok dengan saringan ini.');
+
+        return Excel::download(
+            new OrchaPendaftaranRekapExport($baris, $total ?? count($baris), $saringan),
+            'REKAP-PENDAFTARAN-'.now()->format('Ymd-Hi').'.xlsx'
+        );
+    }
 
     public function excel(Request $request, int $pendaftaran)
     {
@@ -89,14 +169,7 @@ class OrchaEksporController extends Controller
     {
         abort_unless($request->user()?->hasPermission('view_orcha_kesehatan'), 403);
 
-        $saringan = array_filter([
-            'cari' => $request->string('cari')->toString(),
-            'status' => $request->string('status')->toString(),
-            // Saringan paket ikut diteruskan: inilah yang dipakai admin untuk
-            // memastikan manifesnya berisi satu keberangkatan saja.
-            'paket_id' => $request->string('paket_id')->toString(),
-            'per_halaman' => 100,
-        ], fn ($nilai) => $nilai !== '' && $nilai !== null);
+        $saringan = array_merge($this->saringanDari($request), ['per_halaman' => 100]);
 
         try {
             $daftar = $this->orcha->ambil('/pendaftaran', $saringan)['data'] ?? [];

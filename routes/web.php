@@ -589,6 +589,16 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/dashboard', OrchaDashboard::class)->name('admin.orcha.dashboard');
     Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
     Route::get('/admin/orcha/pendaftaran-manifes', [OrchaEksporController::class, 'manifesDaftar'])->name('admin.orcha.pendaftaran.manifes');
+
+    /*
+     | Rekap daftar pendaftaran untuk kantor — bukan manifes tour leader.
+     |
+     | Dua berkas untuk dua pembaca. Manifes di atas berisi nama peserta dan
+     | titik jemput; yang ini berisi angka uang per pemesanan. Sebelumnya hanya
+     | ada yang pertama, jadi rekap bulanan disalin tangan dari layar.
+     */
+    Route::get('/admin/orcha/pendaftaran-rekap', [OrchaEksporController::class, 'pendaftaranRekap'])
+        ->name('admin.orcha.pendaftaran.rekap');
     /*
      | HARUS SEBELUM /{pendaftaran} — tanpa ini "daftarkan" terbaca sebagai
      | nomor pendaftaran, dan halaman ini tidak pernah bisa dibuka.
@@ -636,6 +646,22 @@ Route::middleware('permission:akses_orcha')->group(function () {
      */
     Route::get('/admin/orcha/jejak-audit', OrchaJejakAuditList::class)->name('admin.orcha.jejak-audit');
     Route::get('/admin/orcha/pesan/{id}', OrchaPesanDetail::class)->name('admin.orcha.pesan.detail');
+    /*
+     | Pembagian kursi kendaraan & kamar, per ROMBONGAN.
+     |
+     | Satuannya rombongan, bukan pendaftaran — dan itu yang membuat layar ini
+     | perlu ada sendiri. Satu bus mengangkut peserta dari banyak pemesanan
+     | sekaligus; dikerjakan dari halaman pendaftaran, dua admin yang membuka
+     | dua pemesanan berbeda sama-sama menaruh orangnya di "Bus 1 kursi 5"
+     | tanpa bisa melihat bentrokannya.
+     |
+     | {keberangkatan} adalah id ANGKA keberangkatan di Orcha, bukan UUID.
+     */
+    Route::get('/admin/orcha/rombongan/{keberangkatan}/pembagian',
+        \App\Livewire\Pages\Admin\Orcha\Pembagian\OrchaPembagianRombongan::class)
+        ->whereNumber('keberangkatan')
+        ->name('admin.orcha.pembagian');
+
     Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
     Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');

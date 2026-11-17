@@ -1623,3 +1623,99 @@ test('berkas boleh menyatakan penggantian lewat kolom ketiga', function () {
         ->assertSet('barisPeserta.1.nama', 'Rina Wijaya')
         ->assertCount('barisPeserta', 2);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Jenis kelamin & nomor kursi
+|--------------------------------------------------------------------------
+|
+| Dua medan baru pada baris peserta. Jenis kelamin adalah satu-satunya bahan
+| pembagian kamar: tanpanya, pembagian otomatis tidak bisa menjalankan
+| aturannya sendiri — dan ia TIDAK menebak dari nama, karena nama Indonesia
+| sering tidak menunjukkan jenis kelamin ("Sri", "Nur", "Adi" dipakai keduanya)
+| dan tebakan yang salah berarti satu orang tidur di kamar yang salah.
+*/
+
+test('kolom jenis kelamin selalu tampil, tidak ikut sakelar bus & kamar', function () {
+    palsukanDetail(['peserta' => [
+        ['nama' => 'Budi', 'titik_jemput' => 'Jogja', 'bus' => null, 'kamar' => null,
+            'kursi' => null, 'jenis_kelamin' => null],
+    ]]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        // Sakelar pembagian MATI, tetapi pemilih kelaminnya tetap ada.
+        ->assertSet('bagiKelompok', false)
+        ->assertSee('barisPeserta.0.jenis_kelamin');
+});
+
+test('jenis kelamin terisi sendiri dari riwayat kesehatan', function () {
+    palsukanDetail([
+        'peserta' => [
+            ['nama' => 'Siti Aminah', 'titik_jemput' => 'Jogja', 'bus' => null, 'kamar' => null,
+                'kursi' => null, 'jenis_kelamin' => null],
+        ],
+        'kelamin_kesehatan' => ['siti aminah' => 'Perempuan'],
+    ]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        ->assertSet('barisPeserta.0.jenis_kelamin', 'Perempuan');
+});
+
+test('nilai yang sudah tersimpan di baris peserta menang atas riwayat kesehatan', function () {
+    /*
+     | Riwayat kesehatan dikaitkan lewat NAMA dan diisi pesertanya sendiri.
+     | Kalau ia menang, pembetulan yang dilakukan admin di layar ini akan
+     | dikembalikan sendiri setiap kali halamannya dibuka — perubahan yang
+     | hilang tanpa ada yang menghapusnya.
+     */
+    palsukanDetail([
+        'peserta' => [
+            ['nama' => 'Sri', 'titik_jemput' => 'Jogja', 'bus' => null, 'kamar' => null,
+                'kursi' => null, 'jenis_kelamin' => 'Laki-laki'],
+        ],
+        'kelamin_kesehatan' => ['sri' => 'Perempuan'],
+    ]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        ->assertSet('barisPeserta.0.jenis_kelamin', 'Laki-laki');
+});
+
+test('sakelar pembagian menyala sendiri bila kursinya sudah terisi', function () {
+    palsukanDetail(['peserta' => [
+        ['nama' => 'Budi', 'titik_jemput' => 'Jogja', 'bus' => null, 'kamar' => null,
+            'kursi' => '12', 'jenis_kelamin' => 'Laki-laki'],
+    ]]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        ->assertSet('bagiKelompok', true);
+});
+
+test('tempelan yang menimpa satu baris tidak membuang pembagian busnya', function () {
+    /*
+     | Inilah cacatnya: baris yang namanya ditimpa tempelan dulu ditulis ulang
+     | dari nol dengan empat kunci saja, sehingga bus, kursi, kamar, dan jenis
+     | kelamin yang sudah tersimpan ikut hilang — diam-diam, dan hanya pada
+     | baris yang tertimpa. Admin yang menempelkan daftar revisi panitia
+     | mendapati pembagian busnya kosong di beberapa baris saja, tanpa satu pun
+     | galat, dan selisihnya tidak bisa dilacak lagi setelah disimpan.
+     */
+    palsukanDetail(['peserta' => [
+        ['nama' => 'Budi Lama', 'titik_jemput' => 'Jogja', 'bus' => 'Bus 1', 'kamar' => '201',
+            'kursi' => '5', 'jenis_kelamin' => 'Laki-laki'],
+    ]]);
+
+    $layar = Livewire::actingAs(adminPeserta())
+        ->test(OrchaPesertaForm::class, ['pendaftaran' => 9])
+        // Bentuk "yang digantikan > penggantinya", seperti yang dikirim panitia.
+        ->set('tempelan', 'Budi Lama > Budi Baru')
+        ->call('tempel');
+
+    $layar->assertSet('barisPeserta.0.nama', 'Budi Baru')
+        ->assertSet('barisPeserta.0.bus', 'Bus 1')
+        ->assertSet('barisPeserta.0.kursi', '5')
+        ->assertSet('barisPeserta.0.kamar', '201');
+});

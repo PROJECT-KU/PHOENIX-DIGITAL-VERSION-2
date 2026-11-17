@@ -70,12 +70,30 @@ class OrchaPesertaForm extends Component
         $isi = $this->muat("/pendaftaran/{$pendaftaran}")['data'] ?? [];
         $this->data = $isi;
 
+        /*
+         | Jenis kelamin yang sudah diketahui dari riwayat kesehatan.
+         |
+         | Dipakai MENGISI AWAL saja, dan hanya untuk baris yang belum punya
+         | nilainya sendiri. Rombongan yang pesertanya sudah mengisi borang
+         | kesehatan karenanya tidak perlu diketik ulang satu per satu — dan
+         | pembagian kamar butuh medan ini terisi untuk bisa jalan sama sekali.
+         |
+         | Yang tersimpan tetap nilai di baris pesertanya. Riwayat kesehatan
+         | dikaitkan lewat NAMA: membagi kamar langsung dari sana berarti
+         | pembagian yang berubah sendiri begitu ejaan nama diperbaiki.
+         */
+        $kelaminKesehatan = collect($isi['kelamin_kesehatan'] ?? []);
+
         $this->barisPeserta = collect($isi['peserta'] ?? [])
             ->map(fn ($satu) => [
                 'nama' => (string) ($satu['nama'] ?? ''),
                 'titik_jemput' => (string) ($satu['titik_jemput'] ?? ''),
                 'bus' => (string) ($satu['bus'] ?? ''),
                 'kamar' => (string) ($satu['kamar'] ?? ''),
+                'kursi' => (string) ($satu['kursi'] ?? ''),
+                'jenis_kelamin' => (string) ($satu['jenis_kelamin']
+                    ?? $kelaminKesehatan[mb_strtolower(trim((string) ($satu['nama'] ?? '')))]
+                    ?? ''),
                 'gantikan' => null,
                 'gantikan_titik' => null,
             ])
@@ -86,7 +104,8 @@ class OrchaPesertaForm extends Component
         }
 
         $this->bagiKelompok = collect($this->barisPeserta)
-            ->contains(fn ($baris) => $baris['bus'] !== '' || $baris['kamar'] !== '');
+            ->contains(fn ($baris) => $baris['bus'] !== '' || $baris['kamar'] !== ''
+                || $baris['kursi'] !== '');
     }
 
     public function tambahBaris(): void
@@ -171,6 +190,17 @@ class OrchaPesertaForm extends Component
                      */
                     'bus' => trim($baris['bus'] ?? ''),
                     'kamar' => trim($baris['kamar'] ?? ''),
+                    'kursi' => trim((string) ($baris['kursi'] ?? '')),
+                    /*
+                     | Jenis kelamin dikirim SELALU, termasuk saat kosong.
+                     |
+                     | Alasannya sama dengan bus di atas: membetulkan isian
+                     | yang salah — "Perempuan" jadi kosong karena ternyata
+                     | admin tidak tahu — adalah perbuatan yang harus
+                     | tersimpan. Baris kosong yang dibuang membuat
+                     | pembetulannya tidak pernah sampai.
+                     */
+                    'jenis_kelamin' => trim((string) ($baris['jenis_kelamin'] ?? '')),
                     'gantikan' => trim((string) ($baris['gantikan'] ?? '')) ?: null,
                     // Ikut dikirim walau titiknya sama. Yang membaca arsipnya
                     // kelak tidak bisa membedakan "titiknya memang tetap" dari
@@ -239,6 +269,7 @@ class OrchaPesertaForm extends Component
     private function barisKosong(): array
     {
         return ['nama' => '', 'titik_jemput' => '', 'bus' => '', 'kamar' => '',
+            'kursi' => '', 'jenis_kelamin' => '',
             'gantikan' => null, 'gantikan_titik' => null];
     }
 
@@ -346,12 +377,23 @@ class OrchaPesertaForm extends Component
             $titikLama = trim((string) ($daftar[$urutan]['titik_jemput'] ?? ''));
             $titikBaru = $masuk['titik_jemput'] ?: $titikLama;
 
-            $daftar[$urutan] = [
+            /*
+             | Barisnya DIPERBARUI, bukan digantikan seluruhnya.
+             |
+             | Sebelumnya larik baru ditulis dari nol dengan empat kunci saja,
+             | sehingga bus, kamar, kursi, dan jenis kelamin yang sudah
+             | tersimpan ikut hilang — diam-diam, dan hanya pada baris yang
+             | namanya ditimpa tempelan. Admin yang menempelkan daftar nama
+             | revisi dari panitia mendapati pembagian busnya kosong di
+             | beberapa baris saja, tanpa satu pun galat, dan selisihnya tidak
+             | bisa dilacak lagi setelah disimpan.
+             */
+            $daftar[$urutan] = array_merge($daftar[$urutan], [
                 'nama' => $masuk['nama'],
                 'titik_jemput' => $titikBaru,
                 'gantikan' => $masuk['gantikan'],
                 'gantikan_titik' => $titikLama ?: null,
-            ];
+            ]);
         }
 
         $this->barisPeserta = array_values($daftar);
@@ -422,6 +464,14 @@ class OrchaPesertaForm extends Component
             'pendaftaran' => $this->data,
             'sudahIsi' => $this->namaSudahIsi(),
             'pilihanTitik' => $this->pilihanTitik(),
+            /*
+             | Ejaannya SAMA PERSIS dengan yang diterima Orcha dan yang dipakai
+             | borang riwayat kesehatan. Dua ejaan untuk hal yang sama ("L" di
+             | sini, "Laki-laki" di sana) membuat pembagian kamar otomatis
+             | membaca separuh rombongan sebagai belum diisi, dan Orcha menolak
+             | penyimpanannya dengan pesan yang tidak menunjuk kolom mana pun.
+             */
+            'pilihanKelamin' => ['Laki-laki', 'Perempuan'],
         ])->layout('livewire.layout.templateindex');
     }
 }

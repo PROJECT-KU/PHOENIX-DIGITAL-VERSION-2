@@ -18,6 +18,28 @@ Detail Pendaftaran || lemon
         ->map(fn ($nama) => mb_strtolower(trim($nama)))
         ->all();
 
+    /* Berapa PESERTA TERDATA yang riwayat kesehatannya sudah masuk.
+
+       Bukan kesehatan_terisi, yang menghitung BARIS riwayat kesehatan. Dua
+       angka itu berbeda begitu ada riwayat yang namanya tidak cocok dengan satu
+       pun peserta — dan itu terjadi setiap kali seorang peserta diganti orang
+       lain: riwayat milik yang digantikan tetap tersimpan. Dulu kepala kartu
+       membaca angka yang kedua sementara lencana per baris membaca yang
+       pertama, sehingga kartunya bisa berbunyi "3 dari 4 sudah mengisi" dengan
+       hanya dua baris bertanda hijau, tanpa ada yang menjelaskan selisihnya. */
+    $sudahIsiJumlah = collect($peserta)
+        ->pluck('nama')
+        ->map(fn ($nama) => mb_strtolower(trim((string) $nama)))
+        ->reject(fn ($nama) => in_array($nama, $belumIsi, true))
+        ->count();
+
+    /* Riwayat kesehatan yang tidak lagi dimiliki siapa pun di daftar peserta.
+
+       Tidak disembunyikan: isinya data kesehatan orang sungguhan, dan yang
+       perlu tahu bahwa ia masih tersimpan adalah admin — bukan tidak ada
+       siapa-siapa. */
+    $kesehatanYatim = max(0, (int) ($pendaftaran['kesehatan_terisi'] ?? 0) - $sudahIsiJumlah);
+
     $persenBayar = ($tagihan['total'] ?? 0) > 0
         ? min(100, round(($tagihan['sudah'] ?? 0) / $tagihan['total'] * 100))
         : 0;
@@ -165,6 +187,84 @@ Detail Pendaftaran || lemon
     .pd-kaki-bayar .is-lunas strong { color: #15803d; }
     .pd-kaki-bayar .is-kurang strong { color: #b45309; }
     .pd-kaki-bayar .baris + .baris:last-child { border-top: 1px dashed #e2e8f0; padding-top: 8px; }
+
+    /* ===== Bilah loncat ke bagian ===== */
+    .pd-loncat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pd-loncat-label {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: .76rem; font-weight: 700; letter-spacing: .04em;
+        text-transform: uppercase; color: var(--dsb-redup);
+    }
+    .pd-loncat-tautan {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 11px; border-radius: 999px; text-decoration: none;
+        background: #fff; border: 1px solid var(--dsb-tepi);
+        color: #475569; font-size: .78rem; font-weight: 600;
+    }
+    .pd-loncat-tautan i.bi { color: #7c3aed; font-size: .82rem; }
+    @media (hover: hover) and (pointer: fine) {
+        .pd-loncat-tautan:hover { border-color: #a78bfa; color: #1c1f26; }
+    }
+
+    /* Sasaran loncatan diberi ruang di atasnya.
+
+       Tanpa ini, kepala kartu yang dituju berhenti tepat di tepi atas layar
+       dan sebagian tertutup bilah navigasi lemon yang menempel di sana —
+       admin mendarat di kartu yang benar lalu mengira ia mendarat di tengah
+       kartu sebelumnya. */
+    [id^="bg-"] { scroll-margin-top: 86px; }
+
+    /* ===== Catatan internal =====
+       Ungu, bukan kuning atau abu-abu. Kuning sudah berarti "ada yang perlu
+       dikerjakan" di layar ini, dan abu-abu sudah berarti "tidak ada datanya".
+       Catatan internal bukan keduanya: ia keterangan yang sengaja ditulis
+       seseorang, dan satu-satunya yang perlu menonjol darinya adalah bahwa ia
+       tidak terbaca pelanggan. */
+    .pd-catatan-dalam {
+        padding: 13px 15px; border-radius: 13px;
+        background: #faf5ff; border: 1px solid #e9d5ff;
+    }
+    .pd-catatan-dalam .orcha-label-kecil { color: #7c3aed; }
+    .pd-catatan-dalam .dsb-tautan { margin-top: 7px; font-size: .78rem; }
+
+    /* ===== Zona hapus =====
+       Merahnya terlihat tanpa hover. Tombol hapus yang baru berubah warna saat
+       disentuh tidak membedakan dirinya dari tombol lain justru pada saat ia
+       paling perlu dibedakan: sebelum ditekan. */
+    .pd-zona-hapus {
+        display: flex; align-items: flex-start; gap: 13px; flex-wrap: wrap;
+        padding: 15px; border-radius: 14px;
+        background: #fef2f2; border: 1px solid #fecaca;
+    }
+    .pd-zona-teks { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .pd-zona-teks > strong { font-size: .92rem; color: #991b1b; }
+    .pd-zona-teks > span { font-size: .8rem; line-height: 1.55; color: #7f1d1d; }
+    .pd-zona-hapus .dsb-tombol { margin-left: auto; align-self: center; }
+
+    /* ===== Teks bantu di bawah isian =====
+       Bahasa rupa dasbor hanya punya .dsb-label-ket, yang duduk DI DALAM
+       labelnya. Yang dibutuhkan borang di layar ini kalimat penuh di bawah
+       kotaknya — "angka ini yang mengalikan harga paket jadi tagihan" tidak
+       muat sebagai kurungan di sebelah label, dan justru kalimat itulah yang
+       mencegah satu angka diketik sembarangan. */
+    .pd-bantu {
+        margin-top: 5px; font-size: .76rem; line-height: 1.5;
+        color: var(--dsb-redup);
+    }
+
+    /* ===== Nota: penolakan yang masih bisa dilanjutkan =====
+       Bukan toast. Toast hilang sendiri, dan satu-satunya penolakan yang
+       menawarkan jalan keluar ("lanjutkan, lebihi kuota") tidak boleh hilang
+       sebelum dibaca. */
+    .pd-nota {
+        display: flex; align-items: flex-start; gap: 11px; flex-wrap: wrap;
+        padding: 13px 15px; border-radius: 14px;
+        background: #fffbeb; border: 1px solid #fde68a;
+        color: #78350f; font-size: .84rem; line-height: 1.55;
+    }
+    .pd-nota strong { color: #713f12; }
+    .pd-nota i.bi:first-child { color: #d97706; font-size: 1rem; margin-top: 1px; }
+    .pd-nota .dsb-tombol { margin-left: auto; }
 
     /* ===== Pita: kartu setinggi satu baris =====
        Dipakai bagian yang isinya memang cuma satu kalimat. Kartu penuh untuk
@@ -332,6 +432,66 @@ Detail Pendaftaran || lemon
                                 <i class="bi bi-clock-history"></i><span>Riwayat Perubahan</span>
                             </a>
 
+                            {{-- Membetulkan data pemesan.
+
+                                 Sebelum ini tidak ada jalannya: nomor WhatsApp
+                                 yang salah satu angka atau jumlah peserta yang
+                                 berubah hanya bisa diselesaikan dengan
+                                 membatalkan lalu mendaftar ulang — dan itu
+                                 membuang kode pemesanan, riwayat pembayaran,
+                                 angsuran, serta riwayat kesehatan yang sudah
+                                 diisi peserta. --}}
+                            <button type="button" wire:click="bukaFormulirUbah"
+                                class="dsb-tombol is-lembut" style="--ikon: #0f766e"
+                                title="Betulkan nama, nomor WhatsApp, email, jumlah peserta, dan titik jemput">
+                                <i class="bi bi-pencil-square"></i><span>Ubah Data</span>
+                            </button>
+
+                            {{-- Pindah rombongan. Muncul hanya bila paketnya
+                                 memang punya tanggal lain — tombol yang
+                                 membuka daftar berisi satu pilihan yang sudah
+                                 terpilih tidak menawarkan apa pun. --}}
+                            @if (count($this->pilihanRombongan()) > 1)
+                                <button type="button" wire:click="bukaFormulirPindah"
+                                    class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                    title="Pindahkan pemesanan ini ke tanggal keberangkatan lain pada paket yang sama">
+                                    <i class="bi bi-arrow-left-right"></i><span>Pindah Rombongan</span>
+                                </button>
+                            @endif
+
+                            {{-- Jalan ke pembagian kursi & kamar SELURUH rombongan.
+
+                                 Bukan pembagian pendaftaran ini saja: satu bus
+                                 mengangkut peserta dari banyak pemesanan
+                                 sekaligus, dan satu kamar twin diisi dua orang
+                                 yang bisa mendaftar terpisah. Membaginya per
+                                 pemesanan membuat dua admin sama-sama menaruh
+                                 orangnya di "Bus 1 kursi 5" tanpa bisa melihat
+                                 bentrokannya.
+
+                                 Muncul hanya bila pendaftaran ini sudah
+                                 terhubung ke sebuah rombongan — yang belum
+                                 tidak punya satuan untuk dibagi. --}}
+                            @if (! empty($pendaftaran['keberangkatan_id']))
+                                <a href="{{ route('admin.orcha.pembagian', $pendaftaran['keberangkatan_id']) }}"
+                                    wire:navigate class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                                    title="Bagi tempat duduk bus dan kamar hotel untuk seluruh rombongan {{ $pendaftaran['keberangkatan']['rentang_tanggal'] ?? '' }}">
+                                    <i class="bi bi-grid-3x3-gap"></i><span>Bagi Kursi &amp; Kamar</span>
+                                </a>
+                            @endif
+
+                            {{-- Catatan internal. Titiknya menyala bila sudah
+                                 ada isinya: catatan yang tidak terlihat sama
+                                 saja dengan catatan yang tidak ada, dan admin
+                                 kedua menelepon orang yang sama di hari yang
+                                 sama. --}}
+                            <button type="button" wire:click="bukaFormulirCatatan"
+                                class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
+                                title="Catatan yang hanya dibaca admin — tidak pernah tercetak di kwitansi">
+                                <i class="bi {{ filled($pendaftaran['catatan_internal'] ?? null) ? 'bi-sticky-fill' : 'bi-sticky' }}"></i>
+                                <span>Catatan Internal{{ filled($pendaftaran['catatan_internal'] ?? null) ? ' •' : '' }}</span>
+                            </button>
+
                             {{-- Mencatat pembayaran adalah TINDAKAN, bukan keterangan
                                  yang menempel pada ringkasan biaya. Disembunyikan saat
                                  sudah lunas atau batal: mencatat pembayaran pada
@@ -358,8 +518,33 @@ Detail Pendaftaran || lemon
                                     {{ $pendaftaran['status_label'] ?? $pendaftaran['status'] }}
                                 </span>
                             @else
+                                {{-- Konfirmasi dulu, karena satu di antara
+                                     pilihannya melepas kursi orang.
+
+                                     "Batal" di sini mengembalikan kursi ke
+                                     kuota lalu mengabari daftar tunggu —
+                                     tindakan yang menyentuh orang lain, dan
+                                     tidak bisa dibatalkan dengan memilih
+                                     ulang. Pemilihnya duduk di jalur jempol
+                                     saat menggulir.
+
+                                     Nilainya dikembalikan saat dibatalkan;
+                                     pemilih yang tetap menampilkan pilihan
+                                     baru padahal tidak tersimpan adalah
+                                     kebohongan yang bertahan sampai halaman
+                                     dimuat ulang. --}}
                                 <select class="dsb-isian pd-pilih-status status-{{ $pendaftaran['status'] }}"
-                                    wire:change="ubahStatus($event.target.value)">
+                                    x-data="{ semula: @js($pendaftaran['status']) }"
+                                    x-on:change="
+                                        const pilih = $event.target;
+                                        const label = pilih.options[pilih.selectedIndex].text.trim();
+                                        if (await window.orchaKonfirmasi('Keadaan pendaftaran ini diubah menjadi ' + label + '.', { judul: 'Ubah keadaan?', tombol: 'Ya, ubah' })) {
+                                            semula = pilih.value;
+                                            $wire.ubahStatus(pilih.value);
+                                        } else {
+                                            pilih.value = semula;
+                                        }
+                                    ">
                                     @foreach ($pilihanStatus as $kunci => $label)
                                         <option value="{{ $kunci }}" @selected($pendaftaran['status'] === $kunci)>{{ $label }}</option>
                                     @endforeach
@@ -370,10 +555,284 @@ Detail Pendaftaran || lemon
                 </div>
             </div>
 
+            {{-- ============ LONCAT KE BAGIAN ============
+
+                 Halaman ini lebih dari dua ribu baris markah dan tumbuh terus.
+                 Untuk mencatat satu pembayaran, admin menggulir melewati
+                 seluruh kartu pemesan dan daftar peserta — dan di layar ponsel
+                 itu belasan kali usapan.
+
+                 Yang ditawarkan hanya bagian yang BENAR-BENAR tergambar:
+                 tautan ke kartu angsuran pada pesanan yang tidak punya
+                 angsuran mendarat di tempat kosong, dan satu kali begitu
+                 membuat seluruh bilah ini berhenti dipercaya. --}}
+            @php
+                $bagian = collect([
+                    ['bg-uang', 'Ringkasan Uang', 'bi-receipt', (bool) $tagihan],
+                    ['bg-pembatalan', 'Pembatalan', 'bi-x-octagon', (bool) $pembatalan],
+                    ['bg-pemesan', 'Pemesan', 'bi-person-vcard', true],
+                    ['bg-peserta', 'Peserta', 'bi-people', true],
+                    ['bg-pembayaran', 'Uang Masuk', 'bi-cash-stack', true],
+                    ['bg-angsuran', 'Angsuran', 'bi-calendar2-week', (bool) ($angsuran['rencana'] ?? null)],
+                    ['bg-penggantian', 'Penggantian Peserta', 'bi-arrow-left-right',
+                        filled($pendaftaran['riwayat_penggantian'] ?? [])],
+                ])->filter(fn ($satu) => $satu[3])->values();
+            @endphp
+
+            @if ($bagian->count() > 3)
+                <div class="dsb-rak dsb-bagian">
+                    <div class="dsb-kartu k-12">
+                        <div class="dsb-kartu-isi">
+                            <div class="pd-loncat">
+                                <span class="pd-loncat-label"><i class="bi bi-list-ul"></i> Loncat ke</span>
+                                @foreach ($bagian as $satu)
+                                    <a class="pd-loncat-tautan" href="#{{ $satu[0] }}">
+                                        <i class="bi {{ $satu[2] }}"></i><span>{{ $satu[1] }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ============ PANEL UBAH DATA ============
+
+                 Panel yang melebar di tempat, bukan jendela mengapung. Isinya
+                 tujuh isian dan harus dibandingkan dengan angka di kartu-kartu
+                 di bawahnya — jendela yang menutupi halaman memaksa admin
+                 menutupnya untuk mengingat jumlah peserta yang sedang
+                 dibetulkannya. --}}
+            @if ($bukaUbah)
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0f766e"><i class="bi bi-pencil-square"></i></span>
+                            <span>
+                                <h2 class="dsb-kartu-judul">Betulkan Data Pendaftaran</h2>
+                                <span class="dsb-kartu-sub">Perubahannya tercatat di jejak audit atas nama Anda</span>
+                            </span>
+                        </div>
+                        <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                            wire:click="tutupFormulirUbah"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-4">
+                                <label class="dsb-label">Nama pemesan <span class="dsb-wajib">*</span></label>
+                                <input type="text" wire:model="ubah.nama"
+                                    class="dsb-isian @error('ubah.nama') is-galat @enderror">
+                                @error('ubah.nama')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12 col-lg-4">
+                                <label class="dsb-label">Nomor WhatsApp <span class="dsb-wajib">*</span></label>
+                                <input type="text" inputmode="tel" wire:model="ubah.whatsapp"
+                                    class="dsb-isian @error('ubah.whatsapp') is-galat @enderror">
+                                @error('ubah.whatsapp')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12 col-lg-4">
+                                <label class="dsb-label">Email</label>
+                                <input type="email" wire:model="ubah.email"
+                                    class="dsb-isian @error('ubah.email') is-galat @enderror">
+                                @error('ubah.email')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12 col-lg-3">
+                                <label class="dsb-label">Jumlah peserta <span class="dsb-wajib">*</span></label>
+                                <input type="number" min="1" max="200" wire:model="ubah.jumlah_peserta"
+                                    class="dsb-isian @error('ubah.jumlah_peserta') is-galat @enderror">
+                                {{-- Peringatan yang disebut SEBELUM disimpan,
+                                     bukan sesudah. Angka inilah yang mengalikan
+                                     harga paket jadi tagihan. --}}
+                                <div class="pd-bantu">Angka ini yang mengalikan harga paket jadi tagihan.</div>
+                                @error('ubah.jumlah_peserta')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12 col-lg-3">
+                                <label class="dsb-label">Pendamping gratis</label>
+                                <input type="number" min="0" max="200" wire:model="ubah.pendamping_gratis"
+                                    class="dsb-isian @error('ubah.pendamping_gratis') is-galat @enderror">
+                                <div class="pd-bantu">Ikut berangkat, tidak ikut ditagih.</div>
+                                @error('ubah.pendamping_gratis')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12 col-lg-6">
+                                <label class="dsb-label">Titik jemput rombongan</label>
+                                <input type="text" wire:model="ubah.titik_jemput"
+                                    class="dsb-isian @error('ubah.titik_jemput') is-galat @enderror">
+                                <div class="pd-bantu">Titik per peserta diatur di layar Peserta.</div>
+                                @error('ubah.titik_jemput')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="dsb-label">Catatan dari pemesan</label>
+                                <textarea rows="2" wire:model="ubah.catatan"
+                                    class="dsb-isian @error('ubah.catatan') is-galat @enderror"></textarea>
+                                <div class="pd-bantu">
+                                    Ini catatan milik pemesan dan ikut tercetak di kwitansi.
+                                    Untuk catatan Anda sendiri, pakai Catatan Internal.
+                                </div>
+                                @error('ubah.catatan')<div class="dsb-galat">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                wire:click="tutupFormulirUbah">
+                                <i class="bi bi-x-circle"></i><span>Batal</span>
+                            </button>
+                            <button type="button" class="dsb-tombol is-utama" wire:click="simpanUbah">
+                                <i class="bi bi-check2"></i><span>Simpan Perubahan</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- ============ PANEL PINDAH ROMBONGAN ============ --}}
+            @if ($bukaPindah)
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-arrow-left-right"></i></span>
+                            <span>
+                                <h2 class="dsb-kartu-judul">Pindah ke Rombongan Lain</h2>
+                                <span class="dsb-kartu-sub">
+                                    Kode pemesanan, pembayaran, angsuran, dan riwayat kesehatan ikut terbawa
+                                </span>
+                            </span>
+                        </div>
+                        <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                            wire:click="tutupFormulirPindah"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-lg-7">
+                                <label class="dsb-label">Rombongan tujuan</label>
+                                {{-- Tiap <option> membawa penandanya sendiri, dan
+                                     penandanya dibaca lewat $this->.
+
+                                     <select> + wire:model tidak menandai nilai yang
+                                     dipegang komponen: Blade merender seluruh
+                                     <option> tanpa `selected`, jadi peramban
+                                     menampilkan pilihan PERTAMA. Di sini artinya
+                                     "— pilih tanggal —" terlihat terpilih padahal
+                                     rombongan sekarang sudah ada.
+
+                                     $this-> dipakai karena Blade membocorkan
+                                     variabel @foreach ke sisa berkasnya; penanda
+                                     yang menulis "$satu" bisa membandingkan sesuatu
+                                     yang lain sama sekali pada hari ada properti
+                                     bernama sama. Dijaga SelectCariOrchaTest. --}}
+                                <select wire:model="rombonganTujuan" class="dsb-isian">
+                                    <option value="" @selected($this->rombonganTujuan === '')>— pilih tanggal —</option>
+                                    @foreach ($this->pilihanRombongan() as $satu)
+                                        <option value="{{ $satu['id'] }}"
+                                            @selected($this->rombonganTujuan === (string) $satu['id'])>
+                                            {{ $satu['rentang_tanggal'] ?? $satu['tanggal_berangkat'] ?? ('#' . $satu['id']) }}
+                                            @if ((int) $satu['id'] === (int) ($pendaftaran['keberangkatan_id'] ?? 0))
+                                                (sekarang)
+                                            @endif
+                                            @if (array_key_exists('sisa_kursi', $satu) && $satu['sisa_kursi'] !== null)
+                                                · sisa {{ $satu['sisa_kursi'] }} kursi
+                                            @endif
+                                            {{-- Tanggal yang ditutup tetap boleh jadi tujuan:
+                                                 memindahkan orang ke rombongan yang sudah tidak
+                                                 dijual lagi adalah hal yang memang kadang perlu
+                                                 (rombongan gabungan, atau penutupan yang cuma
+                                                 menghentikan penjualan baru). Yang tidak boleh
+                                                 adalah admin tidak tahu ia melakukannya. --}}
+                                            @if (array_key_exists('aktif', $satu) && ! $satu['aktif'])
+                                                · DITUTUP
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-lg-5">
+                                <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                        wire:click="tutupFormulirPindah">
+                                        <i class="bi bi-x-circle"></i><span>Batal</span>
+                                    </button>
+                                    <button type="button" class="dsb-tombol is-utama" wire:click="pindahRombongan(false)">
+                                        <i class="bi bi-arrow-right-circle"></i><span>Pindahkan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Penolakan kuota tampil DI SINI, bukan sebagai toast
+                             merah yang hilang sendiri — ia satu-satunya
+                             penolakan yang masih bisa dilanjutkan, dan pilihan
+                             itu harus terlihat bersama angkanya. --}}
+                        @if ($peringatanKuota !== '')
+                            <div class="pd-nota mt-3">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Kuotanya tidak cukup.</strong>
+                                    {{ $peringatanKuota }}
+                                    Kalau busnya memang masih ada bangku tambahan, lanjutkan saja.
+                                </div>
+                                <button type="button" class="dsb-tombol is-awas"
+                                    wire:click="pindahRombongan(true)">
+                                    <i class="bi bi-arrow-right-circle"></i><span>Lanjutkan, lebihi kuota</span>
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- ============ PANEL CATATAN INTERNAL ============ --}}
+            @if ($bukaCatatan)
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-sticky-fill"></i></span>
+                            <span>
+                                <h2 class="dsb-kartu-judul">Catatan Internal</h2>
+                                <span class="dsb-kartu-sub">Hanya dibaca admin — tidak pernah tercetak di kwitansi atau dikirim ke pemesan</span>
+                            </span>
+                        </div>
+                        <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                            wire:click="tutupFormulirCatatan"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <textarea rows="4" wire:model="catatanInternal"
+                            placeholder="Mis. sudah ditelepon 2x tanggal 15 & 16, minta ditelepon sore. Nomor WA aktif, panggilan tidak diangkat."
+                            class="dsb-isian @error('catatanInternal') is-galat @enderror"></textarea>
+                        @error('catatanInternal')<div class="dsb-galat">{{ $message }}</div>@enderror
+
+                        <div class="d-flex flex-wrap gap-2 justify-content-end mt-3">
+                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                wire:click="tutupFormulirCatatan">
+                                <i class="bi bi-x-circle"></i><span>Batal</span>
+                            </button>
+                            <button type="button" class="dsb-tombol is-utama" wire:click="simpanCatatanInternal">
+                                <i class="bi bi-check2"></i><span>Simpan Catatan</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- ============ RINGKASAN UANG ============ --}}
             @if ($tagihan)
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-12" id="bg-uang">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-receipt"></i></span>
@@ -634,7 +1093,7 @@ Detail Pendaftaran || lemon
             @endphp
 
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12 pd-kartu-batal">
+                <div class="dsb-kartu k-12 pd-kartu-batal" id="bg-pembatalan">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-x-octagon"></i></span>
@@ -745,7 +1204,7 @@ Detail Pendaftaran || lemon
                  isinya empat baris pada kolom setinggi daftar peserta meninggalkan
                  petak putih sepanjang setengah layar. --}}
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-12" id="bg-pemesan">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-person-vcard"></i></span>
@@ -808,6 +1267,30 @@ Detail Pendaftaran || lemon
                                     <div class="mt-3 p-3 rounded-3 bg-light">
                                         <div class="orcha-label-kecil">Catatan dari pemesan</div>
                                         <div style="font-size:.9rem">{{ $catatanPemesan }}</div>
+                                    </div>
+                                @endif
+
+                                {{-- Catatan internal admin.
+
+                                     Kolom tersendiri, bukan bagian dari catatan
+                                     di atas: yang di atas milik pemesan dan ikut
+                                     tercetak di kwitansi. Satu kolom untuk
+                                     keduanya berarti "nomornya tidak aktif,
+                                     sudah ditelepon 2x" berpeluang tercetak di
+                                     dokumen yang diserahkan ke orangnya sendiri.
+
+                                     Ditandai jelas sebagai tidak terbaca
+                                     pelanggan — tanpa kalimat itu, admin tidak
+                                     tahu apakah boleh menulis apa adanya. --}}
+                                @if (filled($pendaftaran['catatan_internal'] ?? null))
+                                    <div class="pd-catatan-dalam mt-3">
+                                        <div class="orcha-label-kecil">
+                                            <i class="bi bi-eye-slash"></i> Catatan internal &middot; tidak terbaca pelanggan
+                                        </div>
+                                        <div style="font-size:.88rem;white-space:pre-line">{{ $pendaftaran['catatan_internal'] }}</div>
+                                        <button type="button" class="dsb-tautan" wire:click="bukaFormulirCatatan">
+                                            <i class="bi bi-pencil"></i> Ubah catatan
+                                        </button>
                                     </div>
                                 @endif
 
@@ -901,7 +1384,7 @@ Detail Pendaftaran || lemon
                  tepi bawahnya segaris. Tombol peserta ditambat ke dasar kartunya
                  (is-tegak) supaya tidak menggantung di tengah. --}}
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-7">
+                <div class="dsb-kartu k-7" id="bg-peserta">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-people-fill"></i></span>
@@ -910,9 +1393,19 @@ Detail Pendaftaran || lemon
                                 <span class="dsb-kartu-sub">Nama yang berangkat, dari mana dijemput, dan siapa yang belum mengisi kesehatannya</span>
                             </span>
                         </div>
-                        <span class="dsb-lencana {{ ($pendaftaran['kesehatan_lengkap'] ?? false) ? 'is-hijau' : 'is-kuning' }}">
-                            <i class="bi bi-heart-pulse"></i>
-                            {{ $pendaftaran['kesehatan_terisi'] ?? 0 }} dari {{ $pendaftaran['jumlah_peserta'] }} sudah mengisi kesehatan
+                        <span class="d-inline-flex flex-wrap gap-1 justify-content-end">
+                            <span class="dsb-lencana {{ ($pendaftaran['kesehatan_lengkap'] ?? false) ? 'is-hijau' : 'is-kuning' }}">
+                                <i class="bi bi-heart-pulse"></i>
+                                {{ $sudahIsiJumlah }} dari {{ $pendaftaran['jumlah_peserta'] }} sudah mengisi kesehatan
+                            </span>
+
+                            @if ($kesehatanYatim > 0)
+                                <span class="dsb-lencana is-abu"
+                                    title="Riwayat kesehatan yang namanya tidak cocok dengan satu pun peserta di daftar ini — biasanya milik peserta yang sudah diganti orang lain.">
+                                    <i class="bi bi-person-x"></i>
+                                    +{{ $kesehatanYatim }} tanpa nama yang cocok
+                                </span>
+                            @endif
                         </span>
                     </div>
                     <div class="dsb-kartu-isi is-tegak">
@@ -1047,7 +1540,7 @@ Detail Pendaftaran || lemon
                     </div>
                     </div>
                 </div>
-                <div class="dsb-kartu k-5">
+                <div class="dsb-kartu k-5" id="bg-pembayaran">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-cash-stack"></i></span>
@@ -1348,7 +1841,7 @@ Detail Pendaftaran || lemon
             @else
 
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-12" id="bg-angsuran">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-calendar2-week"></i></span>
@@ -1596,7 +2089,7 @@ Detail Pendaftaran || lemon
             @endphp
 
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-12" id="bg-penggantian">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-arrow-left-right"></i></span>
@@ -1778,6 +2271,54 @@ Detail Pendaftaran || lemon
             </div>
             @endif
         @endif
+
+            {{-- ============ HAPUS PENDAFTARAN ============
+
+                 Di DASAR halaman, dan hanya di sini. Tindakan yang tidak bisa
+                 dibatalkan tidak boleh berdampingan dengan tombol yang dipakai
+                 setiap hari — bilah perkakas atas dipakai berkali-kali sehari,
+                 dan tombol hapus di sana cepat atau lambat tertekan saat yang
+                 dimaksud adalah tombol sebelahnya.
+
+                 Pembatasannya ada di Orcha, bukan di sini: yang uangnya sudah
+                 masuk ditolak di sana lengkap dengan nominalnya. --}}
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-isi">
+                        <div class="pd-zona-hapus">
+                            <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-trash3"></i></span>
+
+                            <div class="pd-zona-teks">
+                                <strong>Hapus pendaftaran ini</strong>
+                                <span>
+                                    Hanya untuk borang yang terkirim dua kali atau yang dimasukkan
+                                    ke pelanggan yang salah. Untuk pelanggan yang membatalkan,
+                                    pakai pembatalan — refundnya terhitung dan jejaknya tetap
+                                    terbaca di laporan. Pendaftaran yang pernah menerima uang
+                                    tidak bisa dihapus.
+                                </span>
+                            </div>
+
+                            {{-- Kalimatnya dirakit di PHP lalu dioper lewat @js.
+
+                                 Nama pemesan bisa memuat apostrof ("Ma'ruf"),
+                                 dan apostrof di dalam string JavaScript yang
+                                 ditulis langsung di atribut memutus skripnya —
+                                 tombolnya lalu diam tanpa satu pun galat yang
+                                 terlihat admin. @js yang mengurus pelariannya. --}}
+                            <button type="button" class="dsb-tombol is-bahaya"
+                                x-data="{ tanya: @js('Pendaftaran '.($pendaftaran['kode'] ?? '').' atas nama '.($pendaftaran['nama'] ?? '').' dihapus beserta riwayat kesehatan pesertanya. Ini tidak bisa dibatalkan.') }"
+                                x-on:click="
+                                    if (await window.orchaKonfirmasi(tanya, { judul: 'Hapus pendaftaran?', tombol: 'Ya, hapus' })) {
+                                        $wire.hapusPendaftaran();
+                                    }
+                                ">
+                                <i class="bi bi-trash3"></i><span>Hapus Pendaftaran</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
     </div>
 
     @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')

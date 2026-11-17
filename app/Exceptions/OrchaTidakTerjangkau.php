@@ -38,4 +38,17 @@ class OrchaTidakTerjangkau extends Exception
     {
         return $this->isi['kembaran'] ?? null;
     }
+
+    /**
+     * Penolakan yang masih bisa dilanjutkan admin dengan sengaja.
+     *
+     * Dipakai perpindahan rombongan: kuota tujuan yang kurang ditolak lebih
+     * dulu, tetapi menjual kursi ke-41 dari bus 40 kursi adalah keputusan yang
+     * memang kadang diambil. Dibaca dari penandanya, bukan dari kalimatnya —
+     * mencocokkan kata "kursi" akan patah pada hari kalimatnya diperhalus.
+     */
+    public function butuhPaksa(): bool
+    {
+        return (bool) ($this->isi['butuh_paksa'] ?? false);
+    }
 }

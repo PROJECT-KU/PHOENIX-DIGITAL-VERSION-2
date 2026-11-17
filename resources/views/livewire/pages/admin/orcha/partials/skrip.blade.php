@@ -83,6 +83,71 @@
         return true;
     };
 
+    /* Konfirmasi SEBELUM tindakan yang tidak bisa dibatalkan, lewat SATU
+       pembungkus bersama.
+
+       Dipakai tombol hapus dan pemilih keadaan pendaftaran. Dialognya BUKAN
+       pengamanan — server tetap memeriksa izin dan aturannya sendiri. Yang
+       dicegahnya adalah satu salah klik sambil menggulir: pemilih keadaan di
+       tiap baris duduk persis di jalur jempol, dan "Batal" di sana melepas
+       kursi orang lain lalu mengabari daftar tunggu.
+
+       Memulangkan Promise supaya pemanggilnya menunggu, bukan menebak. Tanpa
+       SweetAlert sama sekali ia jatuh ke confirm() bawaan peramban: jelek,
+       tetapi tetap bertanya — sedangkan melanjutkan tanpa bertanya berarti
+       dialognya hilang justru pada hari aset gagal termuat.
+
+       @param {string} pesan  kalimat yang menyebut AKIBATNYA, bukan "Anda yakin?"
+       @param {object} [pilihan]  {judul, tombol, bahaya}
+       @returns {Promise<boolean>} */
+    window.orchaKonfirmasi = window.orchaKonfirmasi || function (pesan, pilihan) {
+        const setel = pilihan || {};
+
+        if (typeof Swal === 'undefined') {
+            return Promise.resolve(window.confirm(pesan));
+        }
+
+        return Swal.fire({
+            title: setel.judul || 'Yakin?',
+            text: pesan,
+            icon: setel.bahaya === false ? 'question' : 'warning',
+            showCancelButton: true,
+            confirmButtonText: setel.tombol || 'Ya, lanjutkan',
+            cancelButtonText: 'Batal',
+            /* Tombol pembatalan yang DISOROT, bukan tombol lanjutnya.
+
+               Tekanan Enter membatalkan, bukan menghapus. Pada dialog yang
+               muncul tiba-tiba, tombol bawaannya adalah yang paling mudah
+               tertekan tanpa dibaca — dan untuk tindakan yang tidak bisa
+               dibatalkan, yang paling mudah tertekan harus yang tidak
+               melakukan apa pun. */
+            focusCancel: true,
+            reverseButtons: true,
+            ...window.orchaGlossy,
+        }).then((hasil) => hasil.isConfirmed === true);
+    };
+
+    /* Rupa dialog lemon, SATU salinan untuk seluruh layar Orcha.
+
+       Nilainya sama dengan window.fireGlossySwal di layouts/app — hanya
+       tombolnya yang ditambahkan, karena dialog yang menuntut keputusan wajib
+       ditekan dan tidak boleh menutup sendiri.
+
+       Diekspor ke window supaya dialog konfirmasi dan dialog gagal memakai rupa
+       yang sama. Dua salinan untuk satu rupa pasti berbeda suatu hari, dan yang
+       berbeda akan terbaca sebagai dialog dari aplikasi lain. */
+    window.orchaGlossy = window.orchaGlossy || {
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup rounded-4 shadow-lg border-0',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'fw-bold',
+        },
+        buttonsStyling: false,
+    };
+
     /* Nama lama dipertahankan supaya pemanggil yang sudah ada — termasuk yang
        dipicu dari sesi setelah berpindah halaman — tidak perlu diubah. */
     window.orchaSukses = window.orchaSukses || function (pesan) {
@@ -148,19 +213,7 @@
         if (window.__orchaNotifBound) return;
         window.__orchaNotifBound = true;
 
-        /* Nilai yang SAMA dengan window.fireGlossySwal di layouts/app —
-           hanya tombolnya yang ditambahkan, karena dialog gagal wajib
-           ditekan, tidak boleh menutup sendiri. */
-        const glossy = {
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdrop: 'rgba(139, 92, 246, 0.15)',
-            customClass: {
-                popup: 'swal-glossy-popup rounded-4 shadow-lg border-0',
-                confirmButton: 'btn-glossy-confirm',
-                title: 'fw-bold',
-            },
-            buttonsStyling: false,
-        };
+        const glossy = window.orchaGlossy;
 
         const ambilPesan = (e, bawaan) =>
             (e && (e.message ?? (Array.isArray(e) ? e[0]?.message : null))) || bawaan;

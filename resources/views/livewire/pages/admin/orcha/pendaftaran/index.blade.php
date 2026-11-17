@@ -40,6 +40,44 @@ Pendaftaran Trip || lemon
                     <i class="bi bi-person-plus"></i><span>Daftarkan Rombongan</span>
                 </a>
 
+                {{-- Jalan ke daftar tunggu, dari tempat pertanyaannya muncul.
+
+                     Antrean sudah punya layarnya sendiri, tetapi tidak ada
+                     jalan ke sana dari sini — padahal saat yang orang teringat
+                     daftar tunggu adalah saat ia baru membatalkan satu
+                     pendaftaran dan satu kursi menganggur. Saringannya ikut
+                     dibawa supaya yang terbuka antrean rombongan yang sama. --}}
+                <a href="{{ route('admin.orcha.daftar-tunggu', array_filter([
+                        'paket_id' => $this->filterPaket,
+                    ])) }}" wire:navigate
+                    class="dsb-tombol is-lembut" style="--ikon: #7c3aed"
+                    title="Orang yang menunggu kursi — tawarkan ke mereka begitu ada yang membatalkan">
+                    <i class="bi bi-hourglass-split"></i><span>Daftar Tunggu</span>
+                </a>
+
+                {{-- Pembagian kursi & kamar, muncul hanya setelah satu
+                     rombongan dipilih.
+
+                     Satuannya rombongan: tanpa saringan itu, tombol ini tidak
+                     punya satuan untuk dibagi — dan tombol yang menanyakan
+                     "rombongan mana?" setelah ditekan lebih buruk daripada
+                     tombol yang belum ada. --}}
+                @if ($this->filterKeberangkatan !== '')
+                    <a href="{{ route('admin.orcha.pembagian', $this->filterKeberangkatan) }}"
+                        wire:navigate class="dsb-tombol is-lembut" style="--ikon: #0284c7"
+                        title="Bagi tempat duduk bus dan kamar hotel untuk rombongan yang sedang disaring">
+                        <i class="bi bi-grid-3x3-gap"></i><span>Bagi Kursi &amp; Kamar</span>
+                    </a>
+                @endif
+
+                {{-- Rekap kantor, bukan manifes lapangan. Tidak memuat data
+                     kesehatan, jadi tidak ikut dijaga izin itu. --}}
+                <a href="{{ route('admin.orcha.pendaftaran.rekap', $this->saringanTampil()) }}"
+                    class="dsb-tombol is-lembut" style="--ikon: #16a34a"
+                    title="Satu baris per pemesanan berisi angka uang — untuk rekap di kantor">
+                    <i class="bi bi-file-earmark-spreadsheet"></i><span>Unduh Rekap (Excel)</span>
+                </a>
+
                 @if ($bolehKesehatan)
                     <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
                         class="dsb-tombol is-utama"
@@ -143,6 +181,21 @@ Pendaftaran Trip || lemon
                             </div>
                         @endif
 
+                        {{-- Pemilih urutan, berlabel dan bertulisan penuh.
+
+                             Kepala kolom yang bisa diklik juga ada (lihat
+                             tabelnya), tetapi tidak terlihat bisa diklik sampai
+                             dicoba — dan admin yang belum pernah mencobanya
+                             tidak akan menemukan urutan sama sekali. --}}
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="pd-urut">Urutkan</label>
+                            <select id="pd-urut" wire:model.live="urut" class="dsb-isian">
+                                @foreach ($pilihanUrut as $kunci => $pilihan)
+                                    <option value="{{ $kunci }}" @selected($urut === $kunci)>{{ $pilihan[0] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="dsb-medan pd-medan-aksi">
                             @if ($adaSaringan)
                                 <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
@@ -189,6 +242,104 @@ Pendaftaran Trip || lemon
                     </div>
                 </div>
 
+                {{-- Urutan yang DITIMPA oleh tab pekerjaan.
+
+                     Di tab "Perlu ditelepon", Orcha memaksa yang paling mepet
+                     di atas apa pun yang dipilih di pemilih urutan — daftar
+                     pekerjaan yang urutannya bisa diacak berhenti jadi daftar
+                     pekerjaan. Disebut di sini supaya pemilih yang tampak
+                     diabaikan tidak terbaca sebagai fitur yang rusak. --}}
+                @if ($tabAktif === 'perlu_ditagih' && $urut !== 'terbaru')
+                    <div class="dsb-kartu-isi pb-0">
+                        <div class="pd-catatan">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <span>
+                                Di tab <strong>Perlu ditelepon</strong>, yang berangkatnya paling dekat
+                                selalu di atas — pilihan urutan Anda dipakai sebagai pemisah saja.
+                            </span>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ===== TINDAKAN UNTUK YANG DICENTANG =====
+
+                     Mengabari dua puluh pendaftar satu rombongan sebelumnya
+                     berarti membuka dua puluh halaman dan menyalin dua puluh
+                     pesan. Yang disiapkan di sini bukan pengiriman massal —
+                     WhatsApp tidak mengizinkannya dari peramban — melainkan
+                     satu pesan yang sama beserta daftar nomornya, sehingga yang
+                     tersisa menekan kirim satu per satu. --}}
+                @if ($dipilih !== [])
+                    <div class="dsb-kartu-isi pb-0">
+                        <div class="pd-massal">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-check2-square"></i></span>
+
+                            <div class="pd-massal-teks">
+                                <strong>{{ count($dipilih) }} pendaftaran dicentang</strong>
+                                @if (count($barisDipilih) < count($dipilih))
+                                    {{-- Selisihnya DISEBUT. Admin yang mencentang lima
+                                         lalu melihat tiga tautan perlu tahu dua sisanya
+                                         ada di halaman sebelumnya — bukan menduga
+                                         tautannya gagal dirakit. --}}
+                                    <span>
+                                        {{ count($barisDipilih) }} di halaman ini;
+                                        {{ count($dipilih) - count($barisDipilih) }} lagi di halaman lain
+                                        dan nomornya belum terbaca dari sini.
+                                    </span>
+                                @else
+                                    <span>Semuanya ada di halaman ini.</span>
+                                @endif
+                            </div>
+
+                            <div class="pd-massal-aksi">
+                                <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                    wire:click="kosongkanPilihan">
+                                    <i class="bi bi-x-circle"></i><span>Kosongkan</span>
+                                </button>
+                                <button type="button" class="dsb-tombol is-aman" wire:click="bukaKirimMassal">
+                                    <i class="bi bi-whatsapp"></i><span>Siapkan pesan WhatsApp</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        @if ($bukaPesanMassal)
+                            <div class="pd-massal-panel">
+                                <label class="dsb-label">Pesan yang sama untuk semuanya</label>
+                                <textarea rows="4" wire:model.live.debounce.400ms="pesanMassal"
+                                    class="dsb-isian"></textarea>
+                                <p class="pd-massal-ket">
+                                    Tiap nama di bawah membuka percakapan WhatsApp-nya sendiri dengan pesan
+                                    ini sudah terisi. Yang sudah Anda buka berubah warna, jadi tidak ada
+                                    yang terlewat atau terkirim dua kali.
+                                </p>
+
+                                <div class="pd-massal-nomor">
+                                    @foreach ($barisDipilih as $satu)
+                                        @php
+                                            $nomor = preg_replace('/^0/', '62', preg_replace('/\D/', '', $satu['whatsapp']));
+                                        @endphp
+                                        @if ($nomor !== '')
+                                            <a class="pd-nomor" target="_blank" rel="noopener"
+                                                href="https://api.whatsapp.com/send?phone={{ $nomor }}&text={{ rawurlencode($pesanMassal) }}"
+                                                x-on:click="$el.classList.add('is-dibuka')">
+                                                <i class="bi bi-whatsapp"></i>
+                                                <span>{{ $satu['nama'] }}</span>
+                                                <small>{{ $satu['kode'] }}</small>
+                                            </a>
+                                        @else
+                                            <span class="pd-nomor is-mati" title="Nomor WhatsApp-nya belum terisi">
+                                                <i class="bi bi-telephone-x"></i>
+                                                <span>{{ $satu['nama'] }}</span>
+                                                <small>tanpa nomor</small>
+                                            </span>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 @if (count($daftar) === 0)
                     <div class="dsb-kartu-isi">
                         <div class="dsb-kosong">
@@ -210,9 +361,46 @@ Pendaftaran Trip || lemon
                         <table class="dsb-tabel pd-tabel">
                             <thead>
                                 <tr>
-                                    <th>Yang mendaftar</th>
+                                    {{-- Kolom centang.
+
+                                         Lebarnya dipatok supaya tidak ikut
+                                         melebar bersama nama: kolom centang
+                                         yang melebar meninggalkan kotaknya
+                                         jauh dari barisnya, dan yang diklik
+                                         lalu bukan kotaknya. --}}
+                                    <th class="pd-th-centang">
+                                        <input type="checkbox" class="form-check-input"
+                                            aria-label="Centang semua yang tampil"
+                                            title="Centang semua yang tampil di halaman ini"
+                                            @checked($idTampil !== [] && count(array_diff($idTampil, $dipilih)) === 0)
+                                            wire:click="pilihSemuaTampil(@js($idTampil))">
+                                    </th>
+
+                                    {{-- Kepala yang bisa diurut.
+
+                                         Memakai .dsb-tabel-urut milik bahasa
+                                         rupa dasbor, yang sudah menyediakan
+                                         keadaan "aktif" beserta panahnya —
+                                         bukan tombol yang digambar ulang di
+                                         sini dan lama-lama berbeda rupanya dari
+                                         layar lain. --}}
+                                    <th>
+                                        <button type="button" wire:click="urutkanKolom('nama', 'nama_z')"
+                                            class="dsb-tabel-urut {{ in_array($urut, ['nama', 'nama_z'], true) ? 'aktif' : '' }}"
+                                            title="Urutkan menurut nama pemesan">
+                                            Yang mendaftar
+                                            <i class="bi {{ $urut === 'nama_z' ? 'bi-sort-alpha-up' : 'bi-sort-alpha-down' }}"></i>
+                                        </button>
+                                    </th>
                                     <th>Ikut trip</th>
-                                    <th>Berangkat</th>
+                                    <th>
+                                        <button type="button" wire:click="urutkanKolom('berangkat_dekat', 'berangkat_jauh')"
+                                            class="dsb-tabel-urut {{ in_array($urut, ['berangkat_dekat', 'berangkat_jauh'], true) ? 'aktif' : '' }}"
+                                            title="Urutkan menurut tanggal keberangkatan">
+                                            Berangkat
+                                            <i class="bi {{ $urut === 'berangkat_jauh' ? 'bi-sort-down-alt' : 'bi-sort-down' }}"></i>
+                                        </button>
+                                    </th>
                                     <th>Data kesehatan</th>
                                     <th>Keadaan</th>
                                     <th class="text-end">Buka</th>
@@ -235,7 +423,15 @@ Pendaftaran Trip || lemon
                                             : null;
                                         $urlDetail = route('admin.orcha.pendaftaran.detail', $baris['id']);
                                     @endphp
-                                    <tr wire:key="pendaftaran-{{ $baris['id'] }}">
+                                    <tr wire:key="pendaftaran-{{ $baris['id'] }}"
+                                        @class(['pd-baris-dipilih' => in_array((string) $baris['id'], $dipilih, true)])>
+                                        {{-- ===== Centang ===== --}}
+                                        <td class="pd-td-centang" data-judul="Pilih">
+                                            <input type="checkbox" class="form-check-input"
+                                                value="{{ $baris['id'] }}" wire:model.live="dipilih"
+                                                aria-label="Centang {{ $baris['nama'] }}">
+                                        </td>
+
                                         {{-- ===== Yang mendaftar ===== --}}
                                         <td data-judul="Yang mendaftar">
                                             <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-utama pd-tautan">
@@ -328,6 +524,22 @@ Pendaftaran Trip || lemon
                                                         {{ $baris['keberangkatan']['rentang_tanggal']
                                                             ?? $berangkat->locale('id')->translatedFormat('d M Y') }}
                                                     </span>
+
+                                                    {{-- Pendaftaran yang belum punya rombongan DITANDAI.
+
+                                                         Ia peninggalan dari masa sebelum satu paket boleh
+                                                         dijual untuk beberapa tanggal, dan batas
+                                                         pelunasannya dihitung lewat jalur mundur yang
+                                                         berbeda. Tanpa penanda, barisnya terlihat sama
+                                                         saja dengan yang normal — dan admin tidak punya
+                                                         cara tahu kenapa tenggatnya tidak seperti
+                                                         tetangganya. --}}
+                                                    @if (empty($baris['keberangkatan_id']))
+                                                        <span class="dsb-lencana is-kuning"
+                                                            title="Belum terhubung ke salah satu tanggal keberangkatan. Buka detailnya lalu pakai Pindah Rombongan.">
+                                                            <i class="bi bi-link-45deg"></i>belum punya rombongan
+                                                        </span>
+                                                    @endif
                                                     {{-- Hitungan mundur, bukan tanggal saja: yang
                                                          menentukan tindakan hari ini adalah jarak ke
                                                          keberangkatan, dan menghitungnya sendiri dari
@@ -383,8 +595,30 @@ Pendaftaran Trip || lemon
                                                         <i class="bi bi-wifi-off"></i>{{ $baris['status_label'] ?? $baris['status'] }}
                                                     </span>
                                                 @else
+                                                    {{-- Konfirmasi dulu.
+
+                                                         Pemilih ini duduk di jalur jempol saat
+                                                         menggulir, dan "Batal" di dalamnya melepas
+                                                         kursi orang lalu mengabari daftar tunggu —
+                                                         tindakan yang menyentuh orang ketiga dan
+                                                         tidak bisa dibatalkan dengan memilih ulang.
+
+                                                         Nilainya dikembalikan saat dibatalkan;
+                                                         pemilih yang tetap menampilkan pilihan baru
+                                                         padahal tidak tersimpan adalah kebohongan
+                                                         yang bertahan sampai halaman dimuat ulang. --}}
                                                     <select class="dsb-isian pd-pilih-status status-{{ $baris['status'] }}"
-                                                        wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)"
+                                                        x-data="{ semula: @js($baris['status']) }"
+                                                        x-on:change="
+                                                            const pilih = $event.target;
+                                                            const label = pilih.options[pilih.selectedIndex].text.trim();
+                                                            if (await window.orchaKonfirmasi(@js($baris['nama']) + ' diubah keadaannya menjadi ' + label + '.', { judul: 'Ubah keadaan?', tombol: 'Ya, ubah' })) {
+                                                                semula = pilih.value;
+                                                                $wire.ubahStatus(@js((int) $baris['id']), pilih.value);
+                                                            } else {
+                                                                pilih.value = semula;
+                                                            }
+                                                        "
                                                         title="Ubah keadaan pendaftaran ini">
                                                         @foreach ($pilihanStatus as $kunci => $label)
                                                             <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>{{ $label }}</option>
@@ -459,11 +693,23 @@ Pendaftaran Trip || lemon
            Grid, bukan flex bebas — dengan flex tombolnya sempat terlempar ke
            baris kedua persis saat saringan dinyalakan, yaitu saat tangan
            sedang di sana. */
+        /* auto-fit, bukan tiga kolom tetap.
+
+           Jumlah saringannya sekarang BERUBAH-UBAH: Rombongan hanya muncul
+           setelah paketnya dipilih, dan tombol bersihkan hanya saat ada
+           saringan hidup. Kolom tetap membuat salah satu keadaan itu selalu
+           salah — entah ada medan yang terlempar ke baris sendiri selebar
+           layar, entah empat medan berdesakan jadi masing-masing 120px. */
         .pd-saring {
             display: grid; gap: 12px; align-items: end;
-            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
         }
-        @media (max-width: 767.98px) {
+        /* Kotak cari dua kali lebih lebar: yang diketik di sana nama orang,
+           bukan pilihan dari daftar. */
+        @media (min-width: 992px) {
+            .pd-saring > .dsb-medan:first-child { grid-column: span 2; }
+        }
+        @media (max-width: 575.98px) {
             .pd-saring { grid-template-columns: 1fr; }
         }
         .pd-medan-aksi { display: flex; align-items: flex-end; }
@@ -473,6 +719,58 @@ Pendaftaran Trip || lemon
             display: flex; align-items: flex-start; gap: 8px; margin-top: 12px;
             padding: 9px 11px; border-radius: 10px; font-size: .8rem; line-height: 1.5;
             background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+        }
+
+        /* ===== Kolom centang =====
+           Lebarnya dipatok. Kolom centang yang ikut melebar bersama nama
+           meninggalkan kotaknya jauh dari barisnya, dan yang diklik lalu bukan
+           kotaknya melainkan ruang kosong di sebelahnya. */
+        .pd-th-centang, .pd-td-centang { width: 34px; padding-right: 0; }
+        .pd-td-centang .form-check-input { margin: 0; cursor: pointer; }
+        .pd-baris-dipilih { background: #faf5ff; }
+
+        @media (max-width: 991.98px) {
+            /* Di kartu ponsel, kolom centang jadi baris pertama yang berlabel
+               — kotak centang telanjang tanpa label tidak memberi tahu apa
+               yang sedang dicentang. */
+            .pd-td-centang { width: auto; }
+        }
+
+        /* ===== Tindakan untuk yang dicentang ===== */
+        .pd-massal {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 12px 14px; border-radius: 13px;
+            background: #faf5ff; border: 1px solid #e9d5ff;
+        }
+        .pd-massal-teks { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .pd-massal-teks > strong { font-size: .9rem; color: #5b21b6; }
+        .pd-massal-teks > span { font-size: .78rem; line-height: 1.5; color: #6d28d9; }
+        .pd-massal-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+        .pd-massal-panel {
+            margin-top: 11px; padding: 14px;
+            border-radius: 13px; background: #fff; border: 1px solid var(--dsb-tepi);
+        }
+        .pd-massal-ket { margin: 8px 0 0; font-size: .78rem; line-height: 1.5; color: var(--dsb-redup); }
+        .pd-massal-nomor { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+        .pd-nomor {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 7px 11px; border-radius: 999px; text-decoration: none;
+            background: #fff; border: 1px solid #bbf7d0; color: #15803d;
+            font-size: .8rem; font-weight: 600;
+        }
+        .pd-nomor small { font-weight: 500; opacity: .7; font-size: .72rem; }
+        /* Yang sudah dibuka berubah warna, supaya tidak ada yang terlewat atau
+           terkirim dua kali. Ditandai di peramban, bukan disimpan: daftarnya
+           hidup selama satu sesi mengabari, dan menyimpannya berarti penanda
+           yang masih menyala besok untuk pesan yang berbeda. */
+        .pd-nomor.is-dibuka { background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; }
+        .pd-nomor.is-mati { background: #fff1f2; border-color: #fecdd3; color: #9f1239; cursor: not-allowed; }
+        @media (hover: hover) and (pointer: fine) {
+            .pd-nomor:hover { background: #15803d; border-color: transparent; color: #fff; }
+            .pd-nomor.is-dibuka:hover { background: #e2e8f0; color: #475569; }
+            .pd-nomor.is-mati:hover { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
         }
 
         /* Baris tabel: nama di atas, keterangan menumpuk di bawahnya. */
