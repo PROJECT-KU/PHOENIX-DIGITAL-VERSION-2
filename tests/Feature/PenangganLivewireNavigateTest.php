@@ -40,7 +40,7 @@ it('tidak ada penangan Livewire yang hanya menunggu livewire:initialized', funct
     $pelanggar = [];
 
     foreach (berkasTampilanDenganLivewireOn() as $jalur => $isi) {
-        $pakaiInit = str_contains($isi, "livewire:initialized") || str_contains($isi, "livewire:init'")
+        $pakaiInit = str_contains($isi, 'livewire:initialized') || str_contains($isi, "livewire:init'")
             || str_contains($isi, 'livewire:init"');
 
         if (! $pakaiInit) {

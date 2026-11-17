@@ -184,14 +184,14 @@ test('tanggal yang harga atau kuotanya sendiri terlihat berbeda', function () {
             'keberangkatan' => [
                 // Ikut paket: tidak ada angka sendiri.
                 ['id' => 1, 'rentang_tanggal' => '27 – 29 November 2026',
-                 'tanggal_berangkat' => '2026-11-27', 'tanggal_pulang' => '2026-11-29',
-                 'kuota' => null, 'price' => null, 'harga_dipakai' => 1300000, 'kuota_dipakai' => 20,
-                 'kursi_terpakai' => 0, 'sisa_kursi' => 20, 'penuh' => false, 'aktif' => true],
+                    'tanggal_berangkat' => '2026-11-27', 'tanggal_pulang' => '2026-11-29',
+                    'kuota' => null, 'price' => null, 'harga_dipakai' => 1300000, 'kuota_dipakai' => 20,
+                    'kursi_terpakai' => 0, 'sisa_kursi' => 20, 'penuh' => false, 'aktif' => true],
                 // Punya harga & kuota sendiri.
                 ['id' => 2, 'rentang_tanggal' => '4 – 6 Desember 2026',
-                 'tanggal_berangkat' => '2026-12-04', 'tanggal_pulang' => '2026-12-06',
-                 'kuota' => 12, 'price' => 1450000, 'harga_dipakai' => 1450000, 'kuota_dipakai' => 12,
-                 'kursi_terpakai' => 12, 'sisa_kursi' => 0, 'penuh' => true, 'aktif' => true],
+                    'tanggal_berangkat' => '2026-12-04', 'tanggal_pulang' => '2026-12-06',
+                    'kuota' => 12, 'price' => 1450000, 'harga_dipakai' => 1450000, 'kuota_dipakai' => 12,
+                    'kursi_terpakai' => 12, 'sisa_kursi' => 0, 'penuh' => true, 'aktif' => true],
             ],
         ]]),
         '*' => Http::response(['data' => [], 'meta' => []]),

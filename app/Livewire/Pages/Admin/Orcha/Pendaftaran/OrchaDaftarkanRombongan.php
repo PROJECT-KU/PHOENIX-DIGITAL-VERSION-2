@@ -309,7 +309,7 @@ class OrchaDaftarkanRombongan extends Component
          | terdekat — pilihan yang kelihatan masuk akal dan karena itu tidak
          | pernah dipertanyakan siapa pun.
          */
-        $banyakTanggal = 1 < count($this->keberangkatanPaket());
+        $banyakTanggal = count($this->keberangkatanPaket()) > 1;
 
         $this->validate([
             'paketId' => 'required',

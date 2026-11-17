@@ -729,7 +729,7 @@ class OrchaPaketForm extends Component
      * isian jatuh ke daftar yang salah TANPA galat — "Tiket masuk" masuk ke
      * Fasilitas, dan paketnya menjanjikan apa yang justru tidak termasuk.
      *
-     * @var array<string, array{0: string, 1: string}>  jenis => [properti, properti isian baru]
+     * @var array<string, array{0: string, 1: string}> jenis => [properti, properti isian baru]
      */
     private const MEDAN_DAFTAR = [
         'destinasi' => ['destinasi', 'destinasiBaru'],
@@ -984,7 +984,7 @@ class OrchaPaketForm extends Component
         $jam = (int) $cocok[1];
         $menit = (int) $cocok[2];
 
-        if (23 < $jam || 59 < $menit) {
+        if ($jam > 23 || $menit > 59) {
             return;
         }
 

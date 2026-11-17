@@ -43,11 +43,11 @@ function tigaRombongan(): array
 {
     return [
         ['id' => 1, 'rentang_tanggal' => '27 – 29 November 2026', 'tanggal_berangkat' => '2026-11-27',
-         'aktif' => true, 'penuh' => false, 'sisa_kursi' => 15],
+            'aktif' => true, 'penuh' => false, 'sisa_kursi' => 15],
         ['id' => 2, 'rentang_tanggal' => '4 – 6 Desember 2026', 'tanggal_berangkat' => '2026-12-04',
-         'aktif' => true, 'penuh' => true, 'sisa_kursi' => 0],
+            'aktif' => true, 'penuh' => true, 'sisa_kursi' => 0],
         ['id' => 3, 'rentang_tanggal' => '11 – 13 Desember 2026', 'tanggal_berangkat' => '2026-12-11',
-         'aktif' => true, 'penuh' => false, 'sisa_kursi' => 20],
+            'aktif' => true, 'penuh' => false, 'sisa_kursi' => 20],
     ];
 }
 
