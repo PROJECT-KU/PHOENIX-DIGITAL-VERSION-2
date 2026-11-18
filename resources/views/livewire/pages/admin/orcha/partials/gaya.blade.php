@@ -1214,12 +1214,27 @@
         display: block;
         line-height: 1;
         font-size: .95em;
-        /* line-height 1 saja mengangkatnya terlalu jauh — terukur 2,14px di atas
-           tengah huruf. Tintanya memang tidak duduk di tengah kotak em-nya.
-           Digeser turun 2px; sisanya di bawah seperlima piksel. */
+        /* Tintanya tidak duduk di tengah kotak em-nya, jadi digeser turun.
+
+           2px adalah angka lama, dan ia tidak pernah benar di sini: diukur
+           18 Nov 2026 dengan 2px, ikonnya 1,56px KETINGGIAN dari pusat
+           x-height tulisan di sebelahnya. Angka di bawah ini hasil ukurannya. */
         position: relative;
-        top: 2px;
+        top: 3.56px;
     }
+
+    /* Di kerangka dasbor lemon geserannya BUKAN 2px.
+
+       .dsb memuat Plus Jakarta Sans, sementara di luar itu lencana yang sama
+       memakai font sistem. x-height kedua font berbeda, jadi pusat optis
+       tulisan yang harus disejajari ikon pun berbeda letaknya — satu angka
+       tidak mungkin benar di keduanya.
+
+       Diukur 18 Nov 2026 dari potret 8x: pusat tinta ikon dibandingkan dengan
+       pusat pita x-height tulisan di sebelahnya, bukan dengan tinta penuhnya,
+       yang terseret turun oleh ekor huruf p dan y. Dengan 2px ikonnya 0,69px
+       kerendahan; 1,3px menyisakan 0,06px. */
+    .dsb .orcha-cip-termasuk i { top: 1.3px; }
 
     .orcha-cip-termasuk i::before { display: block; }
 
