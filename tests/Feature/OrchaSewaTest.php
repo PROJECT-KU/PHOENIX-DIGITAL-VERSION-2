@@ -253,3 +253,31 @@ test('tabel pemeriksaan tiga kolom, tanpa lajur yang tak pernah terisi', functio
         ->toContain('<th style="width:31%">Saat diserahkan</th>')
         ->toContain('<th style="width:31%">Saat kembali</th>');
 });
+
+it('detail sewa memakai kerangka dasbor lemon, bukan dialek sendiri', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/penyewaan/detail.blade.php')
+    );
+
+    // Sumber bahasa rupanya ikut dimuat, kalau tidak seluruh kelas dsb-* mati
+    // tanpa satu pun galat — halaman tetap 200, hanya tampil polos.
+    expect($sumber)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')");
+
+    foreach (['dsb-hero', 'dsb-hero-aksi', 'dsb-rak', 'dsb-stat', 'dsb-kartu', 'dsb-data', 'dsb-kosong'] as $kelas) {
+        expect(str_contains($sumber, $kelas))->toBeTrue("kerangka {$kelas} tidak dipakai");
+    }
+
+    // Barisnya sendiri hidup di partial bersama, jadi diperiksa di sana —
+    // kalau tidak, halaman yang memanggil partial yang salah tetap lolos.
+    $baris = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/partials/baris-data.blade.php')
+    );
+    expect($sumber)->toContain('orcha.partials.baris-data')
+        ->and($baris)->toContain('dsb-data-baris')
+        ->and($baris)->toContain('dsb-data-nilai');
+
+    // Dialek lama tidak boleh kembali diam-diam.
+    expect($sumber)->not->toContain('orcha-kartu-tindakan')
+        ->not->toContain('orcha-bagian-nomor')
+        ->not->toContain('orcha-bagian-judul');
+});

@@ -14,143 +14,154 @@ Detail Sewa Kendaraan || lemon
 @endphp
 
 <div>
+    {{-- Bahasa rupa dsb-* milik dasbor lemon — patokan yang sama dengan layar
+         Pesanan Toko dan daftar sewa. Kelas orcha-* disisakan untuk yang memang
+         khas Orcha: chip cakupan, medan berkotak, rincian tagihan, lencana
+         kondisi, dan popup pilihan WhatsApp. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
-    <div class="container-fluid">
+    <style>
+        /* Gaya khusus layar Detail Sewa. Inline, bukan lewat Vite: public/build
+           masuk .gitignore dan tidak ikut ter-deploy. */
+
+        /* Pemilih keadaan duduk sebaris dengan tombol di kepala, jadi lebarnya
+           mengikuti isinya — bukan melar memenuhi baris seperti .dsb-isian
+           bawaan yang dipakai di dalam borang. */
+        .sw-detail .sw-status { width: auto; min-width: 150px; flex: 0 0 auto; }
+
+        /* Medan berkotak Orcha dipakai di dalam kartu dsb. Disamakan tingginya
+           supaya baris yang isinya pendek tidak lebih cebol dari tetangganya. */
+        .sw-detail .orcha-medan { height: 100%; }
+
+        /* Empat ubin angka jadi 2x2 di bawah 1400px.
+
+           Ubin layar ini memuat rupiah penuh (Rp 10.000.000), bukan cacahan
+           satu-dua digit seperti di dasbor. Berempat sebaris pada 1280px,
+           tiap kartu menyisakan sekitar 116px untuk nilainya — dan karena
+           .dsb-stat ber-overflow:hidden, angkanya terpotong di tengah
+           ("Rp 10.000.00") tanpa satu pun tanda bahwa ada digit yang hilang.
+           Terukur pada 1280px; pada 1440px keempatnya masih muat. */
+        @media (max-width: 1399.98px) {
+            .sw-detail .dsb-rak > .dsb-stat { grid-column: span 6; }
+        }
+    </style>
+
+    <div class="dsb sw-detail">
 
         @if ($galat)
-            <div class="alert alert-warning border-0 rounded-4">{{ $galat }}</div>
+            <div class="dsb-galat">{{ $galat }}</div>
         @endif
 
         @if (empty($sewa))
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-5">
-                    <div class="empty-state-icon-wrapper mx-auto mb-2"><i class="bi bi-truck"></i></div>
-                    <p class="text-muted mb-3">Data penyewaan tidak bisa ditampilkan.</p>
-                    <a href="{{ route('admin.orcha.penyewaan') }}" class="orcha-btn orcha-btn-utama">
-                        <i class="bi bi-arrow-left"></i> Kembali ke daftar
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi dsb-kosong">
+                    <span class="dsb-kosong-ikon"><i class="bi bi-truck"></i></span>
+                    <p class="dsb-kosong-judul">Data penyewaan tidak bisa ditampilkan</p>
+                    <p class="dsb-kosong-ket">
+                        Nomornya mungkin sudah dihapus, atau alamatnya disalin dari catatan lama.
+                    </p>
+                    <a href="{{ route('admin.orcha.penyewaan') }}" class="dsb-tombol is-lembut mt-3">
+                        <i class="bi bi-arrow-left"></i><span>Kembali ke daftar</span>
                     </a>
                 </div>
             </div>
         @else
 
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div>
-                        <a href="{{ route('admin.orcha.penyewaan') }}" class="orcha-tautan-balik mb-2">
-                            <i class="bi bi-arrow-left"></i> Semua penyewaan
-                        </a>
-                        <h1 class="gradient-text fw-bold mb-1" style="font-size:1.6rem">{{ $sewa['nama'] }}</h1>
-                        <div class="d-flex flex-wrap align-items-center gap-2">
+            {{-- ============ KEPALA ============
+                 Tombol tindakannya kembali ke kanan kepala, tempat yang sama
+                 dengan Pesanan Toko dan Detail Pendaftaran Trip.
+
+                 Dulu mereka memang dipindah KELUAR dari kepala, dan alasannya
+                 benar untuk kerangka yang lama: di kartu polos mereka berhimpit
+                 dengan nama penyewa, dan layout global memaksa setiap
+                 .form-select setinggi 48px sehingga benda yang paling jarang
+                 disentuh justru paling besar. Kerangka dsb menghapus kedua
+                 sebab itu — .dsb-hero memang dibuat menampung sebaris tombol,
+                 dan .dsb-isian tidak kena paksaan 48px.
+
+                 Yang tersisa dari pemisahan itu hanyalah akibatnya: separuh
+                 kanan kepala menganga di sepanjang layar. --}}
+            <header class="dsb-hero">
+                <div class="dsb-hero-teks">
+                    <h1 class="dsb-salam">{{ $sewa['nama'] }}</h1>
+                    <p class="dsb-hero-ket">
+                        <span class="d-block">
                             <span class="orcha-kode">{{ $sewa['kode'] }}</span>
-                            <span class="text-muted" style="font-size:.82rem">
-                                {{ data_get($sewa, 'kendaraan.nama') }} ·
-                                {{ data_get($sewa, 'kendaraan.transmisi') }} ·
-                                {{ $sewa['dengan_sopir'] ? 'dengan sopir' : 'lepas kunci' }} ·
-                                {{ ($sewa['luar_kota'] ?? false) ? 'luar kota' : 'dalam kota' }}
-                            </span>
-                        </div>
+                            {{ data_get($sewa, 'kendaraan.nama') }} ·
+                            {{ data_get($sewa, 'kendaraan.transmisi') }} ·
+                            {{ $sewa['dengan_sopir'] ? 'dengan sopir' : 'lepas kunci' }} ·
+                            {{ ($sewa['luar_kota'] ?? false) ? 'luar kota' : 'dalam kota' }}
+                        </span>
+                    </p>
 
-                        @include('livewire.pages.admin.orcha.penyewaan.partials.termasuk')
-                    </div>
+                    @include('livewire.pages.admin.orcha.penyewaan.partials.termasuk')
+                </div>
 
-                    <div class="row g-3 mt-1">
-                        @foreach ([
-                            ['Biaya sewa', $rp($sewa['estimasi_biaya']), '', 'bi-cash'],
-                            ['Total denda', $rp($sewa['total_denda'] ?? 0), ($sewa['total_denda'] ?? 0) > 0 ? 'sisa' : '', 'bi-exclamation-triangle'],
-                            ['Total tagihan', $rp($sewa['total_tagihan'] ?? 0), '', 'bi-receipt'],
-                            ['Keterlambatan', ($sewa['terlambat'] ?? false)
-                                ? floor(($sewa['terlambat_menit'] ?? 0) / 60) . ' jam ' . (($sewa['terlambat_menit'] ?? 0) % 60) . ' mnt'
-                                : 'Tepat waktu', ($sewa['terlambat'] ?? false) ? 'sisa' : 'lunas', 'bi-hourglass-split'],
-                        ] as [$label, $nilai, $kelas, $ikon])
-                            <div class="col-6 col-lg-3">
-                                <div class="orcha-ringkas {{ $kelas }}">
-                                    <div class="orcha-label-kecil"><i class="bi {{ $ikon }}"></i> {{ $label }}</div>
-                                    <div class="angka">{{ $nilai }}</div>
-                                </div>
-                            </div>
+                <div class="dsb-hero-aksi">
+                    <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate
+                        class="dsb-tombol is-lembut" style="--ikon: #64748b">
+                        <i class="bi bi-arrow-left"></i><span>Kembali</span>
+                    </a>
+
+                    {{-- Membuka pilihan pesan, bukan langsung melompat ke
+                         percakapan kosong. Tautannya pun bukan wa.me: lewat
+                         wa.me, emoji dan sebagian tanda baca sampai dalam
+                         keadaan rusak tanpa admin pernah tahu. --}}
+                    <button type="button" class="dsb-tombol is-aman orcha-aksi-sewa"
+                        onclick="orchaBukaLembar('pilihanWa')">
+                        <i class="bi bi-whatsapp"></i><span>Hubungi Penyewa</span>
+                    </button>
+
+                    {{-- Nota akhir bisa diunduh kapan saja: sebelum unit kembali
+                         isinya estimasi sewa, sesudahnya total termasuk denda. --}}
+                    <a href="{{ route('admin.orcha.penyewaan.kwitansi', $penyewaanId) }}"
+                        class="dsb-tombol is-lembut orcha-aksi-sewa" style="--ikon: #0284c7"
+                        title="Kwitansi / nota akhir sewa">
+                        <i class="bi bi-receipt"></i>
+                        <span>{{ $sewa['dikembalikan_pada'] ? 'Nota Akhir' : 'Kwitansi' }}</span>
+                    </a>
+
+                    {{-- Jalan ke jejak pesanan INI, bukan ke seluruh jejak:
+                         kodenya dibawa di alamat, jadi yang terbuka sudah
+                         tersaring. --}}
+                    <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $sewa['kode']]) }}"
+                        class="dsb-tombol is-lembut orcha-aksi-sewa" style="--ikon: #7c3aed"
+                        title="Siapa mengubah apa pada pesanan ini">
+                        <i class="bi bi-clock-history"></i><span>Jejak</span>
+                    </a>
+
+                    {{-- Warnanya mengikuti keadaan pesanan, sama seperti di
+                         daftar sewa, supaya yang dilihat admin di kedua layar
+                         benda yang sama. --}}
+                    <select class="dsb-isian sw-status orcha-status-ringkas"
+                        data-status="{{ $sewa['status'] }}"
+                        wire:change="ubahStatus($event.target.value)">
+                        @foreach ($pilihanStatus as $kunci => $label)
+                            <option value="{{ $kunci }}" @selected($sewa['status'] === $kunci)>{{ $label }}</option>
                         @endforeach
-                    </div>
+                    </select>
                 </div>
-            </div>
+            </header>
 
-            {{-- ============ TINDAKAN ============
-                 Ketiganya dulu berdesakan di pojok kanan kepala, berhimpit dengan
-                 nama penyewa dan kodenya. Bentuknya memang seperti bilah penyaring,
-                 dan di situlah kelirunya: dua di antaranya bukan penyaring melainkan
-                 tindakan — satu membuka WhatsApp, satu mengunduh berkas — dan yang
-                 ketiga MENGUBAH keadaan pesanan, bukan menyaring apa pun.
-
-                 Dipisah ke kartunya sendiri dengan latar yang sedikit berbeda,
-                 supaya terbaca sebagai bilah perkakas dan bukan kartu keterangan
-                 yang menuntut dibaca.
-
-                 Tingginya disamakan 34px. Sebelumnya isian statusnya memakai
-                 .form-select polos, dan layout memaksa SETIAP .form-select setinggi
-                 48px — jadi benda yang paling besar di baris itu justru yang paling
-                 jarang disentuh. Warnanya kini mengikuti keadaan pesanan, sama
-                 seperti di daftar sewa, supaya yang dilihat admin di kedua layar
-                 benda yang sama. --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4 orcha-kartu-tindakan">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                        <div>
-                            <div class="orcha-label-kecil">
-                                <i class="bi bi-lightning-charge"></i> Tindakan
-                            </div>
-                            <div class="text-muted" style="font-size:.8rem">
-                                Hubungi penyewa, unduh notanya, atau ubah keadaan pesanannya.
-                            </div>
-                        </div>
-
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            {{-- Membuka pilihan pesan, bukan langsung melompat ke
-                                 percakapan kosong.
-
-                                 Tautannya pun tidak lagi wa.me: lewat wa.me, emoji
-                                 dan sebagian tanda baca sering tidak terbaca di
-                                 WhatsApp Web maupun Desktop — pesan sampai dalam
-                                 keadaan rusak, dan admin tidak pernah tahu karena di
-                                 layarnya sendiri tampak baik-baik saja. Pola yang
-                                 sama sudah dipakai halaman pendaftaran open trip. --}}
-                            <button type="button" class="orcha-btn orcha-btn-wa orcha-aksi-sewa"
-                                onclick="orchaBukaLembar('pilihanWa')">
-                                <i class="bi bi-whatsapp"></i> Hubungi Penyewa
-                            </button>
-
-                            {{-- Nota akhir bisa diunduh kapan saja: sebelum unit kembali
-                                 isinya estimasi sewa, sesudahnya total termasuk denda. --}}
-                            <a href="{{ route('admin.orcha.penyewaan.kwitansi', $penyewaanId) }}"
-                                class="orcha-btn orcha-btn-lembut orcha-aksi-sewa" title="Kwitansi / nota akhir sewa">
-                                <i class="bi bi-receipt"></i>
-                                {{ $sewa['dikembalikan_pada'] ? 'Nota Akhir' : 'Kwitansi' }}
-                            </a>
-
-                            {{-- Jalan ke jejak pesanan INI, bukan ke seluruh jejak.
-
-                                 Pertanyaan "siapa yang mengubah nominalnya?" muncul
-                                 saat admin sedang menatap pesanan yang bermasalah —
-                                 bukan saat ia kebetulan membuka halaman audit. Tanpa
-                                 tautan ini jawabannya menuntut: hafal kodenya, buka
-                                 menu lain, ketik ulang, lalu cocokkan sendiri. Kode
-                                 pesanannya dibawa di alamat, jadi yang terbuka sudah
-                                 tersaring. --}}
-                            <a href="{{ route('admin.orcha.jejak-audit', ['cari' => $sewa['kode']]) }}"
-                                class="orcha-btn orcha-btn-lembut orcha-aksi-sewa"
-                                title="Siapa mengubah apa pada pesanan ini">
-                                <i class="bi bi-clock-history"></i> Jejak
-                            </a>
-
-                            <select class="form-select orcha-status-ringkas"
-                                data-status="{{ $sewa['status'] }}"
-                                wire:change="ubahStatus($event.target.value)">
-                                @foreach ($pilihanStatus as $kunci => $label)
-                                    <option value="{{ $kunci }}" @selected($sewa['status'] === $kunci)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
+            {{-- Empat angka yang menentukan percakapan dengan penyewa. --}}
+            <div class="dsb-rak dsb-bagian">
+                @foreach ([
+                    ['Biaya sewa', $rp($sewa['estimasi_biaya']), 'bi-cash', '#0f766e'],
+                    ['Total denda', $rp($sewa['total_denda'] ?? 0), 'bi-exclamation-triangle',
+                        ($sewa['total_denda'] ?? 0) > 0 ? '#b45309' : '#64748b'],
+                    ['Total tagihan', $rp($sewa['total_tagihan'] ?? 0), 'bi-receipt', '#4f46e5'],
+                    ['Keterlambatan', ($sewa['terlambat'] ?? false)
+                        ? floor(($sewa['terlambat_menit'] ?? 0) / 60) . ' jam ' . (($sewa['terlambat_menit'] ?? 0) % 60) . ' mnt'
+                        : 'Tepat waktu', 'bi-hourglass-split',
+                        ($sewa['terlambat'] ?? false) ? '#b91c1c' : '#047857'],
+                ] as [$label, $nilai, $ikon, $warna])
+                    <article class="dsb-stat k-3" style="--c: {{ $warna }}">
+                        <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                        <span class="dsb-stat-label">{{ $label }}</span>
+                        <span class="dsb-stat-nilai">{{ $nilai }}</span>
+                    </article>
+                @endforeach
             </div>
 
             {{-- Unit sudah kembali, sistem punya usulan denda, tetapi tidak ada
@@ -247,19 +258,20 @@ Detail Sewa Kendaraan || lemon
 
                  Bentuknya mengikuti lembar serah terima: kartu per urusan, kepala
                  berikon, dan medan berkotak. --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orcha-bagian-kepala">
-                        <div class="orcha-bagian-nomor"><i class="bi bi-truck-front"></i></div>
-                        <div>
-                            <div class="orcha-bagian-judul">Unit &amp; Layanan</div>
-                            <div class="orcha-bagian-sub">
-                                Kendaraan yang dipesan, dan apa saja yang tercakup harganya.
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-6">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-truck-front"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Unit &amp; Layanan</h2>
+                                <span class="dsb-kartu-sub">Kendaraan yang dipesan, dan apa saja yang tercakup harganya.</span>
                             </div>
                         </div>
                     </div>
+                    <div class="dsb-kartu-isi">
 
-                    <div class="row g-2">
+                    <div class="dsb-data">
                         {{-- Keterangan unitnya disebut selengkap surat penyewa.
 
                              Admin sebelumnya membaca "HiAce Commuter" sementara penyewa
@@ -279,30 +291,28 @@ Detail Sewa Kendaraan || lemon
                             ['Keterangan sopir', $sewa['kendaraan']['sopir_label'] ?? null],
                             ['BBM, tol, parkir', $sewa['kendaraan']['operasional_label'] ?? null],
                         ] as [$label, $nilai])
-                            <div class="col-6 col-lg-4">
-                                @include('livewire.pages.admin.orcha.partials.medan', [
-                                    'label' => $label, 'nilai' => $nilai, 'tautan' => null,
-                                ])
-                            </div>
+                            @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                'label' => $label, 'nilai' => $nilai, 'tautan' => null,
+                            ])
                         @endforeach
                     </div>
+                    </div>
                 </div>
-            </div>
 
             {{-- ============ JADWAL & LOKASI ============ --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orcha-bagian-kepala">
-                        <div class="orcha-bagian-nomor"><i class="bi bi-calendar-range"></i></div>
-                        <div>
-                            <div class="orcha-bagian-judul">Jadwal &amp; Lokasi</div>
-                            <div class="orcha-bagian-sub">
-                                Kapan unit berangkat, kapan ditunggu kembali, dan dari mana.
+                <div class="dsb-kartu k-6">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-calendar-range"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Jadwal &amp; Lokasi</h2>
+                                <span class="dsb-kartu-sub">Kapan unit berangkat, kapan ditunggu kembali, dan dari mana.</span>
                             </div>
                         </div>
                     </div>
+                    <div class="dsb-kartu-isi">
 
-                    <div class="row g-2">
+                    <div class="dsb-data">
                         @foreach ([
                             ['Mulai', ($sewa['tanggal_mulai'] ?? null)
                                 ? \Carbon\Carbon::parse($sewa['tanggal_mulai'])->locale('id')->translatedFormat('l, d F Y').' · '.$sewa['jam_mulai']
@@ -322,39 +332,31 @@ Detail Sewa Kendaraan || lemon
                             [($sewa['dengan_sopir'] ?? false) ? 'Tujuan perjalanan' : 'Lokasi pengembalian',
                                 (($sewa['dengan_sopir'] ?? false) ? ($sewa['tujuan'] ?? null) : $sewa['lokasi_kembali']) ?: null],
                         ] as [$label, $nilai])
-                            <div class="col-6 col-lg-4">
-                                @include('livewire.pages.admin.orcha.partials.medan', [
-                                    'label' => $label, 'nilai' => $nilai, 'tautan' => null,
-                                ])
-                            </div>
+                            @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                'label' => $label, 'nilai' => $nilai, 'tautan' => null,
+                            ])
                         @endforeach
                     </div>
 
-                    @if ($sewa['catatan'])
-                        <div class="orcha-alasan orcha-alasan-tenang mt-3">
-                            <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
-                                <i class="bi bi-chat-left-text"></i> Catatan dari penyewa
-                            </span>
-                            <div class="mt-1">{{ $sewa['catatan'] }}</div>
-                        </div>
-                    @endif
+                    </div>
                 </div>
             </div>
 
             {{-- ============ PENYEWA ============ --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orcha-bagian-kepala">
-                        <div class="orcha-bagian-nomor"><i class="bi bi-person-vcard"></i></div>
-                        <div>
-                            <div class="orcha-bagian-judul">Penyewa</div>
-                            <div class="orcha-bagian-sub">
-                                Siapa yang memesan, dan apa yang ditahan selama masa sewa.
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0f766e"><i class="bi bi-person-vcard"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Penyewa</h2>
+                                <span class="dsb-kartu-sub">Siapa yang memesan, dan apa yang ditahan selama masa sewa.</span>
                             </div>
                         </div>
                     </div>
+                    <div class="dsb-kartu-isi">
 
-                    <div class="row g-2">
+                    <div class="dsb-data">
                         @foreach ([
                             ['Nama', $sewa['nama'] ?? null, null],
                             {{-- Lewat api.whatsapp.com juga, bukan wa.me — satu aturan
@@ -364,12 +366,19 @@ Detail Sewa Kendaraan || lemon
                             ['Email', $sewa['email'] ?: null, $sewa['email'] ? 'mailto:'.$sewa['email'] : null],
                             ['Jaminan dititipkan', $sewa['jaminan'] ?: null, null],
                         ] as [$label, $nilai, $tautan])
-                            <div class="col-6 col-lg-3">
-                                @include('livewire.pages.admin.orcha.partials.medan', [
-                                    'label' => $label, 'nilai' => $nilai, 'tautan' => $tautan,
-                                ])
-                            </div>
+                            @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                'label' => $label, 'nilai' => $nilai, 'tautan' => $tautan,
+                            ])
                         @endforeach
+                    </div>
+                    @if ($sewa['catatan'])
+                        <div class="orcha-alasan orcha-alasan-tenang mt-3">
+                            <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
+                                <i class="bi bi-chat-left-text"></i> Catatan dari penyewa
+                            </span>
+                            <div class="mt-1">{{ $sewa['catatan'] }}</div>
+                        </div>
+                    @endif
                     </div>
                 </div>
             </div>
@@ -379,17 +388,18 @@ Detail Sewa Kendaraan || lemon
                  kiri keadaan waktu diserahkan, kanan waktu kembali. Sebagai enam
                  medan berderet, pasangan yang seharusnya dibandingkan terputus —
                  dan membandingkan itulah satu-satunya guna angka-angka ini. --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orcha-bagian-kepala">
-                        <div class="orcha-bagian-nomor"><i class="bi bi-speedometer2"></i></div>
-                        <div>
-                            <div class="orcha-bagian-judul">Serah Terima</div>
-                            <div class="orcha-bagian-sub">
-                                Keadaan unit saat diserahkan dan saat kembali.
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-speedometer2"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Serah Terima</h2>
+                                <span class="dsb-kartu-sub">Keadaan unit saat diserahkan dan saat kembali.</span>
                             </div>
                         </div>
                     </div>
+                    <div class="dsb-kartu-isi">
 
                     <div class="row g-3">
                         @foreach ([
@@ -546,6 +556,7 @@ Detail Sewa Kendaraan || lemon
                             <div class="mt-2" style="font-size:.82rem">{{ $sewa['catatan_denda'] }}</div>
                         @endif
                     </div>
+                    </div>
                 </div>
             </div>
 
@@ -553,17 +564,18 @@ Detail Sewa Kendaraan || lemon
                  Dua kolom berdampingan, bukan dua daftar terpisah: yang dicari
                  admin adalah barisnya yang BERUBAH, dan itu hanya terlihat kalau
                  keduanya sejajar. --}}
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orcha-bagian-kepala">
-                        <div class="orcha-bagian-nomor"><i class="bi bi-clipboard-check"></i></div>
-                        <div>
-                            <div class="orcha-bagian-judul">Pemeriksaan Fisik</div>
-                            <div class="orcha-bagian-sub">
-                                Bagian yang <strong>memburuk</strong> selama masa sewa ditandai merah.
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-clipboard-check"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Pemeriksaan Fisik</h2>
+                                <span class="dsb-kartu-sub">Bagian yang <strong>memburuk</strong> selama masa sewa ditandai merah.</span>
                             </div>
                         </div>
                     </div>
+                    <div class="dsb-kartu-isi">
 
                     @if (empty($sewa['kondisi_awal']) && empty($sewa['kondisi_akhir']))
                         <div class="orcha-alasan orcha-alasan-tenang mb-0">
@@ -607,6 +619,7 @@ Detail Sewa Kendaraan || lemon
                             </table>
                         </div>
                     @endif
+                    </div>
                 </div>
             </div>
         @endif

@@ -5533,8 +5533,18 @@ test('detail sewa dibagi jadi bagian, sebentuk dengan lembar serah terima', func
         ->toContain('Penyewa')
         ->toContain('Serah Terima')
         ->toContain('Pemeriksaan Fisik')
-        // Kepala bernomor dan medan berkotak, sama seperti lembar serah terima
-        ->toContain('orcha-bagian-nomor')
+        // Kerangka dasbor lemon: kartu ber-kepala-berikon, bukan dialek
+        // orcha-bagian-* yang dipakai layar ini sendirian.
+        ->toContain('dsb-kartu-kepala')
+        ->toContain('dsb-kartu-judul')
+        // Keterangan yang padat jadi baris label-nilai, sebentuk dengan kartu
+        // "Pembayaran & Catatan" di Pesanan Toko. Sebagai kotak di kartu
+        // setengah rak, nama unit yang panjang memaksa seluruh kotak di
+        // barisnya ikut setinggi empat baris.
+        ->toContain('dsb-data-baris')
+        // Medan berkotak TETAP dipakai di sub-kolom serah terima: di sana
+        // gunanya memang dibandingkan kiri-kanan, dan kotak yang sejajar
+        // itulah yang membuatnya terbaca.
         ->toContain('orcha-medan')
         // Serah terimanya dua kolom kembar, bukan enam medan berderet
         ->toContain('orcha-keadaan kembali')
@@ -5608,7 +5618,7 @@ test('sewa lama tanpa daftar termasuk tidak memunculkan barisan kosong', functio
     expect($badan)->not->toContain('orcha-cip-termasuk');
 });
 
-test('tiga kendali detail sewa pindah ke kartunya sendiri, seukuran dan berwarna', function () {
+test('tiga kendali detail sewa duduk di kepala, seukuran dan berwarna', function () {
     Http::fake([
         '*/rujukan' => Http::response(rujukanSewa()),
         '*/penyewaan/12' => Http::response(['data' => balasanSewa(['status' => 'berjalan'])['data'][0]]),
@@ -5616,32 +5626,37 @@ test('tiga kendali detail sewa pindah ke kartunya sendiri, seukuran dan berwarna
     ]);
 
     /*
-     | Ketiganya dulu berdesakan di pojok kanan kepala, berhimpit dengan nama
-     | penyewa dan kodenya — terbaca seperti bilah penyaring, padahal dua di
-     | antaranya tindakan dan yang ketiga MENGUBAH keadaan pesanan.
+     | Ketiganya sempat dipindah KELUAR dari kepala ke kartu "Tindakan"
+     | sendiri, dan alasannya benar untuk kerangka yang lama: di kartu polos
+     | mereka berhimpit dengan nama penyewa dan kodenya, dan layout global
+     | templateindex memaksa SETIAP .form-select setinggi 48px — benda yang
+     | paling jarang disentuh justru jadi yang paling besar di baris itu.
      |
-     | Ukurannya pun tidak seragam: layout memaksa SETIAP .form-select setinggi
-     | 48px, jadi benda yang paling besar di baris itu justru yang paling jarang
-     | disentuh.
+     | Kerangka dsb menghapus kedua sebab itu: .dsb-hero memang dibuat
+     | menampung sebaris tombol di sisi kanannya, dan .dsb-isian tidak kena
+     | paksaan 48px. Yang tersisa dari pemisahan itu tinggal akibatnya —
+     | separuh kanan kepala menganga di sepanjang layar, sementara Pesanan
+     | Toko dan Detail Pendaftaran Trip mengisinya dengan tombol.
      */
     $isi = $this->actingAs(adminOrcha())
         ->get('/admin/orcha/penyewaan/12')->assertOk()->getContent();
 
-    // Kartunya sendiri, berlatar bilah perkakas — bukan menumpang di kepala
-    expect($isi)->toContain('orcha-kartu-tindakan')
-        ->and($isi)->toContain('Hubungi penyewa, unduh notanya');
+    $badan = tanpaGaya($isi);
 
-    // Ditambatkan pada kartu tindakannya. Sempat ditambatkan pada tautan
-    // wa.me — lalu tombolnya berhenti jadi tautan sama sekali begitu ia
-    // membuka pilihan pesan.
-    $kepala = substr(tanpaGaya($isi), strpos(tanpaGaya($isi), 'orcha-kartu-tindakan'), 2400);
+    // Kartu tindakan tersendiri sudah tidak ada di layar ini.
+    expect($badan)->not->toContain('orcha-kartu-tindakan')
+        ->not->toContain('Hubungi penyewa, unduh notanya');
 
-    // Tiga tombol seukuran — Hubungi, Kwitansi, Jejak — plus pemilih status.
-    // Angkanya dipatok, bukan sekadar "ada": tombol yang ditambahkan tanpa
-    // .orcha-aksi-sewa akan berdiri 10px lebih tinggi dari tetangganya, dan
-    // bilah perkakas yang tingginya berbeda-beda terbaca seperti kumpulan
-    // tombol yang kebetulan bersebelahan.
-    expect(substr_count($kepala, 'orcha-aksi-sewa'))->toBe(3)
+    // Ketiganya ada di dalam kepala, bukan di suatu tempat di bawahnya.
+    $kepala = substr($badan, strpos($badan, 'dsb-hero-aksi'), 2400);
+
+    expect($kepala)->toContain('Hubungi Penyewa')
+        ->and($kepala)->toContain('Jejak')
+        // Tiga tombol seukuran. Angkanya dipatok, bukan sekadar "ada": tombol
+        // yang ditambahkan tanpa .orcha-aksi-sewa berdiri lebih tinggi dari
+        // tetangganya, dan sebaris tombol yang tingginya berbeda-beda terbaca
+        // seperti kumpulan tombol yang kebetulan bersebelahan.
+        ->and(substr_count($kepala, 'orcha-aksi-sewa'))->toBe(3)
         ->and($kepala)->toContain('orcha-status-ringkas')
         // Warnanya mengikuti keadaan, sama seperti di daftar sewa
         ->and($kepala)->toContain('data-status="berjalan"');
