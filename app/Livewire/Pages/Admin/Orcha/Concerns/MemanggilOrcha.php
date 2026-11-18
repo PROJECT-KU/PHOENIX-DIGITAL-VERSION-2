@@ -318,6 +318,18 @@ trait MemanggilOrcha
                 'id' => (int) $baris['id'],
                 'nama' => (string) $baris['nama'],
                 'jenis' => $baris['jenis'] ?? null,
+                'armada' => strcasecmp(trim((string) ($baris['jenis'] ?? '')), 'Armada') === 0,
+            ])
+            /*
+             | Vendor armada didahulukan, tetapi yang lain TIDAK disembunyikan.
+             | Menyaringnya keluar terasa rapi sampai ada vendor transportasi
+             | yang jenisnya terlanjur diisi "Lainnya" — ia lalu hilang dari
+             | pemilih, dan admin menyimpulkan vendornya belum terdaftar lalu
+             | membuat kembarannya.
+             */
+            ->sortBy([
+                fn ($a, $b) => ($b['armada'] <=> $a['armada']),
+                fn ($a, $b) => strcasecmp($a['nama'], $b['nama']),
             ])
             ->values()
             ->all();

@@ -111,6 +111,10 @@ class OrchaDashboard extends Component
             'penyewaanTerbaru' => $isi['penyewaan_terbaru'] ?? [],
             'uang' => $untung['ringkasan'] ?? [],
             'uangPerBulan' => $this->enamBulan($untung['per_bulan'] ?? []),
+            // Uang dari SEWA, terpisah dari uang paket. Dua sumber pendapatan
+            // yang berbeda, dan menjumlahkannya jadi satu angka membuat
+            // pertanyaan "yang mana yang sedang turun" tidak bisa dijawab.
+            'uangSewa' => $isi['uang_sewa'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

@@ -107,10 +107,35 @@
                         <span class="dsb-ikon" style="--c: var(--dsb-utama)"><i class="bi bi-cash-stack"></i></span>
                         <div class="vd-belanja-teks">
                             <span class="dsb-kartu-sub">Sudah dibelanjakan ke vendor ini</span>
-                            <strong class="vd-belanja-nilai">{{ $data['belanja_teks'] ?? 'Rp 0' }}</strong>
+                            {{-- Dua jalur belanja dijumlahkan: lewat RAB paket, dan lewat
+                                 pesanan sewa kendaraan satu per satu.
+
+                                 Sebelumnya hanya RAB yang dihitung, sehingga vendor armada
+                                 yang sudah dipakai puluhan kali tetap tampak belum pernah
+                                 dibelanjakan — padahal angka inilah yang dipakai menawar
+                                 harga tahun depan. --}}
+                            <strong class="vd-belanja-nilai">
+                                {{ $data['belanja_total_teks'] ?? ($data['belanja_teks'] ?? 'Rp 0') }}
+                            </strong>
                             <span class="dsb-kartu-sub">
-                                Dihitung dari seluruh RAB yang memakainya — bukan dari halaman yang sedang terlihat.
+                                RAB {{ $data['belanja_teks'] ?? 'Rp 0' }}
+                                &middot; sewa kendaraan {{ $data['belanja_sewa_teks'] ?? 'Rp 0' }}
+                                @if ((int) ($data['sewa_jumlah'] ?? 0) > 0)
+                                    ({{ $data['sewa_jumlah'] }} pesanan)
+                                @endif
+                                — dihitung dari seluruhnya, bukan dari halaman yang sedang terlihat.
                             </span>
+
+                            {{-- Pesanan yang modalnya belum dicatat disebut jumlahnya,
+                                 tidak dihitung nol. "Rp 0 dari 12 pesanan" dan "Rp 0 dari
+                                 0 pesanan" adalah dua keadaan yang sangat berbeda, dan
+                                 yang pertama berarti angka di atas masih kurang. --}}
+                            @if ((int) ($data['sewa_tanpa_modal'] ?? 0) > 0)
+                                <span class="dsb-lencana is-kuning mt-2">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    {{ $data['sewa_tanpa_modal'] }} pesanan sewa belum dicatat modalnya
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>

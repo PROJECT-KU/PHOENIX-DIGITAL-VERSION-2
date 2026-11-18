@@ -318,6 +318,131 @@ class OrchaPenyewaanDetail extends Component
         return \App\Support\TautanWa::kirim($this->data['whatsapp'] ?? null, $pesan);
     }
 
+    /** Tautan WhatsApp ke VENDOR, bukan ke penyewa. */
+    public function tautanWaVendor(string $pesan): string
+    {
+        return \App\Support\TautanWa::kirim(data_get($this->data, 'vendor.kontak'), $pesan);
+    }
+
+    /**
+     * Pesan siap kirim untuk VENDOR.
+     *
+     * Kelima templat yang sudah ada semuanya ditujukan ke penyewa. Padahal
+     * dalam model kerja sekarang — Orcha belum punya unit sendiri — percakapan
+     * yang paling sering diulang justru ke vendor, dan isinya selalu enam hal
+     * yang sama: unit apa, kapan, berapa lama, jemput di mana, pakai sopir
+     * atau tidak, dan harga berapa.
+     *
+     * Mengetiknya ulang tiap pesanan bukan cuma lambat. Salah ketik jam di
+     * pesan ke vendor berarti unitnya datang di jam yang salah, dan yang
+     * menanggung kekacauannya penyewa yang sudah berdiri menunggu.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function pilihanPesanVendor(): array
+    {
+        $sewa = $this->data;
+
+        if (! data_get($sewa, 'vendor.nama')) {
+            return [];
+        }
+
+        /*
+         | Penanda [[E:...]], bukan emoji mentah — konvensi yang sama dengan
+         | pilihanPesan(). Emoji yang dikirim apa adanya rusak jadi tanda tanya
+         | dalam perjalanan lewat respons server, dan tiap pemeriksaan di sisi
+         | kami tampak bersih. Penandanya dirakit jadi emoji di peramban.
+         */
+        $pakaiEmoji = (bool) config('orcha.emoji_wa', true);
+        $e = fn (string $titikKode) => $pakaiEmoji ? "[[E:{$titikKode}]] " : '';
+        $rp = fn ($angka) => 'Rp '.number_format((int) $angka, 0, ',', '.');
+
+        $tgl = fn (?string $waktu) => $waktu
+            ? \Carbon\Carbon::parse($waktu)->locale('id')->translatedFormat('l, j F Y')
+                .' pukul '.\Carbon\Carbon::parse($waktu)->format('H:i')
+            : null;
+
+        $mulai = $tgl($sewa['jadwal_mulai'] ?? null);
+        $tenggat = $tgl($sewa['jadwal_selesai'] ?? null);
+        $unit = data_get($sewa, 'kendaraan.sebutan') ?: data_get($sewa, 'kendaraan.nama');
+
+        $salam = 'Halo '.data_get($sewa, 'vendor.nama').', dari Orcha Journey.';
+        $penutup = "\n\nTerima kasih.";
+
+        /*
+         | Nama dan nomor PENYEWA tidak ikut dikirim ke vendor.
+         |
+         | Vendor perlu tahu unit, waktu, dan titik jemput — bukan siapa
+         | penyewanya. Mengirimkan datanya berarti membagikan data pelanggan
+         | ke pihak ketiga tanpa pernah diminta, dan sekali terkirim tidak
+         | bisa ditarik. Kalau vendor memang perlu menghubungi penyewa di
+         | lapangan, itu keputusan tersendiri yang diambil sadar.
+         */
+        $rincianUnit = $e('1F697').'*Unit:* '.$unit
+            .($mulai ? "\n".$e('1F4C5').'*Mulai:* '.$mulai : '')
+            .($tenggat ? "\n".$e('23F0').'*Selesai:* '.$tenggat : '')
+            .(($sewa['durasi_label'] ?? null) ? "\n".$e('1F4CF').'*Durasi:* '.$sewa['durasi_label'] : '')
+            .(($sewa['lokasi_antar'] ?? null) ? "\n".$e('1F4CD').'*Titik jemput:* '.$sewa['lokasi_antar'] : '')
+            .(($sewa['dengan_sopir'] ?? false) && ($sewa['tujuan'] ?? null)
+                ? "\n".$e('1F6E3').'*Tujuan:* '.$sewa['tujuan'] : '')
+            ."\n".$e('1F9D1').'*Sopir:* '.(($sewa['dengan_sopir'] ?? false) ? 'ya, dengan sopir' : 'lepas kunci');
+
+        $pilihan = [];
+
+        $pilihan[] = [
+            'kunci' => 'vendor-pesan',
+            'judul' => 'Pesan unit ke vendor',
+            'ringkas' => 'Unit, jadwal, titik jemput, sopir, dan harga sepakat',
+            'ikon' => 'bi-send',
+            'rupa' => 'orcha-ikon-netral',
+            'pesan' => $salam."\n\nMohon disiapkan unit berikut:\n\n".$rincianUnit
+                .(($sewa['modal'] ?? null) !== null
+                    ? "\n\n".$e('1F4B0').'*Harga disepakati:* '.$rp($sewa['modal'])
+                    // Harga yang belum dicatat TIDAK ditulis "Rp 0": itu akan
+                    // terbaca sebagai penawaran gratis.
+                    : "\n\n".$e('1F4B0').'*Harga:* mohon dikonfirmasi')
+                ."\n\nMohon dikonfirmasi ketersediaannya.".$penutup,
+        ];
+
+        $pilihan[] = [
+            'kunci' => 'vendor-ingat',
+            'judul' => 'Ingatkan vendor menjelang hari H',
+            'ringkas' => 'Pengingat singkat berisi unit dan jam jemput',
+            'ikon' => 'bi-alarm',
+            'rupa' => 'orcha-ikon-netral',
+            'pesan' => $salam."\n\nMengingatkan pesanan unit yang sudah disepakati:\n\n"
+                .$rincianUnit."\n\nMohon unitnya siap tepat waktu.".$penutup,
+        ];
+
+        // Hanya setelah unit kembali, dan hanya bila ADA yang rusak. Templat
+        // yang selalu tampil membuat admin mengirimkannya juga saat tidak ada
+        // apa-apa — dan vendor yang tiap kali dikabari "ada kerusakan" berhenti
+        // membacanya.
+        if (($sewa['dikembalikan_pada'] ?? null) && ! empty($sewa['kerusakan_baru'])) {
+            $bagian = collect($sewa['kerusakan_baru'])->pluck('bagian')->filter()->implode(', ');
+
+            $pilihan[] = [
+                'kunci' => 'vendor-rusak',
+                'judul' => 'Kabari kerusakan ke vendor',
+                'ringkas' => 'Bagian yang memburuk selama masa sewa',
+                'ikon' => 'bi-tools',
+                'rupa' => 'orcha-ikon-awas',
+                'pesan' => $salam."\n\nUnit *".$unit.'* sudah kembali.'
+                    ."\n\n".$e('1F527').'*Yang memburuk selama masa sewa:* '.$bagian
+                    ."\n\nMohon dicek bersama saat serah terima unit.".$penutup,
+            ];
+        }
+
+        // Dua bentuk pesan, sama seperti pilihanPesan(): 'polos' dipakai href
+        // sebagai cadangan bila skrip perakit emoji tidak sempat jalan.
+        return array_map(function ($satu) {
+            $satu['polos'] = trim(preg_replace('/[ \t]+$/m', '',
+                preg_replace('/\[\[E:[0-9A-F]+\]\] ?/', '', $satu['pesan'])));
+
+            return $satu;
+        }, $pilihan);
+    }
+
     /**
      * Vendor yang bisa dipilih.
      *
@@ -336,6 +461,16 @@ class OrchaPenyewaanDetail extends Component
         $hasil = $this->muat("/penyewaan/{$this->penyewaanId}");
         $this->data = $hasil['data'] ?? [];
 
+        /*
+         | Margin rata-rata seluruh sewa, dipakai sebagai PEMBANDING.
+         |
+         | "28,6%" sendirian tidak bisa dinilai: admin tidak tahu itu bagus
+         | atau pas-pasan tanpa tahu biasanya berapa. Dihitung Orcha, bukan di
+         | sini — datanya ada di sana, dan menghitungnya di lemon berarti
+         | menarik seluruh tabel sewa lewat API hanya untuk satu angka.
+         */
+        $marginRataRata = data_get($hasil, 'meta.margin_rata_rata');
+
         return view('livewire.pages.admin.orcha.penyewaan.detail', [
             'sewa' => $this->data,
             'pilihanStatus' => $this->rujukan('status_penyewaan'),
@@ -352,6 +487,7 @@ class OrchaPenyewaanDetail extends Component
             // sudah tidak bekerja sama tidak boleh bisa dipilih lagi, tetapi
             // tetap tampil pada pesanan lama yang memang memakainya.
             'daftarVendor' => $this->daftarVendor(),
+            'marginRataRata' => $marginRataRata,
         ])->layout('livewire.layout.templateindex');
     }
 }

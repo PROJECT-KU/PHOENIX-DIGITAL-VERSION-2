@@ -425,3 +425,125 @@ test('borang armada mengirim vendor dan modal, dan unit milik sendiri tanpa vend
     // saat menyimpan — dua jawaban untuk satu pertanyaan di satu borang.
     $komponen->set('milikSendiri', true)->assertSet('vendorId', '');
 });
+
+/* ------------- VENDOR: PESAN, DAFTAR, DAN LAPORAN ------------- */
+
+test('detail sewa punya pesan siap kirim untuk vendor, terpisah dari penyewa', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji([
+            'vendor' => ['id' => 9, 'nama' => 'CV Rekanan Jaya', 'kontak' => '08121111', 'jenis' => 'Armada'],
+            'vendor_ditentukan' => true, 'modal' => 500000,
+        ])]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    $pesan = Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 5])
+        ->instance()
+        ->pilihanPesanVendor();
+
+    expect($pesan)->not->toBeEmpty();
+
+    $gabung = collect($pesan)->pluck('pesan')->implode(' ');
+
+    /*
+     | Nama dan nomor PENYEWA tidak boleh ikut ke vendor. Vendor perlu tahu
+     | unit, waktu, dan titik jemput — bukan siapa penyewanya. Sekali
+     | terkirim, data pelanggan itu tidak bisa ditarik kembali.
+     */
+    expect($gabung)->toContain('CV Rekanan Jaya')
+        ->toContain('Rp 500.000')
+        ->not->toContain('Budi')
+        ->not->toContain('0812345678');
+});
+
+test('harga yang belum dicatat tidak dikirim ke vendor sebagai Rp 0', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji([
+            'vendor' => ['id' => 9, 'nama' => 'CV Rekanan Jaya', 'kontak' => '08121111', 'jenis' => 'Armada'],
+            'vendor_ditentukan' => true, 'modal' => null,
+        ])]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    $gabung = collect(Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 5])
+        ->instance()
+        ->pilihanPesanVendor())->pluck('pesan')->implode(' ');
+
+    // "Rp 0" ke vendor terbaca sebagai penawaran gratis.
+    expect($gabung)->toContain('mohon dikonfirmasi')
+        ->not->toContain('Rp 0');
+});
+
+test('tanpa vendor tercatat, tidak ada pesan vendor sama sekali', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji(['vendor' => null])]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    // Tombol yang membuka daftar kosong mengajari admin bahwa menekannya
+    // tidak ada gunanya.
+    $pesan = Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 5])
+        ->instance()
+        ->pilihanPesanVendor();
+
+    expect($pesan)->toBe([]);
+});
+
+test('daftar sewa menyebut vendor per baris, dan menandai yang belum dicarikan', function () {
+    Http::fake([
+        '*/penyewaan*' => Http::response([
+            'data' => [
+                sewaUji(['id' => 5, 'vendor' => ['id' => 9, 'nama' => 'CV Rekanan Jaya', 'kontak' => '08121111', 'jenis' => 'Armada']]),
+                sewaUji(['id' => 6, 'kode' => 'SW-0002', 'vendor' => null, 'status' => 'baru']),
+            ],
+            'meta' => ['total' => 2, 'jumlah_tab' => []],
+        ]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    /*
+     | Daftar ini sudah punya tab "Belum ada vendor", tetapi barisnya sendiri
+     | tidak pernah menyebut vendor — jadi satu-satunya cara tahu adalah
+     | membuka pesanannya satu per satu, persis pekerjaan yang hendak
+     | dihemat tabnya.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan')->assertOk()->getContent();
+
+    expect($isi)->toContain('CV Rekanan Jaya')
+        ->toContain('Vendor belum dicarikan');
+});
+
+test('layar keuntungan sewa menyebut yang belum dicatat modalnya', function () {
+    Http::fake([
+        '*/keuntungan-sewa/rincian*' => Http::response(['data' => [], 'meta' => []]),
+        '*/keuntungan-sewa*' => Http::response(['data' => [
+            'ringkas' => [
+                'pesanan' => 5, 'pesanan_dihitung' => 3, 'tanpa_modal' => 2,
+                'pendapatan' => 5000000, 'pendapatan_dihitung' => 3000000,
+                'modal' => 2000000, 'untung' => 1000000, 'margin_persen' => 33.3,
+            ],
+            'per_unit' => [], 'per_vendor' => [], 'vendor' => [],
+            'dasar_tanggal' => ['mulai' => 'Tanggal mulai sewa'],
+        ]]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/keuntungan-sewa')->assertOk()->getContent();
+
+    /*
+     | Angka yang paling penting di layar ini bukan untungnya, melainkan
+     | berapa yang belum dicatat: selama ia belum nol, untung di atasnya
+     | masih kurang dari yang sebenarnya.
+     */
+    expect($isi)->toContain('2 pesanan belum dicatat modalnya')
+        ->toContain('Rp 5.000.000')       // pendapatan dari SELURUH pesanan
+        ->toContain('Rp 1.000.000');      // untung dari yang dicatat saja
+});

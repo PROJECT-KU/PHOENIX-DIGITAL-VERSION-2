@@ -169,6 +169,74 @@ Dashboard Orcha Journey || lemon
             </section>
         @endif
 
+        {{-- ================== UANG SEWA ==================
+
+             Terpisah dari uang paket, bukan dijumlahkan jadi satu angka: dua
+             sumber pendapatan yang berbeda, dan satu angka gabungan membuat
+             pertanyaan "yang mana yang sedang turun" tidak bisa dijawab.
+
+             Sebelum ini dashboard hanya menghitung CACAHAN sewa. Pertanyaan
+             yang sebenarnya dibawa orang saat membukanya — bulan ini masuk
+             berapa — tidak pernah terjawab untuk sewa. --}}
+        @if ($uangSewa !== [])
+            @php
+                $rpSewa = fn ($angka) => 'Rp '.number_format((int) $angka, 0, ',', '.');
+                $sewaUntung = $uangSewa['untung'] ?? null;
+            @endphp
+
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kepala" style="--c: #b45309">
+                        <span class="dsb-kepala-ikon"><i class="bi bi-truck"></i></span>
+                        <div class="dsb-kepala-teks">
+                            <span class="dsb-kicker">Uang</span>
+                            <h2 class="dsb-judul">Sewa Kendaraan</h2>
+                            <div class="dsb-chip-deret">
+                                <span class="dsb-chip is-samar">
+                                    {{ $uangSewa['periode'] ?? '' }} · menurut tanggal mulai sewa
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @foreach ([
+                        ['Pendapatan', $rpSewa($uangSewa['pendapatan'] ?? 0), 'bi-cash', '#0f766e',
+                            ($uangSewa['pesanan'] ?? 0).' pesanan'],
+                        ['Modal ke vendor', $rpSewa($uangSewa['modal'] ?? 0), 'bi-wallet2', '#b45309',
+                            ($uangSewa['pesanan_dihitung'] ?? 0).' pesanan dicatat'],
+                        ['Untung kotor',
+                            $sewaUntung === null ? 'Belum bisa dihitung' : $rpSewa($sewaUntung),
+                            'bi-piggy-bank',
+                            $sewaUntung === null ? '#94a3b8' : ($sewaUntung < 0 ? '#b91c1c' : '#1a8a52'),
+                            ($uangSewa['margin_persen'] ?? null) !== null
+                                ? 'margin '.$uangSewa['margin_persen'].'%'
+                                : 'belum ada modal dicatat'],
+                    ] as [$label, $nilai, $ikon, $warna, $ket])
+                        <article class="dsb-stat k-4" style="--c: {{ $warna }}">
+                            <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                            <span class="dsb-stat-label">{{ $label }}</span>
+                            <span class="dsb-stat-nilai">{{ $nilai }}</span>
+                            <span class="dsb-stat-ket"><i class="bi {{ $ikon }}"></i><span>{{ $ket }}</span></span>
+                        </article>
+                    @endforeach
+
+                    @if ((int) ($uangSewa['tanpa_modal'] ?? 0) > 0)
+                        <div class="dsb-kartu k-12" style="--c: #d97706">
+                            <div class="dsb-kartu-isi orc-das-catatan">
+                                <span class="dsb-ikon is-kecil"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                                <span>
+                                    <strong>{{ $uangSewa['tanpa_modal'] }} sewa belum ikut terhitung untungnya</strong>
+                                    — modal ke vendornya belum dicatat, jadi angka di atas lebih kecil daripada
+                                    yang sebenarnya.
+                                    <a href="{{ route('admin.orcha.keuntungan-sewa') }}" wire:navigate class="orc-das-tautan">Lihat laporannya</a>.
+                                </span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         {{-- ================== GRAFIK ================== --}}
         @if ($uangPerBulan !== [])
             <section class="dsb-bagian">

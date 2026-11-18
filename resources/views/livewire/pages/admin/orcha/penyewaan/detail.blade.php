@@ -113,6 +113,17 @@ Detail Sewa Kendaraan || lemon
                         <i class="bi bi-whatsapp"></i><span>Hubungi Penyewa</span>
                     </button>
 
+                    {{-- Hanya muncul bila vendornya sudah dicatat: tombol yang
+                         membuka daftar kosong mengajari admin bahwa menekannya
+                         tidak ada gunanya, dan sesudah itu ia tidak ditekan lagi
+                         pada hari ia berisi. --}}
+                    @if (data_get($sewa, 'vendor.kontak'))
+                        <button type="button" class="dsb-tombol is-lembut orcha-aksi-sewa" style="--ikon: #b45309"
+                            onclick="orchaBukaLembar('pilihanWaVendor')">
+                            <i class="bi bi-building"></i><span>Hubungi Vendor</span>
+                        </button>
+                    @endif
+
                     {{-- Nota akhir bisa diunduh kapan saja: sebelum unit kembali
                          isinya estimasi sewa, sesudahnya total termasuk denda. --}}
                     <a href="{{ route('admin.orcha.penyewaan.kwitansi', $penyewaanId) }}"
@@ -186,6 +197,28 @@ Detail Sewa Kendaraan || lemon
                         <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
                         <span class="dsb-stat-label">{{ $label }}</span>
                         <span class="dsb-stat-nilai">{{ $nilai }}</span>
+
+                        {{-- Pembanding, hanya di ubin untung dan hanya bila ADA
+                             pembandingnya. Persentase sendirian tidak bisa dinilai:
+                             28,6% itu bagus atau pas-pasan tergantung biasanya berapa.
+
+                             Diam saat rata-ratanya belum ada — menampilkan "0%"
+                             sebagai patokan justru membuat sewa apa pun terbaca
+                             luar biasa. --}}
+                        @if ($label === 'Untung kotor'
+                            && $marginRataRata !== null
+                            && ($sewa['margin_persen'] ?? null) !== null)
+                            @php
+                                $selisih = round($sewa['margin_persen'] - $marginRataRata, 1);
+                            @endphp
+                            <span class="dsb-stat-ket">
+                                <i class="bi {{ $selisih >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right' }}"></i>
+                                <span>
+                                    {{ $selisih >= 0 ? '+' : '' }}{{ $selisih }} poin dari rata-rata
+                                    ({{ $marginRataRata }}%)
+                                </span>
+                            </span>
+                        @endif
                     </article>
                 @endforeach
             </div>
@@ -231,11 +264,32 @@ Detail Sewa Kendaraan || lemon
                                     <label class="form-label small fw-semibold">Vendor pemasok unit</label>
                                     <select class="form-select" wire:model="vendorId">
                                         <option value="" @selected($this->vendorId === '')>— belum ditentukan —</option>
-                                        @foreach ($daftarVendor as $v)
-                                            <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
-                                                {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
-                                            </option>
-                                        @endforeach
+                                        {{-- Dikelompokkan, bukan disaring: vendor transportasi
+                                             yang jenisnya terlanjur diisi "Lainnya" tetap bisa
+                                             dipilih, cuma tidak lagi berebut tempat dengan yang
+                                             memang armada. --}}
+                                        @php
+                                            $vArmada = collect($daftarVendor)->where('armada', true);
+                                            $vLain = collect($daftarVendor)->where('armada', false);
+                                        @endphp
+                                        @if ($vArmada->isNotEmpty())
+                                            <optgroup label="Vendor armada">
+                                                @foreach ($vArmada as $v)
+                                                    <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                        {{ $v['nama'] }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
+                                        @if ($vLain->isNotEmpty())
+                                            <optgroup label="Vendor lain">
+                                                @foreach ($vLain as $v)
+                                                    <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                        {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
                                     </select>
                                     <div class="form-text">
                                         Belum ada di daftar? Tambahkan dulu lewat menu Vendor.
@@ -857,6 +911,78 @@ Detail Sewa Kendaraan || lemon
                      disampaikan memang tidak ada di daftar mana pun. --}}
                 <a class="orcha-pilihan-wa orcha-pilihan-wa-polos"
                     href="{{ $this->tautanWa('') }}"
+                    target="_blank" rel="noopener">
+                    <span class="orcha-ikon orcha-ikon-netral">
+                        <i class="bi bi-chat-dots"></i>
+                    </span>
+
+                    <span class="flex-grow-1">
+                        <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
+                            Buka percakapan kosong
+                        </span>
+                        <span class="d-block text-muted" style="font-size:.78rem">
+                            Menulis sendiri, tanpa pesan siap pakai
+                        </span>
+                    </span>
+
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+    @endif
+
+    {{-- ============ PILIHAN PESAN KE VENDOR ============
+
+         Terpisah dari popup penyewa, bukan digabung jadi satu daftar panjang.
+         Keduanya menuju NOMOR yang berbeda, dan satu salah kirim berarti
+         harga modal terkirim ke penyewa. --}}
+    @if (! empty($sewa) && data_get($sewa, 'vendor.kontak'))
+        <div class="orcha-lembar" id="pilihanWaVendor" hidden>
+            <div class="orcha-lembar-tirai" onclick="orchaTutupLembar('pilihanWaVendor')"></div>
+
+            <div class="orcha-lembar-isi" role="dialog" aria-modal="true" aria-label="Kirim pesan ke vendor">
+                <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                    <div>
+                        <div class="fw-bold orcha-judul-ikon" style="font-size:1.05rem">
+                            <i class="bi bi-building" style="color:#b45309"></i>
+                            Kirim pesan ke {{ data_get($sewa, 'vendor.nama') }}
+                        </div>
+                        <div class="text-muted" style="font-size:.8rem">
+                            Nama dan nomor penyewa tidak ikut dikirim — vendor cukup tahu unit,
+                            waktu, dan titik jemputnya.
+                        </div>
+                    </div>
+
+                    <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                        onclick="orchaTutupLembar('pilihanWaVendor')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+
+                @foreach ($this->pilihanPesanVendor() as $pilihan)
+                    <a class="orcha-pilihan-wa"
+                        href="{{ $this->tautanWaVendor($pilihan['polos']) }}"
+                        data-wa-pesan="{{ $pilihan['pesan'] }}"
+                        target="_blank" rel="noopener">
+                        <span class="orcha-ikon {{ $pilihan['rupa'] }}">
+                            <i class="bi {{ $pilihan['ikon'] }}"></i>
+                        </span>
+
+                        <span class="flex-grow-1">
+                            <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
+                                {{ $pilihan['judul'] }}
+                            </span>
+                            <span class="d-block text-muted" style="font-size:.78rem">
+                                {{ $pilihan['ringkas'] }}
+                            </span>
+                        </span>
+
+                        <i class="bi bi-box-arrow-up-right text-muted"></i>
+                    </a>
+                @endforeach
+
+                <a class="orcha-pilihan-wa orcha-pilihan-wa-polos"
+                    href="{{ $this->tautanWaVendor('') }}"
                     target="_blank" rel="noopener">
                     <span class="orcha-ikon orcha-ikon-netral">
                         <i class="bi bi-chat-dots"></i>

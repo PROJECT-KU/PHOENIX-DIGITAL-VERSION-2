@@ -307,11 +307,32 @@
                                     <label class="form-label small fw-semibold">Vendor pemasok</label>
                                     <select class="form-select" wire:model.live="vendorId" @disabled($milikSendiri)>
                                         <option value="" @selected($this->vendorId === '')>— belum ditentukan —</option>
-                                        @foreach ($daftarVendor as $v)
-                                            <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
-                                                {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
-                                            </option>
-                                        @endforeach
+                                        {{-- Dikelompokkan, bukan disaring: vendor transportasi
+                                             yang jenisnya terlanjur diisi "Lainnya" tetap bisa
+                                             dipilih, cuma tidak lagi berebut tempat dengan yang
+                                             memang armada. --}}
+                                        @php
+                                            $vArmada = collect($daftarVendor)->where('armada', true);
+                                            $vLain = collect($daftarVendor)->where('armada', false);
+                                        @endphp
+                                        @if ($vArmada->isNotEmpty())
+                                            <optgroup label="Vendor armada">
+                                                @foreach ($vArmada as $v)
+                                                    <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                        {{ $v['nama'] }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
+                                        @if ($vLain->isNotEmpty())
+                                            <optgroup label="Vendor lain">
+                                                @foreach ($vLain as $v)
+                                                    <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                        {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
                                     </select>
                                     <div class="form-text">
                                         Belum ada di daftar? Tambahkan dulu lewat menu <strong>Vendor</strong>.

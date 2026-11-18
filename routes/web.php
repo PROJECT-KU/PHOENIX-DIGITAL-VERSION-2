@@ -693,6 +693,7 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');
 
     Route::get('/admin/orcha/keuntungan', OrchaKeuntunganList::class)->name('admin.orcha.keuntungan');
+    Route::get('/admin/orcha/keuntungan-sewa', \App\Livewire\Pages\Admin\Orcha\KeuntunganSewa\OrchaKeuntunganSewaList::class)->name('admin.orcha.keuntungan-sewa');
 
     // RAB & itinerary private trip, beserta master harga yang dipakainya.
     Route::get('/admin/orcha/rab', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList::class)->name('admin.orcha.rab');

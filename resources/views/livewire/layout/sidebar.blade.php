@@ -567,6 +567,7 @@ new class extends Component
                             'Layanan & Armada' => [
                                 ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
                                 ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
+                                ['admin.orcha.keuntungan-sewa', 'bi-cash-stack', 'Keuntungan Sewa'],
                                 // RAB menyusun harga private trip dari master
                                 // harga; keduanya bertetangga dengan Keuntungan
                                 // karena sama-sama mengurus angka jualan.

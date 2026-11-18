@@ -202,11 +202,55 @@ Armada Orcha || lemon
                                  sempit, sehingga admin harus membaca tiap barisnya untuk
                                  membandingkan; sekarang angkanya jatuh di satu garis
                                  tegak dan bisa disusuri sekali lihat. --}}
+                            {{-- Dari mana unit ini, dan sudahkah modalnya dicatat.
+
+                                 Katalog ini bukan unit milik sendiri melainkan contoh
+                                 yang dicarikan ke vendor begitu ada yang memesan — tapi
+                                 kartunya selama ini hanya memuat harga JUAL. Akibatnya
+                                 tidak ada satu tempat pun untuk melihat unit mana yang
+                                 modalnya belum dicatat, padahal justru itu yang membuat
+                                 untung sewanya tidak bisa dihitung. --}}
+                            <div class="orcha-unit-asal mt-3">
+                                @if ($baris['milik_sendiri'] ?? false)
+                                    <span class="orcha-cip-termasuk ya">
+                                        <i class="bi bi-house-check"></i> Milik Orcha
+                                    </span>
+                                @elseif (data_get($baris, 'vendor.nama'))
+                                    <span class="orcha-cip-termasuk ya">
+                                        <i class="bi bi-building"></i> {{ data_get($baris, 'vendor.nama') }}
+                                    </span>
+                                @else
+                                    <span class="orcha-cip-termasuk tidak">
+                                        <i class="bi bi-building-exclamation"></i> Vendor belum ditentukan
+                                    </span>
+                                @endif
+
+                                {{-- Hanya ditandai bila modal HARIAN belum ada: itu satuan
+                                     yang hampir selalu dipakai, dan menandai tiap satuan
+                                     yang kosong membuat kartu penuh peringatan untuk unit
+                                     yang sebenarnya sudah siap dipakai. --}}
+                                @if (! ($baris['milik_sendiri'] ?? false) && ! ($baris['modal']['hari'] ?? null))
+                                    <span class="orcha-cip-termasuk tidak">
+                                        <i class="bi bi-wallet2"></i> Modal belum dicatat
+                                    </span>
+                                @endif
+                            </div>
+
                             <div class="orcha-unit-tarif mt-3">
                                 <div class="orcha-tarif-utama">
                                     <span class="orcha-label-kecil">Per hari</span>
                                     <span class="angka">{{ $rupiah($baris['tarif']['hari']) }}</span>
                                 </div>
+
+                                {{-- Modal harian disandingkan dengan tarif harian, bukan
+                                     ditaruh di baris lain: keduanya hanya berguna kalau
+                                     dibaca berpasangan. --}}
+                                @if (($baris['modal']['hari'] ?? null) && ! ($baris['milik_sendiri'] ?? false))
+                                    <div class="orcha-tarif-baris">
+                                        <span>Modal / hari</span>
+                                        <span class="angka">{{ $rupiah($baris['modal']['hari']) }}</span>
+                                    </div>
+                                @endif
 
                                 @php
                                     // Sopir disebut keadaannya, bukan hanya angkanya: unit yang
@@ -629,5 +673,9 @@ Armada Orcha || lemon
             line-height: 1;
             vertical-align: middle;
         }
-</style>
+        /* Asal unit: chip kecil di atas blok tarif. Memakai lencana cakupan
+           yang sudah ada (orcha-cip-termasuk) supaya tidak lahir dialek baru
+           untuk benda yang bentuknya persis sama. */
+        .orcha-unit-asal { display: flex; flex-wrap: wrap; gap: .35rem; }
+    </style>
 </div>

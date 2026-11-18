@@ -64,6 +64,13 @@ Sewa Kendaraan Masuk || lemon
            dulu sebelum memakan tombol. */
         .sw-tabel td:last-child, .sw-tabel th:last-child { white-space: nowrap; }
 
+        /* Penanda vendor di kolom kendaraan. Sengaja sekecil meta barisnya:
+           ia keterangan, bukan tindakan — yang menuntut tindakan sudah punya
+           tabnya sendiri di atas. */
+        .sw-vendor { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+        .sw-vendor i.bi { font-size: .9em; }
+        .sw-vendor.is-kosong { color: #b45309; }
+
         /* Varian lembut untuk baris yang urusannya sudah selesai. */
         .sw-lanjut.is-lembut {
             background: #fff; border: 1px solid var(--dsb-tepi); color: #475569;
@@ -334,6 +341,35 @@ Sewa Kendaraan Masuk || lemon
                                                     <span class="dsb-tabel-meta">
                                                         <span>{{ $baris['kendaraan']['transmisi'] }} · {{ $baris['durasi_label'] }} · {{ $baris['dengan_sopir'] ? 'dengan sopir' : 'lepas kunci' }}</span>
                                                     </span>
+
+                                                    {{-- Dari mana unitnya.
+
+                                                         Daftar ini sudah punya tab "Belum ada
+                                                         vendor", tetapi barisnya sendiri tidak
+                                                         pernah menyebut vendor — jadi satu-
+                                                         satunya cara tahu adalah membuka
+                                                         pesanannya satu per satu, persis
+                                                         pekerjaan yang hendak dihemat tabnya.
+
+                                                         Unit milik sendiri tidak diberi penanda
+                                                         apa pun: ia tidak punya vendor, dan
+                                                         lencana "—" cuma menambah benda yang
+                                                         harus diabaikan mata. --}}
+                                                    @if (! ($baris['milik_sendiri'] ?? false))
+                                                        <span class="dsb-tabel-meta">
+                                                            @if (data_get($baris, 'vendor.nama'))
+                                                                <span class="sw-vendor">
+                                                                    <i class="bi bi-building"></i>
+                                                                    {{ data_get($baris, 'vendor.nama') }}
+                                                                </span>
+                                                            @elseif (! in_array($baris['status'] ?? '', ['selesai', 'batal'], true))
+                                                                <span class="sw-vendor is-kosong">
+                                                                    <i class="bi bi-building-exclamation"></i>
+                                                                    Vendor belum dicarikan
+                                                                </span>
+                                                            @endif
+                                                        </span>
+                                                    @endif
                                                 </span>
                                             </td>
 
