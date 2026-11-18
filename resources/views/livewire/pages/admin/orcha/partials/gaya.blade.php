@@ -1553,6 +1553,28 @@
         font-size: .95em;
     }
 
+    /* Tombol IKON-SAJA: glifnya dipusatkan di kotaknya sendiri.
+
+       Kotak <i> ternyata ~4px lebih besar daripada glif di dalamnya (terukur
+       15,83px untuk glif 11,67px pada tombol kamera di lembar serah terima).
+       Tanpa justify-content, flex memakai flex-start: seluruh kelebihan itu
+       jatuh di sisi kanan, dan glifnya duduk 2,17px ke kiri dari tengah.
+
+       Di tombol BERTEKS kelebihan itu tidak mengganggu — ia menambah jarak
+       ikon ke teks, dan tidak ada tepi kanan yang jadi pembanding. Aturan ini
+       karena itu sengaja TIDAK berlaku di sana: memusatkannya di tombol
+       berteks menggeser ikonnya 2px mendekati teks, yaitu mengganti satu
+       cacat dengan cacat lain yang tidak diminta siapa pun.
+
+       Kelasnya dipasang satu per satu, BUKAN lewat :has(> i:only-child).
+       Pemilih itu sempat dipakai dan salah: :only-child tidak menghitung
+       simpul teks, jadi tombol "<i></i> Simpan" — yang jelas berteks — ikut
+       terkena. Di seluruh repo hanya ada dua tombol ikon-saja, jadi menyebut
+       keduanya lebih murah daripada pemilih yang menebak. */
+    .orcha-btn-ikon i {
+        justify-content: center;
+    }
+
     .orcha-btn:hover {
         transform: translateY(-1px);
         filter: saturate(1.06);

@@ -2244,7 +2244,7 @@ Detail Pendaftaran || lemon
                             {{-- Sama seperti galeri: SweetAlert, bukan dialog bawaan
                                  peramban yang menampilkan nama host di atas
                                  kalimatnya. --}}
-                            <button type="button" class="orcha-btn orcha-btn-kecil orcha-btn-bahaya pcek-konfirmasi"
+                            <button type="button" class="orcha-btn orcha-btn-kecil orcha-btn-bahaya orcha-btn-ikon pcek-konfirmasi"
                                 data-action="hapusSuratTtd"
                                 data-title="Hapus surat bertanda tangan?"
                                 data-text="Berkasnya ikut terhapus dari server. Surat kosongnya tetap bisa diunduh ulang untuk ditandatangani lagi."

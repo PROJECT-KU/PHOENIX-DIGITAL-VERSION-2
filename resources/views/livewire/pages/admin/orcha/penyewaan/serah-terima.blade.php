@@ -418,7 +418,7 @@ Serah Terima Kendaraan || lemon
                                      hanya membuka pemilih berkas; di laptop tidak ada jalan
                                      ke kamera sama sekali, padahal admin di loket memang
                                      ingin memotret KTP saat itu juga. --}}
-                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil orcha-btn-ikon"
                                     data-kamera-untuk="orcha-jaminan" title="Ambil foto lewat kamera perangkat">
                                     <i class="bi bi-camera-fill"></i>
                                 </button>
