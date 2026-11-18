@@ -3372,7 +3372,14 @@ test('daftar sewa menandai unit yang telat kembali', function () {
         ->get('/admin/orcha/penyewaan')
         ->assertOk()
         ->assertSee('telat 3 jam')
-        ->assertSee('Serah terima');
+        /*
+         | Tombolnya menyebut LANGKAH BERIKUTNYA baris ini, bukan nama
+         | layarnya: unit yang masih di luar perlu "Catat kembali", yang sudah
+         | pulang cukup "Lihat catatannya". Sederet tombol utama yang semuanya
+         | menuntut perhatian sama saja dengan tidak ada yang menuntut
+         | perhatian.
+         */
+        ->assertSee('Catat kembali');
 });
 
 test('lembar serah terima mengisi usulan denda keterlambatan', function () {

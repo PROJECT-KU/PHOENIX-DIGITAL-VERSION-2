@@ -122,7 +122,7 @@ test('judul kolom daftar sewa ditengahkan, termasuk yang isinya rata kanan', fun
         ->and(substr_count($kepala, 'text-align: right;'))->toBe(2);
 });
 
-test('dua tombol di kolom aksi sama tingginya', function () {
+test('tombol aksi setinggi tombol ikon di bahasa rupa dasbor', function () {
     Http::fake([
         '*/penyewaan*' => Http::response(['data' => [sewaUji()], 'meta' => []]),
         '*' => Http::response(['data' => [], 'meta' => []]),
@@ -145,9 +145,18 @@ test('dua tombol di kolom aksi sama tingginya', function () {
     $mulaiTabel = strpos($isi, 'class="dsb-tabel sw-tabel"');
     $tabel = substr($isi, $mulaiTabel, strpos($isi, '</table>', $mulaiTabel) - $mulaiTabel);
 
-    // Dua kendali di satu sel: tombol ikon detail, dan tombol berlabel.
-    expect(substr_count($tabel, 'dsb-tabel-btn'))->toBe(1)
-        ->and(substr_count($tabel, 'sw-lanjut'))->toBe(1);
+    /*
+     | Tinggal SATU kendali di sel aksi.
+     |
+     | Tombol ikon "lihat detail" dibuang: nama penyewanya di kolom pertama
+     | sudah menjadi tautan ke halaman yang sama, jadi ikon itu mengulang
+     | jalan yang sudah ada — sambil memakan lebar yang membuat tombol
+     | sebelahnya terpotong di tepi kartu (terukur pada 1440px).
+     |
+     | Tingginya tetap dijaga di bawah: begitu ada tombol kedua kembali ke
+     | sel ini, keduanya harus sejajar.
+     */
+    expect(substr_count($tabel, 'sw-lanjut'))->toBe(1);
 
     /*
      | Tingginya DIPATOK sama, bukan diperiksa lewat nama kelasnya: nama yang

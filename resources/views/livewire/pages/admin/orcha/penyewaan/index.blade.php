@@ -7,11 +7,22 @@ Sewa Kendaraan Masuk || lemon
          Pesanan Toko. Kelas orcha-* hanya untuk yang memang khas Orcha —
          di layar ini tinggal paginasi API dan pil statusnya. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
+    {{-- Kartu tab berangka, bahasa rupa yang sama dengan Pesanan Toko dan
+         Pendaftaran Trip. Tiga daftar yang dikerjakan orang yang sama tidak
+         perlu dipelajari tiga kali. --}}
+    @include('livewire.pages.admin.partials.kartu-tab-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
 
     @php
         $jumlah = (int) ($meta['total'] ?? count($daftar));
-        $adaSaringan = trim((string) $cari) !== '' || (string) $filterStatus !== '';
+
+        /* Dibaca dari komponennya, bukan dihitung ulang di sini: layar ini
+           punya tiga saringan (cari, status, belum kembali) dan salinan yang
+           ketinggalan satu membuat tombol "tampilkan semua lagi" hilang persis
+           saat ia paling dibutuhkan. */
+        $adaSaringan = $this->adaSaringan();
+
+        $warnaTab = $tabs[$tabAktif][2] ?? '#7c3aed';
 
         // Unit yang seharusnya sudah kembali tetapi belum. Inilah yang dicek
         // admin tiap pagi, jadi angkanya disebut di kepala halaman — bukan
@@ -27,9 +38,40 @@ Sewa Kendaraan Masuk || lemon
            .gitignore dan tidak ikut ter-deploy. */
 
         /* ===== Saringan ===== */
-        .sw-saring { display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-        @media (max-width: 767.98px) {
+        /* Pencarian melebar, tombol bersihkan di ujung. Statusnya sudah pindah
+           ke tab, jadi bilah ini tinggal satu medan — dan medan tunggal yang
+           tetap dibagi dua kolom menyisakan separuh kartu kosong. */
+        .sw-saring { display: grid; gap: 12px; align-items: end; grid-template-columns: minmax(0, 1fr) auto; }
+        .sw-medan-aksi { display: flex; align-items: flex-end; }
+        .sw-medan-aksi:empty { display: none; }
+        @media (max-width: 575.98px) {
             .sw-saring { grid-template-columns: minmax(0, 1fr); }
+        }
+
+        /* Kolom kendaraan diberi lebar terendah.
+
+           Tanpanya "Avanza 2022 · AB 1234 CD" terbungkus jadi tiga baris
+           sementara kolom di sebelahnya menyisakan ruang kosong — nama unit
+           dan nomor polisinya justru yang dicari mata saat menyapu daftar. */
+        .sw-tabel th.k-lebar, .sw-tabel td.k-lebar { min-width: 165px; }
+
+        /* Kolom aksi tidak boleh terbungkus.
+
+           165px pada kolom kendaraan sempat 190px, dan tabelnya melebihi
+           kartunya sampai tombol di tepi kanan terpotong — terukur pada
+           1440px. Dua patokan itu saling tarik; yang dipatok di sini kolom
+           aksinya, supaya pelebaran berikutnya memakan ruang kolom lain
+           dulu sebelum memakan tombol. */
+        .sw-tabel td:last-child, .sw-tabel th:last-child { white-space: nowrap; }
+
+        /* Varian lembut untuk baris yang urusannya sudah selesai. */
+        .sw-lanjut.is-lembut {
+            background: #fff; border: 1px solid var(--dsb-tepi); color: #475569;
+            box-shadow: none;
+        }
+        .sw-lanjut.is-lembut i.bi { color: #94a3b8; }
+        @media (hover: hover) and (pointer: fine) {
+            .sw-lanjut.is-lembut:hover { border-color: #cbd5e1; color: #1c1f26; }
         }
 
         /* ===== Tabel ===== */
@@ -101,43 +143,86 @@ Sewa Kendaraan Masuk || lemon
                     Pemesanan sewa yang dikirim lewat formulir di website Orcha.
                 </p>
 
-                <div class="dsb-chip-deret mt-2">
-                    <span class="dsb-chip" style="--c: #7c3aed">
-                        <i class="bi bi-truck"></i> {{ $jumlah }} pemesanan
-                    </span>
-                    @if ($telat)
-                        {{-- Disebut hanya saat ada. Cip "0 telat" yang selalu
-                             berdiri membuat mata berhenti membacanya, dan pada
-                             hari yang benar-benar ada telatnya ia tidak lagi
-                             menarik perhatian siapa pun. --}}
-                        <span class="dsb-chip" style="--c: #dc2626">
-                            <i class="bi bi-exclamation-triangle-fill"></i> {{ $telat }} belum kembali
-                        </span>
-                    @endif
-                </div>
+                {{-- Cip jumlah & telat DIBUANG dari sini.
+
+                     Keduanya kini ada di kartu tab, lengkap dengan angkanya —
+                     dan dua tempat untuk satu angka adalah dua angka yang
+                     suatu saat berbeda. Yang di tab lebih benar pula: ia
+                     dihitung dari seluruh data, sedangkan cip "telat" di sini
+                     hanya menghitung baris di halaman yang sedang tampil. --}}
             </div>
         </header>
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
 
-        {{-- ================== SARINGAN ================== --}}
+        {{-- ================== TAB ==================
+
+             Dua kelompok, dan pemisahannya disengaja: yang atas cara MELIHAT
+             daftar, yang bawah DAFTAR PEKERJAAN. Digabung, "Belum kembali"
+             tenggelam jadi salah satu pilihan menonton — padahal ia
+             satu-satunya yang uangnya bisa hilang kalau didiamkan.
+
+             Menggantikan pemilih status yang lama. Pemilih menyembunyikan
+             enam pilihan di balik satu kotak dan tidak pernah menyebut berapa
+             isinya; kartu berangka menjawab "ada pekerjaan di sana atau
+             tidak" tanpa ditekan dulu. --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
+                <div class="k-12">
+                    <div class="pt-grup-deret">
+                        @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
+                            <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                <div class="pt-grup-kepala">
+                                    <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                    <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                </div>
+                                <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}">
+                                    @foreach ($kunciGrup as $kunci)
+                                        @php
+                                            [$label, $ikon, $warna] = $tabs[$kunci];
+                                            $angka = $jumlahTab[$kunci] ?? null;
+                                            $iniAktif = $tabAktif === $kunci;
+                                        @endphp
+                                        <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
+                                            class="pt-kartu-tab {{ $iniAktif ? 'is-aktif' : '' }} {{ $angka === 0 ? 'is-nol' : '' }}"
+                                            aria-pressed="{{ $iniAktif ? 'true' : 'false' }}">
+                                            <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                            <span class="pt-kartu-teks">
+                                                {{-- Angkanya hilang, bukan jadi "0", bila Orcha
+                                                     belum mengirimnya: nol yang keliru lebih buruk
+                                                     daripada tidak ada angka sama sekali. --}}
+                                                <span class="pt-kartu-angka">
+                                                    {{ $angka === null ? '–' : (999 < $angka ? '999+' : number_format($angka, 0, ',', '.')) }}
+                                                </span>
+                                                <span class="pt-kartu-label">{{ $label }}</span>
+                                            </span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </nav>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- ================== SARINGAN ==================
+                     Tinggal pencarian: statusnya sudah pindah ke tab. --}}
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi">
                         <div class="sw-saring">
-                            @include('livewire.pages.admin.orcha.partials.cari', [
-                                'petunjuk' => 'Cari kode, nama, WhatsApp, atau unit…',
-                                'rupa' => 'dsb',
-                            ])
-
                             <div class="dsb-medan">
-                                <select wire:model.live="filterStatus" class="dsb-isian" aria-label="Saring menurut status">
-                                    <option value="" @selected((string) $this->filterStatus === '')>Semua status</option>
-                                    @foreach ($pilihanStatus as $kunci => $label)
-                                        <option value="{{ $kunci }}" @selected((string) $this->filterStatus === (string) $kunci)>{{ $label }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="dsb-label" for="sw-cari">Cari penyewa</label>
+                                @include('livewire.pages.admin.orcha.partials.cari', [
+                                    'petunjuk' => 'Nama, nomor WhatsApp, kode, atau unitnya',
+                                    'rupa' => 'dsb',
+                                ])
+                            </div>
+
+                            <div class="dsb-medan sw-medan-aksi">
+                                @if ($adaSaringan)
+                                    <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut">
+                                        <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua lagi</span>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -149,13 +234,24 @@ Sewa Kendaraan Masuk || lemon
         <section class="dsb-bagian">
             <div class="dsb-rak">
                 <div class="dsb-kartu k-12">
-                    <div class="dsb-kartu-kepala">
-                        <div class="dsb-kartu-kepala-kiri">
-                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-truck"></i></span>
-                            <div>
-                                <h3 class="dsb-kartu-judul">Pemesanan Sewa</h3>
-                                <span class="dsb-kartu-sub">Satu baris = satu pemesanan · tenggat kembali ada di kolomnya sendiri</span>
-                            </div>
+                    {{-- Kepala daftar seperti Pesanan Toko: nama tab yang
+                         sedang menyala, lalu berapa isinya. Judul tetap
+                         ("Pemesanan Sewa") tidak memberi tahu apa pun yang
+                         belum terbaca dari tabnya. --}}
+                    <div class="pt-daftar-kepala" style="--c: {{ $warnaTab }}">
+                        <div class="pt-daftar-judul">
+                            <b>{{ $tabs[$tabAktif][0] ?? 'Semua' }}</b>
+                            <span>
+                                @if ($jumlah > 0)
+                                    {{ number_format($jumlah, 0, ',', '.') }} pemesanan
+                                    @if ($tabAktif === 'telat')
+                                        — sudah lewat tenggat dan belum dicatat kembali.
+                                        Dendanya berjalan terus, dan unitnya belum bisa disewakan lagi.
+                                    @endif
+                                @else
+                                    Belum ada isinya
+                                @endif
+                            </span>
                         </div>
                     </div>
 
@@ -176,12 +272,19 @@ Sewa Kendaraan Masuk || lemon
                             <table class="dsb-tabel sw-tabel">
                                 <thead>
                                     <tr>
+                                        {{-- ENAM kolom, bukan tujuh.
+
+                                             "Mulai" dan "Kembali" berdiri sendiri-sendiri
+                                             membuat tabelnya lebih lebar daripada layar:
+                                             terukur 1440px, tombol Aksi terpotong di tepi
+                                             kanan dan judul kolomnya ikut hilang. Keduanya
+                                             memang satu hal — rentang pemakaian — dan
+                                             dibaca begitu juga oleh orang. --}}
                                         <th>Penyewa</th>
                                         <th class="k-lebar">Kendaraan</th>
-                                        <th class="k-sedang">Mulai</th>
-                                        <th class="k-sedang">Kembali</th>
+                                        <th class="k-sedang">Dipakai</th>
                                         <th style="text-align: right;">Tagihan</th>
-                                        <th>Status</th>
+                                        <th>Keadaan</th>
                                         <th style="text-align: right;">Aksi</th>
                                     </tr>
                                 </thead>
@@ -234,18 +337,23 @@ Sewa Kendaraan Masuk || lemon
                                                 </span>
                                             </td>
 
-                                            <td class="k-sedang" data-judul="Mulai">
-                                                <span class="dsb-tabel-angka">{{ $tgl($baris['tanggal_mulai']) ?: '—' }}</span>
-                                                <span class="dsb-tabel-samar">{{ $baris['jam_mulai'] ?: '—' }}</span>
-                                            </td>
+                                            {{-- Satu kolom untuk rentangnya.
 
-                                            {{-- Tenggat pengembalian berdiri sendiri, bukan diselipkan
-                                                 di kolom mulai: inilah yang dicek admin tiap pagi untuk
-                                                 tahu unit mana yang seharusnya sudah kembali. --}}
-                                            <td class="k-sedang" data-judul="Kembali">
+                                                 Tenggat pengembalian tetap yang paling tebal
+                                                 di dalamnya — itu yang dicek admin tiap pagi
+                                                 untuk tahu unit mana yang seharusnya sudah
+                                                 kembali — tetapi tanggal mulainya tidak
+                                                 pantas memakan kolom sendiri selebar itu. --}}
+                                            <td class="k-sedang" data-judul="Dipakai">
                                                 @if ($baris['tanggal_selesai'])
-                                                    <span class="dsb-tabel-angka">{{ $tgl($baris['tanggal_selesai']) }}</span>
-                                                    <span class="dsb-tabel-samar">{{ $baris['jam_selesai'] }}</span>
+                                                    <span class="dsb-tabel-angka">
+                                                        {{ $tgl($baris['tanggal_mulai'], 'd M') ?: '—' }}
+                                                        &rarr;
+                                                        {{ $tgl($baris['tanggal_selesai']) }}
+                                                    </span>
+                                                    <span class="dsb-tabel-samar">
+                                                        {{ $baris['jam_mulai'] ?: '—' }}–{{ $baris['jam_selesai'] ?: '—' }}
+                                                    </span>
                                                     @if ($sudahKembali)
                                                         <span class="dsb-lencana is-hijau">
                                                             <i class="bi bi-check-circle-fill"></i>
@@ -258,7 +366,8 @@ Sewa Kendaraan Masuk || lemon
                                                         </span>
                                                     @endif
                                                 @else
-                                                    <span class="dsb-tabel-samar">—</span>
+                                                    <span class="dsb-tabel-angka">{{ $tgl($baris['tanggal_mulai']) ?: '—' }}</span>
+                                                    <span class="dsb-tabel-samar">tanggal kembalinya belum diisi</span>
                                                 @endif
                                             </td>
 
@@ -293,10 +402,34 @@ Sewa Kendaraan Masuk || lemon
                                                         {{ $baris['status_label'] ?? $baris['status'] }}
                                                     </span>
                                                 @else
+                                                    {{-- Konfirmasi dulu.
+
+                                                         Pemilih ini duduk di jalur jempol saat
+                                                         menggulir, dan "Batal" di dalamnya
+                                                         melepas unitnya dari jadwal — tindakan
+                                                         yang tidak bisa dibatalkan dengan
+                                                         memilih ulang.
+
+                                                         Nilainya dikembalikan saat dibatalkan;
+                                                         pemilih yang tetap menampilkan pilihan
+                                                         baru padahal tidak tersimpan adalah
+                                                         kebohongan yang bertahan sampai halaman
+                                                         dimuat ulang. Pola yang sama dipakai
+                                                         Pendaftaran Trip. --}}
                                                     <select class="form-select form-select-sm orcha-status-ringkas"
                                                         data-status="{{ $baris['status'] }}"
-                                                        aria-label="Ubah status {{ $baris['kode'] }}"
-                                                        wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)">
+                                                        aria-label="Ubah keadaan {{ $baris['kode'] }}"
+                                                        x-data="{ semula: @js($baris['status']) }"
+                                                        x-on:change="
+                                                            const pilih = $event.target;
+                                                            const label = pilih.options[pilih.selectedIndex].text.trim();
+                                                            if (await window.orchaKonfirmasi(@js($baris['nama']) + ' diubah keadaannya menjadi ' + label + '.', { judul: 'Ubah keadaan?', tombol: 'Ya, ubah' })) {
+                                                                semula = pilih.value;
+                                                                $wire.ubahStatus(@js((int) $baris['id']), pilih.value);
+                                                            } else {
+                                                                pilih.value = semula;
+                                                            }
+                                                        ">
                                                         @foreach ($pilihanStatus as $kunci => $label)
                                                             <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>
                                                                 {{ $label }}
@@ -308,21 +441,45 @@ Sewa Kendaraan Masuk || lemon
 
                                             <td style="text-align: right;">
                                                 <span class="sw-aksi">
-                                                    <a wire:navigate href="{{ $urlDetail }}"
-                                                        class="dsb-tabel-btn" style="--c: #0284c7"
-                                                        title="Lihat detail penyewaan">
-                                                        <i class="bi bi-truck-front"></i>
-                                                    </a>
+                                                    {{-- Tombol ikon "lihat detail" DIBUANG dari sini.
+
+                                                         Nama penyewanya di kolom pertama sudah
+                                                         menjadi tautan ke halaman yang sama, jadi
+                                                         ikon ini mengulang jalan yang sudah ada —
+                                                         sambil memakan 44px yang membuat tombol
+                                                         sebelahnya terpotong di tepi kartu. Dua
+                                                         jalan ke satu tempat juga membuat admin
+                                                         yang awam ragu apakah keduanya berbeda. --}}
                                                     {{-- Tautan biasa, bukan tombol Livewire. Lembarnya kini
                                                          halaman tersendiri, jadi membukanya tidak bergantung
                                                          pada JavaScript yang harus hidup lebih dulu di
                                                          halaman daftar. --}}
-                                                    <a href="{{ route('admin.orcha.penyewaan.serah-terima', $baris['id']) }}"
-                                                        wire:navigate class="sw-lanjut"
-                                                        title="Catat serah terima & denda">
-                                                        <i class="bi bi-clipboard-check"></i>
-                                                        <span class="k-sedang">Serah terima</span>
-                                                    </a>
+                                                    {{-- Tombolnya menyebut LANGKAH BERIKUTNYA baris ini,
+                                                         bukan nama layarnya.
+
+                                                         Sebelumnya "Serah terima" berwarna utama di SETIAP
+                                                         baris — termasuk yang unitnya sudah pulang dan
+                                                         urusannya selesai. Sederet tombol utama yang
+                                                         semuanya menuntut perhatian sama saja dengan tidak
+                                                         ada yang menuntut perhatian, dan untuk admin yang
+                                                         tidak setiap hari memakai aplikasi, itu yang
+                                                         membuat ia menekan yang salah.
+
+                                                         Yang batal tidak diberi tombol sama sekali:
+                                                         tidak ada unit yang diserahterimakan. --}}
+                                                    @if (($baris['status'] ?? '') !== 'batal')
+                                                        <a href="{{ route('admin.orcha.penyewaan.serah-terima', $baris['id']) }}"
+                                                            wire:navigate
+                                                            class="{{ $sudahKembali ? 'sw-lanjut is-lembut' : 'sw-lanjut' }}"
+                                                            title="{{ $sudahKembali
+                                                                ? 'Lihat atau betulkan catatan serah terima & dendanya'
+                                                                : 'Catat unit ini kembali, sekalian dendanya kalau ada' }}">
+                                                            <i class="bi {{ $sudahKembali ? 'bi-clipboard-check' : 'bi-box-arrow-in-left' }}"></i>
+                                                            <span class="k-sedang">
+                                                                {{ $sudahKembali ? 'Lihat catatannya' : 'Catat kembali' }}
+                                                            </span>
+                                                        </a>
+                                                    @endif
                                                 </span>
                                             </td>
                                         </tr>
