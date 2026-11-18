@@ -461,6 +461,38 @@ Serah Terima Kendaraan || lemon
                         </div>
                     </div>
 
+                    {{-- Siapa yang dikabari kalau ada yang rusak.
+
+                         Unitnya milik vendor, bukan milik Orcha. Selama ini
+                         kenyataan itu tidak ada di layar mana pun, sehingga
+                         admin yang menemukan baret baru harus bertanya dulu ke
+                         orang lain — dan pertanyaan itu muncul tepat saat
+                         penyewanya masih berdiri di loket menunggu. --}}
+                    @if (data_get($sewa, 'vendor.nama'))
+                        <div class="orcha-alasan orcha-alasan-tenang mb-3 d-flex flex-wrap gap-2 align-items-center">
+                            <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
+                                <i class="bi bi-building"></i> Unit dari
+                            </span>
+                            <strong style="font-size:.88rem">{{ data_get($sewa, 'vendor.nama') }}</strong>
+                            @if (data_get($sewa, 'vendor.kontak'))
+                                <span class="text-muted" style="font-size:.82rem">
+                                    · {{ data_get($sewa, 'vendor.kontak') }}
+                                </span>
+                            @endif
+                        </div>
+                    @elseif (! ($sewa['milik_sendiri'] ?? false))
+                        <div class="orcha-alasan orcha-alasan-sedang mb-3 d-flex gap-2 align-items-start">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <div style="font-size:.86rem">
+                                <strong>Vendor unit ini belum dicatat.</strong>
+                                Kalau ada bagian yang rusak, belum ada catatan siapa yang perlu dikabari.
+                                Isi lewat
+                                <a href="{{ route('admin.orcha.penyewaan.detail', $serahTerimaUntuk) }}"
+                                    wire:navigate class="fw-bold text-decoration-none">halaman detail sewa</a>.
+                            </div>
+                        </div>
+                    @endif
+
                     <div>
                         <div class="orcha-gulung">
                             <table class="table table-sm align-middle orcha-tabel mb-0">

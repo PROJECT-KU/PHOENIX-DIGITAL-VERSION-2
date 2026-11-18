@@ -280,6 +280,122 @@
                         </div>
                     </div>
 
+                    {{-- ============ ASAL UNIT & MODAL ============
+                         Katalog ini bukan unit milik sendiri melainkan contoh:
+                         begitu ada yang memesan, unitnya dicarikan ke vendor.
+                         Kenyataan itu sudah lama hidup di kode, tetapi tidak
+                         pernah punya tempat di borang mana pun — sehingga
+                         "unit ini dari siapa" dan "berapa yang kita bayar"
+                         hanya ada di kepala orang.
+
+                         Ditaruh TEPAT SEBELUM kartu Tarif, bukan di akhir
+                         borang: modal dan harga jual dibaca berpasangan, dan
+                         dua angka yang menentukan untung tidak boleh dipisah
+                         satu layar gulir. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-building text-warning"></i> Asal Unit &amp; Modal
+                            </h6>
+                            <p class="text-muted small mb-3">
+                                Dari mana unit ini didapat, dan berapa yang dibayarkan ke vendor.
+                                Boleh dikosongkan dulu — modal menyusul setelah vendornya menjawab.
+                            </p>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-semibold">Vendor pemasok</label>
+                                    <select class="form-select" wire:model.live="vendorId" @disabled($milikSendiri)>
+                                        <option value="" @selected($this->vendorId === '')>— belum ditentukan —</option>
+                                        @foreach ($daftarVendor as $v)
+                                            <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">
+                                        Belum ada di daftar? Tambahkan dulu lewat menu <strong>Vendor</strong>.
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-semibold d-block">Kepemilikan</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                            id="armada-milik-sendiri" wire:model.live="milikSendiri">
+                                        <label class="form-check-label" for="armada-milik-sendiri">
+                                            Unit ini milik Orcha sendiri
+                                        </label>
+                                    </div>
+                                    {{-- Penandanya berdiri sendiri, tidak disimpulkan dari
+                                         vendor yang kosong: hari ini seluruh katalog
+                                         vendornya memang kosong. --}}
+                                    <div class="form-text">
+                                        Biarkan mati selama unitnya masih dicarikan ke vendor.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <p class="text-muted small mb-3">
+                                <strong>Modal</strong> — berapa yang dibayarkan ke vendor, berpasangan dengan
+                                tarif jual di bawah. Kosong berarti <strong>belum dicatat</strong>, dan selama
+                                kosong untung sewanya tidak dihitung.
+                            </p>
+
+                            <div class="row g-3">
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold">Modal / hari</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                            wire:model.blur="modalHariTeks" value="{{ $modalHariTeks }}"
+                                            placeholder="250.000">
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold">Modal / jam</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                            wire:model.blur="modalJamTeks" value="{{ $modalJamTeks }}"
+                                            placeholder="40.000">
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold">Modal 12 jam</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                            wire:model.blur="modal12JamTeks" value="{{ $modal12JamTeks }}"
+                                            placeholder="200.000">
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold">Modal luar kota / hari</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                            wire:model.blur="modalLuarKotaTeks" value="{{ $modalLuarKotaTeks }}"
+                                            placeholder="600.000">
+                                    </div>
+                                </div>
+
+                                {{-- Modal sopir disembunyikan saat sopir sudah termasuk
+                                     tarif unit, mengikuti aturan yang sama dengan tarif
+                                     sopir: vendor yang harganya sudah termasuk sopir tidak
+                                     menagihkannya terpisah. --}}
+                                @unless ($termasukSopir)
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small fw-semibold">Modal sopir / hari</label>
+                                        <div class="orcha-rupiah">
+                                            <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                                wire:model.blur="modalSopirTeks" value="{{ $modalSopirTeks }}"
+                                                placeholder="100.000">
+                                        </div>
+                                    </div>
+                                @endunless
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-1 orcha-judul-ikon">

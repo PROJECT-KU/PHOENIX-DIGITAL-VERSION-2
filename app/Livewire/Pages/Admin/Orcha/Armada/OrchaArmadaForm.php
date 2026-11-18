@@ -120,6 +120,43 @@ class OrchaArmadaForm extends Component
 
     public bool $tersedia = true;
 
+    /*
+     | Dari mana unit ini. Orcha belum punya kendaraan sendiri, jadi bawaannya
+     | milik vendor — dan vendornya boleh belum ditentukan, karena katalog ini
+     | memang berisi contoh unit yang baru dicarikan begitu ada yang memesan.
+     |
+     | milik_sendiri diberi penandanya sendiri, TIDAK disimpulkan dari vendor
+     | yang kosong: hari ini seluruh katalog vendornya kosong, dan menyamakan
+     | keduanya membuat semuanya salah terbaca sebagai milik Orcha.
+     */
+    public bool $milikSendiri = false;
+
+    public string $vendorId = '';
+
+    /*
+     | Harga modal, pasangan satu lawan satu dari tarif jualnya. Kosong berarti
+     | BELUM DICATAT, bukan nol — dan bedanya dijaga sampai ke peladen.
+     */
+    public $modalHari = '';
+
+    public $modalJam = '';
+
+    public $modal12Jam = '';
+
+    public $modalSopir = '';
+
+    public $modalLuarKota = '';
+
+    public string $modalHariTeks = '';
+
+    public string $modalJamTeks = '';
+
+    public string $modal12JamTeks = '';
+
+    public string $modalSopirTeks = '';
+
+    public string $modalLuarKotaTeks = '';
+
     /**
      * BBM, tol, dan parkir — masing-masing berdiri sendiri.
      *
@@ -301,6 +338,56 @@ class OrchaArmadaForm extends Component
     {
         $this->tarif12Jam = $this->angkaDari($this->tarif12JamTeks) ?: '';
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
+    }
+
+    /*
+     | Isian modal. Semuanya memakai `?: ''` seperti tarif opsional di atas —
+     | nol disamakan dengan kosong, karena pada borang ini nol tidak pernah
+     | berarti "gratis", ia berarti isiannya belum diisi.
+     */
+    public function updatedModalHariTeks(): void
+    {
+        $this->modalHari = $this->angkaDari($this->modalHariTeks) ?: '';
+        $this->modalHariTeks = $this->keRupiah($this->modalHari);
+    }
+
+    public function updatedModalJamTeks(): void
+    {
+        $this->modalJam = $this->angkaDari($this->modalJamTeks) ?: '';
+        $this->modalJamTeks = $this->keRupiah($this->modalJam);
+    }
+
+    public function updatedModal12JamTeks(): void
+    {
+        $this->modal12Jam = $this->angkaDari($this->modal12JamTeks) ?: '';
+        $this->modal12JamTeks = $this->keRupiah($this->modal12Jam);
+    }
+
+    public function updatedModalSopirTeks(): void
+    {
+        $this->modalSopir = $this->angkaDari($this->modalSopirTeks) ?: '';
+        $this->modalSopirTeks = $this->keRupiah($this->modalSopir);
+    }
+
+    public function updatedModalLuarKotaTeks(): void
+    {
+        $this->modalLuarKota = $this->angkaDari($this->modalLuarKotaTeks) ?: '';
+        $this->modalLuarKotaTeks = $this->keRupiah($this->modalLuarKota);
+    }
+
+    /**
+     * Unit milik sendiri tidak punya vendor.
+     *
+     * Dibersihkan saat penandanya dinyalakan, bukan cuma diabaikan saat
+     * menyimpan: isian vendor yang masih memperlihatkan nama rekanan di
+     * layar sementara peladen menyimpannya kosong adalah dua jawaban yang
+     * saling bertentangan di satu borang.
+     */
+    public function updatedMilikSendiri($nilai): void
+    {
+        if ($nilai) {
+            $this->vendorId = '';
+        }
     }
 
     /**
@@ -889,6 +976,16 @@ class OrchaArmadaForm extends Component
         $this->tarifSopir = $isi['tarif']['sopir_per_hari'] ?? '';
         $this->tarifLuarKota = $isi['tarif']['luar_kota'] ?? '';
         $this->tersedia = (bool) ($isi['tersedia'] ?? true);
+        $this->milikSendiri = (bool) ($isi['milik_sendiri'] ?? false);
+        $this->vendorId = (string) ($isi['vendor_id'] ?? '');
+        $this->modalHari = $isi['modal']['hari'] ?? '';
+        $this->modalJam = $isi['modal']['jam'] ?? '';
+        $this->modal12Jam = $isi['modal']['12jam'] ?? '';
+        $this->modalSopir = $isi['modal']['sopir_per_hari'] ?? '';
+        $this->modalLuarKota = $isi['modal']['luar_kota'] ?? '';
+        foreach (['Hari', 'Jam', '12Jam', 'Sopir', 'LuarKota'] as $pos) {
+            $this->{'modal'.$pos.'Teks'} = $this->keRupiah($this->{'modal'.$pos});
+        }
         foreach ($isi['operasional'] ?? [] as $pos => $rinci) {
             $this->termasukPos[$pos] = (bool) ($rinci['termasuk'] ?? false);
             $this->biayaPos[$pos] = ($rinci['biaya'] ?? 0) ?: '';
@@ -952,6 +1049,19 @@ class OrchaArmadaForm extends Component
             'luar_termasuk_sopir' => $this->luarTermasukSopir,
             'luar_tarif_sopir' => $this->luarTermasukSopir ? null : ($this->luarTarifSopir ?: null),
             'tersedia' => $this->tersedia,
+
+            // Unit milik sendiri tidak dikirim bersama vendornya: dua jawaban
+            // untuk satu pertanyaan, dan peladen pun membersihkannya.
+            'milik_sendiri' => $this->milikSendiri,
+            'vendor_id' => $this->milikSendiri ? null : ($this->vendorId !== '' ? (int) $this->vendorId : null),
+
+            // Kosong dikirim sebagai null, bukan 0. Lihat alasannya di atas.
+            'modal_hari' => $this->modalHari !== '' ? $this->modalHari : null,
+            'modal_jam' => $this->modalJam !== '' ? $this->modalJam : null,
+            'modal_12jam' => $this->modal12Jam !== '' ? $this->modal12Jam : null,
+            'modal_sopir' => $this->termasukSopir ? null : ($this->modalSopir !== '' ? $this->modalSopir : null),
+            'modal_luar_kota' => $this->modalLuarKota !== '' ? $this->modalLuarKota : null,
+
             ...$this->muatanPos(),
         ];
 
@@ -1074,9 +1184,23 @@ class OrchaArmadaForm extends Component
         }
     }
 
+    /**
+     * Vendor yang bisa dipilih sebagai pemasok unit.
+     *
+     * Gagal memuat tidak menjatuhkan borang: yang hilang cuma pemilihnya,
+     * sementara seluruh isian unit lainnya tetap bisa disimpan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function daftarVendor(): array
+    {
+        return $this->daftarVendorOrcha();
+    }
+
     public function render()
     {
         return view('livewire.pages.admin.orcha.armada.form', [
+            'daftarVendor' => $this->daftarVendor(),
             'daftarBagian' => $this->bagianUntukJenis(),
             'daftarKondisi' => $this->rujukan('kondisi_pemeriksaan'),
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),

@@ -144,10 +144,36 @@ Detail Sewa Kendaraan || lemon
                 </div>
             </header>
 
-            {{-- Empat angka yang menentukan percakapan dengan penyewa. --}}
+            {{-- Enam angka yang menentukan percakapan dengan penyewa — dan,
+                 sejak modal dicatat, juga percakapan dengan diri sendiri soal
+                 apakah sewa ini pantas diambil lagi lain kali.
+
+                 Barisnya k-4, tiga per baris: dua baris penuh tanpa lubang.
+                 Dengan k-3 yang lama, enam ubin berarti empat di baris pertama
+                 dan dua di baris kedua, menyisakan separuh baris kosong. --}}
+            @php
+                $adaModal = ($sewa['modal'] ?? null) !== null;
+                $untung = $sewa['untung'] ?? null;
+            @endphp
             <div class="dsb-rak dsb-bagian">
                 @foreach ([
                     ['Biaya sewa', $rp($sewa['estimasi_biaya']), 'bi-cash', '#0f766e'],
+
+                    /*
+                     | Modal dan untung yang BELUM DICATAT disebut apa adanya,
+                     | bukan ditulis "Rp 0". Nol berarti gratis, dan untung
+                     | sebesar seluruh harga sewa adalah angka yang akan
+                     | dipercaya karena tampil seperti hasil hitungan.
+                     */
+                    ['Modal ke vendor', $adaModal ? $rp($sewa['modal']) : 'Belum dicatat',
+                        'bi-wallet2', $adaModal ? '#b45309' : '#94a3b8'],
+                    ['Untung kotor', $untung === null
+                        ? 'Belum diketahui'
+                        : $rp($untung).(($sewa['margin_persen'] ?? null) !== null
+                            ? ' · '.$sewa['margin_persen'].'%' : ''),
+                        'bi-graph-up-arrow',
+                        $untung === null ? '#94a3b8' : ($untung < 0 ? '#b91c1c' : '#047857')],
+
                     ['Total denda', $rp($sewa['total_denda'] ?? 0), 'bi-exclamation-triangle',
                         ($sewa['total_denda'] ?? 0) > 0 ? '#b45309' : '#64748b'],
                     ['Total tagihan', $rp($sewa['total_tagihan'] ?? 0), 'bi-receipt', '#4f46e5'],
@@ -156,12 +182,154 @@ Detail Sewa Kendaraan || lemon
                         : 'Tepat waktu', 'bi-hourglass-split',
                         ($sewa['terlambat'] ?? false) ? '#b91c1c' : '#047857'],
                 ] as [$label, $nilai, $ikon, $warna])
-                    <article class="dsb-stat k-3" style="--c: {{ $warna }}">
+                    <article class="dsb-stat k-4" style="--c: {{ $warna }}">
                         <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
                         <span class="dsb-stat-label">{{ $label }}</span>
                         <span class="dsb-stat-nilai">{{ $nilai }}</span>
                     </article>
                 @endforeach
+            </div>
+
+            {{-- ============ VENDOR & MODAL ============
+                 Orcha belum punya kendaraan sendiri: unitnya dicarikan ke
+                 vendor begitu ada yang memesan. Sampai sekarang kenyataan itu
+                 tidak ada di layar mana pun — admin yang ditanya "unit ini
+                 dari siapa" harus bertanya ke orang, dan saat unit kembali
+                 lecet tidak ada catatan siapa yang perlu dikabari. --}}
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #b45309"><i class="bi bi-building"></i></span>
+                            <div>
+                                <h2 class="dsb-kartu-judul">Vendor &amp; Modal</h2>
+                                <span class="dsb-kartu-sub">
+                                    Dari mana unitnya dicarikan, dan berapa yang dibayarkan ke sana.
+                                </span>
+                            </div>
+                        </div>
+
+                        @if (! ($sewa['milik_sendiri'] ?? false) && ! $borangVendor)
+                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                wire:click="bukaBorangVendor">
+                                <i class="bi bi-pencil-square"></i><span>Catat</span>
+                            </button>
+                        @endif
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        @if ($sewa['milik_sendiri'] ?? false)
+                            {{-- Unit milik sendiri tidak punya vendor, dan layar ini
+                                 tidak boleh terus menagih admin mengisinya. --}}
+                            <div class="orcha-alasan orcha-alasan-tenang mb-0">
+                                <i class="bi bi-house-check"></i>
+                                Unit ini milik Orcha sendiri, jadi tidak ada vendor yang perlu dicatat.
+                            </div>
+                        @elseif ($borangVendor)
+                            <div class="row g-3">
+                                <div class="col-12 col-lg-6">
+                                    <label class="form-label small fw-semibold">Vendor pemasok unit</label>
+                                    <select class="form-select" wire:model="vendorId">
+                                        <option value="" @selected($this->vendorId === '')>— belum ditentukan —</option>
+                                        @foreach ($daftarVendor as $v)
+                                            <option value="{{ $v['id'] }}" @selected((string) $this->vendorId === (string) $v['id'])>
+                                                {{ $v['nama'] }}{{ ! empty($v['jenis']) ? ' · '.$v['jenis'] : '' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">
+                                        Belum ada di daftar? Tambahkan dulu lewat menu Vendor.
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-lg-6">
+                                    <label class="form-label small fw-semibold">Modal dibayarkan ke vendor</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric" class="form-control orcha-uang"
+                                            wire:model.blur="modal" placeholder="Kosongkan bila belum tahu">
+                                    </div>
+                                    {{-- Kosong dan nol dibedakan, dan bedanya disebut
+                                         supaya admin tidak mengisi 0 untuk "belum tahu". --}}
+                                    <div class="form-text">
+                                        Dikosongkan berarti <strong>belum dicatat</strong>; diisi 0 berarti
+                                        unitnya benar-benar gratis.
+                                    </div>
+                                </div>
+
+                                <div class="col-12 d-flex flex-wrap gap-2">
+                                    <button type="button" class="dsb-tombol is-utama"
+                                        wire:click="simpanVendor" wire:target="simpanVendor"
+                                        wire:loading.attr="disabled">
+                                        <span wire:loading.remove wire:target="simpanVendor">
+                                            <i class="bi bi-save"></i><span>Simpan</span>
+                                        </span>
+                                        <span wire:loading wire:target="simpanVendor">
+                                            <span class="spinner-border spinner-border-sm me-2"
+                                                role="status" aria-hidden="true"></span>Menyimpan…
+                                        </span>
+                                    </button>
+                                    <button type="button" class="dsb-tombol is-lembut"
+                                        wire:click="tutupBorangVendor">
+                                        <i class="bi bi-x-lg"></i><span>Batal</span>
+                                    </button>
+                                </div>
+                            </div>
+                        @else
+                            <div class="dsb-data">
+                                @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                    'label' => 'Vendor pemasok',
+                                    'nilai' => data_get($sewa, 'vendor.nama'),
+                                    'tautan' => null,
+                                ])
+                                @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                    'label' => 'Kontak vendor',
+                                    'nilai' => data_get($sewa, 'vendor.kontak'),
+                                    'tautan' => null,
+                                ])
+                                @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                    'label' => 'Modal dibayarkan',
+                                    'nilai' => $adaModal ? $rp($sewa['modal']) : null,
+                                    'tautan' => null,
+                                ])
+                                @include('livewire.pages.admin.orcha.partials.baris-data', [
+                                    'label' => 'Untung kotor',
+                                    'nilai' => $untung === null ? null : $rp($untung),
+                                    'tautan' => null,
+                                ])
+                            </div>
+
+                            @unless ($sewa['vendor_ditentukan'] ?? false)
+                                {{-- Pesanan yang unitnya tidak pernah dicarikan berakhir
+                                     dibatalkan di hari H. Disebut di sini, bukan hanya
+                                     dihitung di tab daftar. --}}
+                                <div class="orcha-alasan orcha-alasan-sedang mt-3 mb-0 d-flex gap-2 align-items-start">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                    <div>
+                                        <strong>Unitnya belum dicarikan ke vendor mana pun.</strong>
+                                        <div style="font-size:.88rem" class="mt-1">
+                                            Selama ini belum dicatat, pesanan ini muncul di tab
+                                            <strong>Belum ada vendor</strong> di daftar sewa, dan untungnya
+                                            tidak bisa dihitung.
+                                        </div>
+                                    </div>
+                                </div>
+                            @endunless
+
+                            @if ($untung !== null && $untung < 0)
+                                <div class="orcha-alasan orcha-alasan-tinggi mt-3 mb-0 d-flex gap-2 align-items-start">
+                                    <i class="bi bi-graph-down-arrow"></i>
+                                    <div>
+                                        <strong>Modalnya lebih besar daripada harga sewanya.</strong>
+                                        <div style="font-size:.88rem" class="mt-1">
+                                            Bisa memang begitu — unit pengganti dadakan sering lebih mahal.
+                                            Disebut di sini supaya tidak lewat tanpa disadari.
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        @endif
+                    </div>
+                </div>
             </div>
 
             {{-- Unit sudah kembali, sistem punya usulan denda, tetapi tidak ada

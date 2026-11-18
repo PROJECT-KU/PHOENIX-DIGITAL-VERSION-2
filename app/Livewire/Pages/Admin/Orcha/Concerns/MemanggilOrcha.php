@@ -295,4 +295,31 @@ trait MemanggilOrcha
             return false;
         }
     }
+
+    /**
+     * Vendor rekanan yang bisa dipilih sebagai pemasok unit.
+     *
+     * Hasilnya DISARING jadi bentuk yang pasti: hanya baris berupa larik yang
+     * punya id dan nama. Tanpa itu, balasan yang bentuknya berbeda — tiruan
+     * Http::fake di uji, atau API yang berubah — membuat blade memanggil
+     * $v['id'] pada sebuah angka dan seluruh halaman mati dengan "Trying to
+     * access array offset on int". Borang armada tidak boleh jatuh hanya
+     * karena daftar vendornya tidak bisa dibaca.
+     *
+     * @return array<int, array{id: int, nama: string, jenis: ?string}>
+     */
+    protected function daftarVendorOrcha(): array
+    {
+        $balasan = $this->muat('/vendor', ['per_halaman' => 200, 'aktif' => 1]);
+
+        return collect($balasan['data'] ?? [])
+            ->filter(fn ($baris) => is_array($baris) && isset($baris['id'], $baris['nama']))
+            ->map(fn ($baris) => [
+                'id' => (int) $baris['id'],
+                'nama' => (string) $baris['nama'],
+                'jenis' => $baris['jenis'] ?? null,
+            ])
+            ->values()
+            ->all();
+    }
 }

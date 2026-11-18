@@ -281,3 +281,147 @@ it('detail sewa memakai kerangka dasbor lemon, bukan dialek sendiri', function (
         ->not->toContain('orcha-bagian-nomor')
         ->not->toContain('orcha-bagian-judul');
 });
+
+/* ---------------------- VENDOR & MODAL SEWA ---------------------- */
+
+test('daftar sewa punya tab "Belum ada vendor" di kelompok pekerjaan', function () {
+    Http::fake([
+        '*/penyewaan*' => Http::response([
+            'data' => [sewaUji()],
+            'meta' => ['total' => 1, 'jumlah_tab' => ['semua' => 1, 'tanpa_vendor' => 1]],
+        ]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    /*
+     | Mencari unit ke vendor adalah satu-satunya langkah di alur sewa yang
+     | jawabannya ada di tangan orang lain, dan pesanan yang unitnya tidak
+     | pernah dicarikan berakhir dibatalkan di hari H. Karena itu ia tab
+     | berangka, bukan saringan yang harus ditemukan dulu.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan')->assertOk()->getContent();
+
+    expect($isi)->toContain('Belum ada vendor');
+});
+
+test('pindah ke tab belum ada vendor mengirim saringannya ke Orcha', function () {
+    Http::fake([
+        '*/penyewaan*' => Http::response(['data' => [], 'meta' => ['jumlah_tab' => []]]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList::class)
+        ->call('setTab', 'tanpa_vendor')
+        ->assertSet('tanpaVendor', true)
+        // Statusnya TIDAK ikut tersaring: "belum ada vendor" berlaku lintas
+        // status, dan pesanan bisa sudah DP masuk sementara unitnya belum
+        // dicarikan.
+        ->assertSet('filterStatus', '');
+
+    Http::assertSent(fn ($r) => str_contains($r->url(), 'tanpa_vendor=1'));
+});
+
+test('detail sewa menyebut modal belum dicatat, bukan Rp 0', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji([
+            'modal' => null, 'untung' => null, 'margin_persen' => null,
+            'vendor' => null, 'vendor_ditentukan' => false, 'milik_sendiri' => false,
+        ])]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    /*
+     | Modal nol membuat untungnya terbaca sebesar SELURUH harga sewa, dan
+     | angka itu akan dipercaya karena tampil seperti hasil hitungan — bukan
+     | seperti data yang belum diisi.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan/5')->assertOk()->getContent();
+
+    expect($isi)->toContain('Belum dicatat')
+        ->toContain('Belum diketahui')
+        ->toContain('Unitnya belum dicarikan ke vendor mana pun');
+});
+
+test('detail sewa menampilkan vendor dan untungnya begitu modal dicatat', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji([
+            'estimasi_biaya' => 700000,
+            'modal' => 500000, 'untung' => 200000, 'margin_persen' => 28.6,
+            'vendor' => ['id' => 9, 'nama' => 'CV Rekanan Jaya', 'kontak' => '0812-1111', 'jenis' => 'transportasi'],
+            'vendor_ditentukan' => true, 'milik_sendiri' => false,
+        ])]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan/5')->assertOk()->getContent();
+
+    expect($isi)->toContain('CV Rekanan Jaya')
+        ->toContain('0812-1111')
+        ->toContain('Rp 200.000')
+        ->not->toContain('Unitnya belum dicarikan ke vendor mana pun');
+});
+
+test('modal yang dikosongkan dikirim sebagai null, bukan nol', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [], 'meta' => []]),
+        '*/penyewaan*' => Http::response(['data' => sewaUji()]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    // Nol berarti unitnya gratis. Hanya null yang berarti "belum dicatat",
+    // dan cuma itu yang membuat layar jujur bilang untungnya belum diketahui.
+    Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 5])
+        ->set('vendorId', '')
+        ->set('modal', '')
+        ->call('simpanVendor');
+
+    Http::assertSent(function ($r) {
+        if (! str_contains($r->url(), '/vendor') || $r->method() !== 'PATCH') {
+            return false;
+        }
+
+        return array_key_exists('modal', $r->data()) && $r->data()['modal'] === null;
+    });
+});
+
+test('borang armada mengirim vendor dan modal, dan unit milik sendiri tanpa vendor', function () {
+    Http::fake([
+        '*/vendor*' => Http::response(['data' => [
+            ['id' => 9, 'nama' => 'CV Rekanan Jaya', 'jenis' => 'transportasi'],
+        ], 'meta' => []]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    $komponen = Livewire::actingAs(adminPeserta())
+        ->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm::class)
+        // Merek lebih dulu: updatedMerek() mengosongkan nama unit, jadi nama
+        // yang diisi sebelum merek akan terhapus lagi sebelum sempat dipakai.
+        ->set('merek', 'Toyota')
+        ->set('nopol', 'AB 1234 CD')
+        ->set('tarifHariTeks', '350.000')
+        ->set('vendorId', '9')
+        ->set('modalHariTeks', '250.000')
+        ->set('nama', 'Avanza Uji');
+
+    $komponen->call('simpan');
+
+    Http::assertSent(function ($r) {
+        if ($r->method() !== 'POST' || ! str_contains($r->url(), '/kendaraan')) {
+            return false;
+        }
+
+        return ($r->data()['vendor_id'] ?? null) === 9
+            && (int) ($r->data()['modal_hari'] ?? 0) === 250000;
+    });
+
+    // Dinyalakan "milik sendiri": vendornya dibersihkan, bukan cuma diabaikan
+    // saat menyimpan — dua jawaban untuk satu pertanyaan di satu borang.
+    $komponen->set('milikSendiri', true)->assertSet('vendorId', '');
+});

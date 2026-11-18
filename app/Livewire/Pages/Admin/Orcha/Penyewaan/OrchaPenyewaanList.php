@@ -40,6 +40,14 @@ class OrchaPenyewaanList extends Component
      * menyala tetap terlihat menyala walau keadaannya sama ("Semua" dan status
      * kosong adalah hal yang sama bagi peladen, tetapi bukan bagi mata).
      */
+    /**
+     * Hanya pesanan yang unitnya belum dicarikan ke vendor mana pun.
+     *
+     * Bukan status, melainkan pertanyaan tersendiri: pesanan bisa sudah DP
+     * masuk sementara unitnya belum dicarikan.
+     */
+    public bool $tanpaVendor = false;
+
     public string $tabAktif = 'semua';
 
     /**
@@ -60,12 +68,21 @@ class OrchaPenyewaanList extends Component
         'selesai' => ['Sudah selesai', 'bi-check-circle-fill', '#15803d'],
         'batal' => ['Batal', 'bi-x-circle-fill', '#e11d48'],
         'telat' => ['Belum kembali', 'bi-exclamation-triangle-fill', '#dc2626'],
+        'tanpa_vendor' => ['Belum ada vendor', 'bi-building-exclamation', '#b45309'],
     ];
 
     public const GRUP_TAB = [
         ['Keadaan pemesanan', 'Sudah sampai mana urusannya',
             ['semua', 'baru', 'dikonfirmasi', 'dp_masuk', 'berjalan', 'selesai', 'batal']],
-        ['Perlu dikerjakan hari ini', 'Jangan didiamkan', ['telat']],
+        /*
+         | Keduanya pekerjaan, dan keduanya bisa menghilangkan uang kalau
+         | didiamkan — tetapi beda jenisnya. "Belum kembali" berarti unitnya
+         | masih di luar; "Belum ada vendor" berarti unitnya belum dicarikan
+         | ke siapa pun, dan itu satu-satunya langkah yang jawabannya ada di
+         | tangan orang lain. Pesanan yang unitnya tidak pernah dicarikan
+         | berakhir dibatalkan di hari H.
+         */
+        ['Perlu dikerjakan hari ini', 'Jangan didiamkan', ['telat', 'tanpa_vendor']],
     ];
 
     /**
@@ -80,7 +97,8 @@ class OrchaPenyewaanList extends Component
         $this->tabAktif = array_key_exists($tab, self::TAB) ? $tab : 'semua';
 
         $this->belumKembali = $this->tabAktif === 'telat';
-        $this->filterStatus = in_array($this->tabAktif, ['semua', 'telat'], true)
+        $this->tanpaVendor = $this->tabAktif === 'tanpa_vendor';
+        $this->filterStatus = in_array($this->tabAktif, ['semua', 'telat', 'tanpa_vendor'], true)
             ? ''
             : $this->tabAktif;
 
@@ -97,14 +115,14 @@ class OrchaPenyewaanList extends Component
      */
     public function bersihkanSaringan(): void
     {
-        $this->reset(['cari', 'filterStatus', 'belumKembali']);
+        $this->reset(['cari', 'filterStatus', 'belumKembali', 'tanpaVendor']);
         $this->tabAktif = 'semua';
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterStatus !== '' || $this->belumKembali;
+        return $this->cari !== '' || $this->filterStatus !== '' || $this->belumKembali || $this->tanpaVendor;
     }
 
     public function ubahStatus(int $id, string $status): void
@@ -118,6 +136,7 @@ class OrchaPenyewaanList extends Component
             // Dikirim hanya saat menyala. Mengirim 0 membuat Orcha membaca
             // parameternya ada, dan daftar biasa ikut tersaring.
             'telat' => $this->belumKembali ? 1 : null,
+            'tanpa_vendor' => $this->tanpaVendor ? 1 : null,
         ], fn ($nilai) => $nilai !== null)));
 
         $meta = $hasil['meta'] ?? [];

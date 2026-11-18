@@ -23,9 +23,65 @@ class OrchaPenyewaanDetail extends Component
 
     public array $data = [];
 
+    /**
+     * Isian vendor & modal.
+     *
+     * Dipisah dari $data karena keduanya SEDANG DIKETIK: $data ditulis ulang
+     * tiap render dari jawaban Orcha, dan isian yang ikut ditulis ulang
+     * kehilangan ketikan admin setiap kali ada permintaan lain lewat.
+     */
+    public string $vendorId = '';
+
+    public string $modal = '';
+
+    public bool $borangVendor = false;
+
     public function mount(int $penyewaan): void
     {
         $this->penyewaanId = $penyewaan;
+    }
+
+    /**
+     * Buka borang vendor, terisi keadaan yang sekarang.
+     *
+     * Diisi saat DIBUKA, bukan di mount(): mount hanya jalan sekali, dan
+     * sesudah disimpan sekali isinya akan tertinggal di nilai lama.
+     */
+    public function bukaBorangVendor(): void
+    {
+        $this->vendorId = (string) (data_get($this->data, 'vendor.id') ?? '');
+        $this->modal = ($this->data['modal'] ?? null) !== null
+            ? number_format((int) $this->data['modal'], 0, ',', '.')
+            : '';
+        $this->borangVendor = true;
+    }
+
+    public function tutupBorangVendor(): void
+    {
+        $this->borangVendor = false;
+    }
+
+    /**
+     * Simpan vendor pemasok unit dan modal yang dibayarkan kepadanya.
+     *
+     * Modal kosong dikirim sebagai null, BUKAN nol. Nol berarti gratis;
+     * kosong berarti belum dicatat, dan hanya yang kedua yang membuat layar
+     * ini jujur mengatakan untungnya belum diketahui.
+     */
+    public function simpanVendor(): void
+    {
+        $angka = preg_replace('/\D/', '', $this->modal);
+
+        $this->kirimPerubahan(
+            "/penyewaan/{$this->penyewaanId}/vendor",
+            [
+                'vendor_id' => $this->vendorId !== '' ? (int) $this->vendorId : null,
+                'modal' => $angka === '' ? null : (int) $angka,
+            ],
+            'Vendor dan modal sewa disimpan di Orcha.'
+        );
+
+        $this->borangVendor = false;
     }
 
     public function ubahStatus(string $status): void
@@ -262,6 +318,19 @@ class OrchaPenyewaanDetail extends Component
         return \App\Support\TautanWa::kirim($this->data['whatsapp'] ?? null, $pesan);
     }
 
+    /**
+     * Vendor yang bisa dipilih.
+     *
+     * Gagal memuat tidak menjatuhkan halaman: yang hilang cuma pemilihnya,
+     * sementara seluruh keterangan sewa di layar ini tetap berguna.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function daftarVendor(): array
+    {
+        return $this->daftarVendorOrcha();
+    }
+
     public function render()
     {
         $hasil = $this->muat("/penyewaan/{$this->penyewaanId}");
@@ -279,6 +348,10 @@ class OrchaPenyewaanDetail extends Component
                 (array) ($this->data['kondisi_akhir'] ?? []),
             ),
             'pilihanKondisi' => $this->rujukan('kondisi_pemeriksaan'),
+            // Daftar vendor untuk pemilihnya. Hanya yang aktif: vendor yang
+            // sudah tidak bekerja sama tidak boleh bisa dipilih lagi, tetapi
+            // tetap tampil pada pesanan lama yang memang memakainya.
+            'daftarVendor' => $this->daftarVendor(),
         ])->layout('livewire.layout.templateindex');
     }
 }
