@@ -191,3 +191,65 @@ test('status di daftar sewa ringkas dan berwarna menurut keadaannya', function (
         ->assertSee('orcha-status-ringkas', false)
         ->assertSee('data-status="berjalan"', false);
 });
+
+test('kepala lembar serah terima satu kartu, sebentuk dengan Pesanan Toko', function () {
+    Http::fake([
+        '*/penyewaan*' => Http::response(['data' => sewaUji()]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    /*
+     | Judul dan angka ringkasnya dulu tinggal di DUA kartu berturutan, dan
+     | layar ini jadi satu-satunya di antara Pesanan Toko, Pendaftaran Trip,
+     | dan Detail sewa yang bentuknya begitu. Bantalan di antara kedua kartu
+     | memakan tinggi tanpa memuat apa pun.
+     |
+     | Yang diperiksa bukan "ada kartu kepala" — itu selalu benar — melainkan
+     | bahwa judul DAN ketiga angkanya berada di dalam kartu yang SAMA. Karena
+     | itu isinya dipotong dari pembuka kartu pertama sampai pembuka kartu
+     | berikutnya, lalu yang dicari di dalam potongan itu saja.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan/5/serah-terima')->assertOk()->getContent();
+
+    $pembuka = '<div class="card border-0 shadow-sm rounded-4 mb-4">';
+    $awal = strpos($isi, $pembuka);
+    $kedua = strpos($isi, $pembuka, $awal + 1);
+
+    expect($awal)->not->toBeFalse()
+        ->and($kedua)->not->toBeFalse();
+
+    $kepala = substr($isi, $awal, $kedua - $awal);
+
+    expect($kepala)
+        ->toContain('Serah Terima Kendaraan')
+        ->toContain('orcha-tautan-balik')
+        ->toContain('SW-0001')
+        ->toContain('Ditunggu kembali')
+        ->toContain('Keterlambatan');
+
+    // Satu jalan kembali, bukan dua: tautan di kepala sudah menuju daftar,
+    // jadi tombol senama di sebelahnya dibuang.
+    expect($kepala)->not->toContain('Kembali ke daftar');
+});
+
+test('tabel pemeriksaan tiga kolom, tanpa lajur yang tak pernah terisi', function () {
+    Http::fake([
+        '*/penyewaan*' => Http::response(['data' => sewaUji()]),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    /*
+     | Lajur "Perubahan" hanya terisi pada baris yang memburuk. Selama unitnya
+     | belum diperiksa — keadaan lembar ini saat dibuka — tidak satu pun dari
+     | tiga belas barisnya terisi, dan yang tergambar adalah lajur kosong
+     | selebar 16% di sebelah dua pemilih yang justru terjepit.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/penyewaan/5/serah-terima')->assertOk()->getContent();
+
+    expect($isi)
+        ->not->toContain('<th style="width:16%">Perubahan</th>')
+        ->toContain('<th style="width:31%">Saat diserahkan</th>')
+        ->toContain('<th style="width:31%">Saat kembali</th>');
+});

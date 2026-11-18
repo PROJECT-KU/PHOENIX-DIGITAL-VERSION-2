@@ -37,15 +37,40 @@ Serah Terima Kendaraan || lemon
                  dibandingkan adalah bagian yang sama — "baret di pintu kanan"
                  yang ditulis sebagai kalimat bebas tidak pernah bisa
                  dibandingkan, dan di situlah sengketa dengan penyewa bermula. --}}
+            {{-- ============ KEPALA LEMBAR ============
+                 Bentuknya disamakan dengan Pesanan Toko dan halaman Detail
+                 sewa: SATU kartu yang memuat jalan kembali, judul, kode,
+                 chip cakupan, dan angka ringkasnya sekaligus.
+
+                 Sebelumnya judul dan angka tinggal di dua kartu berturutan.
+                 Dua kartu untuk satu kepala membuat layar ini terbaca berbeda
+                 dari dua layar tetangganya yang dikerjakan orang yang sama,
+                 sambil menyisipkan satu lapis bantalan kosong di antaranya —
+                 bantalan yang di layar 1440px memakan tinggi satu kartu penuh
+                 tanpa memuat apa pun. --}}
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-body p-3 p-lg-4">
                     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                         <div>
-                            <h4 class="gradient-text fw-bold mb-1">Serah Terima Kendaraan</h4>
-                            <span class="text-muted small">
-                                {{ $sewa['kode'] ?? '' }} · {{ data_get($sewa, 'kendaraan.nama') }} ·
-                                {{ $sewa['nama'] ?? '' }}
-                            </span>
+                            {{-- Satu jalan kembali, bukan dua. Tombol "Kembali ke
+                                 daftar" yang dulu berdiri di kanan menuju tempat
+                                 yang persis sama dengan tautan ini; dua jalan ke
+                                 satu tempat membuat admin awam ragu apakah
+                                 keduanya berbeda. Alasan yang sama sudah dipakai
+                                 saat tombol ikon dibuang dari daftar sewa. --}}
+                            <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate
+                                class="orcha-tautan-balik mb-2">
+                                <i class="bi bi-arrow-left"></i> Semua penyewaan
+                            </a>
+                            <h1 class="gradient-text fw-bold mb-1" style="font-size:1.6rem">
+                                Serah Terima Kendaraan
+                            </h1>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="orcha-kode">{{ $sewa['kode'] ?? '' }}</span>
+                                <span class="text-muted" style="font-size:.82rem">
+                                    {{ data_get($sewa, 'kendaraan.nama') }} · {{ $sewa['nama'] ?? '' }}
+                                </span>
+                            </div>
 
                             {{-- Dipasang di lembar ini juga, bukan cuma di halaman
                                  detail. Saat unit kembali dan BBM-nya tinggal 1/4,
@@ -54,31 +79,25 @@ Serah Terima Kendaraan || lemon
                                  cenderung menebak. --}}
                             @include('livewire.pages.admin.orcha.penyewaan.partials.termasuk')
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate
-                                class="orcha-btn orcha-btn-lembut">
-                                <i class="bi bi-arrow-left"></i> Kembali ke daftar
-                            </a>
+
+                        <div class="d-flex flex-wrap gap-2">
                             <a href="{{ route('admin.orcha.penyewaan.detail', $serahTerimaUntuk) }}" wire:navigate
                                 class="orcha-btn orcha-btn-lembut">
                                 <i class="bi bi-truck-front"></i> Detail sewa
                             </a>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {{-- Tenggat & keterlambatan ditaruh paling atas: itu yang menentukan
-                 ada tidaknya denda. --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="row g-3">
-                        @php
-                            $tenggat = ($sewa['jadwal_selesai'] ?? null)
-                                ? \Carbon\Carbon::parse($sewa['jadwal_selesai'])
-                                : null;
-                        @endphp
-                        <div class="col-12 col-md-4">
+                    {{-- Tenggat & keterlambatan tetap yang pertama dibaca: itu yang
+                         menentukan ada tidaknya denda. Sekarang ia duduk di dalam
+                         kepala, sejajar dengan ubin angka di Detail sewa. --}}
+                    @php
+                        $tenggat = ($sewa['jadwal_selesai'] ?? null)
+                            ? \Carbon\Carbon::parse($sewa['jadwal_selesai'])
+                            : null;
+                    @endphp
+                    <div class="row g-3 mt-1">
+                        <div class="col-6 col-lg-4">
                             <div class="orcha-ringkas">
                                 <div class="orcha-label-kecil"><i class="bi bi-calendar-check"></i> Ditunggu kembali</div>
                                 <div class="angka" style="font-size:1.05rem">
@@ -86,7 +105,7 @@ Serah Terima Kendaraan || lemon
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-6 col-lg-4">
                             <div class="orcha-ringkas {{ ($sewa['terlambat'] ?? false) ? 'sisa' : 'lunas' }}">
                                 <div class="orcha-label-kecil"><i class="bi bi-hourglass-split"></i> Keterlambatan</div>
                                 <div class="angka" style="font-size:1.05rem">
@@ -99,7 +118,7 @@ Serah Terima Kendaraan || lemon
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-6 col-lg-4">
                             <div class="orcha-ringkas">
                                 {{-- Sewa bersopir tidak "dikembalikan" ke mana pun: yang
                                      berguna dilihat sekilas adalah tujuannya. --}}
@@ -370,7 +389,12 @@ Serah Terima Kendaraan || lemon
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-12 col-md-6">
+                        {{-- 5/7, bukan 6/6. Kolom kanan memuat tiga benda — isian
+                             berkas, tombol kamera, tombol simpan — sementara kolom
+                             kiri cuma satu kotak teks. Dibagi rata, yang kanan
+                             berdesakan sampai tombolnya terjepit dan yang kiri
+                             menyisakan ruang yang tidak dipakai siapa pun. --}}
+                        <div class="col-12 col-md-5">
                             <label class="form-label small fw-semibold">Jaminan yang dititipkan</label>
                             <input type="text" class="form-control" placeholder="Mis. KTP asli + fotokopi KK"
                                 wire:model="jaminan">
@@ -380,7 +404,7 @@ Serah Terima Kendaraan || lemon
                              membuktikan. Saat unit tidak kembali, yang dibutuhkan adalah
                              gambarnya: nama, alamat, dan nomor yang bisa dibaca. Bisa
                              dipotret langsung lewat kamera ponsel. --}}
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-7">
                             <label class="form-label small fw-semibold">Foto berkas jaminan (KTP/SIM)</label>
                             <div class="d-flex gap-2">
                                 {{-- wire:ignore.self supaya isian berkasnya tidak digambar
@@ -441,11 +465,23 @@ Serah Terima Kendaraan || lemon
                         <div class="orcha-gulung">
                             <table class="table table-sm align-middle orcha-tabel mb-0">
                                 <thead>
+                                    {{-- Tiga kolom, bukan empat.
+
+                                         Kolom "Perubahan" hanya terisi pada baris yang
+                                         memburuk — dan selama unitnya belum diperiksa,
+                                         itu berarti TIDAK SATU PUN dari tiga belas
+                                         barisnya terisi. Yang tergambar: satu lajur
+                                         kosong selebar 16% di sepanjang tabel, persis
+                                         di sebelah dua pemilih yang justru terjepit.
+
+                                         Penandanya sekarang menempel di bawah nama
+                                         bagiannya, jadi ia muncul hanya saat memang ada
+                                         yang perlu disebut, dan lebarnya kembali ke dua
+                                         pemilih yang dipakai mengisi. --}}
                                     <tr>
                                         <th>Bagian</th>
-                                        <th style="width:26%">Saat diserahkan</th>
-                                        <th style="width:26%">Saat kembali</th>
-                                        <th style="width:16%">Perubahan</th>
+                                        <th style="width:31%">Saat diserahkan</th>
+                                        <th style="width:31%">Saat kembali</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -458,7 +494,16 @@ Serah Terima Kendaraan || lemon
                                                 && array_search($akhir, $urutan, true) > array_search($awal, $urutan, true);
                                         @endphp
                                         <tr class="{{ $memburuk ? 'table-danger' : '' }}">
-                                            <td class="small">{{ $label }}</td>
+                                            <td class="small">
+                                                {{ $label }}
+                                                @if ($memburuk)
+                                                    <div class="mt-1">
+                                                        <span class="orcha-lencana-awas">
+                                                            <i class="bi bi-exclamation-triangle-fill"></i> kerusakan baru
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <select class="form-select form-select-sm"
                                                     wire:model="kondisiAwal.{{ $kunci }}">
@@ -475,13 +520,6 @@ Serah Terima Kendaraan || lemon
                                                         <option value="{{ $k }}" @selected((string) ($this->kondisiAkhir[$kunci] ?? '') === (string) $k)>{{ $l }}</option>
                                                     @endforeach
                                                 </select>
-                                            </td>
-                                            <td>
-                                                @if ($memburuk)
-                                                    <span class="orcha-lencana-awas">
-                                                        <i class="bi bi-exclamation-triangle-fill"></i> kerusakan baru
-                                                    </span>
-                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -623,6 +661,17 @@ Serah Terima Kendaraan || lemon
 
                             <div class="col-12">
                                 <div class="orcha-ringkas {{ $totalDenda > 0 ? 'sisa' : '' }}">
+                                    {{-- Satu angka saja di baris ini, dan sisi kanannya
+                                         memang dibiarkan lapang.
+
+                                         Sempat diisi "Sisa yang harus dibayar" supaya
+                                         separuh kanannya tidak menganga. Itu keliru dua
+                                         kali: angka sisa jadi tercetak KETIGA kalinya di
+                                         satu layar (kartu Posisi Pembayaran dan baris
+                                         penutup rincian sudah memuatnya), dan saat
+                                         tagihannya tertutup penuh layar ini jadi menyebut
+                                         kata "sisa" — padahal yang benar "Lunas".
+                                         Keduanya dijaga uji di OrchaDashboardTest. --}}
                                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                         <div>
                                             <div class="orcha-label-kecil">
