@@ -300,7 +300,15 @@
             overflow: hidden;
         }
 
-        .sr-hp-sembunyi { display: none; }
+        /* Tiga tombol kepala TIDAK boleh berbagi satu baris di ponsel.
+           Dulu kata "Masuk"/"Keluar" disembunyikan supaya muat — dan dua
+           tombol itu jadi sama-sama berbunyi "Surat", sementara "Dashboard"
+           terpenggal. Yang satu mencatat surat yang kita TERIMA dan yang
+           satunya yang kita KIRIM; tertukar berarti salah masuk buku agenda.
+           Jadi yang mengalah barisnya, bukan katanya. */
+        .sr-hero-daftar .dsb-hero-aksi { flex-wrap: wrap; }
+        .sr-hero-daftar .dsb-hero-aksi .dsb-tombol { flex: 1 1 calc(50% - 6px); min-width: 0; }
+        .sr-hero-daftar .dsb-hero-aksi .dsb-tombol:first-child { flex: 1 1 100%; }
     }
 </style>
 @endonce

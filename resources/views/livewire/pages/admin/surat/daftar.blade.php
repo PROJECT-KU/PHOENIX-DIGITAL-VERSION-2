@@ -45,10 +45,10 @@ Arsip Surat || lemon
                 </a>
                 @if ($bolehCatat)
                     <a href="{{ route('admin.surat.create', ['arah' => 'masuk']) }}" wire:navigate class="dsb-tombol is-utama">
-                        <i class="bi bi-envelope-arrow-down"></i><span>Surat <span class="sr-hp-sembunyi">Masuk</span></span>
+                        <i class="bi bi-envelope-arrow-down"></i><span>Surat Masuk</span>
                     </a>
                     <a href="{{ route('admin.surat.create', ['arah' => 'keluar']) }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #17a974">
-                        <i class="bi bi-envelope-arrow-up"></i><span>Surat <span class="sr-hp-sembunyi">Keluar</span></span>
+                        <i class="bi bi-envelope-arrow-up"></i><span>Surat Keluar</span>
                     </a>
                 @endif
             </div>
