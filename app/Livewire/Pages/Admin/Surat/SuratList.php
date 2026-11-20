@@ -124,6 +124,7 @@ class SuratList extends Component
         $tab ??= $this->tab;
 
         $q = Surat::query()
+            ->terlihatOleh(auth()->user())
             ->cari($this->cari)
             ->klasifikasi($this->klasifikasi ?: null)
             ->sifat($this->sifat ?: null)

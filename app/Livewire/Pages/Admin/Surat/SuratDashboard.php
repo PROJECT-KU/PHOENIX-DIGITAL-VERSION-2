@@ -32,14 +32,21 @@ class SuratDashboard extends Component
             'perlu' => ModeSurat::perlu($u),
             'bolehCatat' => (bool) $u?->hasPermission('create_surat'),
             'bolehKlasifikasi' => $bolehKlasifikasi,
+            /*
+             | Semua angka disaring dengan terlihatOleh().
+             |
+             | Kalau hanya daftarnya yang disaring, "Seluruh surat 48"
+             | sementara daftarnya memuat 45 baris — dan selisih tiga itu
+             | memberitahu persis apa yang sedang disembunyikan.
+             */
             'angka' => [
-                'masuk_bulan' => Surat::where('arah', 'masuk')->where('tanggal_surat', '>=', $bulan)->count(),
-                'keluar_bulan' => Surat::where('arah', 'keluar')->where('tanggal_surat', '>=', $bulan)->count(),
-                'belum_selesai' => Surat::belumSelesai()->count(),
-                'seluruh' => Surat::count(),
+                'masuk_bulan' => Surat::terlihatOleh($u)->where('arah', 'masuk')->where('tanggal_surat', '>=', $bulan)->count(),
+                'keluar_bulan' => Surat::terlihatOleh($u)->where('arah', 'keluar')->where('tanggal_surat', '>=', $bulan)->count(),
+                'belum_selesai' => Surat::terlihatOleh($u)->belumSelesai()->count(),
+                'seluruh' => Surat::terlihatOleh($u)->count(),
             ],
             'klasifikasiAktif' => $bolehKlasifikasi ? SuratKlasifikasi::aktif()->count() : null,
-            'suratTerbaru' => Surat::with('klasifikasi')->latest('id')->limit(6)->get(),
+            'suratTerbaru' => Surat::terlihatOleh($u)->with('klasifikasi')->latest('id')->limit(6)->get(),
             /*
              | Disposisi yang masih menggantung, yang paling mendesak di atas.
              |
@@ -50,6 +57,7 @@ class SuratDashboard extends Component
              */
             'disposisiMenggantung' => SuratDisposisi::with(['surat', 'penerima'])
                 ->belumSelesai()
+                ->whereHas('surat', fn ($s) => $s->terlihatOleh($u))
                 ->orderByRaw('batas IS NULL')
                 ->orderBy('batas')
                 ->limit(6)

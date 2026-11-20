@@ -217,6 +217,36 @@ class Surat extends Model
         });
     }
 
+    /**
+     * Hanya surat yang boleh dilihat orang ini.
+     *
+     * Surat bersifat RAHASIA disembunyikan dari siapa pun yang tidak
+     * memegang 'view_surat_rahasia'. Arsip surat menyimpan hasil audit,
+     * teguran, dan perjanjian yang isinya tidak untuk semua staf — sementara
+     * nomor agenda, perihal, dan pindaiannya ada dalam satu daftar yang sama
+     * dengan undangan rapat. Tanpa saringan ini, memberi seorang staf akses
+     * untuk mencatat surat masuk berarti memberinya seluruh isi lemari.
+     *
+     * Dipasang di KUERI, bukan di tampilan: menyaring setelah data terambil
+     * membuat jumlah di tab, angka dasbor, dan ekspor tetap memuat yang
+     * disembunyikan — dan angka yang tidak cocok dengan daftarnya adalah cara
+     * paling pelan untuk mengetahui bahwa ada yang bocor.
+     */
+    public function scopeTerlihatOleh(Builder $q, ?User $pengguna): Builder
+    {
+        if ($pengguna?->hasPermission('view_surat_rahasia')) {
+            return $q;
+        }
+
+        return $q->where('sifat', '!=', 'rahasia');
+    }
+
+    /** Boleh dibuka orang ini? Dipakai untuk menjaga satu baris, bukan daftar. */
+    public function bolehDilihat(?User $pengguna): bool
+    {
+        return $this->sifat !== 'rahasia' || (bool) $pengguna?->hasPermission('view_surat_rahasia');
+    }
+
     /** Belum tuntas: masih menunggu dikerjakan seseorang. */
     public function scopeBelumSelesai(Builder $q): Builder
     {

@@ -20,7 +20,7 @@ use Livewire\Livewire;
  * surat lama, dan pindaian surat rahasia yang bisa diambil lewat alamat surat
  * lain.
  */
-function adminSurat(array $izin = ['akses_arsip_surat', 'view_surat', 'create_surat', 'edit_surat', 'delete_surat', 'kelola_klasifikasi_surat']): \App\Models\User
+function adminSurat(array $izin = ['akses_arsip_surat', 'view_surat', 'view_surat_rahasia', 'create_surat', 'edit_surat', 'delete_surat', 'kelola_klasifikasi_surat']): \App\Models\User
 {
     $role = \App\Models\Role::create(['name' => 'uji-surat-'.uniqid(), 'description' => 'Peran untuk uji arsip surat']);
 

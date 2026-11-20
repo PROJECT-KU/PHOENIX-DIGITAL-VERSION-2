@@ -32,6 +32,16 @@ class BerkasPrivatController extends Controller
      */
     public function lampiranSurat(Surat $surat, int $lampiran)
     {
+        /*
+         | Pindaian surat rahasia ditutup juga di sini.
+         |
+         | Alamat berkas tidak melewati komponen Livewire mana pun, jadi
+         | penjagaan di layar tidak menyentuhnya sama sekali — dan justru
+         | pindaian inilah isi suratnya, bukan barisnya di daftar.
+         */
+        abort_unless($surat->bolehDilihat(auth()->user()), 403,
+            'Surat ini bersifat rahasia. Mintalah izin "Lihat Surat Rahasia" kepada admin.');
+
         $berkas = $surat->lampiran()->whereKey($lampiran)->firstOrFail();
 
         /*

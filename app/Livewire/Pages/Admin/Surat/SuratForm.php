@@ -100,6 +100,12 @@ class SuratForm extends Component
             $this->suratId = $surat;
             $m = Surat::findOrFail($surat);
 
+            // Layar ubah adalah jalan masuk kedua ke isi surat; tanpa
+            // penjaga di sini, surat rahasia tetap terbaca lengkap lewat
+            // borangnya walau halaman detailnya sudah ditutup.
+            abort_unless($m->bolehDilihat(auth()->user()), 403,
+                'Surat ini bersifat rahasia. Mintalah izin "Lihat Surat Rahasia" kepada admin.');
+
             $this->f = [
                 'arah' => $m->arah,
                 'nomor_surat' => (string) $m->nomor_surat,
@@ -334,6 +340,9 @@ class SuratForm extends Component
         ];
 
         $surat = $this->isEdit ? Surat::findOrFail($this->suratId) : new Surat;
+
+        abort_unless(! $this->isEdit || $surat->bolehDilihat(auth()->user()), 403,
+            'Surat ini bersifat rahasia. Mintalah izin "Lihat Surat Rahasia" kepada admin.');
         $surat->fill($data);
 
         /*

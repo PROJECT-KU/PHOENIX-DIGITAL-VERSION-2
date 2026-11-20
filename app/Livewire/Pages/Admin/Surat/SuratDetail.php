@@ -58,13 +58,26 @@ class SuratDetail extends Component
 
         // Memastikan ada; findOrFail di mount supaya alamat yang salah
         // jadi 404 biasa, bukan halaman setengah jadi.
-        Surat::findOrFail($surat);
+        $this->surat();
     }
 
+    /**
+     * Suratnya, dengan penjaga kerahasiaan ikut melekat.
+     *
+     * SEMUA jalan masuk ke baris ini lewat sini — membuka halamannya,
+     * mengubah status, menambah disposisi, mengunggah pindaian, menghapus.
+     * Kalau penjagaannya hanya dipasang di mount(), permintaan Livewire
+     * berikutnya tidak melewatinya lagi.
+     */
     private function surat(): Surat
     {
-        return Surat::with(['klasifikasi', 'pencatat', 'lampiran.pengunggah', 'disposisi.penerima', 'disposisi.pembuat'])
+        $surat = Surat::with(['klasifikasi', 'pencatat', 'lampiran.pengunggah', 'disposisi.penerima', 'disposisi.pembuat'])
             ->findOrFail($this->suratId);
+
+        abort_unless($surat->bolehDilihat(auth()->user()), 403,
+            'Surat ini bersifat rahasia. Mintalah izin "Lihat Surat Rahasia" kepada admin.');
+
+        return $surat;
     }
 
     /* ----------------------------- STATUS ----------------------------- */
@@ -77,7 +90,7 @@ class SuratDetail extends Component
             return;
         }
 
-        $surat = Surat::findOrFail($this->suratId);
+        $surat = $this->surat();
         $surat->status = $status;
         $surat->save();
 
@@ -88,6 +101,10 @@ class SuratDetail extends Component
 
     public function tambahDisposisi(): void
     {
+        // Lewat penjaga kerahasiaan dulu: surat rahasia tidak boleh
+        // disentuh dari jalur tulis mana pun.
+        $this->surat();
+
         abort_unless(auth()->user()?->hasPermission('create_surat'), 403);
 
         $this->validate([
@@ -134,7 +151,7 @@ class SuratDetail extends Component
          | Status lanjut lainnya (selesai, diarsipkan) tidak diturunkan
          | kembali — itu keputusan yang sudah diambil orang.
          */
-        $surat = Surat::findOrFail($this->suratId);
+        $surat = $this->surat();
 
         if ($surat->status === 'baru') {
             $surat->status = 'diproses';
@@ -147,6 +164,10 @@ class SuratDetail extends Component
 
     public function ubahStatusDisposisi(int $id, string $status): void
     {
+        // Lewat penjaga kerahasiaan dulu: surat rahasia tidak boleh
+        // disentuh dari jalur tulis mana pun.
+        $this->surat();
+
         abort_unless(auth()->user()?->hasPermission('edit_surat'), 403);
 
         if (! array_key_exists($status, SuratDisposisi::STATUS)) {
@@ -163,6 +184,10 @@ class SuratDetail extends Component
 
     public function hapusDisposisi(int $id): void
     {
+        // Lewat penjaga kerahasiaan dulu: surat rahasia tidak boleh
+        // disentuh dari jalur tulis mana pun.
+        $this->surat();
+
         abort_unless(auth()->user()?->hasPermission('delete_surat'), 403);
 
         SuratDisposisi::where('surat_id', $this->suratId)->findOrFail($id)->delete();
@@ -219,6 +244,10 @@ class SuratDetail extends Component
 
     public function unggahBerkas(): void
     {
+        // Lewat penjaga kerahasiaan dulu: surat rahasia tidak boleh
+        // disentuh dari jalur tulis mana pun.
+        $this->surat();
+
         abort_unless(auth()->user()?->hasPermission('edit_surat'), 403);
 
         $this->validate(
@@ -248,6 +277,10 @@ class SuratDetail extends Component
 
     public function hapusLampiran(int $id): void
     {
+        // Lewat penjaga kerahasiaan dulu: surat rahasia tidak boleh
+        // disentuh dari jalur tulis mana pun.
+        $this->surat();
+
         abort_unless(auth()->user()?->hasPermission('delete_surat'), 403);
 
         $l = SuratLampiran::where('surat_id', $this->suratId)->findOrFail($id);
@@ -272,7 +305,7 @@ class SuratDetail extends Component
     {
         abort_unless(auth()->user()?->hasPermission('delete_surat'), 403);
 
-        $surat = Surat::findOrFail($this->suratId);
+        $surat = $this->surat();
         $nomor = $surat->nomor_agenda;
 
         /*

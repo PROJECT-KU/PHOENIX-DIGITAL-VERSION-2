@@ -43,7 +43,11 @@ class AksesArsipSuratSeeder extends Seeder
                 'Akses Mode Arsip Surat',
                 'Dapat berpindah ke mode Arsip Surat: buku agenda surat masuk & keluar. Izin per layar tetap berlaku di dalamnya.',
             ],
-            'view_surat' => ['Lihat Arsip Surat', 'Dapat melihat daftar dan detail surat.'],
+            'view_surat' => ['Lihat Arsip Surat', 'Dapat melihat daftar dan detail surat — kecuali yang bersifat rahasia.'],
+            'view_surat_rahasia' => [
+                'Lihat Surat Rahasia',
+                'Dapat melihat surat yang ditandai RAHASIA beserta pindaiannya. Berikan hanya kepada yang benar-benar perlu — di dalamnya ada hasil audit, teguran, dan perjanjian.',
+            ],
             'create_surat' => ['Catat Surat', 'Dapat mencatat surat masuk/keluar baru dan menambah disposisi.'],
             'edit_surat' => ['Ubah Surat', 'Dapat mengubah data surat, status, dan lampirannya.'],
             'delete_surat' => ['Hapus Surat', 'Dapat menghapus surat dari arsip.'],

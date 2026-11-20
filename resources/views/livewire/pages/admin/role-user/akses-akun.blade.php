@@ -253,7 +253,9 @@ Atur Akses Akun || lemon
 
                     @forelse ($semuaIzin as $grup => $daftar)
                         <div class="aa-izin-grup">
-                            <span class="aa-izin-judul">{{ ucfirst($grup ?: 'lainnya') }}</span>
+                            {{-- Nama grup diambil dari daftar bersama, bukan dari kunci mentahnya:
+                                 kunci "arsip_surat" terbaca sebagai "Arsip_surat" di layar. --}}
+                            <span class="aa-izin-judul">{{ \App\Support\ModulIzin::label($grup) }}</span>
                             <div class="aa-izin-rak">
                                 @foreach ($daftar as $izin)
                                     @php

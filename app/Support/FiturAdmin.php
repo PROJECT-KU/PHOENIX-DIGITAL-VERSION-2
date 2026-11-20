@@ -92,6 +92,11 @@ class FiturAdmin
             'ket' => 'Seluruh modul Orcha di dalam lemon',
             'rute' => ['admin.orcha.'],
         ],
+        'arsip_surat' => [
+            'label' => 'Arsip Surat',
+            'ket' => 'Buku agenda surat masuk & keluar beserta klasifikasinya',
+            'rute' => ['admin.surat.'],
+        ],
     ];
 
     public const PESAN_BAWAAN = 'Modul ini sedang diperbaiki. Silakan coba lagi nanti, atau tanyakan ke admin bila mendesak.';

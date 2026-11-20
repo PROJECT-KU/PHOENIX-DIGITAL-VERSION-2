@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Permission;
 
 use App\Models\Permission;
+use App\Support\ModulIzin;
 use Livewire\Component;
 
 class PermissionForm extends Component
@@ -29,31 +30,16 @@ class PermissionForm extends Component
      * Daftar modul mengikuti sidebar (key group => label tampilan).
      * Memudahkan admin membuat permission tanpa salah ketik key.
      */
-    public array $sidebarModules = [
-        'dashboard' => 'Dashboard',
-        'pesananrsc' => 'Pesanan RSC',
-        'pemesanantoko' => 'Pesanan Toko',
-        'banners' => 'Banner',
-        'customer_message' => 'Pesan Pelanggan',
-        'promo' => 'Promo',
-        'dataakun' => 'Data Akun',
-        'product' => 'Produk',
-        'bundlings' => 'Produk Bundling',
-        'customer' => 'Pelanggan',
-        'cashflow' => 'Cashflow',
-        'spending' => 'Pengeluaran',
-        'loan' => 'Peminjaman',
-        'gajikaryawan' => 'Gaji Karyawan',
-        'roles' => 'Role',
-        'permission' => 'Permission',
-        'users' => 'User',
-        'karyawan' => 'Karyawan',
-        'lowongan' => 'Lowongan Kerja',
-        'pelamar' => 'Pelamar',
-        'message' => 'Pesan Masuk',
-        'asthana' => 'Asthana (mode Asthana)',
-        'orcha' => 'Orcha Journey',
-    ];
+    /**
+     * Daftar modul mengikuti sidebar (key group => label tampilan).
+     * Memudahkan admin membuat permission tanpa salah ketik key.
+     *
+     * Diambil dari App\Support\ModulIzin supaya satu daftar saja yang perlu
+     * ditambah saat ada modul baru. Sebelumnya daftarnya disalin di tiga
+     * tempat, dan lima modul lama tertinggal di dua di antaranya tanpa ada
+     * yang menyadarinya.
+     */
+    public array $sidebarModules = [];
 
     /**
      * Jenis aksi (prefix key => label tampilan).
@@ -81,6 +67,8 @@ class PermissionForm extends Component
 
     public function mount($permission = null)
     {
+        $this->sidebarModules = array_map(fn ($meta) => $meta[0], ModulIzin::META);
+
         if ($permission) {
             $this->permission = $permission;
             $this->name = $this->permission->name ?? '';

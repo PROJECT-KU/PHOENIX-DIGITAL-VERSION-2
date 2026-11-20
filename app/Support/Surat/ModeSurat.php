@@ -25,7 +25,7 @@ class ModeSurat
     /** Izin yang dikelompokkan 'arsip_surat' di layar Role → Permission. */
     public const IZIN = [
         'akses_arsip_surat',
-        'view_surat', 'create_surat', 'edit_surat', 'delete_surat',
+        'view_surat', 'view_surat_rahasia', 'create_surat', 'edit_surat', 'delete_surat',
         'kelola_klasifikasi_surat',
     ];
 
@@ -52,8 +52,11 @@ class ModeSurat
         }
 
         return [
-            'surat_baru' => Surat::where('status', 'baru')->count(),
+            'surat_baru' => Surat::terlihatOleh($u)->where('status', 'baru')->count(),
+            // Disposisi ikut disaring lewat suratnya: tenggat yang lewat pun
+            // tidak boleh membocorkan adanya surat rahasia di bilah samping.
             'disposisi_telat' => SuratDisposisi::belumSelesai()
+                ->whereHas('surat', fn ($s) => $s->terlihatOleh($u))
                 ->whereNotNull('batas')
                 ->whereDate('batas', '<', now()->toDateString())
                 ->count(),
@@ -67,7 +70,7 @@ class ModeSurat
              | adalah yang masa simpannya habis padahal pekerjaannya belum
              | ditutup: itu keadaan yang memang perlu diperiksa orang.
              */
-            'retensi_habis' => Surat::whereNotNull('musnah_pada')
+            'retensi_habis' => Surat::terlihatOleh($u)->whereNotNull('musnah_pada')
                 ->whereDate('musnah_pada', '<=', now()->toDateString())
                 ->where('status', '!=', 'diarsipkan')
                 ->count(),

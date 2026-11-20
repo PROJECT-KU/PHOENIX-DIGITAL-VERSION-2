@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\RoleUser;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\ModulIzin;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -33,43 +34,16 @@ class RolePermissionEdit extends Component
      * Metadata modul: urutan, label, ikon & warna mengikuti sidebar.
      * key => [label, ikon bootstrap, gradient warna].
      */
-    public array $moduleMeta = [
-        // Dashboard
-        'dashboard' => ['Dashboard', 'bi-grid-fill', '#4f46e5,#6366f1'],
-        // Pesanan
-        'pesananrsc' => ['Pesanan RSC', 'bi-cart', '#2563eb,#0ea5e9'],
-        'pemesanantoko' => ['Pesanan Toko', 'bi-cart-check', '#2563eb,#0ea5e9'],
-        // E-Commerce
-        'banners' => ['Data Banner', 'bi-shop', '#0d9488,#14b8a6'],
-        'productreview' => ['Moderasi Ulasan Produk', 'bi-star-half', '#0d9488,#14b8a6'],
-        'blog' => ['Blog / Artikel', 'bi-journal-richtext', '#0d9488,#14b8a6'],
-        'customer_message' => ['Pesan Masuk Pelanggan', 'bi-chat-dots', '#0d9488,#14b8a6'],
-        // Promo
-        'promo' => ['Promo', 'bi-tag', '#d97706,#f59e0b'],
-        // Produk
-        'dataakun' => ['Data Akun', 'bi-person-badge', '#7c3aed,#6d28d9'],
-        'product' => ['Product', 'bi-box', '#7c3aed,#6d28d9'],
-        'bundlings' => ['Product Bundling', 'bi-boxes', '#7c3aed,#6d28d9'],
-        // Pelanggan
-        'customer' => ['Pelanggan', 'bi-people', '#0891b2,#06b6d4'],
-        // Keuangan
-        'cashflow' => ['Cashflow', 'bi-cash-coin', '#059669,#10b981'],
-        'spending' => ['Pengeluaran', 'bi-cash-stack', '#059669,#10b981'],
-        'loan' => ['Peminjaman', 'bi-wallet2', '#059669,#10b981'],
-        'gajikaryawan' => ['Gaji Karyawan', 'bi-coin', '#059669,#10b981'],
-        // Akun
-        'roles' => ['Pengaturan Role', 'bi-person-gear', '#e11d48,#f43f5e'],
-        'permission' => ['Permission Akun', 'bi-shield-lock', '#e11d48,#f43f5e'],
-        'users' => ['Data User', 'bi-person', '#e11d48,#f43f5e'],
-        // Karyawan & Karir
-        'karyawan' => ['Karyawan', 'bi-person-vcard', '#db2777,#ec4899'],
-        'lowongan' => ['Lowongan Kerja', 'bi-briefcase', '#db2777,#ec4899'],
-        'pelamar' => ['Pelamar', 'bi-file-earmark-person', '#db2777,#ec4899'],
-        'message' => ['Pesan Masuk', 'bi-envelope', '#db2777,#ec4899'],
-        // Aplikasi lain (mode tersendiri di bilah samping)
-        'asthana' => ['Asthana — Situs, Karyawan & Karir', 'bi-buildings', '#2455e6,#17a974'],
-        'orcha' => ['Orcha Journey', 'bi-water', '#0f2d4a,#1d6fa5'],
-    ];
+    /**
+     * Metadata modul: urutan, label, ikon & warna mengikuti sidebar.
+     *
+     * Daftarnya tinggal di App\Support\ModulIzin supaya layar Akses Akun
+     * per orang memakai nama yang sama persis — dulu layar itu menampilkan
+     * nama grup mentahnya, dan modul baru selalu tertinggal di salah satu.
+     *
+     * Tetap sebagai properti publik karena blade-nya membaca $moduleMeta.
+     */
+    public array $moduleMeta = ModulIzin::META;
 
     public function mount(Role $role)
     {
