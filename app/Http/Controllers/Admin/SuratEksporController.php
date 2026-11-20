@@ -66,7 +66,7 @@ class SuratEksporController extends Controller
         abort_unless($surat->bolehDilihat($request->user()), 403,
             'Surat ini bersifat rahasia. Mintalah izin "Lihat Surat Rahasia" kepada admin.');
 
-        $surat->load('klasifikasi');
+        $surat->load(['klasifikasi', 'penanggungJawab']);
 
         $pdf = Pdf::loadView('livewire.pages.admin.surat.cetak.lembar-disposisi-pdf', [
             'surat' => $surat,

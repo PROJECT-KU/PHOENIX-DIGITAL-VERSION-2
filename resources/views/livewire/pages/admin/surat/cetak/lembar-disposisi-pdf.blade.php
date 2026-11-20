@@ -57,6 +57,9 @@
             <td class="k">Klasifikasi</td><td>{{ $surat->klasifikasi?->label ?: 'Belum diklasifikasi' }}</td>
             <td class="k">Tempat Berkas</td><td>{{ $surat->lokasi_fisik ?: '-' }}</td>
         </tr>
+        <tr>
+            <td class="k">Ditangani oleh</td><td colspan="3">{{ $surat->penanggungJawab?->name ?: 'Belum ditunjuk' }}</td>
+        </tr>
         @if ($surat->tembusan)
             <tr><td class="k">Tembusan</td><td colspan="3">{{ $surat->tembusan }}</td></tr>
         @endif

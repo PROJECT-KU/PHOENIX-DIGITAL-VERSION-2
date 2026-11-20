@@ -30,7 +30,7 @@ class Surat extends Model
         'klasifikasi_id', 'sifat', 'perihal', 'dari', 'kepada', 'status',
         'lokasi_fisik', 'ringkasan', 'musnah_pada', 'dicatat_oleh',
         'urut_utama', 'urut_klasifikasi', 'kode_klasifikasi',
-        'induk_id', 'tembusan', 'pemusnahan_id',
+        'induk_id', 'tembusan', 'pemusnahan_id', 'penanggung_jawab_id',
     ];
 
     protected $casts = [
@@ -41,6 +41,7 @@ class Surat extends Model
         'dicatat_oleh' => 'integer',
         'induk_id' => 'integer',
         'pemusnahan_id' => 'integer',
+        'penanggung_jawab_id' => 'integer',
         'urut_utama' => 'integer',
         'urut_klasifikasi' => 'integer',
     ];
@@ -103,6 +104,7 @@ class Surat extends Model
         'lokasi_fisik' => 'tempat berkas',
         'ringkasan' => 'ringkasan isi',
         'induk_id' => 'surat yang ditanggapi',
+        'penanggung_jawab_id' => 'karyawan yang menangani',
     ];
 
     protected static function booted(): void
@@ -226,6 +228,12 @@ class Surat extends Model
     public function pemusnahan(): BelongsTo
     {
         return $this->belongsTo(SuratPemusnahan::class, 'pemusnahan_id');
+    }
+
+    /** Karyawan yang memegang urusan surat ini. */
+    public function penanggungJawab(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'penanggung_jawab_id');
     }
 
     /* ----------------------------- JEJAK ----------------------------- */

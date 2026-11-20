@@ -8,10 +8,10 @@
 --}}
 <table>
     <thead>
-        <tr><th colspan="17" style="font-weight:bold;font-size:14px;">BUKU AGENDA SURAT</th></tr>
-        <tr><th colspan="17">{{ $ringkasan }}</th></tr>
-        <tr><th colspan="17">Dicetak {{ now()->locale('id')->translatedFormat('d F Y, H.i') }} &middot; {{ $surat->count() }} surat</th></tr>
-        <tr><th colspan="17"></th></tr>
+        <tr><th colspan="18" style="font-weight:bold;font-size:14px;">BUKU AGENDA SURAT</th></tr>
+        <tr><th colspan="18">{{ $ringkasan }}</th></tr>
+        <tr><th colspan="18">Dicetak {{ now()->locale('id')->translatedFormat('d F Y, H.i') }} &middot; {{ $surat->count() }} surat</th></tr>
+        <tr><th colspan="18"></th></tr>
         <tr>
             <th style="font-weight:bold;">No</th>
             <th style="font-weight:bold;">Nomor Agenda</th>
@@ -29,6 +29,7 @@
             <th style="font-weight:bold;">Tempat Berkas</th>
             <th style="font-weight:bold;">Boleh Dimusnahkan</th>
             <th style="font-weight:bold;">Menanggapi</th>
+            <th style="font-weight:bold;">Ditangani Oleh</th>
             <th style="font-weight:bold;">Dicatat Oleh</th>
         </tr>
     </thead>
@@ -51,6 +52,7 @@
                 <td>{{ $s->lokasi_fisik ?: '-' }}</td>
                 <td>{{ $s->musnah_pada_teks }}</td>
                 <td>{{ $s->induk?->nomor_agenda ?: '-' }}</td>
+                <td>{{ $s->penanggungJawab?->name ?: '-' }}</td>
                 <td>{{ $s->pencatat?->name ?: '-' }}</td>
             </tr>
         @endforeach

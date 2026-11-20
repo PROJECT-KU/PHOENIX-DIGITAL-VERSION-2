@@ -29,7 +29,7 @@ class SuratExport implements FromView
     public function view(): View
     {
         $surat = SaringanSurat::urut(
-            SaringanSurat::kueri($this->pengguna, $this->saringan)->with(['klasifikasi', 'pencatat', 'induk']),
+            SaringanSurat::kueri($this->pengguna, $this->saringan)->with(['klasifikasi', 'pencatat', 'induk', 'penanggungJawab']),
             $this->saringan['urut'] ?? 'terbaru',
         )->get();
 
