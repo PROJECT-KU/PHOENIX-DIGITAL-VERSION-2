@@ -170,6 +170,52 @@
 
     .sr-borang .sr-lebar { grid-column: 1 / -1; }
 
+    /* ---------- Nomor surat keluar ---------- */
+    .sr-nomor-saklar {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        margin: 0 0 .4rem;
+        padding: .32rem .6rem;
+        border: 1px solid #e3d9c4;
+        border-radius: 999px;
+        background: #fdf9f0;
+        color: #6b5a33;
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .sr-nomor-saklar input { width: 15px; height: 15px; margin: 0; accent-color: #a16207; cursor: pointer; }
+
+    .sr-nomor-baris { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+    .sr-nomor-baris .dsb-isian { flex: 1 1 14rem; min-width: 0; font-variant-numeric: tabular-nums; }
+
+    /* Kotak yang sedang diisikan sistem dibedakan warnanya, bukan hanya
+       dikunci: kotak abu-abu yang tetap putih membuat admin mengetik di
+       dalamnya lalu heran ketikannya tidak muncul. */
+    .sr-nomor-baris .dsb-isian[readonly] { background: #faf6ec; color: #6b5a33; cursor: default; }
+
+    /* Arti tiap potongan nomor. Nomor surat adalah satu-satunya bagian borang
+       yang bentuknya diatur aturan kantor, dan admin baru tidak punya tempat
+       lain untuk belajar membacanya. */
+    .sr-nomor-arti { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .45rem; }
+
+    .sr-nomor-arti span {
+        display: inline-flex;
+        flex-direction: column;
+        gap: .1rem;
+        padding: .25rem .5rem;
+        border: 1px solid #ece3d2;
+        border-radius: 8px;
+        background: #fffdf8;
+        line-height: 1.25;
+    }
+
+    .sr-nomor-arti b { font-size: .8rem; color: #3f3524; font-variant-numeric: tabular-nums; }
+    .sr-nomor-arti i { font-size: .66rem; font-style: normal; color: #8a7c5e; }
+
     /* ---------- Rincian (halaman detail) ---------- */
     /* Dua kolom rapat: label kecil di atas, isinya di bawah. Tabel dua kolom
        akan menyisakan lajur kosong panjang pada nilai yang pendek. */

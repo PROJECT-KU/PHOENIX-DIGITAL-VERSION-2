@@ -14,6 +14,9 @@
         $ikonArah = $masuk ? 'bi-envelope-arrow-down' : 'bi-envelope-arrow-up';
         $adaNomorNanti = filled($nomorNanti);
         $adaBerkasBaru = count($berkas) !== 0;
+        $keluar = ! $masuk;
+        $nomorDikunci = $keluar && $nomorOtomatis;
+        $adaArtiNomor = $keluar && count($potonganNomor) !== 0;
     @endphp
 
     <div class="dsb">
@@ -48,7 +51,7 @@
             <section class="dsb-bagian">
                 <div class="dsb-rak sr-rak-puncak">
                     {{-- ---------- IDENTITAS SURAT ---------- --}}
-                    <div class="dsb-kartu k-7">
+                    <div class="dsb-kartu k-6">
                         <div class="dsb-kartu-kepala">
                             <div class="dsb-kartu-kepala-kiri">
                                 <span class="dsb-ikon is-kecil" style="--c: {{ $warnaArah }}"><i class="bi {{ $ikonArah }}"></i></span>
@@ -100,19 +103,10 @@
                                 </div>
 
                                 <div class="dsb-medan">
-                                    <label class="dsb-label" for="sr-nomor">Nomor surat</label>
-                                    <input id="sr-nomor" type="text" maxlength="120"
-                                        class="dsb-isian @error('f.nomor_surat') is-galat @enderror"
-                                        wire:model="f.nomor_surat" placeholder="005/DPK/XI/2026">
-                                    @error('f.nomor_surat')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                    <span class="dsb-kartu-sub">Nomor yang tertulis di suratnya. Boleh kosong.</span>
-                                </div>
-
-                                <div class="dsb-medan">
                                     <label class="dsb-label" for="sr-tgl-surat">Tanggal surat <span class="dsb-wajib">*</span></label>
                                     <input id="sr-tgl-surat" type="date"
                                         class="dsb-isian @error('f.tanggal_surat') is-galat @enderror"
-                                        wire:model="f.tanggal_surat">
+                                        wire:model.live="f.tanggal_surat">
                                     @error('f.tanggal_surat')<div class="dsb-galat">{{ $message }}</div>@enderror
                                     <span class="dsb-kartu-sub">Tanggal yang tertulis di suratnya.</span>
                                 </div>
@@ -145,7 +139,7 @@
                     </div>
 
                     {{-- ---------- ADMINISTRASI ---------- --}}
-                    <div class="dsb-kartu k-5">
+                    <div class="dsb-kartu k-6">
                         <div class="dsb-kartu-kepala">
                             <div class="dsb-kartu-kepala-kiri">
                                 <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-tags-fill"></i></span>
@@ -173,6 +167,59 @@
                                         Tanggal boleh musnahnya dihitung dari sini saat disimpan.
                                     </span>
                                 </div>
+
+                                <div class="dsb-medan sr-lebar">
+                                    <label class="dsb-label" for="sr-nomor">Nomor surat</label>
+
+                                    @if ($keluar)
+                                        {{-- Atribut centang ditulis dalam SATU baris: wire:model tidak
+                                             pernah menggambar `checked` sendiri, jadi @checked yang menulisnya. --}}
+                                        <label class="sr-nomor-saklar">
+                                            <input type="checkbox" wire:model.live="nomorOtomatis" @checked($nomorOtomatis)>
+                                            <span>Buatkan nomornya otomatis</span>
+                                        </label>
+                                    @endif
+
+                                    <div class="sr-nomor-baris">
+                                        <input id="sr-nomor" type="text" maxlength="120"
+                                            class="dsb-isian @error('f.nomor_surat') is-galat @enderror"
+                                            wire:model="f.nomor_surat"
+                                            placeholder="{{ $masuk ? '005/DPK/XI/2026' : '016/03.D/ACM/VI/2026' }}"
+                                            @readonly($nomorDikunci)>
+
+                                        @if ($keluar && ! $nomorOtomatis)
+                                            <button type="button" class="dsb-tombol is-lembut" style="--ikon: #a16207"
+                                                wire:click="pakaiNomorUsulan" wire:target="pakaiNomorUsulan">
+                                                <i class="bi bi-arrow-repeat"></i><span>Hitung ulang</span>
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    @error('f.nomor_surat')<div class="dsb-galat">{{ $message }}</div>@enderror
+
+                                    @if ($adaArtiNomor)
+                                        <div class="sr-nomor-arti">
+                                            @foreach ($potonganNomor as $potong)
+                                                <span><b>{{ $potong['isi'] }}</b><i>{{ $potong['arti'] }}</i></span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    @if ($masuk)
+                                        <span class="dsb-kartu-sub">Nomor yang tertulis di suratnya. Boleh kosong.</span>
+                                    @elseif ($nomorOtomatis)
+                                        <span class="dsb-kartu-sub">
+                                            Angka tengah hanya ikut klasifikasi yang dipilih; bulan dan tahun ikut
+                                            <b>tanggal surat</b>. Hilangkan centangnya kalau mau diketik sendiri.
+                                        </span>
+                                    @else
+                                        <span class="dsb-kartu-sub">
+                                            Yang tersimpan adalah yang tertulis di sini, dan surat keluar
+                                            berikutnya menyambung dari nomor ini.
+                                        </span>
+                                    @endif
+                                </div>
+
 
                                 <div class="dsb-medan">
                                     <label class="dsb-label" for="sr-sifat">Sifat <span class="dsb-wajib">*</span></label>

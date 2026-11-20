@@ -66,6 +66,11 @@ Klasifikasi Surat || lemon
                                         class="dsb-isian @error('kode') is-galat @enderror"
                                         wire:model="kode" placeholder="400">
                                     @error('kode')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    <span class="dsb-kartu-sub">
+                                        Kode ini ikut tercetak di nomor surat keluar, pada bagian
+                                        <b>03.D</b> &mdash; huruf D-nya diambil dari sini. Isi dengan kode
+                                        yang memang dipakai kantor.
+                                    </span>
                                 </div>
 
                                 <div class="dsb-medan">

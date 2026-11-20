@@ -3,6 +3,7 @@
 namespace App\Models\Surat;
 
 use App\Models\User;
+use App\Support\Surat\NomorSuratKeluar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ class Surat extends Model
         'arah', 'nomor_agenda', 'nomor_surat', 'tanggal_surat', 'tanggal_catat',
         'klasifikasi_id', 'sifat', 'perihal', 'dari', 'kepada', 'status',
         'lokasi_fisik', 'ringkasan', 'musnah_pada', 'dicatat_oleh',
+        'urut_utama', 'urut_klasifikasi', 'kode_klasifikasi',
     ];
 
     protected $casts = [
@@ -36,6 +38,8 @@ class Surat extends Model
         'musnah_pada' => 'date',
         'klasifikasi_id' => 'integer',
         'dicatat_oleh' => 'integer',
+        'urut_utama' => 'integer',
+        'urut_klasifikasi' => 'integer',
     ];
 
     public const ARAH = [
@@ -76,6 +80,35 @@ class Surat extends Model
             if (blank($surat->dicatat_oleh) && auth()->check()) {
                 $surat->dicatat_oleh = auth()->id();
             }
+        });
+
+        /*
+         | Hitungan nomor surat keluar dibaca ulang dari nomor yang BENAR-BENAR
+         | tersimpan, setiap kali disimpan.
+         |
+         | Bukan dari apa yang diusulkan sistem: nomornya boleh diketik manual,
+         | dan kalau hitungannya ikut usulan sementara kertasnya memakai nomor
+         | lain, surat berikutnya akan diberi nomor yang sudah beredar. Dengan
+         | dibaca dari teksnya, nomor manual pun menyambung rantainya.
+         |
+         | Surat MASUK dikosongkan: nomornya ditulis oleh instansi lain dan
+         | kebetulan berbentuk mirip, sehingga ikut terhitung akan melompatkan
+         | nomor surat keluar kita.
+         */
+        static::saving(function (self $surat) {
+            if ($surat->arah !== 'keluar') {
+                $surat->urut_utama = null;
+                $surat->urut_klasifikasi = null;
+                $surat->kode_klasifikasi = null;
+
+                return;
+            }
+
+            $urai = NomorSuratKeluar::urai($surat->nomor_surat);
+
+            $surat->urut_utama = $urai['urut_utama'] ?? null;
+            $surat->urut_klasifikasi = $urai['urut_klasifikasi'] ?? null;
+            $surat->kode_klasifikasi = $urai['kode_klasifikasi'] ?? null;
         });
     }
 

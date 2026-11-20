@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Surat;
 use App\Models\Surat\Surat;
 use App\Models\Surat\SuratKlasifikasi;
 use App\Models\Surat\SuratLampiran;
+use App\Support\Surat\NomorSuratKeluar;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -54,6 +55,21 @@ class SuratForm extends Component
     /** Berkas pindaian yang baru dipilih, belum tersimpan. */
     public array $berkas = [];
 
+    /*
+     | Nomor surat keluar dibuatkan sistem, tetapi tetap boleh diketik sendiri.
+     |
+     | Menyalakan centang ini membuat kotak nomornya ikut berubah sendiri
+     | ketika tanggal atau klasifikasinya diganti; mematikannya menyerahkan
+     | kotak itu sepenuhnya kepada admin. Harus ada dua-duanya: ada surat yang
+     | nomornya sudah terlanjur dikeluarkan di kertas, dan arsip wajib
+     | mengikuti kertasnya — bukan sebaliknya.
+     |
+     | Saat MENGUBAH surat lama, centangnya mati sejak awal. Nomor yang sudah
+     | beredar di luar kantor tidak boleh berganti hanya karena seseorang
+     | membuka layar ubah untuk membetulkan perihalnya.
+     */
+    public bool $nomorOtomatis = true;
+
     public function mount(?int $surat = null, ?string $arah = null): void
     {
         if ($surat) {
@@ -76,6 +92,8 @@ class SuratForm extends Component
                 'ringkasan' => (string) $m->ringkasan,
             ];
 
+            $this->nomorOtomatis = false;
+
             return;
         }
 
@@ -84,6 +102,71 @@ class SuratForm extends Component
         $this->f['arah'] = in_array($arah, ['masuk', 'keluar'], true) ? $arah : 'masuk';
         $this->f['tanggal_surat'] = now()->toDateString();
         $this->f['tanggal_catat'] = now()->toDateString();
+
+        $this->susunNomor();
+    }
+
+    /*
+     | Tanda tangan tanpa tipe pada $kunci disengaja.
+     |
+     | Livewire memanggil kait ini juga untuk pembaruan yang bukan per-kunci,
+     | dan $kunci bisa datang null; menuliskan `string $kunci` membuat
+     | seluruh layar jatuh pada ketikan pertama di kotak mana pun.
+     */
+    public function updatedF($nilai = null, $kunci = null): void
+    {
+        if (in_array($kunci, ['arah', 'tanggal_surat', 'klasifikasi_id'], true)) {
+            $this->susunNomor();
+        }
+    }
+
+    public function updatedNomorOtomatis(): void
+    {
+        $this->susunNomor();
+    }
+
+    /**
+     * Isikan usulan nomor ke kotaknya — hanya bila admin memintanya.
+     *
+     * Surat MASUK tidak pernah diberi nomor usulan: nomornya ditulis oleh
+     * pengirimnya. Kalau arahnya berpindah ke masuk sementara centang
+     * otomatis masih menyala, nomor yang terlanjur dirakit justru dihapus,
+     * supaya nomor milik kita tidak tercatat sebagai nomor surat orang lain.
+     */
+    public function susunNomor(): void
+    {
+        if (! $this->nomorOtomatis) {
+            return;
+        }
+
+        if ($this->f['arah'] !== 'keluar') {
+            $this->f['nomor_surat'] = '';
+
+            return;
+        }
+
+        $this->f['nomor_surat'] = $this->usulanNomor()['nomor'];
+    }
+
+    /** Usulan nomor saat ini, dipakai kotak isian maupun keterangannya. */
+    public function usulanNomor(): array
+    {
+        return NomorSuratKeluar::usulkan(
+            $this->f['tanggal_surat'] ?: null,
+            $this->f['klasifikasi_id'] ?: null,
+            $this->suratId,
+        );
+    }
+
+    /** Tombol "Hitung ulang" saat nomornya sedang diketik manual. */
+    public function pakaiNomorUsulan(): void
+    {
+        if ($this->f['arah'] !== 'keluar') {
+            return;
+        }
+
+        $this->f['nomor_surat'] = $this->usulanNomor()['nomor'];
+        $this->resetValidation('f.nomor_surat');
     }
 
     protected function rules(): array
@@ -146,9 +229,34 @@ class SuratForm extends Component
     {
         $this->validate();
 
+        /*
+         | Nomor dirakit ULANG tepat sebelum disimpan, bukan dipakai apa
+         | adanya dari layar.
+         |
+         | Borang bisa dibiarkan terbuka setengah jam, dan dalam waktu itu
+         | admin lain sudah mengeluarkan dua surat. Nomor yang dirakit saat
+         | layar dibuka akan kembar dengan punya mereka — dan surat kembar
+         | nomor baru ketahuan berbulan-bulan kemudian, saat seseorang
+         | mencarinya dan menemukan dua.
+         */
+        if ($this->nomorOtomatis) {
+            $this->susunNomor();
+        }
+
+        $nomor = trim((string) $this->f['nomor_surat']);
+
+        if ($this->f['arah'] === 'keluar' && $nomor !== ''
+            && NomorSuratKeluar::sudahDipakai($nomor, $this->suratId)) {
+            $this->addError('f.nomor_surat',
+                'Nomor '.$nomor.' sudah dipakai surat keluar lain. Ganti nomornya, '
+                .'atau centang "Buatkan nomornya otomatis" supaya dihitungkan.');
+
+            return null;
+        }
+
         $data = [
             'arah' => $this->f['arah'],
-            'nomor_surat' => trim((string) $this->f['nomor_surat']) ?: null,
+            'nomor_surat' => $nomor ?: null,
             'tanggal_surat' => $this->f['tanggal_surat'],
             'tanggal_catat' => $this->f['tanggal_catat'] ?: null,
             'klasifikasi_id' => $this->f['klasifikasi_id'] ?: null,
@@ -228,6 +336,10 @@ class SuratForm extends Component
             'nomorNanti' => $this->isEdit
                 ? null
                 : Surat::nomorAgendaBaru((string) $this->f['arah']),
+            'potonganNomor' => $this->f['arah'] === 'keluar'
+                ? NomorSuratKeluar::penjelasan(trim((string) $this->f['nomor_surat'])
+                    ?: $this->usulanNomor()['nomor'])
+                : [],
         ]);
     }
 }
