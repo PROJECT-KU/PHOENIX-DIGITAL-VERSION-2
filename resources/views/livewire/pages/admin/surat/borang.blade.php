@@ -258,18 +258,41 @@
                                 <div class="dsb-medan sr-lebar">
                                     <label class="dsb-label" for="sr-berkas">Pindaian surat</label>
                                     <input id="sr-berkas" type="file" multiple
-                                        class="dsb-isian @error('berkas.*') is-galat @enderror"
-                                        wire:model="berkas" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                        class="dsb-isian @error('unggahan.*') is-galat @enderror"
+                                        wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                    @error('unggahan')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    @error('unggahan.*')<div class="dsb-galat">{{ $message }}</div>@enderror
                                     @error('berkas.*')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                    <div wire:loading wire:target="berkas" class="dsb-kartu-sub">
+                                    <div wire:loading wire:target="unggahan" class="dsb-kartu-sub">
                                         <span class="dsb-putar is-kecil"></span> Mengunggah berkas…
                                     </div>
+
                                     @if ($adaBerkasBaru)
-                                        <span class="dsb-kartu-sub">{{ count($berkas) }} berkas siap disimpan.</span>
+                                        <div class="sr-antrean">
+                                            @foreach ($berkas as $urutan => $b)
+                                                <div class="sr-antrean-baris" wire:key="antrean-{{ $urutan }}-{{ $b->getFilename() }}">
+                                                    <i class="bi bi-paperclip"></i>
+                                                    <span class="sr-antrean-teks">
+                                                        <b>{{ $b->getClientOriginalName() }}</b>
+                                                        <span>{{ \App\Models\Surat\SuratLampiran::ukuranTeks($b->getSize()) }}</span>
+                                                    </span>
+                                                    <button type="button" class="dsb-tabel-btn" title="Keluarkan berkas ini"
+                                                        wire:click="hapusAntrean({{ $urutan }})">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <span class="dsb-kartu-sub">
+                                            {{ count($berkas) }} berkas siap disimpan bersama suratnya.
+                                        </span>
                                     @endif
+
                                     <span class="dsb-kartu-sub">
-                                        PDF, foto, atau Word. Maksimal 20 MB per lembar. Berkasnya disimpan
-                                        tertutup — hanya bisa dibuka dari halaman ini, bukan dari alamat umum.
+                                        Boleh pilih beberapa lembar sekaligus, dan boleh memilih lagi —
+                                        yang sudah dipilih tidak hilang. PDF, foto, atau Word, maksimal 20 MB
+                                        per lembar. Berkasnya disimpan tertutup: hanya bisa dibuka dari
+                                        halaman suratnya, bukan dari alamat umum.
                                     </span>
                                 </div>
                             </div>

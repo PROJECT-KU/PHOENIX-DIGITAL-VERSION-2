@@ -166,17 +166,42 @@
                         @if ($bolehUbah)
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="sr-berkas-baru">Tambah pindaian</label>
-                                <input id="sr-berkas-baru" type="file" multiple class="dsb-isian"
-                                    wire:model="berkasBaru" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                <input id="sr-berkas-baru" type="file" multiple
+                                    class="dsb-isian @error('unggahan.*') is-galat @enderror"
+                                    wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                @error('unggahan')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                @error('unggahan.*')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 @error('berkasBaru.*')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                <div wire:loading wire:target="berkasBaru" class="dsb-kartu-sub">
+                                <div wire:loading wire:target="unggahan" class="dsb-kartu-sub">
                                     <span class="dsb-putar is-kecil"></span> Mengunggah…
                                 </div>
+
                                 @if ($adaBerkasBaru)
-                                    <button type="button" wire:click="unggahBerkas" class="dsb-tombol is-utama is-mungil" style="margin-top:.4rem">
+                                    <div class="sr-antrean">
+                                        @foreach ($berkasBaru as $urutan => $b)
+                                            <div class="sr-antrean-baris" wire:key="antrean-{{ $urutan }}-{{ $b->getFilename() }}">
+                                                <i class="bi bi-paperclip"></i>
+                                                <span class="sr-antrean-teks">
+                                                    <b>{{ $b->getClientOriginalName() }}</b>
+                                                    <span>{{ \App\Models\Surat\SuratLampiran::ukuranTeks($b->getSize()) }}</span>
+                                                </span>
+                                                <button type="button" class="dsb-tabel-btn" title="Keluarkan berkas ini"
+                                                    wire:click="hapusAntrean({{ $urutan }})">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <button type="button" wire:click="unggahBerkas" wire:target="unggahBerkas"
+                                        class="dsb-tombol is-utama is-mungil" style="margin-top:.4rem">
                                         <i class="bi bi-upload"></i><span>Simpan {{ count($berkasBaru) }} berkas</span>
                                     </button>
                                 @endif
+
+                                <span class="dsb-kartu-sub">
+                                    Boleh pilih beberapa lembar sekaligus, dan boleh memilih lagi —
+                                    yang sudah dipilih tidak hilang.
+                                </span>
                             </div>
                         @endif
                     </div>

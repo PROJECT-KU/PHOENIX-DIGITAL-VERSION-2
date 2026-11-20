@@ -24,6 +24,11 @@ class SuratDetail extends Component
 {
     use WithFileUploads;
 
+    /** Satu tempat untuk aturan berkas, supaya kotak dan antrean tidak pernah berbeda. */
+    private const ATURAN_BERKAS = 'file|max:20480|mimes:pdf,jpg,jpeg,png,webp,doc,docx';
+
+    private const BATAS_ANTREAN = 20;
+
     public int $suratId;
 
     /* ---- Borang disposisi baru ---- */
@@ -35,7 +40,17 @@ class SuratDetail extends Component
 
     public string $disBatas = '';
 
+    /**
+     * Antrean pindaian yang sudah dipilih tetapi belum diunggah.
+     *
+     * Terpisah dari kotak berkasnya ($unggahan) karena <input type="file">
+     * selalu MENGGANTI isinya — memilih lembar kedua membuang lembar
+     * pertama tanpa pesan apa pun.
+     */
     public array $berkasBaru = [];
+
+    /** Kotak berkasnya; isinya langsung dipindahkan ke antrean lalu dikosongkan. */
+    public array $unggahan = [];
 
     public function mount(int $surat): void
     {
@@ -157,16 +172,59 @@ class SuratDetail extends Component
 
     /* ----------------------------- LAMPIRAN ----------------------------- */
 
+    /** Pesan berkas ditulis sekali, dipakai kotak maupun tombol simpan. */
+    private function pesanBerkas(string $medan): array
+    {
+        return [
+            $medan.'.max' => 'Berkas pindaian maksimal 20 MB per lembar.',
+            $medan.'.mimes' => 'Berkas pindaian harus PDF, gambar (JPG/PNG/WEBP), atau Word.',
+        ];
+    }
+
+    /**
+     * Pindahkan berkas yang baru dipilih ke antrean — ditambahkan, bukan
+     * menggantikan. Surat berlembar-lembar dipindai dan dipilih beberapa
+     * kali, dan pilihan kedua tidak boleh membuang pilihan pertama.
+     */
+    public function updatedUnggahan(): void
+    {
+        $this->validate(['unggahan.*' => 'nullable|'.self::ATURAN_BERKAS], $this->pesanBerkas('unggahan.*'));
+
+        foreach ($this->unggahan as $berkas) {
+            if (! $berkas) {
+                continue;
+            }
+
+            if (count($this->berkasBaru) >= self::BATAS_ANTREAN) {
+                $this->addError('unggahan', 'Sekali unggah maksimal '.self::BATAS_ANTREAN
+                    .' berkas. Simpan dulu yang ini, sisanya bisa ditambahkan setelahnya.');
+                break;
+            }
+
+            $this->berkasBaru[] = $berkas;
+        }
+
+        $this->unggahan = [];
+    }
+
+    /** Keluarkan satu berkas dari antrean sebelum diunggah. */
+    public function hapusAntrean(int $urutan): void
+    {
+        unset($this->berkasBaru[$urutan]);
+
+        // Nomornya disusun ulang: celah di tengah larik membuat tombol
+        // hapus berikutnya menunjuk berkas yang salah.
+        $this->berkasBaru = array_values($this->berkasBaru);
+    }
+
     public function unggahBerkas(): void
     {
         abort_unless(auth()->user()?->hasPermission('edit_surat'), 403);
 
-        $this->validate([
-            'berkasBaru.*' => 'required|file|max:20480|mimes:pdf,jpg,jpeg,png,webp,doc,docx',
-        ], [
-            'berkasBaru.*.max' => 'Berkas pindaian maksimal 20 MB per lembar.',
-            'berkasBaru.*.mimes' => 'Berkas pindaian harus PDF, gambar (JPG/PNG/WEBP), atau Word.',
-        ]);
+        $this->validate(
+            ['berkasBaru.*' => 'required|'.self::ATURAN_BERKAS],
+            $this->pesanBerkas('berkasBaru.*'),
+        );
 
         foreach ($this->berkasBaru as $berkas) {
             if (! $berkas) {
@@ -184,6 +242,7 @@ class SuratDetail extends Component
         }
 
         $this->berkasBaru = [];
+        $this->unggahan = [];
         $this->dispatch('swal-success', message: 'Pindaian ditambahkan.');
     }
 

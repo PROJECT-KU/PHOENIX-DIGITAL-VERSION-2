@@ -32,7 +32,21 @@ class SuratLampiran extends Model
     /** "1,4 MB" — ukuran yang bisa dibaca tanpa menghitung. */
     public function getUkuranTeksAttribute(): string
     {
-        $b = (int) $this->ukuran;
+        return static::ukuranTeks($this->ukuran);
+    }
+
+    /**
+     * Bentuk statis dari accessor di atas.
+     *
+     * Dipakai juga untuk berkas yang BELUM tersimpan — antrean pindaian di
+     * borang masih berupa berkas sementara, belum punya baris di tabel ini,
+     * dan daftarnya harus menyebut ukuran dengan satuan yang sama persis
+     * supaya "1,4 MB" di antrean dan "1,4 MB" di daftar lampiran tidak
+     * terbaca sebagai dua angka yang berbeda.
+     */
+    public static function ukuranTeks($bita): string
+    {
+        $b = (int) $bita;
 
         if ($b <= 0) {
             return '-';

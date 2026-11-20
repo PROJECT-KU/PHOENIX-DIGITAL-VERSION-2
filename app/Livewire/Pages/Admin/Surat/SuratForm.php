@@ -32,6 +32,18 @@ class SuratForm extends Component
 {
     use WithFileUploads;
 
+    /** Satu tempat untuk aturan berkas, supaya kotak dan antrean tidak pernah berbeda. */
+    private const ATURAN_BERKAS = 'file|max:20480|mimes:pdf,jpg,jpeg,png,webp,doc,docx';
+
+    /**
+     * Batas antrean sekali catat.
+     *
+     * Bukan batas arsip: pindaian boleh ditambah terus dari halaman detail
+     * sesudah suratnya tersimpan. Batas ini menjaga satu permintaan simpan
+     * tidak membawa ratusan berkas sekaligus di hosting bersama.
+     */
+    private const BATAS_ANTREAN = 20;
+
     public ?int $suratId = null;
 
     public bool $isEdit = false;
@@ -52,8 +64,19 @@ class SuratForm extends Component
         'ringkasan' => '',
     ];
 
-    /** Berkas pindaian yang baru dipilih, belum tersimpan. */
+    /**
+     * Antrean pindaian yang sudah dipilih tetapi belum tersimpan.
+     *
+     * TERPISAH dari kotak berkasnya ($unggahan) dengan sengaja. Kotak
+     * <input type="file"> selalu MENGGANTI isinya: memilih satu berkas lagi
+     * membuang semua yang dipilih sebelumnya — tanpa pesan apa pun. Surat
+     * yang dipindai lembar demi lembar justru selalu dipilih beberapa kali,
+     * jadi antreannya disimpan sendiri dan kotaknya hanya jadi pintu masuk.
+     */
     public array $berkas = [];
+
+    /** Kotak berkasnya; isinya langsung dipindahkan ke antrean lalu dikosongkan. */
+    public array $unggahan = [];
 
     /*
      | Nomor surat keluar dibuatkan sistem, tetapi tetap boleh diketik sendiri.
@@ -191,7 +214,7 @@ class SuratForm extends Component
              | batas ini longgar supaya pindaian berwarna beresolusi tinggi
              | tetap lolos, tanpa membuka pintu untuk berkas yang bukan surat.
              */
-            'berkas.*' => 'nullable|file|max:20480|mimes:pdf,jpg,jpeg,png,webp,doc,docx',
+            'berkas.*' => 'nullable|'.self::ATURAN_BERKAS,
         ];
     }
 
@@ -203,6 +226,8 @@ class SuratForm extends Component
             'f.tanggal_surat.date' => 'Tanggal surat belum berupa tanggal yang sah.',
             'berkas.*.max' => 'Berkas pindaian maksimal 20 MB per lembar.',
             'berkas.*.mimes' => 'Berkas pindaian harus PDF, gambar (JPG/PNG/WEBP), atau Word.',
+            'unggahan.*.max' => 'Berkas pindaian maksimal 20 MB per lembar.',
+            'unggahan.*.mimes' => 'Berkas pindaian harus PDF, gambar (JPG/PNG/WEBP), atau Word.',
         ];
     }
 
@@ -214,6 +239,7 @@ class SuratForm extends Component
             'f.tanggal_surat' => 'tanggal surat',
             'f.tanggal_catat' => 'tanggal diterima/dikirim',
             'f.nomor_surat' => 'nomor surat',
+            'unggahan.*' => 'berkas pindaian',
             'f.klasifikasi_id' => 'klasifikasi',
             'f.lokasi_fisik' => 'tempat berkas',
         ];
@@ -223,6 +249,44 @@ class SuratForm extends Component
     public function labelPihak(): string
     {
         return $this->f['arah'] === 'keluar' ? 'Kepada' : 'Dari';
+    }
+
+    /**
+     * Pindahkan berkas yang baru dipilih ke antrean.
+     *
+     * Ditambahkan, bukan menggantikan: admin yang memindai sepuluh lembar
+     * akan memilihnya beberapa kali, dan pilihan kedua tidak boleh membuang
+     * pilihan pertama.
+     */
+    public function updatedUnggahan(): void
+    {
+        $this->validate(['unggahan.*' => 'nullable|'.self::ATURAN_BERKAS], $this->messages());
+
+        foreach ($this->unggahan as $berkas) {
+            if (! $berkas) {
+                continue;
+            }
+
+            if (count($this->berkas) >= self::BATAS_ANTREAN) {
+                $this->addError('unggahan', 'Sekali catat maksimal '.self::BATAS_ANTREAN
+                    .' berkas. Simpan dulu suratnya, sisanya bisa ditambahkan dari halaman suratnya.');
+                break;
+            }
+
+            $this->berkas[] = $berkas;
+        }
+
+        $this->unggahan = [];
+    }
+
+    /** Keluarkan satu berkas dari antrean sebelum suratnya disimpan. */
+    public function hapusAntrean(int $urutan): void
+    {
+        unset($this->berkas[$urutan]);
+
+        // Disusun ulang nomornya: celah di tengah larik membuat tombol
+        // hapus berikutnya menunjuk berkas yang salah.
+        $this->berkas = array_values($this->berkas);
     }
 
     public function save()
@@ -327,6 +391,7 @@ class SuratForm extends Component
         }
 
         $this->berkas = [];
+        $this->unggahan = [];
     }
 
     public function render()

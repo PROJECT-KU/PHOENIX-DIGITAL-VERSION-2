@@ -242,6 +242,33 @@
     .sr-lampiran-teks b { font-size: .85rem; word-break: break-all; }
     .sr-lampiran-teks span { font-size: .72rem; color: #64748b; }
 
+    /* ---------- Antrean pindaian (belum tersimpan) ---------- */
+    /* Nama berkasnya ditampilkan satu per satu, bukan cuma jumlahnya: admin
+       yang memilih sepuluh lembar perlu melihat lembar mana yang sudah masuk
+       sebelum menekan simpan, dan angka "10 berkas" tidak menjawab itu. */
+    .sr-antrean {
+        display: flex;
+        flex-direction: column;
+        gap: .3rem;
+        margin: .5rem 0 .35rem;
+    }
+
+    .sr-antrean-baris {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .35rem .55rem;
+        border: 1px solid #e8eef5;
+        border-radius: 9px;
+        background: #f8fbff;
+    }
+
+    .sr-antrean-baris .bi-paperclip { color: #0284c7; font-size: .9rem; flex: 0 0 auto; }
+
+    .sr-antrean-teks { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.25; }
+    .sr-antrean-teks b { font-size: .8rem; word-break: break-all; }
+    .sr-antrean-teks span { font-size: .7rem; color: #64748b; }
+
     .sr-dis-baris {
         --c: #0284c7;
         display: flex;
