@@ -162,6 +162,7 @@ class OrchaRabSusun extends Component
             (bool) ($m['bisa_jadi_kegiatan'] ?? false),
             (string) ($m['nama'] ?? ''),
             $destinasi,
+            (string) ($m['kategori'] ?? ''),
         );
     }
 
@@ -170,8 +171,13 @@ class OrchaRabSusun extends Component
      *
      * @param  array<int, string>  $destinasi  tempat yang tercakup harga ini
      */
-    private function pakaiBiaya(int $id, bool $jugaKegiatan, string $nama, array $destinasi = []): void
-    {
+    private function pakaiBiaya(
+        int $id,
+        bool $jugaKegiatan,
+        string $nama,
+        array $destinasi = [],
+        string $kategori = '',
+    ): void {
         /*
          | Yang BELUM ada di jadwal saja.
          |
@@ -186,9 +192,27 @@ class OrchaRabSusun extends Component
             fn (string $d) => ! $this->adaDiItinerary($d),
         ));
 
+        /*
+         | Tiket yang tempatnya belum dicatat DIKATAKAN, bukan didiamkan.
+         |
+         | Tanpa nama destinasi di master harga, yang masuk jadwal adalah nama
+         | baris harganya — "Tiket Masuk Mikutopia" — bertanda kegiatan biasa,
+         | bukan destinasi. Hasilnya benar-benar membingungkan: admin melihat
+         | kuitansi di jadwalnya dan bertanya kenapa jenisnya bukan destinasi,
+         | sementara layar tidak pernah menyebut sebabnya.
+         |
+         | Disebutkan berikut jalan keluarnya, karena memperbaikinya cuma
+         | mengisi satu kolom di Master Harga — dan sesudah itu tempatnya ikut
+         | muncul sebagai chip bertiket di sini.
+         */
+        $tiketTanpaTempat = $destinasi === [] && $kategori === 'tiket';
+
         $pesan = match (true) {
             $baru !== [] => 'Masuk rincian biaya, dan '.(count($baru) > 1 ? count($baru).' tempatnya' : 'tempatnya')
                 .' ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.',
+            $tiketTanpaTempat => 'Masuk rincian biaya dan jadwal hari '.$this->hariAktif
+                .' — tetapi tempatnya belum dicatat di Master Harga, jadi ia masuk sebagai kegiatan biasa.'
+                .' Isi kolom Destinasi pada harga ini supaya ia jadi destinasi.',
             $jugaKegiatan => 'Masuk rincian biaya, dan ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.',
             default => 'Biaya ditambahkan.',
         };

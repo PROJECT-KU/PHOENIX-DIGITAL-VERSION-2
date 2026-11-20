@@ -326,6 +326,26 @@
                 "vendor_kontak": null,
                 "catatan": null,
                 "bisa_jadi_kegiatan": false
+            },
+            {
+                "id": 104,
+                "nama": "Tiket Masuk Mikutopia",
+                "kategori": "tiket",
+                "kategori_label": "Tiket",
+                "tipe": null,
+                "destinasi": null,
+                "destinasi_lain": [],
+                "provinsi": "Jawa Tengah",
+                "daerah": "Wonosobo",
+                "satuan": "orang",
+                "satuan_label": "per orang",
+                "kapasitas": null,
+                "harga": 30000,
+                "harga_teks": "Rp 30.000",
+                "vendor": null,
+                "vendor_kontak": null,
+                "catatan": null,
+                "bisa_jadi_kegiatan": true
             }
         ]
     }

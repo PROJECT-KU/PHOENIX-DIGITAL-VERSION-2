@@ -5631,3 +5631,29 @@ test('armada tidak pernah jadi kegiatan di jadwal', function () {
     // Tidak ada penyimpanan jadwal sama sekali: tidak ada yang perlu disimpan.
     expect(itineraryTerkirim())->toBe([]);
 });
+
+test('tiket yang tempatnya belum dicatat menyebutkan sebabnya', function () {
+    palsukanRab();
+
+    /*
+     | Ditanyakan 20 Nov 2026: "kenapa di kategorinya kegiatan, bukan
+     | destinasi?" — untuk Tiket Masuk Mikutopia, satu-satunya baris tiket di
+     | produksi yang kolom destinasinya kosong (1 dari 31).
+     |
+     | Tanpa nama destinasi, yang masuk jadwal memang nama baris harganya,
+     | bertanda kegiatan biasa. Itu benar; yang salah adalah layar yang tidak
+     | pernah menyebut sebabnya, sehingga terbaca seperti cacat.
+     */
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 104);
+
+    // Tetap masuk jadwal — jangan sampai perbaikan pesan malah membatalkannya.
+    expect(collect(itineraryTerkirim())->pluck('nama'))->toContain('Tiket Masuk Mikutopia');
+
+    // Dan sebabnya disebut, berikut jalan keluarnya.
+    $pesan = json_encode($komponen->effects['dispatches'] ?? []);
+
+    expect($pesan)->toContain('belum dicatat di Master Harga')
+        ->toContain('Destinasi');
+});
