@@ -130,13 +130,29 @@ class OrchaMasterHargaForm extends Component
         $katalog = $this->katalog();
 
         /*
-         | Destinasi yang ditawarkan mengikuti provinsi terpilih — daftar 70
+         | Destinasi yang ditawarkan mengikuti provinsi terpilih — daftar 138
          | destinasi seluruh Indonesia untuk tiket Jogja hanya menambah
          | gulungan. Yang dipakai menandai "belum terdaftar" tetap seluruh
          | provinsi, karena nama di luar provinsi ini pun tetap nama yang ada.
+         |
+         | YANG PROVINSINYA KOSONG SELALU IKUT.
+         |
+         | Provinsi kosong berarti BELUM DIISI, bukan "provinsi lain" — dan
+         | menyaringnya keluar membuat destinasi itu mustahil dipilih dari
+         | borang mana pun. Terhitung 20 Nov 2026 ada 11 nama dalam keadaan
+         | itu di produksi, beberapa jelas Jawa Timur (Kawah Wurung, Desa
+         | Wisata Osing Kemiren, Baluran). Admin yang tidak menemukannya
+         | menyimpulkan namanya belum terdaftar lalu membuat kembarannya —
+         | dan kembaran nama destinasi memutus penjodohan tiket ke itinerary,
+         | karena penjodohannya mencocokkan nama PERSIS.
+         |
+         | Yang provinsinya cocok tetap didahulukan; yang belum diisi menyusul
+         | di bawahnya dengan keterangannya sendiri.
          */
         $barisDestinasi = collect($katalog['destinasi'] ?? [])
-            ->when($this->isian['provinsi'] ?? '', fn ($c, $p) => $c->where('provinsi', $p))
+            ->when($this->isian['provinsi'] ?? '', fn ($c, $p) => $c
+                ->filter(fn ($b) => ($b['provinsi'] ?? null) === $p || blank($b['provinsi'] ?? null))
+                ->sortBy(fn ($b) => blank($b['provinsi'] ?? null) ? 1 : 0))
             ->values()->all();
 
         $destinasi = collect($barisDestinasi)->pluck('nama')->values()->all();

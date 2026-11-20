@@ -336,7 +336,12 @@
                                         $barisPilihDestinasi = collect($destinasiBaris)->map(fn ($b) => [
                                             'nilai' => $b['nama'],
                                             'label' => $b['nama'],
-                                            'ket' => trim(implode(' · ', array_filter([$b['daerah'] ?? null, $b['provinsi'] ?? null]))),
+                                            // Provinsi yang belum diisi disebut apa adanya: tanpa itu
+                                            // barisnya cuma tampak kurang lengkap, padahal itulah sebabnya
+                                            // ia nyaris tidak pernah ketemu saat dicari lewat provinsi.
+                                            'ket' => blank($b['provinsi'] ?? null)
+                                                ? trim(($b['daerah'] ?? '').' · provinsi belum diisi', ' ·')
+                                                : trim(implode(' · ', array_filter([$b['daerah'] ?? null, $b['provinsi'] ?? null]))),
                                             'lencana' => ($b['punya_tiket'] ?? false) ? 'punya tiket' : null,
                                             'hapus' => $b['katalog_id'] ?? null,
                                             /*

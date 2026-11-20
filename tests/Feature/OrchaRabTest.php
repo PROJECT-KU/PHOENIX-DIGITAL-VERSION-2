@@ -5657,3 +5657,47 @@ test('tiket yang tempatnya belum dicatat menyebutkan sebabnya', function () {
     expect($pesan)->toContain('belum dicatat di Master Harga')
         ->toContain('Destinasi');
 });
+
+test('destinasi yang provinsinya belum diisi tetap bisa dipilih', function () {
+    Http::fake(function (Request $r) {
+        $jalur = parse_url($r->url(), PHP_URL_PATH);
+
+        return match (true) {
+            str_contains($jalur, '/rab/katalog') => Http::response(['data' => [
+                'destinasi' => [
+                    ['nama' => 'Museum Angkut', 'provinsi' => 'Jawa Timur', 'daerah' => 'Malang', 'punya_tiket' => true],
+                    ['nama' => 'Candi Borobudur', 'provinsi' => 'Jawa Tengah', 'daerah' => 'Magelang', 'punya_tiket' => true],
+                    // Provinsinya belum diisi — nyata di produksi: 11 nama.
+                    ['nama' => 'Kawah Wurung', 'provinsi' => null, 'daerah' => null, 'punya_tiket' => true],
+                ],
+                'provinsi' => ['Jawa Timur', 'Jawa Tengah'],
+                'vendor' => [], 'kosakata' => [], 'master' => [], 'paket' => [], 'master_cari' => [],
+            ]]),
+            default => Http::response(['data' => [], 'meta' => []]),
+        };
+    });
+
+    /*
+     | Provinsi kosong berarti BELUM DIISI, bukan "provinsi lain".
+     |
+     | Disaring keluar, destinasi itu mustahil dipilih dari borang mana pun —
+     | admin menyimpulkan namanya belum terdaftar lalu membuat kembarannya,
+     | dan kembaran nama memutus penjodohan tiket ke itinerary karena
+     | penjodohannya mencocokkan nama PERSIS.
+     */
+    $baris = Livewire::actingAs(adminRab())
+        ->test(App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaForm::class)
+        ->set('isian.provinsi', 'Jawa Timur')
+        ->viewData('destinasiBaris');
+
+    $nama = collect($baris)->pluck('nama');
+
+    expect($nama)->toContain('Museum Angkut')
+        ->toContain('Kawah Wurung')
+        // Provinsi LAIN tetap disaring keluar — itu memang bukan di sini.
+        ->not->toContain('Candi Borobudur');
+
+    // Yang provinsinya cocok didahulukan; yang belum diisi menyusul.
+    expect($nama->first())->toBe('Museum Angkut')
+        ->and($nama->last())->toBe('Kawah Wurung');
+});
