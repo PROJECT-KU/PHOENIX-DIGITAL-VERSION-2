@@ -35,6 +35,10 @@ class OrchaVendorList extends Component
     #[Url(as: 'provinsi', except: '')]
     public string $filterProvinsi = '';
 
+    /** 'tanpa' = hanya vendor yang belum punya nomor. */
+    #[Url(as: 'kontak', except: '')]
+    public string $filterKontak = '';
+
     /** Vendor yang sedang ditawarkan untuk digabungkan; null berarti tertutup. */
     public ?int $gabungDari = null;
 
@@ -85,13 +89,54 @@ class OrchaVendorList extends Component
         $this->filterJenis = '';
         $this->filterStatus2 = '';
         $this->filterProvinsi = '';
+        $this->filterKontak = '';
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
         return $this->cari !== '' || $this->filterJenis !== ''
-            || $this->filterStatus2 !== '' || $this->filterProvinsi !== '';
+            || $this->filterStatus2 !== '' || $this->filterProvinsi !== ''
+            || $this->filterKontak !== '';
+    }
+
+    /**
+     * Tab di kepala daftar: satu ketukan, satu kumpulan vendor.
+     *
+     * Tab MENGGANTI saringan, bukan menambahnya. Tab yang menumpuk di atas
+     * saringan yang sedang terpasang memulangkan daftar kosong, dan admin
+     * membacanya sebagai "tidak ada vendor nonaktif" padahal yang terjadi
+     * dua saringan saling meniadakan. Kata pencarian sengaja DIPERTAHANKAN:
+     * itu satu-satunya saringan yang diketik sendiri, dan mengetiknya ulang
+     * tiap berpindah tab adalah hukuman untuk hal yang tidak salah.
+     */
+    public function pilihTab(string $tab): void
+    {
+        $this->filterStatus2 = '';
+        $this->filterJenis = '';
+        $this->filterKontak = '';
+        $this->halaman = 1;
+
+        match ($tab) {
+            'aktif' => $this->filterStatus2 = 'aktif',
+            'nonaktif' => $this->filterStatus2 = 'nonaktif',
+            'tanpa_jenis' => $this->filterJenis = '-',
+            'tanpa_kontak' => $this->filterKontak = 'tanpa',
+            default => null,
+        };
+    }
+
+    /** Tab mana yang sedang terbuka — dibaca dari saringannya, bukan disimpan sendiri. */
+    public function tabKini(): string
+    {
+        return match (true) {
+            $this->filterKontak === 'tanpa' => 'tanpa_kontak',
+            $this->filterJenis === '-' => 'tanpa_jenis',
+            $this->filterStatus2 === 'aktif' => 'aktif',
+            $this->filterStatus2 === 'nonaktif' => 'nonaktif',
+            $this->filterJenis !== '' || $this->filterProvinsi !== '' => '',
+            default => 'semua',
+        };
     }
 
     /**
@@ -293,6 +338,7 @@ class OrchaVendorList extends Component
             'jenis' => $this->filterJenis,
             'status' => $this->filterStatus2,
             'provinsi' => $this->filterProvinsi,
+            'tanpa_kontak' => $this->filterKontak === 'tanpa' ? 1 : null,
         ]));
 
         return view('livewire.pages.admin.orcha.vendor.index', [

@@ -5,6 +5,7 @@
 <div>
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
+    @include('livewire.pages.admin.orcha.vendor.partials.gaya')
 
     @php
         $v = $data['vendor'] ?? [];
@@ -100,9 +101,18 @@
              bisa dihitung sendiri dari dua tabel tepat di bawahnya; keduanya
              pindah ke kepala tabelnya masing-masing. Yang benar-benar baru
              cuma nilai belanjanya — dan itu yang pantas sebesar ini. --}}
+        {{-- ===== Berapa yang sudah dibelanjakan =====
+
+             TIGA ubin, bukan satu kartu selebar halaman.
+
+             Satu kartu dengan satu angka menyisakan dua pertiga lebarnya
+             kosong, sementara dua angka pecahannya — lewat RAB dan lewat
+             sewa kendaraan — terpaksa dijejalkan sebagai kalimat kecil di
+             bawahnya. Dipecah jadi ubin, ketiganya terbaca sebagai angka
+             yang setara dan barisnya habis terpakai. --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-4">
                     <div class="dsb-kartu-isi vd-belanja">
                         <span class="dsb-ikon" style="--c: var(--dsb-utama)"><i class="bi bi-cash-stack"></i></span>
                         <div class="vd-belanja-teks">
@@ -117,14 +127,7 @@
                             <strong class="vd-belanja-nilai">
                                 {{ $data['belanja_total_teks'] ?? ($data['belanja_teks'] ?? 'Rp 0') }}
                             </strong>
-                            <span class="dsb-kartu-sub">
-                                RAB {{ $data['belanja_teks'] ?? 'Rp 0' }}
-                                &middot; sewa kendaraan {{ $data['belanja_sewa_teks'] ?? 'Rp 0' }}
-                                @if ((int) ($data['sewa_jumlah'] ?? 0) > 0)
-                                    ({{ $data['sewa_jumlah'] }} pesanan)
-                                @endif
-                                — dihitung dari seluruhnya, bukan dari halaman yang sedang terlihat.
-                            </span>
+                            <span class="dsb-kartu-sub">Dihitung dari seluruhnya, bukan dari halaman yang terlihat.</span>
 
                             {{-- Pesanan yang modalnya belum dicatat disebut jumlahnya,
                                  tidak dihitung nol. "Rp 0 dari 12 pesanan" dan "Rp 0 dari
@@ -136,6 +139,32 @@
                                     {{ $data['sewa_tanpa_modal'] }} pesanan sewa belum dicatat modalnya
                                 </span>
                             @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-4">
+                    <div class="dsb-kartu-isi vd-belanja">
+                        <span class="dsb-ikon" style="--c: var(--dsb-awas)"><i class="bi bi-calculator"></i></span>
+                        <div class="vd-belanja-teks">
+                            <span class="dsb-kartu-sub">Lewat RAB paket</span>
+                            <strong class="vd-belanja-nilai">{{ $data['belanja_teks'] ?? 'Rp 0' }}</strong>
+                            {{-- Jumlah dari meta, bukan dari baris yang termuat: daftar RAB di
+                                 bawah dibatasi beberapa baris terbaru. --}}
+                            <span class="dsb-kartu-sub">{{ (int) ($rabMeta["total"] ?? count($rab)) }} RAB memakai vendor ini.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-4">
+                    <div class="dsb-kartu-isi vd-belanja">
+                        <span class="dsb-ikon" style="--c: var(--dsb-telaah)"><i class="bi bi-bus-front"></i></span>
+                        <div class="vd-belanja-teks">
+                            <span class="dsb-kartu-sub">Lewat sewa kendaraan</span>
+                            <strong class="vd-belanja-nilai">{{ $data['belanja_sewa_teks'] ?? 'Rp 0' }}</strong>
+                            <span class="dsb-kartu-sub">
+                                {{ (int) ($data['sewa_jumlah'] ?? 0) }} pesanan sewa tercatat.
+                            </span>
                         </div>
                     </div>
                 </div>

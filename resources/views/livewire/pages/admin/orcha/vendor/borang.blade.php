@@ -28,6 +28,7 @@
          daftar vendor dan halaman rinciannya. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
+    @include('livewire.pages.admin.orcha.vendor.partials.gaya')
 
     <style>
         /* Ditulis telanjang di badan komponen, bukan dititipkan ke tumpukan:

@@ -6,7 +6,9 @@ Vendor || lemon
     {{-- Bahasa rupa dsb-* milik dasbor lemon — patokan yang sama dengan
          master harga dan daftar RAB. --}}
     @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.partials.kartu-tab-gaya')
     @include('livewire.pages.admin.orcha.partials.gaya')
+    @include('livewire.pages.admin.orcha.vendor.partials.gaya')
 
     @php
         $jumlahData = (int) ($meta['total'] ?? count($daftar));
@@ -39,6 +41,45 @@ Vendor || lemon
         // katalog pada master harga: nilai di luar daftar harus terlihat
         // sebagai di luar daftar.
         $jenisAsing = $jenisKini !== '' && ! in_array($jenisKini, $pilihanJenis, true);
+
+        /*
+         | Kartu tab di kepala daftar — bentuk yang sama dengan Pesanan Toko.
+         |
+         | Angkanya datang dari 'ringkas' yang dihitung Orcha dari SELURUH
+         | tabel, bukan dari halaman yang sedang disaring: tab yang angkanya
+         | ikut berubah saat disaring tidak lagi memberi tahu apa pun.
+         */
+        $tabKini = $this->tabKini();
+        /*
+         | Warna disebut menurut PERANNYA, bukan heksanya — layar vendor
+         | adalah salah satu layar acuan kosakata itu, dan heksa yang
+         | tertulis di sini akan disalin layar berikutnya.
+         */
+        $tabs = [
+            'semua' => ['Semua', 'bi-shop', 'var(--dsb-utama)'],
+            'aktif' => ['Aktif', 'bi-check2-circle', 'var(--dsb-aman)'],
+            'nonaktif' => ['Nonaktif', 'bi-slash-circle', 'var(--dsb-netral)'],
+            'tanpa_kontak' => ['Belum Ada Nomor', 'bi-telephone-x', 'var(--dsb-bahaya)'],
+            'tanpa_jenis' => ['Belum Berjenis', 'bi-question-circle', 'var(--dsb-awas)'],
+        ];
+        $jumlahTab = [
+            'semua' => (int) ($ringkas['semua'] ?? 0),
+            'aktif' => (int) ($ringkas['aktif'] ?? 0),
+            'nonaktif' => $nonaktif,
+            'tanpa_kontak' => $tanpaKontak,
+            'tanpa_jenis' => (int) ($ringkas['tanpa_jenis'] ?? 0),
+        ];
+        /*
+         | Dua grup, seperti Pesanan Toko: "keadaan" memilah seluruh daftar,
+         | "perlu dilengkapi" menunjuk pekerjaan yang belum selesai. Digabung
+         | jadi satu baris, keduanya terbaca sebagai golongan yang setara —
+         | padahal yang kedua menuntut tindakan.
+         */
+        $grupTab = [
+            ['Keadaan vendor', 'Memilah seluruh daftar', ['semua', 'aktif', 'nonaktif']],
+            ['Perlu dilengkapi', 'Data yang belum selesai diisi', ['tanpa_kontak', 'tanpa_jenis']],
+        ];
+
     @endphp
 
     <div class="dsb">
@@ -53,17 +94,69 @@ Vendor || lemon
                 </p>
             </div>
 
+            {{-- Aksi utama tinggal di KEPALA halaman, bukan menyelip di antara
+                 kotak-kotak saringan. Tombol "Vendor Baru" yang berbaris dengan
+                 kotak pilih terbaca sebagai saringan keenam, dan tempatnya
+                 bergeser tiap kali satu saringan muncul atau hilang. --}}
             <div class="dsb-hero-aksi">
-                <a href="{{ route('admin.orcha.master-harga') }}" wire:navigate class="dsb-tombol is-awas">
+                <a href="{{ route('admin.orcha.master-harga') }}" wire:navigate class="dsb-tombol is-lembut">
                     <i class="bi bi-tags"></i><span>Master Harga</span>
                 </a>
-                <a href="{{ route('admin.orcha.rab') }}" wire:navigate class="dsb-tombol is-utama">
-                    <i class="bi bi-calculator"></i><span>RAB &amp; Itinerary</span>
+                <a href="{{ route('admin.orcha.vendor.pdf', [
+                        'cari' => $cari, 'jenis' => $filterJenis,
+                        'status' => $filterStatus2, 'provinsi' => $filterProvinsi,
+                    ]) }}"
+                    class="dsb-tombol is-telaah" title="Unduh daftar vendor sesuai saringan">
+                    <i class="bi bi-file-earmark-pdf"></i><span>PDF</span>
+                </a>
+                <a href="{{ route('admin.orcha.vendor.tambah') }}" wire:navigate class="dsb-tombol is-utama">
+                    <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
                 </a>
             </div>
         </header>
 
         @include('livewire.pages.admin.orcha.partials.galat-dsb')
+
+        {{-- ================== TAB ==================
+             Bentuk yang sama dengan Pesanan Toko dan Penyewaan: kartu berangka
+             lebih dulu, baru daftarnya. Pemilih status yang lama menyembunyikan
+             pilihannya di balik satu kotak dan tidak pernah menyebut berapa
+             isinya; kartu berangka menjawab "ada pekerjaan di sana atau tidak"
+             tanpa ditekan dulu. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="k-12">
+                    <div class="pt-grup-deret">
+                        @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
+                            <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                <div class="pt-grup-kepala">
+                                    <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                    <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                </div>
+                                <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}">
+                                    @foreach ($kunciGrup as $kunci)
+                                        @php
+                                            [$labelTab, $ikonTab, $warnaTab] = $tabs[$kunci];
+                                            $angkaTab = $jumlahTab[$kunci];
+                                            $iniAktif = $tabKini === $kunci;
+                                        @endphp
+                                        <button type="button" wire:click="pilihTab('{{ $kunci }}')" style="--c: {{ $warnaTab }}"
+                                            class="pt-kartu-tab {{ $iniAktif ? 'is-aktif' : '' }} {{ $angkaTab === 0 ? 'is-nol' : '' }}"
+                                            aria-pressed="{{ $iniAktif ? 'true' : 'false' }}">
+                                            <span class="pt-kartu-ikon"><i class="bi {{ $ikonTab }}"></i></span>
+                                            <span class="pt-kartu-teks">
+                                                <span class="pt-kartu-angka">{{ 999 < $angkaTab ? '999+' : number_format($angkaTab, 0, ',', '.') }}</span>
+                                                <span class="pt-kartu-label">{{ $labelTab }}</span>
+                                            </span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </nav>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
 
         {{-- ================== SARINGAN ================== --}}
         <section class="dsb-bagian">
@@ -71,64 +164,54 @@ Vendor || lemon
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-isi">
                         <div class="vd-saring">
-                            <div class="vd-medan-cari">
+                            <div class="dsb-medan vd-saring-cari">
+                                <label class="dsb-label" for="vd-cari">Cari vendor</label>
                                 @include('livewire.pages.admin.orcha.partials.cari', [
-                                    'petunjuk' => 'Cari nama vendor atau nomornya…',
+                                    'petunjuk' => 'Nama vendor atau nomornya…',
                                 ])
                             </div>
 
-                            <select class="dsb-isian vd-pilih" wire:model.live="filterJenis" aria-label="Saring menurut jenis">
-                                <option value="" @selected((string) $this->filterJenis === '')>Semua jenis</option>
-                                <option value="-" @selected((string) $this->filterJenis === '-')>Belum berjenis</option>
-                                @foreach ($jenisAda as $j)
-                                    <option value="{{ $j }}" @selected((string) $this->filterJenis === (string) $j)>{{ $j }}</option>
-                                @endforeach
-                            </select>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="vd-jenis">Jenis</label>
+                                <select id="vd-jenis" class="dsb-isian" wire:model.live="filterJenis">
+                                    <option value="" @selected((string) $this->filterJenis === '')>Semua jenis</option>
+                                    <option value="-" @selected((string) $this->filterJenis === '-')>Belum berjenis</option>
+                                    @foreach ($jenisAda as $j)
+                                        <option value="{{ $j }}" @selected((string) $this->filterJenis === (string) $j)>{{ $j }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                            <select class="dsb-isian vd-pilih" wire:model.live="filterProvinsi" aria-label="Saring menurut wilayah">
-                                <option value="" @selected((string) $this->filterProvinsi === '')>Semua wilayah</option>
-                                <option value="-" @selected((string) $this->filterProvinsi === '-')>Tanpa wilayah</option>
-                                @foreach ($provinsiAda as $p)
-                                    <option value="{{ $p }}" @selected((string) $this->filterProvinsi === (string) $p)>{{ $p }}</option>
-                                @endforeach
-                            </select>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="vd-provinsi">Wilayah</label>
+                                <select id="vd-provinsi" class="dsb-isian" wire:model.live="filterProvinsi">
+                                    <option value="" @selected((string) $this->filterProvinsi === '')>Semua wilayah</option>
+                                    <option value="-" @selected((string) $this->filterProvinsi === '-')>Tanpa wilayah</option>
+                                    @foreach ($provinsiAda as $p)
+                                        <option value="{{ $p }}" @selected((string) $this->filterProvinsi === (string) $p)>{{ $p }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                            <select class="dsb-isian vd-pilih" wire:model.live="filterStatus2" aria-label="Saring menurut status">
-                                <option value="" @selected((string) $this->filterStatus2 === '')>Aktif &amp; nonaktif</option>
-                                <option value="aktif" @selected((string) $this->filterStatus2 === 'aktif')>Hanya aktif</option>
-                                <option value="nonaktif" @selected((string) $this->filterStatus2 === 'nonaktif')>Hanya nonaktif</option>
-                            </select>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="vd-status">Status</label>
+                                <select id="vd-status" class="dsb-isian" wire:model.live="filterStatus2">
+                                    <option value="" @selected((string) $this->filterStatus2 === '')>Aktif &amp; nonaktif</option>
+                                    <option value="aktif" @selected((string) $this->filterStatus2 === 'aktif')>Hanya aktif</option>
+                                    <option value="nonaktif" @selected((string) $this->filterStatus2 === 'nonaktif')>Hanya nonaktif</option>
+                                </select>
+                            </div>
 
-                            {{-- Halaman tersendiri, bukan kartu yang menyelip di
-                                 antara saringan dan tabel. Formulir yang terbuka di
-                                 dalam daftar mendorong daftarnya keluar pandangan,
-                                 dan alamatnya tidak pernah menunjuk apa yang sedang
-                                 dikerjakan. --}}
-                            <a href="{{ route('admin.orcha.vendor.tambah') }}" class="dsb-tombol is-utama" wire:navigate>
-                                <i class="bi bi-plus-lg"></i><span>Vendor Baru</span>
-                            </a>
-
-                            {{-- Tautan biasa, bukan aksi Livewire: berkasnya dirakit
-                                 Orcha dan diteruskan apa adanya, jadi tidak ada yang
-                                 perlu ditunggu di layar ini.
-
-                                 Saringannya ikut di alamatnya — berkas yang isinya
-                                 berbeda dari yang terlihat di layar adalah berkas
-                                 yang menyesatkan. --}}
-                            <a href="{{ route('admin.orcha.vendor.pdf', [
-                                    'cari' => $cari, 'jenis' => $filterJenis,
-                                    'status' => $filterStatus2, 'provinsi' => $filterProvinsi,
-                                ]) }}"
-                                class="dsb-tombol is-telaah" title="Unduh daftar vendor sesuai saringan">
-                                <i class="bi bi-file-earmark-pdf"></i><span>PDF</span>
-                            </a>
-
-                            @if ($adaSaringan)
-                                <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-awas"
-                                    title="Kembali menampilkan seluruh vendor">
-                                    <i class="bi bi-x-circle"></i><span>Tampilkan semua</span>
-                                </button>
-                            @endif
+                            <div class="dsb-medan vd-saring-kaki">
+                                @if ($adaSaringan)
+                                    <button type="button" wire:click="bersihkanSaringan" class="dsb-tombol is-lembut"
+                                        title="Kembali menampilkan seluruh vendor">
+                                        <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                    </button>
+                                @else
+                                    <span class="dsb-kartu-sub">Tidak ada saringan terpasang.</span>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -536,15 +619,6 @@ Vendor || lemon
     </div>
 
     <style>
-        .vd-saring { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        /* Enam benda di satu baris: kotak cari yang mengalah duluan.
-
-           Dengan basis 260px ia menolak menyempit, tombol terakhir terdorong
-           ke baris kedua, dan barisnya menyisakan tiga perempat ruang kosong
-           untuk satu tombol. */
-        .vd-saring > .vd-medan-cari { flex: 1 1 180px; min-width: 0; }
-        .vd-saring .dsb-tombol { flex: 0 0 auto; }
-
         /* Kotak cari bersama memakai .form-control Bootstrap; yang disamakan
            rupanya saja — markup & perilakunya tetap milik partial. */
         .vd-saring .form-control {
@@ -558,31 +632,28 @@ Vendor || lemon
             color: #94a3b8; pointer-events: none; z-index: 2;
         }
 
-        .vd-medan-rak { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; }
-        .vd-medan-rak > .dsb-medan { flex: 1 1 240px; min-width: 0; }
-        .vd-medan-rak > .dsb-medan.is-lebar { flex-basis: 100%; }
-        .vd-medan-rak .dsb-kartu-sub,
-        .vd-medan-rak .dsb-galat { display: block; margin-top: 5px; }
-        .vd-medan-rak .dsb-label-ket { margin-left: 4px; font-weight: 500; }
-
-        /* Pilihan jenis: chip melar berbagi baris dengan kotak ketiknya, jadi
-           barisnya habis terpakai berapa pun jumlah chipnya. */
-        .vd-jenis { display: flex; flex-wrap: wrap; gap: 6px; }
-        .vd-jenis-chip {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            flex: 1 1 120px; padding: 8px 11px; border-radius: 10px; cursor: pointer;
-            background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3);
-            color: var(--dsb-tinta, #1c1f26); font-size: .79rem; font-weight: 600; white-space: nowrap;
+        /* ---------- Saringan berlabel ----------
+           Kotak-kotak tanpa label memaksa isinya dibaca untuk tahu kotak itu
+           menyaring apa — dan kotak yang sedang kosong tidak memberi petunjuk
+           sama sekali. */
+        .vd-saring {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+            gap: 12px 14px;
+            align-items: end;
         }
-        .vd-jenis-chip i { color: var(--c, #64748b); }
-        .vd-jenis-chip:hover { border-color: #c7d2fe; }
-        .vd-jenis-chip.is-aktif { border-color: var(--c, #4f46e5); background: #f8fafc; box-shadow: 0 0 0 3px rgba(99, 102, 241, .08); }
-        .vd-jenis-lain { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-        .vd-jenis-lain .dsb-kartu-sub { flex: 0 0 auto; }
-        .vd-jenis-isi { flex: 1 1 auto; min-width: 0; }
 
-        .vd-sakelar { margin-top: 14px; }
-        .vd-kaki { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+        .vd-saring-cari { grid-column: 1 / -1; }
+        .vd-saring-kaki { display: flex; align-items: center; min-height: 2.4rem; }
+        .vd-saring .dsb-label { display: block; margin-bottom: 5px; }
+
+        @media (min-width: 992px) {
+            /* Kotak cari berbagi baris dengan saringan lain begitu layarnya
+               cukup lebar: di layar lebar, kotak cari selebar penuh menyisakan
+               baris kedua yang cuma terisi separuh. */
+            .vd-saring-cari { grid-column: span 2; }
+        }
+
 
         .vd-utama { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .vd-catatan { font-style: italic; }
@@ -601,7 +672,6 @@ Vendor || lemon
             font-size: .76rem; font-weight: 600; color: #b45309;
         }
 
-        .vd-saring > .vd-pilih { flex: 0 1 auto; width: auto; min-width: 128px; max-width: 176px; }
 
         /* Ringkasan di kepala kartu: dua angka yang sebelumnya harus dipindai
            baris per baris, dan keduanya membawa ke tempatnya. */
@@ -673,7 +743,6 @@ Vendor || lemon
             background: #fffbeb; border: 1px solid #fde68a;
             color: #92400e; font-size: .68rem; font-weight: 700;
         }
-        .vd-jenis-asing { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; }
 
         .vd-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
         .vd-halaman > * { margin-bottom: 0 !important; margin-top: 0 !important; }
