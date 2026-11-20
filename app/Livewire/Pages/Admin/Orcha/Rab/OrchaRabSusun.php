@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Orcha\Rab;
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
@@ -524,6 +525,29 @@ class OrchaRabSusun extends Component
      */
     private function kirimKe(string $cara, string $jalur, array $data = [], ?string $pesan = null): ?array
     {
+        $versi = $this->versiSekarang();
+
+        if ($versi > 0) {
+            /*
+             | Penanda versi ikut di SETIAP perubahan, disisipkan di sini dan
+             | bukan di 40-an pemanggilnya.
+             |
+             | Gunanya satu: supaya Orcha bisa menolak suntingan yang ditulis
+             | di atas data yang sudah basi. Dua admin yang mengerjakan satu
+             | RAB bersamaan dulu saling menimpa tanpa suara — yang menyimpan
+             | belakangan menang, dan angka orang pertama kembali sendiri ke
+             | nilai lama saat layarnya dimuat ulang.
+             |
+             | DELETE tidak punya badan permintaan, jadi penandanya menempel
+             | sebagai query. Laravel membaca keduanya lewat $request->filled().
+             */
+            if ($cara === 'hapus') {
+                $jalur .= (str_contains($jalur, '?') ? '&' : '?').'versi='.$versi;
+            } else {
+                $data['versi'] = $versi;
+            }
+        }
+
         try {
             $balasan = match ($cara) {
                 'ubah' => $this->orcha()->ubah($jalur, $data),
@@ -546,13 +570,59 @@ class OrchaRabSusun extends Component
         return $balasan;
     }
 
-    private function muatUlang(): void
+    /**
+     * @return bool Benar kalau datanya benar-benar terbaca ulang dari Orcha.
+     */
+    private function muatUlang(): bool
     {
         try {
             $this->terapkan($this->orcha()->ambil("/rab/{$this->rabId}")['data'] ?? []);
         } catch (OrchaTidakTerjangkau) {
             // Pesan galatnya sudah tampil lewat toast.
+            return false;
         }
+
+        return true;
+    }
+
+    /**
+     * Versi RAB yang sedang terbaca di layar ini.
+     *
+     * Nol berarti Orcha belum mengirimkannya — versi Orcha yang belum
+     * dideploy. Penandanya lalu tidak dikirim sama sekali, dan Orcha lama
+     * berjalan seperti sebelumnya: menambahkan kunci yang tidak ia kenal ke
+     * setiap permintaan akan mematikan layar ini di server yang belum naik.
+     */
+    private function versiSekarang(): int
+    {
+        return (int) ($this->dataRab['versi'] ?? 0);
+    }
+
+    /**
+     * Dipanggil penanda (komponen kecil yang mengintip tiap 10 detik) begitu
+     * ia melihat RAB ini diubah orang lain.
+     *
+     * Yang dimuat ulang HANYA data dari Orcha; isian yang sedang diketik tidak
+     * disentuh, dan keputusan boleh-tidaknya memuat ulang diambil di peramban
+     * (lihat skrip di layar susun) supaya ketikan yang belum selesai tidak
+     * hilang di tengah kalimat.
+     */
+    #[On('rab-muat-ulang')]
+    public function muatUlangDariPenanda(): void
+    {
+        /*
+         | Penandanya dikabari HANYA kalau datanya sungguh terbaca ulang.
+         |
+         | Orcha yang sedang tidak bisa dihubungi membuat layar ini tetap
+         | memegang angka yang lama. Bilahnya harus tetap berdiri di situ:
+         | bilah yang hilang adalah pernyataan bahwa layar ini sudah mutakhir,
+         | dan admin akan menyunting di atas data basi dengan yakin.
+         */
+        if (! $this->muatUlang()) {
+            return;
+        }
+
+        $this->dispatch('rab-sudah-dimuat', versi: $this->versiSekarang());
     }
 
     /* ------------------------------ ITINERARY ------------------------------ */

@@ -3890,6 +3890,80 @@ Susun RAB || lemon
         @endif
     </div>
 
+    {{--
+        Pengintip versi: komponen TERPISAH, supaya pengintipan tiap 10 detik
+        tidak membawa seluruh keadaan layar ini naik-turun. Alasan panjangnya
+        ada di OrchaRabPenanda.
+
+        :versi diambil dari data RAB. Orcha yang belum dideploy tidak
+        mengirimkannya, nilainya jadi 0, dan pengintipnya diam sama sekali.
+    --}}
+    @if ($ada)
+        <livewire:pages.admin.orcha.rab.orcha-rab-penanda
+            :rab-id="$rabId"
+            :versi="(int) ($rab['versi'] ?? 0)"
+            :key="'penanda-rab-'.$rabId" />
+    @endif
+
     @include('livewire.pages.admin.orcha.partials.seret-urut')
     @include('livewire.pages.admin.orcha.partials.skrip')
+
+    {{--
+        Siapa yang memutuskan memuat ulang sendiri.
+
+        Penanda cuma mengabarkan bahwa orang lain mengubah RAB ini. Yang tahu
+        kursornya sedang di mana hanya peramban: memuat ulang saat admin
+        sedang di tengah mengetik harga akan mengganti angka yang sedang ia
+        tulis — persis kerugian yang fitur ini mau cegah.
+
+        Jadi: tidak ada yang sedang diketik -> muat ulang seketika, admin tidak
+        perlu melakukan apa-apa. Sedang mengetik -> diamkan, bilah "Diubah oleh
+        X - Muat ulang" sudah berdiri dan admin yang memilih kapan.
+    --}}
+    <script>
+        /* Dipasang LANGSUNG kalau Livewire sudah hidup, dan hanya menunggu
+           `livewire:initialized` kalau belum.
+
+           Sama seperti penangan di partials/skrip: peristiwa itu dikirim
+           SEKALI seumur halaman. Admin yang masuk lewat bilah samping
+           (wire:navigate) menjalankan ulang skrip ini di body yang baru, lalu
+           mendaftar menunggu peristiwa yang sudah lewat dan tidak akan datang
+           lagi. Akibatnya muat ulang otomatis mati justru pada jalur masuk
+           yang paling biasa, sementara F5 memperbaikinya sendiri — jadi
+           pengujian manual selalu melihatnya bekerja. */
+        (() => {
+            const pasang = () => {
+                if (window.__rabPenandaBound) return;
+                window.__rabPenandaBound = true;
+
+                const sedangMengetik = () => {
+                    const f = document.activeElement;
+
+                    if (! f || f === document.body) {
+                        return false;
+                    }
+
+                    /* contentEditable ikut dihitung: catatan per baris dan
+                       per kegiatan memakainya, dan isinya yang paling panjang
+                       ditulis — paling mahal kalau hilang di tengah. */
+                    return f.isContentEditable
+                        || ['INPUT', 'TEXTAREA', 'SELECT'].includes(f.tagName);
+                };
+
+                Livewire.on('rab-diubah-orang-lain', () => {
+                    if (sedangMengetik()) {
+                        return;
+                    }
+
+                    Livewire.dispatch('rab-muat-ulang');
+                });
+            };
+
+            if (window.Livewire) {
+                pasang();
+            } else {
+                document.addEventListener('livewire:initialized', pasang);
+            }
+        })();
+    </script>
 </div>

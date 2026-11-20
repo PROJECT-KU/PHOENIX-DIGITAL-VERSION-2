@@ -456,7 +456,17 @@ class OrchaClient
          */
         $pesanOrcha = trim((string) ($balasan->json('pesan') ?? ''));
 
-        if ($kode === 422 && $pesanOrcha !== '') {
+        /*
+         | 422 DAN 409.
+         |
+         | 409 dipakai Orcha untuk satu hal: data ini baru saja diubah orang
+         | lain. Kalimatnya menyebut siapa dan kapan, lalu menyuruh mengulang
+         | suntingan di atas data yang baru — satu-satunya penjelasan yang
+         | membuat admin paham mengapa angkanya tidak tersimpan. Diganti jadi
+         | "Orcha membalas dengan kode 409" ia akan menekan Simpan lagi, dan
+         | ditolak lagi, tanpa pernah tahu sebabnya.
+         */
+        if (in_array($kode, [409, 422], true) && $pesanOrcha !== '') {
             return $pesanOrcha;
         }
 
@@ -464,6 +474,7 @@ class OrchaClient
             401 => 'Kunci API Orcha ditolak. Pastikan ORCHA_API_KEY sama persis di kedua aplikasi.',
             403 => 'IP server ini belum diizinkan oleh Orcha.',
             404 => 'Data yang diminta tidak ada di Orcha.',
+            409 => 'Data ini baru saja diubah orang lain. Muat ulang layarnya dulu.',
             429 => 'Terlalu banyak permintaan ke Orcha. Tunggu sebentar.',
             503 => 'Orcha belum menyalakan API-nya (ORCHA_API_KEY di sisi Orcha masih kosong).',
             default => "Orcha membalas dengan kode {$kode}.",

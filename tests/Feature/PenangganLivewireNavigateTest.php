@@ -87,17 +87,60 @@ it('tiap layar orcha memuat partial skrip', function () {
      | Layar yang melewatkannya mengirim eventnya ke ruang kosong: tidak ada
      | toast, tidak ada perpindahan, dan tidak ada galat yang bisa dicurigai.
      */
+    /*
+     | Komponen ANAK dikecualikan, dan daftarnya ditulis satu-satu.
+     |
+     | Aturannya berlaku untuk LAYAR — halaman penuh yang dicapai lewat
+     | wire:navigate. Komponen anak hidup di dalam layar yang sudah memuat
+     | partialnya; memuatnya sekali lagi berarti skrip yang sama terpasang
+     | dua kali di satu halaman.
+     |
+     | Ditulis satu-satu, bukan ditebak dari pola nama, supaya komponen anak
+     | yang baru harus disebutkan di sini dengan sadar — dan layar yang
+     | sungguhan tidak bisa menyelinap keluar dari aturan ini.
+     */
+    $anak = ['rab/penanda.blade.php'];
+
     $tanpa = [];
+    $bukanLayar = [];
 
     foreach (glob(resource_path('views/livewire/pages/admin/orcha/*/*.blade.php')) as $jalur) {
         if (str_contains($jalur, '/partials/')) {
             continue;
         }
 
-        if (! str_contains(file_get_contents($jalur), 'partials.skrip')) {
-            $tanpa[] = str_replace(resource_path('views/livewire/pages/admin/orcha/'), '', $jalur);
+        $nama = str_replace(resource_path('views/livewire/pages/admin/orcha/'), '', $jalur);
+        $isi = file_get_contents($jalur);
+
+        if (in_array($nama, $anak, true)) {
+            continue;
+        }
+
+        /*
+         | Penjaga dua arah.
+         |
+         | Tiap layar lemon dibuka dengan @section('title'); itu penandanya.
+         | Tampilan tanpa penanda itu DAN tanpa izin sebagai komponen anak
+         | dianggap pelanggaran juga — kalau tidak, layar baru yang lupa
+         | menulis judulnya ikut lolos dari aturan di bawahnya tanpa suara.
+         */
+        if (! str_contains($isi, "@section('title')")) {
+            $bukanLayar[] = $nama;
+
+            continue;
+        }
+
+        if (! str_contains($isi, 'partials.skrip')) {
+            $tanpa[] = $nama;
         }
     }
 
     expect($tanpa)->toBe([], 'Layar Orcha tanpa partial skrip: '.implode(', ', $tanpa));
+
+    expect($bukanLayar)->toBe([], implode("\n", array_merge(
+        ['Tampilan Orcha tanpa @section(\'title\') dan tidak terdaftar sebagai komponen anak:'],
+        $bukanLayar,
+        ['', 'Kalau ini layar: tambahkan @section(\'title\') dan @include partials.skrip.',
+            'Kalau ini komponen anak: daftarkan namanya di $anak pada uji ini.'],
+    )));
 });
