@@ -6,6 +6,7 @@ use App\Models\Surat\Surat;
 use App\Models\Surat\SuratDisposisi;
 use App\Models\Surat\SuratLampiran;
 use App\Models\User;
+use App\Notifications\DisposisiBaru;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -86,7 +87,7 @@ class SuratDetail extends Component
     {
         abort_unless(auth()->user()?->hasPermission('edit_surat'), 403);
 
-        if (! array_key_exists($status, Surat::STATUS)) {
+        if (! in_array($status, Surat::STATUS_MANUAL, true)) {
             return;
         }
 
@@ -133,7 +134,7 @@ class SuratDetail extends Component
             return;
         }
 
-        SuratDisposisi::create([
+        $disposisi = SuratDisposisi::create([
             'surat_id' => $this->suratId,
             'kepada_user_id' => $this->disKepadaUser ?: null,
             'kepada_nama' => trim($this->disKepadaNama) ?: null,
@@ -141,6 +142,22 @@ class SuratDetail extends Component
             'batas' => $this->disBatas ?: null,
             'status' => 'menunggu',
         ]);
+
+        /*
+         | Beri tahu orangnya — kalau ia punya akun.
+         |
+         | Disposisi yang tidak terbaca sama saja dengan disposisi yang tidak
+         | pernah dibuat. Yang ditulis sebagai NAMA (tanpa akun) tetap sah dan
+         | tetap tercatat; menagihnya memang masih tugas manusia, dan angkanya
+         | sudah tampil di dasbor.
+         |
+         | Tidak mengirim ke diri sendiri: orang yang baru saja mengetik
+         | perintahnya tidak perlu diberi tahu bahwa ia mengetiknya.
+         */
+        if ($disposisi->kepada_user_id && (int) $disposisi->kepada_user_id !== (int) auth()->id()) {
+            $disposisi->penerima?->notify(new DisposisiBaru($disposisi));
+            $disposisi->forceFill(['diberitahu_pada' => now()])->saveQuietly();
+        }
 
         /*
          | Surat yang baru didisposisi otomatis jadi 'diproses'.
@@ -330,6 +347,16 @@ class SuratDetail extends Component
 
         return view('livewire.pages.admin.surat.detail', [
             'surat' => $surat,
+            /*
+             | Riwayat dibatasi 60 baris terakhir, TERBARU DI ATAS.
+             |
+             | Diurutkan dengan id, bukan created_at: beberapa jejak lahir
+             | dalam detik yang sama (ubah data lalu ubah status), dan
+             | riwayat yang terbaca terbalik lebih buruk daripada tidak ada.
+             */
+            'jejak' => $surat->jejak()->with('pelaku')->orderByDesc('id')->limit(60)->get(),
+            'tanggapan' => $surat->tanggapan()->terlihatOleh($u)
+                ->orderBy('tanggal_surat')->orderBy('id')->get(),
             'bolehUbah' => (bool) $u?->hasPermission('edit_surat'),
             'bolehCatat' => (bool) $u?->hasPermission('create_surat'),
             'bolehHapus' => (bool) $u?->hasPermission('delete_surat'),

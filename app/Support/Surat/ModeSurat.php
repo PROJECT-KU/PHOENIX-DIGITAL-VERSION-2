@@ -26,7 +26,7 @@ class ModeSurat
     public const IZIN = [
         'akses_arsip_surat',
         'view_surat', 'view_surat_rahasia', 'create_surat', 'edit_surat', 'delete_surat',
-        'kelola_klasifikasi_surat',
+        'kelola_pemusnahan_surat', 'kelola_klasifikasi_surat',
     ];
 
     public static function aktif(): bool

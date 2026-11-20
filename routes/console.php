@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Promo;
+use App\Models\Surat\SuratDisposisi;
 use App\Models\Task;
+use App\Notifications\DisposisiLewatTenggat;
 use App\Notifications\TaskDeadlineSoon;
 use App\Notifications\TaskOverdue;
 use App\Support\CronHeartbeat;
@@ -305,3 +307,33 @@ $jadwalkan('telegram:webhook pastikan')->hourly()->withoutOverlapping(60);
  * Diam total bila bot belum dikonfigurasi.
  */
 $jadwalkan('cron:pantau')->everyFiveMinutes()->withoutOverlapping(10);
+
+/**
+ * Ingatkan disposisi surat yang tenggatnya sudah lewat.
+ *
+ * SEKALI per disposisi, ditandai telat_diberitahu_pada. Pengingat harian
+ * untuk hal yang sama membuat orang berhenti membacanya — dan sekali itu
+ * terjadi, pemberitahuan yang lain ikut diabaikan.
+ *
+ * Hanya yang punya AKUN yang bisa diberi tahu. Disposisi ke nama yang
+ * ditulis tangan ("Pak Budi — Bagian Umum") memang ada dan memang sah;
+ * yang menagihnya tetap manusia, dan angkanya sudah tampil di dasbor.
+ */
+Artisan::command('surat:ingatkan-disposisi', function () {
+    $telat = SuratDisposisi::belumSelesai()
+        ->whereNotNull('batas')
+        ->whereDate('batas', '<', today())
+        ->whereNull('telat_diberitahu_pada')
+        ->whereNotNull('kepada_user_id')
+        ->with(['penerima', 'surat'])
+        ->get();
+
+    foreach ($telat as $disposisi) {
+        $disposisi->penerima?->notify(new DisposisiLewatTenggat($disposisi));
+        $disposisi->forceFill(['telat_diberitahu_pada' => now()])->saveQuietly();
+    }
+
+    $this->info('Pengingat disposisi: '.$telat->count().' dikirim.');
+})->purpose('Kirim pengingat disposisi surat yang lewat tenggat');
+
+$jadwalkan('surat:ingatkan-disposisi')->dailyAt('07:15')->withoutOverlapping(30);

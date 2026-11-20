@@ -51,6 +51,7 @@ class SuratForm extends Component
     /** @var array<string, mixed> */
     public array $f = [
         'arah' => 'masuk',
+        'induk_id' => '',
         'nomor_surat' => '',
         'tanggal_surat' => '',
         'tanggal_catat' => '',
@@ -59,6 +60,7 @@ class SuratForm extends Component
         'perihal' => '',
         'dari' => '',
         'kepada' => '',
+        'tembusan' => '',
         'status' => 'baru',
         'lokasi_fisik' => '',
         'ringkasan' => '',
@@ -108,6 +110,7 @@ class SuratForm extends Component
 
             $this->f = [
                 'arah' => $m->arah,
+                'induk_id' => (string) ($m->induk_id ?? ''),
                 'nomor_surat' => (string) $m->nomor_surat,
                 'tanggal_surat' => $m->tanggal_surat?->toDateString() ?? '',
                 'tanggal_catat' => $m->tanggal_catat?->toDateString() ?? '',
@@ -116,6 +119,7 @@ class SuratForm extends Component
                 'perihal' => (string) $m->perihal,
                 'dari' => (string) $m->dari,
                 'kepada' => (string) $m->kepada,
+                'tembusan' => (string) $m->tembusan,
                 'status' => $m->status,
                 'lokasi_fisik' => (string) $m->lokasi_fisik,
                 'ringkasan' => (string) $m->ringkasan,
@@ -132,7 +136,44 @@ class SuratForm extends Component
         $this->f['tanggal_surat'] = now()->toDateString();
         $this->f['tanggal_catat'] = now()->toDateString();
 
+        $this->siapkanBalasan();
         $this->susunNomor();
+    }
+
+    /**
+     * Borang yang dibuka lewat tombol "Catat balasan" di halaman surat.
+     *
+     * Yang diisikan hanya yang pasti benar: arahnya terbalik dari surat yang
+     * ditanggapi, tujuannya pengirim surat itu, dan klasifikasinya sama.
+     * Perihalnya TIDAK ditebak — "Balasan: ..." terbaca seperti data yang
+     * dibuat mesin, dan perihal adalah satu-satunya kalimat yang nanti
+     * dipakai orang untuk mencari suratnya.
+     */
+    private function siapkanBalasan(): void
+    {
+        $balas = (int) request()->query('balas');
+
+        if (! $balas) {
+            return;
+        }
+
+        $induk = Surat::terlihatOleh(auth()->user())->find($balas);
+
+        if (! $induk) {
+            return;
+        }
+
+        $this->f['induk_id'] = (string) $induk->id;
+        $this->f['arah'] = $induk->arah === 'masuk' ? 'keluar' : 'masuk';
+        $this->f['klasifikasi_id'] = (string) ($induk->klasifikasi_id ?? '');
+
+        $lawan = $induk->arah === 'masuk' ? $induk->dari : $induk->kepada;
+
+        if ($this->f['arah'] === 'keluar') {
+            $this->f['kepada'] = (string) $lawan;
+        } else {
+            $this->f['dari'] = (string) $lawan;
+        }
     }
 
     /*
@@ -211,6 +252,8 @@ class SuratForm extends Component
             'f.status' => 'required|in:'.implode(',', array_keys(Surat::STATUS)),
             'f.dari' => 'nullable|string|max:180',
             'f.kepada' => 'nullable|string|max:180',
+            'f.tembusan' => 'nullable|string|max:500',
+            'f.induk_id' => 'nullable|exists:surat,id',
             'f.lokasi_fisik' => 'nullable|string|max:180',
             'f.ringkasan' => 'nullable|string|max:5000',
             /*
@@ -248,6 +291,8 @@ class SuratForm extends Component
             'unggahan.*' => 'berkas pindaian',
             'f.klasifikasi_id' => 'klasifikasi',
             'f.lokasi_fisik' => 'tempat berkas',
+            'f.tembusan' => 'tembusan',
+            'f.induk_id' => 'surat yang ditanggapi',
         ];
     }
 
@@ -334,6 +379,8 @@ class SuratForm extends Component
             'perihal' => trim((string) $this->f['perihal']),
             'dari' => trim((string) $this->f['dari']) ?: null,
             'kepada' => trim((string) $this->f['kepada']) ?: null,
+            'tembusan' => trim((string) $this->f['tembusan']) ?: null,
+            'induk_id' => $this->f['induk_id'] ?: null,
             'status' => $this->f['status'],
             'lokasi_fisik' => trim((string) $this->f['lokasi_fisik']) ?: null,
             'ringkasan' => trim((string) $this->f['ringkasan']) ?: null,
@@ -407,6 +454,19 @@ class SuratForm extends Component
     {
         return view('livewire.pages.admin.surat.borang', [
             'daftarKlasifikasi' => SuratKlasifikasi::aktif()->tersusun()->get(),
+            /*
+             | Kotak "menanggapi surat" diisi surat ber-ARAH SEBALIKNYA saja.
+             |
+             | Surat keluar menanggapi surat masuk, bukan surat keluar lain.
+             | Dibatasi 60 terbaru supaya kotaknya tetap bisa dibaca; surat
+             | lama yang perlu ditanggapi tetap bisa dipilih dari halaman
+             | suratnya sendiri lewat tombol "Catat balasan".
+             */
+            'daftarInduk' => Surat::terlihatOleh(auth()->user())
+                ->where('arah', $this->f['arah'] === 'keluar' ? 'masuk' : 'keluar')
+                ->when($this->suratId, fn ($q) => $q->whereKeyNot($this->suratId))
+                ->orderByDesc('tanggal_surat')->orderByDesc('id')
+                ->limit(60)->get(['id', 'nomor_agenda', 'perihal', 'tanggal_surat']),
             'nomorNanti' => $this->isEdit
                 ? null
                 : Surat::nomorAgendaBaru((string) $this->f['arah']),

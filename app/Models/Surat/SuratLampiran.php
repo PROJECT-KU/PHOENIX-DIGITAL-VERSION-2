@@ -13,6 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SuratLampiran extends Model
 {
+    protected static function booted(): void
+    {
+        static::created(fn (self $l) => $l->surat?->catatJejak('lampiran', 'Pindaian ditambahkan: '.$l->nama));
+        static::deleted(fn (self $l) => $l->surat?->catatJejak('lampiran', 'Pindaian dihapus: '.$l->nama));
+    }
+
     protected $table = 'surat_lampiran';
 
     protected $fillable = ['surat_id', 'nama', 'jalur', 'ukuran', 'jenis', 'diunggah_oleh'];

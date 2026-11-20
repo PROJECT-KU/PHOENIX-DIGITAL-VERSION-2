@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * Disposisi: perintah tindak lanjut atas sebuah surat.
@@ -21,6 +22,7 @@ class SuratDisposisi extends Model
     protected $fillable = [
         'surat_id', 'kepada_user_id', 'kepada_nama', 'instruksi',
         'batas', 'status', 'selesai_pada', 'dibuat_oleh',
+        'diberitahu_pada', 'telat_diberitahu_pada',
     ];
 
     protected $casts = [
@@ -28,6 +30,8 @@ class SuratDisposisi extends Model
         'selesai_pada' => 'datetime',
         'surat_id' => 'integer',
         'kepada_user_id' => 'integer',
+        'diberitahu_pada' => 'datetime',
+        'telat_diberitahu_pada' => 'datetime',
     ];
 
     public const STATUS = [
@@ -43,6 +47,25 @@ class SuratDisposisi extends Model
                 $d->dibuat_oleh = auth()->id();
             }
         });
+
+        /*
+         | Disposisi menulis riwayat SURATNYA, bukan riwayat sendiri.
+         |
+         | Yang dibaca orang adalah "apa yang terjadi pada surat ini", dan
+         | perintah tindak lanjut adalah bagian terpenting dari cerita itu.
+         */
+        static::created(fn (self $d) => $d->surat?->catatJejak(
+            'disposisi', 'Disposisi ke '.$d->kepada_teks.': '.Str::limit((string) $d->instruksi, 120)));
+
+        static::updated(function (self $d) {
+            if ($d->wasChanged('status')) {
+                $d->surat?->catatJejak('disposisi',
+                    'Disposisi ke '.$d->kepada_teks.' jadi "'.(self::STATUS[$d->status] ?? $d->status).'".');
+            }
+        });
+
+        static::deleted(fn (self $d) => $d->surat?->catatJejak(
+            'disposisi', 'Disposisi ke '.$d->kepada_teks.' dihapus.'));
     }
 
     public function surat(): BelongsTo

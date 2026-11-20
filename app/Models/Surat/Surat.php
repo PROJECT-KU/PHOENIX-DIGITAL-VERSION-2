@@ -30,6 +30,7 @@ class Surat extends Model
         'klasifikasi_id', 'sifat', 'perihal', 'dari', 'kepada', 'status',
         'lokasi_fisik', 'ringkasan', 'musnah_pada', 'dicatat_oleh',
         'urut_utama', 'urut_klasifikasi', 'kode_klasifikasi',
+        'induk_id', 'tembusan', 'pemusnahan_id',
     ];
 
     protected $casts = [
@@ -38,6 +39,8 @@ class Surat extends Model
         'musnah_pada' => 'date',
         'klasifikasi_id' => 'integer',
         'dicatat_oleh' => 'integer',
+        'induk_id' => 'integer',
+        'pemusnahan_id' => 'integer',
         'urut_utama' => 'integer',
         'urut_klasifikasi' => 'integer',
     ];
@@ -68,6 +71,38 @@ class Surat extends Model
         'diproses' => 'Sedang diproses',
         'selesai' => 'Selesai',
         'diarsipkan' => 'Diarsipkan',
+        /*
+         | 'dimusnahkan' hanya bisa dicapai lewat berita acara, tidak lewat
+         | tombol status biasa. Ia menyatakan berkas KERTASNYA sudah tidak
+         | ada — keadaan yang tidak boleh diberikan atau dicabut sambil lalu.
+         */
+        'dimusnahkan' => 'Dimusnahkan',
+    ];
+
+    /** Status yang boleh dipilih lewat tombol di halaman detail. */
+    public const STATUS_MANUAL = ['baru', 'diproses', 'selesai', 'diarsipkan'];
+
+    /**
+     * Kolom yang perubahannya dicatat di riwayat, beserta namanya di layar.
+     *
+     * musnah_pada sengaja TIDAK ada di sini: ia dihitung dari klasifikasi dan
+     * tanggal surat, yang dua-duanya sudah dicatat. Kolom turunan yang punya
+     * baris riwayat sendiri membuat satu perubahan terbaca seperti dua.
+     */
+    public const MEDAN_JEJAK = [
+        'arah' => 'jenis surat',
+        'nomor_surat' => 'nomor surat',
+        'tanggal_surat' => 'tanggal surat',
+        'tanggal_catat' => 'tanggal diterima/dikirim',
+        'klasifikasi_id' => 'klasifikasi',
+        'sifat' => 'sifat',
+        'perihal' => 'perihal',
+        'dari' => 'pengirim',
+        'kepada' => 'tujuan',
+        'tembusan' => 'tembusan',
+        'lokasi_fisik' => 'tempat berkas',
+        'ringkasan' => 'ringkasan isi',
+        'induk_id' => 'surat yang ditanggapi',
     ];
 
     protected static function booted(): void
@@ -110,6 +145,43 @@ class Surat extends Model
             $surat->urut_klasifikasi = $urai['urut_klasifikasi'] ?? null;
             $surat->kode_klasifikasi = $urai['kode_klasifikasi'] ?? null;
         });
+
+        /*
+         | Jejak perubahan dicatat DI MODEL, bukan di layar.
+         |
+         | Perubahan bisa datang dari borang, dari halaman detail, dari
+         | perintah terjadwal, atau dari perbaikan data lewat tinker.
+         | Riwayat yang hanya mencatat sebagian justru lebih menyesatkan
+         | daripada tidak ada riwayat sama sekali: ia membuat orang
+         | menyimpulkan "tidak ada yang mengubah" dari sesuatu yang cuma
+         | tidak terpantau.
+         */
+        static::created(fn (self $surat) => $surat->catatJejak('dicatat', 'Surat masuk ke buku agenda.'));
+
+        static::updated(function (self $surat) {
+            if ($surat->wasChanged('status')) {
+                $lama = self::STATUS[$surat->getOriginal('status')] ?? $surat->getOriginal('status');
+                $surat->catatJejak('status', 'Status: '.$lama.' → '.$surat->status_label);
+            }
+
+            $berubah = collect(array_keys($surat->getChanges()))
+                ->intersect(array_keys(self::MEDAN_JEJAK))
+                ->map(fn ($medan) => self::MEDAN_JEJAK[$medan])
+                ->values();
+
+            if ($berubah->isNotEmpty()) {
+                $surat->catatJejak('diubah', 'Yang diubah: '.$berubah->join(', ', ' dan '));
+            }
+        });
+
+        static::deleted(function (self $surat) {
+            // Hanya hapus lembut; pemusnahan punya jejaknya sendiri.
+            if (! $surat->isForceDeleting()) {
+                $surat->catatJejak('dihapus', 'Surat dipindahkan ke daftar terhapus.');
+            }
+        });
+
+        static::restored(fn (self $surat) => $surat->catatJejak('dipulihkan', 'Surat dikembalikan ke buku agenda.'));
     }
 
     /* ----------------------------- RELASI ----------------------------- */
@@ -132,6 +204,52 @@ class Surat extends Model
     public function pencatat(): BelongsTo
     {
         return $this->belongsTo(User::class, 'dicatat_oleh');
+    }
+
+    /** Surat yang DITANGGAPI oleh surat ini. */
+    public function induk(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'induk_id');
+    }
+
+    /** Surat-surat yang menanggapi surat ini. */
+    public function tanggapan(): HasMany
+    {
+        return $this->hasMany(self::class, 'induk_id');
+    }
+
+    public function jejak(): HasMany
+    {
+        return $this->hasMany(SuratJejak::class, 'surat_id');
+    }
+
+    public function pemusnahan(): BelongsTo
+    {
+        return $this->belongsTo(SuratPemusnahan::class, 'pemusnahan_id');
+    }
+
+    /* ----------------------------- JEJAK ----------------------------- */
+
+    /**
+     * Tulis satu baris riwayat.
+     *
+     * Galatnya ditelan: riwayat adalah catatan SAMPINGAN, dan kegagalan
+     * menulisnya tidak boleh menggagalkan penyimpanan suratnya sendiri —
+     * surat yang tidak tersimpan jauh lebih merugikan daripada riwayat yang
+     * bolong satu baris.
+     */
+    public function catatJejak(string $aksi, ?string $keterangan = null): void
+    {
+        try {
+            SuratJejak::create([
+                'surat_id' => $this->id,
+                'aksi' => $aksi,
+                'keterangan' => $keterangan,
+                'oleh' => auth()->id(),
+            ]);
+        } catch (\Throwable) {
+            // sengaja dibiarkan
+        }
     }
 
     /* ----------------------------- NOMOR AGENDA ----------------------------- */

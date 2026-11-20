@@ -896,6 +896,7 @@ new class extends Component
                                 ['admin.surat.index', ['tab' => 'keluar'], 'bi-envelope-arrow-up', 'Surat Keluar', 'view_surat', null],
                             ],
                             'Pengaturan' => [
+                                ['admin.surat.pemusnahan', [], 'bi-fire', 'Penyusutan Arsip', 'view_surat', null],
                                 ['admin.surat.klasifikasi', [], 'bi-tags-fill', 'Klasifikasi Surat', 'kelola_klasifikasi_surat', null],
                             ],
                         ];

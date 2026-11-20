@@ -49,6 +49,18 @@
                 <a href="{{ route('admin.surat.index') }}" wire:navigate class="dsb-tombol is-lembut" style="--ikon: #64748b">
                     <i class="bi bi-arrow-left"></i><span>Kembali</span>
                 </a>
+                <a href="{{ route('admin.surat.lembar-disposisi', $surat) }}" target="_blank" rel="noopener"
+                    class="dsb-tombol is-lembut" style="--ikon: #b91c1c" title="Cetak untuk ditempel di surat fisiknya">
+                    <i class="bi bi-printer"></i><span>Lembar Disposisi</span>
+                </a>
+                @if ($bolehCatat)
+                    {{-- Jalan terpendek dari "surat ini perlu dibalas" ke suratnya:
+                         arah, tujuan, dan klasifikasinya sudah terisi. --}}
+                    <a href="{{ route('admin.surat.create', ['balas' => $surat->id]) }}" wire:navigate
+                        class="dsb-tombol is-lembut" style="--ikon: #17a974">
+                        <i class="bi bi-reply"></i><span>Catat Balasan</span>
+                    </a>
+                @endif
                 @if ($bolehUbah)
                     <a href="{{ route('admin.surat.edit', $surat) }}" wire:navigate class="dsb-tombol is-utama">
                         <i class="bi bi-pencil"></i><span>Ubah</span>
@@ -122,10 +134,36 @@
                                 <dd>{{ $surat->lokasi_fisik ?: 'Belum dicatat' }}</dd>
                             </div>
                             <div>
+                                <dt>Tembusan</dt>
+                                <dd>{{ $surat->tembusan ?: 'Tidak ada' }}</dd>
+                            </div>
+                            <div>
                                 <dt>Dicatat oleh</dt>
                                 <dd>{{ $surat->pencatat?->name ?: 'Tidak diketahui' }}</dd>
                             </div>
                         </dl>
+
+                        @if ($surat->induk)
+                            <div class="sr-kait">
+                                <span class="dsb-label">Menanggapi surat</span>
+                                <a href="{{ route('admin.surat.detail', $surat->induk) }}" wire:navigate class="sr-kait-baris">
+                                    <i class="bi bi-arrow-return-left"></i>
+                                    <span><b>{{ $surat->induk->nomor_agenda }}</b> &middot; {{ $surat->induk->perihal }}</span>
+                                </a>
+                            </div>
+                        @endif
+
+                        @if ($tanggapan->isNotEmpty())
+                            <div class="sr-kait">
+                                <span class="dsb-label">Ditanggapi oleh</span>
+                                @foreach ($tanggapan as $anak)
+                                    <a href="{{ route('admin.surat.detail', $anak) }}" wire:navigate class="sr-kait-baris">
+                                        <i class="bi bi-arrow-return-right"></i>
+                                        <span><b>{{ $anak->nomor_agenda }}</b> &middot; {{ $anak->perihal }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
 
                         @if ($adaRingkasan)
                             <div class="dsb-medan" style="margin-top: .85rem;">
@@ -151,8 +189,18 @@
                         @if ($bolehUbah)
                             <span class="dsb-label">Ubah status</span>
                             <div class="dsb-chip-deret" style="margin-bottom: .8rem;">
-                                @foreach (\App\Models\Surat\Surat::STATUS as $kunci => $label)
-                                    @php $iniStatus = $surat->status === $kunci; @endphp
+                                {{-- Hanya status manual. 'Dimusnahkan' hanya bisa dicapai
+                                     lewat berita acara: ia menyatakan berkas kertasnya sudah
+                                     tidak ada, dan itu bukan keadaan yang diberikan atau
+                                     dicabut sambil lalu lewat satu tombol. --}}
+                                @foreach (\App\Models\Surat\Surat::STATUS_MANUAL as $kunci)
+                                    {{-- Satu blok @php saja: blok @php yang menyusul @php(...)
+                                         sebaris akan ikut tertelan sampai @endphp, dan galatnya
+                                         menyebut variabel yang tidak bersalah. --}}
+                                    @php
+                                        $label = \App\Models\Surat\Surat::STATUS[$kunci];
+                                        $iniStatus = $surat->status === $kunci;
+                                    @endphp
                                     <button type="button" wire:click="ubahStatus('{{ $kunci }}')"
                                         class="dsb-tombol is-mungil {{ $iniStatus ? 'is-utama' : 'is-lembut' }}"
                                         style="--ikon: {{ $warnaStatus[$kunci] ?? '#64748b' }}"
@@ -360,6 +408,43 @@
                                 yang mengerjakan dan kapan tenggatnya.
                             </p>
                         </div>
+                    @endif
+                </div>
+            </div>
+            <div class="dsb-rak" style="margin-top: 1rem;">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #64748b"><i class="bi bi-clock-history"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Riwayat surat</h3>
+                                <span class="dsb-kartu-sub">Siapa mengubah apa, dan kapan &mdash; terbaru di atas</span>
+                            </div>
+                        </div>
+                    </div>
+                    @if ($jejak->isEmpty())
+                        <div class="dsb-kartu-isi">
+                            <p class="dsb-kartu-sub" style="margin: 0;">
+                                Belum ada riwayat. Surat yang dicatat sebelum fitur ini dipasang tidak punya
+                                catatan surut &mdash; riwayat hanya bisa mulai dari sekarang.
+                            </p>
+                        </div>
+                    @else
+                        @foreach ($jejak as $baris)
+                            <div class="sr-jejak-baris">
+                                <span class="dsb-ikon is-kecil" style="--c: {{ $baris->warna }}"><i class="bi {{ $baris->ikon }}"></i></span>
+                                <span class="sr-jejak-teks">
+                                    <b>{{ $baris->aksi_label }}</b>
+                                    @if ($baris->keterangan)
+                                        <span>{{ $baris->keterangan }}</span>
+                                    @endif
+                                </span>
+                                <span class="sr-jejak-waktu">
+                                    {{ $baris->waktu_teks }}<br>
+                                    <span>oleh {{ $baris->pelaku_teks }}</span>
+                                </span>
+                            </div>
+                        @endforeach
                     @endif
                 </div>
             </div>

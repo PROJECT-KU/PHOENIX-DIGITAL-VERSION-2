@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Surat;
 
 use App\Models\Surat\Surat;
 use App\Models\Surat\SuratKlasifikasi;
+use App\Support\Surat\SaringanSurat;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -73,6 +74,16 @@ class SuratList extends Component
         'baru' => ['Belum Ditindak', 'bi-envelope-exclamation', '#d97706', 'Sudah dicatat, belum dibaca'],
         'telat' => ['Lewat Tenggat', 'bi-hourglass-bottom', '#b91c1c', 'Disposisinya belum ditutup'],
         'retensi' => ['Masa Simpan Habis', 'bi-archive', '#7c3aed', 'Perlu diputuskan'],
+        /*
+         | Terhapus ditaruh sebagai TAB, bukan layar tersembunyi.
+         |
+         | Surat yang dihapus tidak benar-benar hilang (hapus lembut), dan
+         | selama ini satu-satunya cara mengembalikannya adalah lewat basis
+         | data. Yang paling sering dihapus justru yang baru saja salah
+         | dicatat — dan orang yang salah menekan tombol tidak akan menelepon
+         | pemrogram, ia akan mencatat ulang suratnya dengan nomor agenda baru.
+         */
+        'terhapus' => ['Terhapus', 'bi-trash', '#64748b', 'Bisa dikembalikan'],
     ];
 
     public const URUTAN = [
@@ -118,31 +129,71 @@ class SuratList extends Component
             || $this->urut !== 'terbaru';
     }
 
-    /** Satu tempat untuk tab + saringan, dipakai daftar maupun penghitung tab. */
+    /**
+     * Kembalikan surat yang terhapus ke buku agenda.
+     *
+     * Nomor agendanya tidak pernah dilepas selama terhapus (lihat
+     * Surat::nomorAgendaBaru yang ikut melihat baris terhapus), jadi
+     * pemulihannya tidak pernah bertabrakan dengan surat yang dicatat
+     * sesudahnya.
+     */
+    public function pulihkan(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('delete_surat'), 403);
+
+        $surat = Surat::onlyTrashed()->terlihatOleh(auth()->user())->findOrFail($id);
+        $surat->restore();
+
+        $this->dispatch('swal-success', message: 'Surat '.$surat->nomor_agenda.' dikembalikan ke buku agenda.');
+    }
+
+    /**
+     * Hapus selamanya — beserta baris pindaiannya.
+     *
+     * Disediakan karena tanpa itu daftar terhapus tumbuh selamanya dan
+     * berhenti bisa dibaca. Berkas pindaian di cakram sengaja TIDAK ikut
+     * dihapus di sini: menghapus berkas adalah satu-satunya langkah yang
+     * tidak bisa dibatalkan sama sekali, dan di hosting bersama satu jalur
+     * berkas yang salah bisa menyapu lebih dari yang dimaksud.
+     */
+    public function hapusPermanen(int $id): void
+    {
+        abort_unless(auth()->user()?->hasPermission('delete_surat'), 403);
+
+        $surat = Surat::onlyTrashed()->terlihatOleh(auth()->user())->findOrFail($id);
+        $nomor = $surat->nomor_agenda;
+        $surat->forceDelete();
+
+        $this->dispatch('swal-success', message: 'Surat '.$nomor.' dihapus selamanya.');
+    }
+
+    /**
+     * Satu tempat untuk tab + saringan — dipakai daftar, penghitung tab,
+     * DAN tombol ekspor.
+     *
+     * Logikanya tinggal di App\Support\Surat\SaringanSurat supaya berkas
+     * ekspor memulangkan kumpulan surat yang sama persis dengan yang terlihat
+     * di layar. Begitu disalin, salah satunya akan diam-diam melepaskan satu
+     * saringan dan tidak ada yang menyadarinya.
+     */
     private function dasar(?string $tab = null): Builder
     {
-        $tab ??= $this->tab;
+        return SaringanSurat::kueri(auth()->user(), $this->saringan($tab));
+    }
 
-        $q = Surat::query()
-            ->terlihatOleh(auth()->user())
-            ->cari($this->cari)
-            ->klasifikasi($this->klasifikasi ?: null)
-            ->sifat($this->sifat ?: null)
-            ->status($this->status ?: null)
-            ->periode($this->tglDari ?: null, $this->tglSampai ?: null);
-
-        return match ($tab) {
-            'masuk' => $q->where('arah', 'masuk'),
-            'keluar' => $q->where('arah', 'keluar'),
-            'baru' => $q->where('status', 'baru'),
-            'telat' => $q->whereHas('disposisi', fn (Builder $d) => $d->belumSelesai()
-                ->whereNotNull('batas')
-                ->whereDate('batas', '<', now()->toDateString())),
-            'retensi' => $q->whereNotNull('musnah_pada')
-                ->whereDate('musnah_pada', '<=', now()->toDateString())
-                ->where('status', '!=', 'diarsipkan'),
-            default => $q,
-        };
+    /** Saringan sekarang, dalam bentuk yang juga dipakai alamat ekspor. */
+    public function saringan(?string $tab = null): array
+    {
+        return [
+            'tab' => $tab ?? $this->tab,
+            'cari' => $this->cari,
+            'klasifikasi' => $this->klasifikasi,
+            'sifat' => $this->sifat,
+            'status' => $this->status,
+            'dari' => $this->tglDari,
+            'sampai' => $this->tglSampai,
+            'urut' => $this->urut,
+        ];
     }
 
     public function render()
@@ -155,12 +206,7 @@ class SuratList extends Component
          | Tanpa pemecah, satu surat bisa terbit di dua halaman sekaligus
          | sementara surat lain tidak terbit di halaman mana pun.
          */
-        $surat = match ($this->urut) {
-            'terlama' => $this->dasar()->orderBy('tanggal_surat')->orderBy('id'),
-            'agenda' => $this->dasar()->orderByDesc('nomor_agenda')->orderByDesc('id'),
-            'dicatat' => $this->dasar()->orderByDesc('created_at')->orderByDesc('id'),
-            default => $this->dasar()->orderByDesc('tanggal_surat')->orderByDesc('id'),
-        };
+        $surat = SaringanSurat::urut($this->dasar(), $this->urut);
 
         $jumlahTab = [];
 
@@ -173,6 +219,7 @@ class SuratList extends Component
             'jumlahTab' => $jumlahTab,
             'daftarKlasifikasi' => SuratKlasifikasi::tersusun()->get(),
             'bolehCatat' => (bool) auth()->user()?->hasPermission('create_surat'),
+            'bolehHapus' => (bool) auth()->user()?->hasPermission('delete_surat'),
         ]);
     }
 }

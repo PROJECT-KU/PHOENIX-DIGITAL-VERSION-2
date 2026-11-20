@@ -78,6 +78,24 @@
                                 </div>
 
                                 <div class="dsb-medan sr-lebar">
+                                    <label class="dsb-label" for="sr-induk">Menanggapi surat</label>
+                                    <select id="sr-induk" class="dsb-isian @error('f.induk_id') is-galat @enderror" wire:model="f.induk_id">
+                                        <option value="">Tidak menanggapi surat lain</option>
+                                        @foreach ($daftarInduk as $induk)
+                                            <option value="{{ $induk->id }}" @selected((string) $this->f['induk_id'] === (string) $induk->id)>
+                                                {{ $induk->nomor_agenda }} &middot; {{ \Illuminate\Support\Str::limit($induk->perihal, 60) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('f.induk_id')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    <span class="dsb-kartu-sub">
+                                        Isi kalau surat ini balasan atau tindak lanjut dari surat lain. Satu urusan
+                                        yang berjalan beberapa surat jadi punya benang merah, bukan tersebar.
+                                        Daftarnya 60 surat terakhir ber-{{ $masuk ? 'arah keluar' : 'arah masuk' }}.
+                                    </span>
+                                </div>
+
+                                <div class="dsb-medan sr-lebar">
                                     <label class="dsb-label" for="sr-perihal">Perihal <span class="dsb-wajib">*</span></label>
                                     <input id="sr-perihal" type="text" maxlength="255"
                                         class="dsb-isian @error('f.perihal') is-galat @enderror"
@@ -100,6 +118,18 @@
                                         @error('f.kepada')<div class="dsb-galat">{{ $message }}</div>@enderror
                                     @endif
                                     <span class="dsb-kartu-sub">Nama orang atau instansinya.</span>
+                                </div>
+
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="sr-tembusan">Tembusan</label>
+                                    <input id="sr-tembusan" type="text" maxlength="500"
+                                        class="dsb-isian @error('f.tembusan') is-galat @enderror"
+                                        wire:model="f.tembusan" placeholder="Direktur; Bagian Keuangan; Arsip">
+                                    @error('f.tembusan')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    <span class="dsb-kartu-sub">
+                                        Pihak yang ditembusi, dipisah titik koma. Sering jadi satu-satunya bukti
+                                        bahwa mereka sudah diberi tahu.
+                                    </span>
                                 </div>
 
                                 <div class="dsb-medan">

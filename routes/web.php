@@ -580,9 +580,31 @@ Route::middleware(['permission:akses_arsip_surat', 'permission:view_surat'])
     ->prefix('admin/arsip-surat')->name('admin.surat.')->group(function () {
         Route::get('/daftar', \App\Livewire\Pages\Admin\Surat\SuratList::class)->name('index');
 
+        /*
+         | Ekspor DIDAFTARKAN DI ATAS /{surat}.
+         |
+         | Rute /{surat} memang sudah dibatasi whereNumber, tetapi menaruh
+         | rute berkata di bawahnya adalah kebiasaan yang cepat atau lambat
+         | menggigit begitu ada satu rute yang lupa dibatasi.
+         */
+        Route::get('/ekspor/excel', [\App\Http\Controllers\Admin\SuratEksporController::class, 'excel'])
+            ->name('ekspor.excel');
+        Route::get('/ekspor/pdf', [\App\Http\Controllers\Admin\SuratEksporController::class, 'pdf'])
+            ->name('ekspor.pdf');
+        Route::get('/{surat}/lembar-disposisi', [\App\Http\Controllers\Admin\SuratEksporController::class, 'lembarDisposisi'])
+            ->whereNumber('surat')->name('lembar-disposisi');
+
         Route::middleware('permission:kelola_klasifikasi_surat')
             ->get('/klasifikasi', \App\Livewire\Pages\Admin\Surat\KlasifikasiList::class)
             ->name('klasifikasi');
+
+        // Penyusutan arsip. Layarnya boleh DILIHAT pemegang view_surat —
+        // daftar jatuh tempo itu informasi arsip biasa; yang dijaga izin
+        // tersendiri adalah membuat berita acaranya (di dalam komponen).
+        Route::get('/pemusnahan', \App\Livewire\Pages\Admin\Surat\PemusnahanList::class)
+            ->name('pemusnahan');
+        Route::get('/pemusnahan/{pemusnahan}/cetak', [\App\Http\Controllers\Admin\SuratEksporController::class, 'beritaAcara'])
+            ->whereNumber('pemusnahan')->name('berita-acara');
 
         Route::middleware('permission:create_surat')
             ->get('/catat/{arah?}', \App\Livewire\Pages\Admin\Surat\SuratForm::class)

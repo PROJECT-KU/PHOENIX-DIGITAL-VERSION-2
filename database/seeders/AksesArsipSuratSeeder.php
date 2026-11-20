@@ -51,6 +51,10 @@ class AksesArsipSuratSeeder extends Seeder
             'create_surat' => ['Catat Surat', 'Dapat mencatat surat masuk/keluar baru dan menambah disposisi.'],
             'edit_surat' => ['Ubah Surat', 'Dapat mengubah data surat, status, dan lampirannya.'],
             'delete_surat' => ['Hapus Surat', 'Dapat menghapus surat dari arsip.'],
+            'kelola_pemusnahan_surat' => [
+                'Kelola Pemusnahan Arsip',
+                'Dapat membuat berita acara pemusnahan arsip yang masa simpannya habis. Keputusan yang tidak bisa dibatalkan lewat layar.',
+            ],
             'kelola_klasifikasi_surat' => [
                 'Kelola Klasifikasi Surat',
                 'Dapat menambah/mengubah kode klasifikasi surat dan masa simpannya.',

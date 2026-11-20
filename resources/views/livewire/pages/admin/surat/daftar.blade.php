@@ -19,6 +19,7 @@ Arsip Surat || lemon
         $pilihanBaris = $this::PILIHAN_BARIS;
         [$labelTab, $ikonTab, $warnaTab, $ketTab] = $tabs[$tab] ?? $tabs['semua'];
         $adaSaringan = $this->adaSaringan();
+        $tabTerhapus = $this->tab === 'terhapus';
         $kosong = $surat->isEmpty();
         $targetMuat = 'cari,klasifikasi,sifat,status,tglDari,tglSampai,urut,perHalaman,pilihTab,kosongkanSaringan,gotoPage,nextPage,previousPage';
 
@@ -174,8 +175,23 @@ Arsip Surat || lemon
                                 <b>{{ $labelTab }}</b>
                                 <span>{{ $ketTab }} · {{ $urutan[$urut] ?? '' }}</span>
                             </div>
-                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $targetMuat }}">
-                                <span class="dsb-putar is-kecil"></span>Memuat…
+                            <span class="sr-kepala-aksi">
+                                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $targetMuat }}">
+                                    <span class="dsb-putar is-kecil"></span>Memuat…
+                                </span>
+                                @if (! $kosong)
+                                    {{-- Saringan yang sedang dipakai IKUT ke alamat berkasnya.
+                                         Berkas yang memuat surat yang sengaja disaring keluar jauh
+                                         lebih berbahaya daripada tombol yang gagal. --}}
+                                    <a href="{{ route('admin.surat.ekspor.pdf', $this->saringan()) }}" target="_blank" rel="noopener"
+                                        class="dsb-tombol is-lembut is-mungil" style="--ikon: #b91c1c" title="Buka buku agenda dalam PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i><span>PDF</span>
+                                    </a>
+                                    <a href="{{ route('admin.surat.ekspor.excel', $this->saringan()) }}"
+                                        class="dsb-tombol is-lembut is-mungil" style="--ikon: #17a974" title="Unduh buku agenda dalam Excel">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i><span>Excel</span>
+                                    </a>
+                                @endif
                             </span>
                         </div>
 
@@ -223,13 +239,13 @@ Arsip Surat || lemon
                                     <tbody>
                                         @foreach ($surat as $s)
                                             @php
-                                                $url = route('admin.surat.detail', $s);
+                                                $url = $tabTerhapus ? '#' : route('admin.surat.detail', $s);
                                                 $adaNomor = filled($s->nomor_surat);
                                                 $adaLemari = filled($s->lokasi_fisik);
                                             @endphp
                                             <tr class="{{ $kelasSifat[$s->sifat] ?? '' }}">
                                                 <td>
-                                                    <a wire:navigate href="{{ $url }}" class="dsb-tabel-utama">
+                                                    <a @if (! $tabTerhapus) wire:navigate @endif href="{{ $url }}" class="dsb-tabel-utama">
                                                         <span class="dsb-ikon is-kecil" style="--c: {{ $warnaArah[$s->arah] ?? '#64748b' }}">
                                                             <i class="bi {{ $ikonArah[$s->arah] ?? 'bi-envelope' }}"></i>
                                                         </span>
@@ -275,9 +291,33 @@ Arsip Surat || lemon
                                                     </span>
                                                 </td>
                                                 <td class="dsb-tabel-aksi">
-                                                    <a wire:navigate href="{{ $url }}" class="dsb-tabel-btn" title="Buka surat">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
+                                                    @if ($tabTerhapus)
+                                                        {{-- Surat terhapus tidak punya halaman detail: rutenya
+                                                             menolak baris terhapus. Yang ditawarkan hanya dua
+                                                             keputusan, dan dua-duanya lewat konfirmasi. --}}
+                                                        @if ($bolehHapus)
+                                                            <button type="button" class="dsb-tabel-btn pcek-konfirmasi" title="Kembalikan surat"
+                                                                data-action="pulihkan" data-arg="{{ $s->id }}"
+                                                                data-title="Kembalikan {{ $s->nomor_agenda }}?"
+                                                                data-text="Suratnya muncul lagi di buku agenda dengan nomor agenda yang sama."
+                                                                data-confirm="Ya, kembalikan" data-icon="question">
+                                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                            </button>
+                                                            <button type="button" class="dsb-tabel-btn tombol-bahaya pcek-konfirmasi" title="Hapus selamanya"
+                                                                data-action="hapusPermanen" data-arg="{{ $s->id }}"
+                                                                data-title="Hapus {{ $s->nomor_agenda }} selamanya?"
+                                                                data-text="Catatannya hilang dan tidak bisa dikembalikan lagi. Berkas pindaiannya tetap ada di server."
+                                                                data-confirm="Ya, hapus selamanya" data-icon="warning">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        @else
+                                                            <span class="dsb-tabel-meta">&mdash;</span>
+                                                        @endif
+                                                    @else
+                                                        <a wire:navigate href="{{ $url }}" class="dsb-tabel-btn" title="Buka surat">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

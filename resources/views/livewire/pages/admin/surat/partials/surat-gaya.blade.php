@@ -269,6 +269,82 @@
     .sr-antrean-teks b { font-size: .8rem; word-break: break-all; }
     .sr-antrean-teks span { font-size: .7rem; color: #64748b; }
 
+    /* ---------- Kaitan antar surat & riwayat ---------- */
+    /* Tombol ekspor duduk di kepala kartu daftar, bukan di kepala halaman:
+       di kepala halaman ia akan berdesakan dengan tombol catat surat, dan
+       yang diekspor memang isi tabel ini, bukan isi halaman. */
+    .sr-kepala-aksi { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* ---------- Penyusutan arsip ---------- */
+    .sr-musnah-baris, .sr-ba-baris {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .55rem .9rem;
+        border-top: 1px solid #f1f5f9;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .sr-musnah-baris:hover, .sr-ba-baris:hover { background: #fdf9f0; }
+    .sr-musnah-baris input { width: 16px; height: 16px; margin: 0; accent-color: #a16207; flex: 0 0 auto; }
+    .sr-ba-baris i { color: #b91c1c; font-size: 1rem; flex: 0 0 auto; }
+
+    .sr-musnah-teks { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.3; }
+    .sr-musnah-teks b { font-size: .84rem; }
+    .sr-musnah-teks span { font-size: .74rem; color: #64748b; }
+
+    /* Tanggalnya rata kanan dan tidak pernah dipenggal: inilah angka yang
+       membuat seseorang berani mencentang barisnya. */
+    .sr-musnah-tgl { flex: 0 0 auto; text-align: right; font-size: .7rem; color: #64748b; white-space: nowrap; line-height: 1.35; }
+    .sr-musnah-tgl b { font-size: .78rem; color: #7c3aed; }
+
+    .sr-kait { margin-top: .85rem; display: flex; flex-direction: column; gap: .3rem; }
+
+    .sr-kait-baris {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .4rem .6rem;
+        border: 1px solid #e8eef5;
+        border-radius: 9px;
+        background: #f8fbff;
+        color: #334155;
+        text-decoration: none;
+        font-size: .82rem;
+        line-height: 1.3;
+    }
+
+    .sr-kait-baris:hover { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+    .sr-kait-baris i { color: #0284c7; flex: 0 0 auto; }
+    .sr-kait-baris b { font-variant-numeric: tabular-nums; }
+
+    .sr-jejak-baris {
+        display: flex;
+        align-items: flex-start;
+        gap: .6rem;
+        padding: .55rem .9rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .sr-jejak-teks { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 1.35; }
+    .sr-jejak-teks b { font-size: .83rem; }
+    .sr-jejak-teks span { font-size: .78rem; color: #475569; overflow-wrap: anywhere; }
+
+    /* Waktu & pelakunya rata kanan dan tidak pernah dipenggal: inilah dua
+       keterangan yang membuat riwayat bisa dipakai sebagai bukti. */
+    .sr-jejak-waktu {
+        flex: 0 0 auto;
+        text-align: right;
+        font-size: .72rem;
+        color: #64748b;
+        white-space: nowrap;
+        line-height: 1.35;
+    }
+
+    .sr-jejak-waktu span { color: #94a3b8; }
+
     .sr-dis-baris {
         --c: #0284c7;
         display: flex;
@@ -306,9 +382,21 @@
            terpenggal. Yang satu mencatat surat yang kita TERIMA dan yang
            satunya yang kita KIRIM; tertukar berarti salah masuk buku agenda.
            Jadi yang mengalah barisnya, bukan katanya. */
-        .sr-hero-daftar .dsb-hero-aksi { flex-wrap: wrap; }
-        .sr-hero-daftar .dsb-hero-aksi .dsb-tombol { flex: 1 1 calc(50% - 6px); min-width: 0; }
-        .sr-hero-daftar .dsb-hero-aksi .dsb-tombol:first-child { flex: 1 1 100%; }
+        /* Berlaku untuk SEMUA kepala layar arsip surat, bukan cuma daftar:
+           halaman detail punya lima tombol dan akan terjepit dengan cara
+           yang sama persis. Gaya ini hanya ikut ke layar yang memuat
+           partial ini, jadi layar lemon lain tidak tersentuh. */
+        .dsb-hero-aksi { flex-wrap: wrap; }
+        .dsb-hero-aksi .dsb-tombol { flex: 1 1 calc(50% - 6px); min-width: 0; }
+        .dsb-hero-aksi .dsb-tombol:first-child { flex: 1 1 100%; }
+
+        /* Riwayat di ponsel: waktu & pelakunya turun ke bawah, rata kiri.
+           Dipaksa tetap di kanan, keterangannya tinggal selebar dua kata. */
+        .sr-jejak-baris { flex-wrap: wrap; }
+        .sr-jejak-waktu { flex: 1 1 100%; text-align: left; padding-left: 2.1rem; white-space: normal; }
+
+        .sr-musnah-baris { flex-wrap: wrap; }
+        .sr-musnah-tgl { flex: 1 1 100%; text-align: left; padding-left: 2.2rem; }
     }
 </style>
 @endonce
