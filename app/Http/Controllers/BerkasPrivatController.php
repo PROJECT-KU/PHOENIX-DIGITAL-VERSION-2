@@ -6,6 +6,7 @@ use App\Models\CustomerMessageAttachment;
 use App\Models\JobApplication;
 use App\Models\Order;
 use App\Models\Spending;
+use App\Models\Surat\Surat;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -21,6 +22,34 @@ use Illuminate\Support\Facades\Storage;
  */
 class BerkasPrivatController extends Controller
 {
+    /**
+     * Pindaian surat di Arsip Surat.
+     *
+     * Lampirannya dicari lewat suratnya, bukan langsung dari id lampiran:
+     * tanpa itu, menyisipkan id lampiran milik surat lain ke alamat ini akan
+     * menyajikan pindaian surat yang berbeda — termasuk surat bersifat
+     * rahasia — meski alamat suratnya sendiri terlihat wajar.
+     */
+    public function lampiranSurat(Surat $surat, int $lampiran)
+    {
+        $berkas = $surat->lampiran()->whereKey($lampiran)->firstOrFail();
+
+        /*
+         | Nama unduhnya dirakit dari nomor agenda, bukan nama berkas asli.
+         |
+         | Nama asli dari pemindai sering "Scan_20261120_0001.pdf" — tidak
+         | memberi tahu apa pun begitu berkasnya tersimpan di komputer orang.
+         | Ekstensinya tetap diambil dari berkas asli supaya peramban membuka
+         | PDF sebagai PDF dan gambar sebagai gambar.
+         */
+        $ekstensi = pathinfo((string) $berkas->nama, PATHINFO_EXTENSION)
+            ?: pathinfo((string) $berkas->jalur, PATHINFO_EXTENSION);
+
+        $nama = 'surat-'.$surat->nomor_agenda.'-'.$berkas->id.($ekstensi ? '.'.$ekstensi : '');
+
+        return $this->sajikan($berkas->jalur, $nama);
+    }
+
     /** CV pelamar kerja. */
     public function cvPelamar(JobApplication $pelamar)
     {

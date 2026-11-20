@@ -555,6 +555,58 @@ Route::middleware(['permission:akses_asthana', 'permission:kelola_situs_asthana'
 
 /*
 |--------------------------------------------------------------------------
+| Arsip Surat
+|--------------------------------------------------------------------------
+|
+| Mode Arsip Surat (padanan mode Orcha & mode Asthana): buku agenda surat
+| masuk & keluar, klasifikasinya, disposisinya, dan pindaiannya. Datanya di
+| basis data lemon sendiri, bukan lewat API.
+|
+| Penjaganya izin gerbang 'akses_arsip_surat' DITAMBAH izin per layar. Menu
+| yang disembunyikan di bilah samping bukan pengaman; penjagaan sebenarnya
+| ada di sini.
+|
+| URUTAN PENTING: 'daftar', 'catat', dan 'klasifikasi' didaftarkan SEBELUM
+| '/{surat}', kalau tidak kata-kata itu terbaca sebagai nomor surat dan
+| seluruh layar selain dasbor berakhir 404 — tanpa petunjuk apa pun bahwa
+| penyebabnya urutan rute. whereNumber() di '{surat}' menjadi jaring
+| keduanya.
+*/
+Route::middleware('permission:akses_arsip_surat')
+    ->get('/admin/arsip-surat', \App\Livewire\Pages\Admin\Surat\SuratDashboard::class)
+    ->name('admin.surat.dashboard');
+
+Route::middleware(['permission:akses_arsip_surat', 'permission:view_surat'])
+    ->prefix('admin/arsip-surat')->name('admin.surat.')->group(function () {
+        Route::get('/daftar', \App\Livewire\Pages\Admin\Surat\SuratList::class)->name('index');
+
+        Route::middleware('permission:kelola_klasifikasi_surat')
+            ->get('/klasifikasi', \App\Livewire\Pages\Admin\Surat\KlasifikasiList::class)
+            ->name('klasifikasi');
+
+        Route::middleware('permission:create_surat')
+            ->get('/catat/{arah?}', \App\Livewire\Pages\Admin\Surat\SuratForm::class)
+            ->whereIn('arah', ['masuk', 'keluar'])
+            ->name('create');
+
+        Route::middleware('permission:edit_surat')
+            ->get('/{surat}/ubah', \App\Livewire\Pages\Admin\Surat\SuratForm::class)
+            ->whereNumber('surat')
+            ->name('edit');
+
+        // Pindaian surat: disajikan dari disk PRIVAT lewat route ber-izin,
+        // bukan dari URL publik yang berlaku selamanya tanpa login.
+        Route::get('/{surat}/lampiran/{lampiran}', [\App\Http\Controllers\BerkasPrivatController::class, 'lampiranSurat'])
+            ->whereNumber(['surat', 'lampiran'])
+            ->name('lampiran');
+
+        Route::get('/{surat}', \App\Livewire\Pages\Admin\Surat\SuratDetail::class)
+            ->whereNumber('surat')
+            ->name('detail');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Orcha Journey
 |--------------------------------------------------------------------------
 |

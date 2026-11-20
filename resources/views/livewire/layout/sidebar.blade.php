@@ -14,7 +14,7 @@ use Livewire\Volt\Component;
 new class extends Component
 {
     /**
-     * 'lemon' | 'orcha' | 'asthana' — ditetapkan SEKALI saat bilah dipasang.
+     * 'lemon' | 'orcha' | 'asthana' | 'surat' — ditetapkan SEKALI saat bilah dipasang.
      *
      * Dulu mode dihitung dari request()->routeIs() di with(), yang ikut
      * dijalankan ulang saat event 'sidebar-badge-updated' merender bilah ini
@@ -25,9 +25,12 @@ new class extends Component
 
     public function mount(): void
     {
-        $this->mode = request()->routeIs('admin.orcha.*')
-            ? 'orcha'
-            : (\App\Support\Asthana\ModeAsthana::aktif() ? 'asthana' : 'lemon');
+        $this->mode = match (true) {
+            request()->routeIs('admin.orcha.*') => 'orcha',
+            \App\Support\Asthana\ModeAsthana::aktif() => 'asthana',
+            \App\Support\Surat\ModeSurat::aktif() => 'surat',
+            default => 'lemon',
+        };
     }
 
     public function logout(Logout $logout): void
@@ -131,6 +134,10 @@ new class extends Component
             'orchaPerlu' => $orchaPerlu,
             'modeOrcha' => $this->mode === 'orcha',
             'modeAsthana' => $this->mode === 'asthana',
+            'modeSurat' => $this->mode === 'surat',
+            'suratPerlu' => $login && $u->hasPermission('akses_arsip_surat')
+                ? \App\Support\Surat\ModeSurat::perlu($u)
+                : ['surat_baru' => 0, 'disposisi_telat' => 0, 'retensi_habis' => 0],
             'asthanaPerlu' => $login && $u->hasPermission('akses_asthana')
                 ? \App\Support\Asthana\ModeAsthana::perlu($u) : ['pelamar_baru' => 0, 'pesan_belum_dibaca' => 0, 'lowongan_lewat_batas' => 0],
 
@@ -491,6 +498,33 @@ new class extends Component
             border-radius: 6px;
             background: #fff;
         }
+
+        /* Mode Arsip Surat: cokelat-kertas, padanan Orcha & Asthana.
+           Warnanya sengaja beda dari keduanya supaya admin langsung sadar
+           sedang melihat data aplikasi yang lain. */
+        #sidebar .surat-ganti>.sidebar-link {
+            background: linear-gradient(135deg, #5b3b1a, #a9702c 65%, #c9972f);
+            margin-bottom: .45rem;
+        }
+
+        #sidebar .surat-ganti>.sidebar-link i {
+            color: #ffe9b8 !important;
+        }
+
+        #sidebar .surat-lencana-menu {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin: .25rem .35rem .5rem;
+            padding: .55rem .75rem;
+            border-radius: .7rem;
+            background: linear-gradient(135deg, #5b3b1a, #a9702c 65%, #c9972f);
+            color: #ffe9b8;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
     </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
@@ -826,6 +860,82 @@ new class extends Component
                                     <span>{{ $label }}</span>
                                     @if ($adaPenanda)
                                         <span class="orcha-hitung-menu" title="{{ $nilaiPenanda }} {{ $judulPenandaAsthana[$kunciPenanda] }}">{{ min($nilaiPenanda, 99) }}</span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endforeach
+                    @endforeach
+
+                    <li class="mt-4 sidebar-title">Aplikasi</li>
+                    <li class="sidebar-item">
+                        <a href="{{ route('admin.dashboard') }}" class="sidebar-link" wire:navigate>
+                            <i class="bi bi-arrow-left-circle"></i>
+                            <span>Kembali ke lemon</span>
+                        </a>
+                    </li>
+                @elseif ($modeSurat)
+                    <li class="surat-lencana-menu">
+                        <i class="bi bi-folder2-open"></i> Arsip Surat
+                    </li>
+
+                    @php
+                        /*
+                         | Menu mode Arsip Surat — dikelompokkan seperti dua mode
+                         | sebelumnya. Tiap butir hanya tampil bagi pemegang izin
+                         | layarnya.
+                         |
+                         | [rute, parameter, ikon, label, izin, kunci penanda]
+                         */
+                        $grupSurat = [
+                            'Menu' => [
+                                ['admin.surat.dashboard', [], 'bi-grid-fill', 'Dashboard', 'akses_arsip_surat', null],
+                            ],
+                            'Buku Agenda' => [
+                                ['admin.surat.index', [], 'bi-archive-fill', 'Semua Surat', 'view_surat', 'surat_baru'],
+                                ['admin.surat.index', ['tab' => 'masuk'], 'bi-envelope-arrow-down', 'Surat Masuk', 'view_surat', null],
+                                ['admin.surat.index', ['tab' => 'keluar'], 'bi-envelope-arrow-up', 'Surat Keluar', 'view_surat', null],
+                            ],
+                            'Pengaturan' => [
+                                ['admin.surat.klasifikasi', [], 'bi-tags-fill', 'Klasifikasi Surat', 'kelola_klasifikasi_surat', null],
+                            ],
+                        ];
+
+                        $judulPenandaSurat = ['surat_baru' => 'surat belum ditindak'];
+
+                        /*
+                         | Tab mana yang sedang terbuka, dibaca dari alamat.
+                         |
+                         | Tiga butir "Buku Agenda" menunjuk rute yang SAMA dan
+                         | hanya berbeda tabnya; tanpa membandingkan tabnya,
+                         | ketiganya menyala bersamaan dan admin kehilangan
+                         | petunjuk sedang berada di mana.
+                         */
+                        $tabSuratAktif = (string) request()->query('tab', 'semua');
+
+                        $menuSurat = collect($grupSurat)
+                            ->map(fn ($isi) => collect($isi)->filter(fn ($b) => auth()->user()->hasPermission($b[4]))->values())
+                            ->filter(fn ($isi) => $isi->isNotEmpty());
+                    @endphp
+
+                    @foreach ($menuSurat as $judulGrup => $isiGrup)
+                        <li class="{{ $loop->first ? '' : 'mt-4 ' }}sidebar-title">{{ $judulGrup }}</li>
+
+                        @foreach ($isiGrup as [$rute, $param, $ikon, $label, $izinButir, $kunciPenanda])
+                            @php
+                                $tabButir = (string) ($param['tab'] ?? 'semua');
+                                $daftarSurat = $rute === 'admin.surat.index';
+                                $butirAktif = $daftarSurat
+                                    ? request()->routeIs($rute) && $tabSuratAktif === $tabButir
+                                    : request()->routeIs($rute);
+                                $nilaiPenanda = $kunciPenanda ? (int) ($suratPerlu[$kunciPenanda] ?? 0) : 0;
+                                $adaPenanda = $nilaiPenanda !== 0;
+                            @endphp
+                            <li class="sidebar-item {{ $butirAktif ? 'active' : '' }}">
+                                <a href="{{ route($rute, $param) }}" class="sidebar-link" wire:navigate>
+                                    <i class="bi {{ $ikon }}"></i>
+                                    <span>{{ $label }}</span>
+                                    @if ($adaPenanda)
+                                        <span class="orcha-hitung-menu" title="{{ $nilaiPenanda }} {{ $judulPenandaSurat[$kunciPenanda] ?? 'hal menunggu' }}">{{ min($nilaiPenanda, 99) }}</span>
                                     @endif
                                 </a>
                             </li>
@@ -1283,9 +1393,12 @@ new class extends Component
                     // membuat penanda morph Livewire timpang.
                     $bolehOrcha = auth()->user()->hasPermission('akses_orcha');
                     $bolehAsthana = auth()->user()->hasPermission('akses_asthana');
-                    $adaAplikasiLain = $bolehOrcha || $bolehAsthana;
+                    $bolehSurat = auth()->user()->hasPermission('akses_arsip_surat');
+                    $adaAplikasiLain = $bolehOrcha || $bolehAsthana || $bolehSurat;
                     $jumlahAsthana = array_sum($asthanaPerlu);
                     $adaPerluAsthana = $jumlahAsthana !== 0;
+                    $jumlahSurat = array_sum($suratPerlu);
+                    $adaPerluSurat = $jumlahSurat !== 0;
                 @endphp
                 @if ($adaAplikasiLain)
                 <li class="mt-4 sidebar-title">Aplikasi Lain</li>
@@ -1310,6 +1423,17 @@ new class extends Component
                             <span class="sidebar-badge" title="{{ $orchaPerlu }} hal menunggu ditindak di Orcha">
                                 {{ $orchaPerlu }}
                             </span>
+                        @endif
+                    </a>
+                </li>
+                @endif
+                @if ($bolehSurat)
+                <li class="sidebar-item orcha-ganti surat-ganti">
+                    <a href="{{ route('admin.surat.dashboard') }}" class="sidebar-link" wire:navigate>
+                        <i class="bi bi-folder2-open"></i>
+                        <span>Ganti ke Arsip Surat</span>
+                        @if ($adaPerluSurat)
+                            <span class="sidebar-badge" title="{{ $jumlahSurat }} hal menunggu ditindak di Arsip Surat">{{ $jumlahSurat }}</span>
                         @endif
                     </a>
                 </li>

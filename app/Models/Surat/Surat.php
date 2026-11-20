@@ -1,0 +1,278 @@
+<?php
+
+namespace App\Models\Surat;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * Satu surat di buku agenda.
+ *
+ * Istilahnya sengaja istilah administrasi, bukan istilah program: nomor
+ * agenda, perihal, sifat, klasifikasi, disposisi. Admin yang memakai layar
+ * ini sudah mengenal kata-kata itu dari buku agenda kertas, dan menamainya
+ * ulang ("judul", "kategori", "prioritas") memaksanya menerjemahkan dua arah
+ * setiap kali.
+ */
+class Surat extends Model
+{
+    use SoftDeletes;
+
+    protected $table = 'surat';
+
+    protected $fillable = [
+        'arah', 'nomor_agenda', 'nomor_surat', 'tanggal_surat', 'tanggal_catat',
+        'klasifikasi_id', 'sifat', 'perihal', 'dari', 'kepada', 'status',
+        'lokasi_fisik', 'ringkasan', 'musnah_pada', 'dicatat_oleh',
+    ];
+
+    protected $casts = [
+        'tanggal_surat' => 'date',
+        'tanggal_catat' => 'date',
+        'musnah_pada' => 'date',
+        'klasifikasi_id' => 'integer',
+        'dicatat_oleh' => 'integer',
+    ];
+
+    public const ARAH = [
+        'masuk' => 'Surat Masuk',
+        'keluar' => 'Surat Keluar',
+    ];
+
+    /**
+     * Sifat surat, dari yang paling biasa ke yang paling perlu dijaga.
+     *
+     * 'rahasia' ditaruh terakhir karena ia BUKAN tingkat kecepatan seperti
+     * tiga yang lain, melainkan tingkat kerahasiaan. Disatukan dalam satu
+     * kolom karena di buku agenda kertas pun satu kotak, dan surat rahasia
+     * yang juga segera dicatat sebagai rahasia — yang perlu dijaga lebih
+     * dulu daripada yang perlu dikebut.
+     */
+    public const SIFAT = [
+        'biasa' => 'Biasa',
+        'segera' => 'Segera',
+        'sangat_segera' => 'Sangat Segera',
+        'rahasia' => 'Rahasia',
+    ];
+
+    public const STATUS = [
+        'baru' => 'Belum ditindak',
+        'diproses' => 'Sedang diproses',
+        'selesai' => 'Selesai',
+        'diarsipkan' => 'Diarsipkan',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $surat) {
+            if (blank($surat->nomor_agenda)) {
+                $surat->nomor_agenda = self::nomorAgendaBaru((string) $surat->arah);
+            }
+
+            if (blank($surat->dicatat_oleh) && auth()->check()) {
+                $surat->dicatat_oleh = auth()->id();
+            }
+        });
+    }
+
+    /* ----------------------------- RELASI ----------------------------- */
+
+    public function klasifikasi(): BelongsTo
+    {
+        return $this->belongsTo(SuratKlasifikasi::class, 'klasifikasi_id');
+    }
+
+    public function lampiran(): HasMany
+    {
+        return $this->hasMany(SuratLampiran::class, 'surat_id');
+    }
+
+    public function disposisi(): HasMany
+    {
+        return $this->hasMany(SuratDisposisi::class, 'surat_id');
+    }
+
+    public function pencatat(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dicatat_oleh');
+    }
+
+    /* ----------------------------- NOMOR AGENDA ----------------------------- */
+
+    /**
+     * Nomor agenda berikutnya: SM-2026-0001 / SK-2026-0001.
+     *
+     * Berurut per ARAH dan per TAHUN, karena itulah cara buku agenda kertas
+     * disusun — surat masuk dan surat keluar punya buku sendiri, dan tiap
+     * Januari nomornya mulai dari satu lagi.
+     *
+     * Dihitung dari nomor TERBESAR yang sudah ada, bukan dari jumlah baris:
+     * surat yang dihapus (lembut) tetap memegang nomornya, dan menghitung
+     * jumlah baris akan memberikan nomor yang sudah dipakai. Baris terhapus
+     * ikut dilihat lewat withTrashed() justru supaya nomornya tidak
+     * dipakai dua kali.
+     */
+    public static function nomorAgendaBaru(string $arah, ?int $tahun = null): string
+    {
+        $awalan = $arah === 'keluar' ? 'SK' : 'SM';
+        $tahun ??= (int) now()->format('Y');
+        $pola = "{$awalan}-{$tahun}-";
+
+        $terakhir = static::withTrashed()
+            ->where('nomor_agenda', 'like', $pola.'%')
+            ->orderByDesc('nomor_agenda')
+            ->value('nomor_agenda');
+
+        $urut = $terakhir ? ((int) substr((string) $terakhir, strlen($pola))) + 1 : 1;
+
+        return $pola.str_pad((string) $urut, 4, '0', STR_PAD_LEFT);
+    }
+
+    /* ----------------------------- SCOPE ----------------------------- */
+
+    public function scopeArah(Builder $q, ?string $arah): Builder
+    {
+        return $arah ? $q->where('arah', $arah) : $q;
+    }
+
+    public function scopeStatus(Builder $q, ?string $status): Builder
+    {
+        return $status ? $q->where('status', $status) : $q;
+    }
+
+    public function scopeSifat(Builder $q, ?string $sifat): Builder
+    {
+        return $sifat ? $q->where('sifat', $sifat) : $q;
+    }
+
+    public function scopeKlasifikasi(Builder $q, $id): Builder
+    {
+        return $id ? $q->where('klasifikasi_id', $id) : $q;
+    }
+
+    public function scopePeriode(Builder $q, ?string $dari, ?string $sampai): Builder
+    {
+        return $q->when($dari, fn (Builder $b) => $b->whereDate('tanggal_surat', '>=', $dari))
+            ->when($sampai, fn (Builder $b) => $b->whereDate('tanggal_surat', '<=', $sampai));
+    }
+
+    /**
+     * Pencarian satu kotak.
+     *
+     * Admin yang awam tidak akan memilih "cari berdasarkan" lebih dulu — ia
+     * mengetik apa yang diingatnya, dan yang diingat bisa nomor agenda,
+     * nomor suratnya, perihalnya, atau nama pengirimnya. Satu kotak yang
+     * mencari di semuanya lebih jujur daripada enam kotak yang lima di
+     * antaranya selalu kosong.
+     */
+    public function scopeCari(Builder $q, ?string $kata): Builder
+    {
+        $kata = trim((string) $kata);
+
+        if ($kata === '') {
+            return $q;
+        }
+
+        return $q->where(function (Builder $b) use ($kata) {
+            foreach (['nomor_agenda', 'nomor_surat', 'perihal', 'dari', 'kepada', 'lokasi_fisik'] as $kolom) {
+                $b->orWhere($kolom, 'like', '%'.$kata.'%');
+            }
+        });
+    }
+
+    /** Belum tuntas: masih menunggu dikerjakan seseorang. */
+    public function scopeBelumSelesai(Builder $q): Builder
+    {
+        return $q->whereIn('status', ['baru', 'diproses']);
+    }
+
+    /* ----------------------------- TAMPILAN ----------------------------- */
+
+    public function getArahLabelAttribute(): string
+    {
+        return self::ARAH[$this->arah] ?? $this->arah;
+    }
+
+    public function getSifatLabelAttribute(): string
+    {
+        return self::SIFAT[$this->sifat] ?? $this->sifat;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUS[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Nama bulan Indonesia dipaksa lewat locale('id').
+     *
+     * APP_LOCALE=en di .env, jadi format() bawaan akan menulis "November"
+     * sebagai "November" tetapi "Agustus" sebagai "August" — campur dua
+     * bahasa dalam satu daftar.
+     */
+    public function getTanggalSuratTeksAttribute(): string
+    {
+        return $this->tanggal_surat?->locale('id')->translatedFormat('d F Y') ?? '-';
+    }
+
+    public function getTanggalCatatTeksAttribute(): string
+    {
+        return $this->tanggal_catat?->locale('id')->translatedFormat('d F Y') ?? '-';
+    }
+
+    public function getMusnahPadaTeksAttribute(): string
+    {
+        return $this->musnah_pada?->locale('id')->translatedFormat('d F Y') ?? 'Belum ditentukan';
+    }
+
+    /** Lawan bicara surat ini: pengirimnya kalau masuk, tujuannya kalau keluar. */
+    public function getPihakAttribute(): string
+    {
+        $nilai = $this->arah === 'keluar' ? $this->kepada : $this->dari;
+
+        return trim((string) $nilai) ?: 'Tidak dicatat';
+    }
+
+    /** Label kolom "pihak" menurut arahnya — dipakai sebagai judul kolom tabel. */
+    public function getPihakLabelAttribute(): string
+    {
+        return $this->arah === 'keluar' ? 'Kepada' : 'Dari';
+    }
+
+    /**
+     * Sudah lewat tanggal boleh musnah?
+     *
+     * Bukan perintah memusnahkan — hanya penanda bahwa masa simpannya habis.
+     * Keputusan memusnahkan arsip selalu milik manusia.
+     */
+    public function getSudahBolehMusnahAttribute(): bool
+    {
+        return $this->musnah_pada !== null && $this->musnah_pada->isPast();
+    }
+
+    /**
+     * Hitung tanggal boleh musnah dari retensi klasifikasinya.
+     *
+     * Dasarnya tanggal surat, bukan tanggal dicatat: masa simpan arsip
+     * dihitung dari umur dokumennya, dan surat lama yang baru dicatat hari
+     * ini tidak jadi muda karenanya.
+     *
+     * Mengembalikan null bila klasifikasinya belum punya retensi — dan null
+     * itu disimpan apa adanya, supaya "belum ditentukan" tidak pernah
+     * berubah jadi tanggal karangan.
+     */
+    public function hitungMusnah(): ?string
+    {
+        $tahun = $this->klasifikasi?->retensi_tahun;
+
+        if ($tahun === null || ! $this->tanggal_surat) {
+            return null;
+        }
+
+        return $this->tanggal_surat->copy()->addYears($tahun)->toDateString();
+    }
+}
