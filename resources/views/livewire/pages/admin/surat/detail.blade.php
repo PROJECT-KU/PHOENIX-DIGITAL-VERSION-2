@@ -134,6 +134,10 @@
                                 <dd>{{ $surat->lokasi_fisik ?: 'Belum dicatat' }}</dd>
                             </div>
                             <div>
+                                <dt>Ditangani oleh</dt>
+                                <dd>{{ $surat->penanggungJawab?->name ?: 'Belum ditunjuk' }}</dd>
+                            </div>
+                            <div>
                                 <dt>Tembusan</dt>
                                 <dd>{{ $surat->tembusan ?: 'Tidak ada' }}</dd>
                             </div>
@@ -214,9 +218,15 @@
                         @if ($bolehUbah)
                             <div class="dsb-medan">
                                 <label class="dsb-label" for="sr-berkas-baru">Tambah pindaian</label>
-                                <input id="sr-berkas-baru" type="file" multiple
-                                    class="dsb-isian @error('unggahan.*') is-galat @enderror"
-                                    wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                <label class="sr-unggah @error('unggahan.*') is-galat @enderror">
+                                    <input id="sr-berkas-baru" type="file" multiple class="sr-unggah-asli"
+                                        wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                    <span class="sr-unggah-ikon"><i class="bi bi-cloud-arrow-up"></i></span>
+                                    <span class="sr-unggah-teks">
+                                        <b>Pilih berkas pindaian</b>
+                                        <span>PDF, foto, atau Word &middot; maksimal 20 MB per lembar</span>
+                                    </span>
+                                </label>
                                 @error('unggahan')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 @error('unggahan.*')<div class="dsb-galat">{{ $message }}</div>@enderror
                                 @error('berkasBaru.*')<div class="dsb-galat">{{ $message }}</div>@enderror

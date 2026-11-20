@@ -417,3 +417,171 @@ it('tidak mencetak berita acara yang memuat surat rahasia bagi yang tak berizin'
         ->get(route('admin.surat.berita-acara', SuratPemusnahan::firstOrFail()))
         ->assertForbidden();
 });
+
+/* ============================== TEMBUSAN SEBAGAI KEPING ============================== */
+
+it('memecah tembusan jadi keping saat dipisah titik koma', function () {
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', 'Direktur; Bagian Keuangan; Arsip')
+        ->assertSet('f.tembusan', 'Direktur; Bagian Keuangan; Arsip')
+        ->assertSee('Bagian Keuangan');
+});
+
+it('memecah tembusan yang disalin menurun per baris', function () {
+    // Daftar tembusan di surat aslinya ditulis menurun; yang disalin pun begitu.
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', "Direktur\nBagian Keuangan\n\nArsip")
+        ->assertSet('f.tembusan', 'Direktur; Bagian Keuangan; Arsip');
+});
+
+it('menambah keping tanpa membuang yang sudah ada', function () {
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', 'Direktur')
+        ->call('tambahTembusan', 'Bagian Keuangan')
+        ->assertSet('f.tembusan', 'Direktur; Bagian Keuangan');
+});
+
+it('mengabaikan tembusan yang sudah ada di daftar', function () {
+    // Menolak dengan pesan galat untuk nama yang MEMANG sudah ada hanya menghalangi.
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', 'Direktur; Direktur ; Arsip')
+        ->assertSet('f.tembusan', 'Direktur; Arsip')
+        ->assertHasNoErrors('f.tembusan');
+});
+
+it('membuang satu keping tanpa menggeser yang lain', function () {
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', 'Direktur; Bagian Keuangan; Arsip')
+        ->call('hapusTembusan', 1)
+        ->assertSet('f.tembusan', 'Direktur; Arsip')
+        ->assertDontSee('Bagian Keuangan');
+});
+
+it('membatasi jumlah pihak yang ditembusi dan mengatakan sebabnya', function () {
+    $banyak = collect(range(1, 20))->map(fn ($i) => 'Pihak '.$i)->join('; ');
+
+    $borang = Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', $banyak)
+        ->assertHasErrors('f.tembusan');
+
+    expect(count(explode(';', $borang->get('f.tembusan'))))->toBe(15);
+});
+
+it('menyimpan tembusan tetap sebagai satu teks dipisah titik koma', function () {
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->set('f.perihal', 'Surat bertembusan')
+        ->set('f.tanggal_surat', '2026-11-20')
+        ->call('tambahTembusan', 'Direktur; Arsip')
+        ->call('save');
+
+    // Yang tercetak di kaki surat adalah teks ini apa adanya.
+    expect(Surat::where('perihal', 'Surat bertembusan')->value('tembusan'))->toBe('Direktur; Arsip');
+});
+
+it('menggambar tombol buang pada tiap keping', function () {
+    /*
+     | Memeriksa HTML, bukan propertinya.
+     |
+     | Daftar kepingnya dirender server; kalau tombolnya tidak tergambar,
+     | $f['tembusan'] tetap benar dan ujinya tetap hijau — sementara di layar
+     | tembusan yang salah ketik tidak bisa dibuang sama sekali.
+     */
+    Livewire::test(SuratForm::class, ['arah' => 'keluar'])
+        ->call('tambahTembusan', 'Direktur')
+        ->assertSeeHtml('wire:click="hapusTembusan(0)"');
+});
+
+/* ============================== KARYAWAN PENANGGUNG JAWAB ============================== */
+
+it('menawarkan karyawan lemon, bukan seluruh akun', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+
+    // Akun tanpa data karyawan: bukan orang yang bisa ditunjuk memegang surat.
+    $akunLayanan = \App\Models\User::factory()->create(['role_id' => peranLkp([])->id, 'name' => 'Akun Layanan']);
+
+    $daftar = Livewire::test(SuratForm::class, ['arah' => 'masuk'])->viewData('daftarKaryawan');
+
+    expect($daftar->pluck('id')->all())->toContain($karyawan->id)
+        ->and($daftar->pluck('id')->all())->not->toContain($akunLayanan->id);
+});
+
+it('menyimpan karyawan yang dipilih dari jendela pilih', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+
+    Livewire::test(SuratForm::class, ['arah' => 'masuk'])
+        ->set('f.perihal', 'Surat bertuan')
+        ->set('f.tanggal_surat', '2026-11-20')
+        // Jendela pilih mengirim nilainya sebagai TEKS dari peramban.
+        ->call('pilihPenanggungJawab', (string) $karyawan->id)
+        ->assertSet('f.penanggung_jawab_id', (string) $karyawan->id)
+        ->call('save');
+
+    expect(Surat::where('perihal', 'Surat bertuan')->value('penanggung_jawab_id'))->toBe($karyawan->id);
+});
+
+it('menolak id yang bukan karyawan walau dikirim dari peramban', function () {
+    $akunLayanan = \App\Models\User::factory()->create(['role_id' => peranLkp([])->id, 'name' => 'Akun Layanan']);
+
+    /*
+     | Jendela pilih hidup di sisi pengguna; id apa pun bisa dikirim ke sini.
+     | Yang menentukan sah atau tidak adalah daftar di server, bukan daftar
+     | yang kebetulan tergambar di layar.
+     */
+    Livewire::test(SuratForm::class, ['arah' => 'masuk'])
+        ->call('pilihPenanggungJawab', (string) $akunLayanan->id)
+        ->assertSet('f.penanggung_jawab_id', '');
+});
+
+it('mengosongkan karyawan yang sudah ditunjuk', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+
+    Livewire::test(SuratForm::class, ['arah' => 'masuk'])
+        ->call('pilihPenanggungJawab', (string) $karyawan->id)
+        ->call('kosongkanPenanggungJawab')
+        ->assertSet('f.penanggung_jawab_id', '');
+});
+
+it('mencatat pergantian karyawan penanggung jawab di riwayat', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+    $surat = suratLkp();
+
+    $surat->update(['penanggung_jawab_id' => $karyawan->id]);
+
+    expect($surat->jejak()->where('aksi', 'diubah')->value('keterangan'))
+        ->toContain('karyawan yang menangani');
+});
+
+it('menyebut karyawan penanggung jawab di halaman suratnya', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+    $surat = suratLkp(['penanggung_jawab_id' => $karyawan->id]);
+
+    $this->get('/admin/arsip-surat/'.$surat->id)
+        ->assertOk()
+        ->assertSee('Ditangani oleh')
+        ->assertSee($karyawan->name);
+});
+
+it('membawa karyawan penanggung jawab ke berkas ekspor', function () {
+    $karyawan = orangLkp(['akses_arsip_surat', 'view_surat']);
+    suratLkp(['penanggung_jawab_id' => $karyawan->id]);
+
+    $saringan = ['tab' => 'semua', 'cari' => '', 'klasifikasi' => '', 'sifat' => '',
+        'status' => '', 'dari' => '', 'sampai' => '', 'urut' => 'terbaru'];
+
+    expect((new SuratExport($this->aku, $saringan))->view()->render())
+        ->toContain('Ditangani Oleh')
+        ->toContain($karyawan->name);
+});
+
+it('menyediakan daftar karyawan sebagai data, bukan dirangkai ke dalam skrip', function () {
+    /*
+     | Nama orang bisa memuat tanda kutip. Merangkainya ke dalam kode
+     | membuat satu nama mematahkan seluruh halaman — dan gejalanya bukan
+     | galat PHP, melainkan tombol yang diam saja.
+     */
+    orangLkp(['akses_arsip_surat', 'view_surat']);
+
+    Livewire::test(SuratForm::class, ['arah' => 'masuk'])
+        ->assertSeeHtml('<script type="application/json" id="sr-daftar-karyawan">')
+        ->assertSeeHtml('data-sr-pilih-karyawan');
+});

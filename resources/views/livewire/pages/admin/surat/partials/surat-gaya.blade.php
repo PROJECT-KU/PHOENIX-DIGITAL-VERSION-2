@@ -170,6 +170,267 @@
 
     .sr-borang .sr-lebar { grid-column: 1 / -1; }
 
+    /* ---------- Borang catat surat: dua lajur tetap ---------- */
+    /*
+       DUA lajur, bukan auto-fit.
+
+       Dengan auto-fit, lebar kartu menentukan jumlah lajurnya: pada layar
+       lebar muncul TIGA lajur, dan medan terakhir berdiri sendirian dengan
+       dua lajur kosong menganga di sebelahnya. Jumlah medannya genap, jadi
+       dua lajur selalu habis terbagi.
+    */
+    .sr-borang-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    /* ---------- Pilih karyawan penanggung jawab ---------- */
+    .sr-pilih-kotak {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        flex-wrap: wrap;
+        padding: .5rem .6rem;
+        border: 1px solid #e6e9f0;
+        border-radius: 12px;
+        background: #fcfcfe;
+    }
+
+    .sr-pilih-kotak.is-galat { border-color: #e11d48; background: #fff1f2; }
+    .sr-pilih-terpilih { display: flex; align-items: center; gap: .55rem; flex: 1 1 12rem; min-width: 0; }
+
+    .sr-pilih-ikon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        flex: 0 0 auto;
+        border-radius: 9px;
+        background: #f3e8ff;
+        color: #7c3aed;
+        font-size: .9rem;
+    }
+
+    .sr-pilih-teks { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+    .sr-pilih-teks b { font-size: .85rem; }
+    .sr-pilih-teks span { font-size: .72rem; color: #64748b; }
+    .sr-pilih-belum { flex: 1 1 8rem; font-size: .82rem; color: #94a3b8; }
+    .sr-pilih-aksi { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+
+    /* Isi jendela pilih (SweetAlert). Jendelanya dirender di body, di luar
+       komponen — gaya ini global sehingga tetap terpakai di sana. */
+    .sr-pilih-cari {
+        width: 100%;
+        padding: .55rem .75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: .9rem;
+        outline: 0;
+    }
+
+    .sr-pilih-cari:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99, 102, 241, .12); }
+
+    .sr-pilih-daftar {
+        margin-top: .6rem;
+        max-height: 17rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        text-align: left;
+    }
+
+    .sr-pilih-baris {
+        display: flex;
+        flex-direction: column;
+        gap: .1rem;
+        width: 100%;
+        padding: .5rem .65rem;
+        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        background: #fff;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .sr-pilih-baris:hover { border-color: #c4b5fd; background: #faf5ff; }
+    .sr-pilih-baris b { font-size: .86rem; color: #1f2937; }
+    .sr-pilih-baris span { font-size: .72rem; color: #64748b; }
+    .sr-pilih-nihil { margin: .8rem 0; font-size: .85rem; color: #94a3b8; }
+
+    /* ---------- Kotak unggah berkas ---------- */
+    /* Input berkas bawaan peramban ditindih, bukan disembunyikan: elemennya
+       tetap ada dan tetap yang menerima klik, jadi wire:model dan pemilihan
+       banyak berkas bekerja persis seperti sebelumnya. */
+    .sr-unggah {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .7rem .85rem;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: border-color .15s, background .15s;
+    }
+
+    .sr-unggah:hover { border-color: #0891b2; background: #f0fdff; }
+    .sr-unggah.is-galat { border-color: #e11d48; background: #fff1f2; }
+
+    .sr-unggah-asli {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .sr-unggah-ikon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 auto;
+        border-radius: 10px;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 1rem;
+    }
+
+    .sr-unggah-teks { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+    .sr-unggah-teks b { font-size: .85rem; color: #334155; }
+    .sr-unggah-teks span { font-size: .72rem; color: #64748b; }
+
+    /* ---------- Tembusan sebagai keping ---------- */
+    /* Kotaknya meniru .dsb-isian tetapi tingginya ikut isinya, dan isian
+       teksnya duduk di dalam kotak yang sama supaya terbaca sebagai SATU
+       medan, bukan dua. */
+    .sr-tembusan {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .3rem;
+        height: auto;
+        min-height: 2.6rem;
+        padding: .3rem .45rem;
+        cursor: text;
+    }
+
+    .sr-tembusan:focus-within { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99, 102, 241, .12); }
+
+    .sr-tembusan-ketik {
+        flex: 1 1 7rem;
+        min-width: 6rem;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        padding: .18rem .1rem;
+        font: inherit;
+        color: inherit;
+    }
+
+    .sr-keping {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        max-width: 100%;
+        padding: .18rem .3rem .18rem .5rem;
+        border: 1px solid #dbeafe;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: .78rem;
+        line-height: 1.3;
+    }
+
+    .sr-keping span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .sr-keping button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(30, 58, 138, .1);
+        color: #1e3a8a;
+        font-size: .6rem;
+        cursor: pointer;
+    }
+
+    .sr-keping button:hover { background: #1e3a8a; color: #fff; }
+
+    /*
+       Medan yang IKUT MEMANJANG mengikuti tinggi barisnya.
+
+       Antrean pindaian di sel sebelah tumbuh tiap kali satu berkas dipilih,
+       dan sel ini akan berhenti di tinggi aslinya — menyisakan ruang kosong
+       memanjang di kiri justru saat borangnya paling penuh. Kotak ringkasan
+       ikut memanjang, jadi ruang itu terpakai untuk hal yang memang berguna:
+       tempat menulis lebih lega.
+    */
+    .sr-tumbuh { align-self: stretch; display: flex; flex-direction: column; }
+    .sr-tumbuh textarea { flex: 1 1 auto; min-height: 7rem; }
+
+    /* Satu sel kisi yang berisi beberapa medan bertumpuk. */
+    .sr-kolom { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+
+    /*
+       Pemisah antar kartu: garis warna di tepi atas.
+
+       Kartu putih di atas latar nyaris putih hanya dibatasi tepi tipis, dan
+       pada borang panjang ketiganya terbaca seperti satu bidang. Garisnya
+       memakai warna ikon kartu itu sendiri, jadi ia sekaligus menandai
+       bagian mana yang sedang dibaca.
+    */
+    .sr-kartu-borang {
+        position: relative;
+        overflow: hidden;
+        border-color: #e6e9f0;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -16px rgba(15, 23, 42, .18);
+    }
+
+    .sr-kartu-borang::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: var(--aksen, #94a3b8);
+    }
+
+    /* Garis tipis memisahkan judul kartu dari isiannya. */
+    .sr-kartu-borang .dsb-kartu-kepala { border-bottom: 1px solid #f1f5f9; }
+
+    /*
+       Kedua kartu atas berakhir di garis yang sama.
+
+       Tingginya disamakan, lalu medan-medannya direnggangkan merata supaya
+       kartu yang isinya lebih pendek tidak menyisakan blok kosong di bawah —
+       jarak antar medan yang sedikit lebih lega terbaca sebagai kelonggaran,
+       bukan sebagai ruang yang terlupa diisi.
+    */
+    /*
+       Dua kartu atas berakhir di garis yang sama.
+
+       Tingginya disamakan, lalu medan-medannya direnggangkan merata supaya
+       kartu yang isinya lebih pendek tidak menyisakan blok kosong di bawah.
+       Jarak antar medan yang sedikit lebih lega terbaca sebagai kelonggaran,
+       bukan sebagai ruang yang terlupa diisi.
+
+       Hanya kartu BORANG yang diperlakukan begini. Bilah "Simpan ke buku
+       agenda" juga tinggal di rak yang sama dan isinya sengaja berbaris
+       mendatar; memaksanya jadi kolom membuat tombolnya turun ke tengah dan
+       bilahnya memanjang ke bawah tanpa isi.
+    */
+    .sr-rak-borang { align-items: stretch; }
+    .sr-rak-borang > .sr-kartu-borang { display: flex; flex-direction: column; }
+    .sr-rak-borang > .sr-kartu-borang > .dsb-kartu-isi { flex: 1 1 auto; display: flex; flex-direction: column; }
+    .sr-rak-borang > .sr-kartu-borang > .dsb-kartu-isi > .sr-borang { flex: 1 1 auto; align-content: space-between; }
+
     /* ---------- Nomor surat keluar ---------- */
     .sr-nomor-saklar {
         display: inline-flex;
@@ -200,7 +461,12 @@
     /* Arti tiap potongan nomor. Nomor surat adalah satu-satunya bagian borang
        yang bentuknya diatur aturan kantor, dan admin baru tidak punya tempat
        lain untuk belajar membacanya. */
+    /* Keping arti nomor DIBAGI RATA selebar kotaknya.
+       Dibiarkan mengalir, keping terakhir berhenti di tengah dan menyisakan
+       ruang kosong memanjang di kanannya — padahal jumlahnya berubah
+       (empat keping tanpa klasifikasi, lima dengan klasifikasi). */
     .sr-nomor-arti { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .45rem; }
+    .sr-nomor-arti span { flex: 1 1 0; min-width: 4.4rem; }
 
     .sr-nomor-arti span {
         display: inline-flex;
@@ -394,6 +660,10 @@
            Dipaksa tetap di kanan, keterangannya tinggal selebar dua kata. */
         .sr-jejak-baris { flex-wrap: wrap; }
         .sr-jejak-waktu { flex: 1 1 100%; text-align: left; padding-left: 2.1rem; white-space: normal; }
+
+        /* Satu lajur di ponsel: dua lajur selebar 170px membuat kotak
+           tanggal dan kotak pilih terpotong isinya. */
+        .sr-borang-duo { grid-template-columns: minmax(0, 1fr); }
 
         .sr-musnah-baris { flex-wrap: wrap; }
         .sr-musnah-tgl { flex: 1 1 100%; text-align: left; padding-left: 2.2rem; }

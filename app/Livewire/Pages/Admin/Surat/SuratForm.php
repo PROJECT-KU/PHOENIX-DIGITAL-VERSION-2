@@ -44,6 +44,9 @@ class SuratForm extends Component
      */
     private const BATAS_ANTREAN = 20;
 
+    /** Batas pihak yang ditembusi; kolomnya 500 huruf. */
+    private const BATAS_TEMBUSAN = 15;
+
     public ?int $suratId = null;
 
     public bool $isEdit = false;
@@ -62,6 +65,7 @@ class SuratForm extends Component
         'kepada' => '',
         'tembusan' => '',
         'status' => 'baru',
+        'penanggung_jawab_id' => '',
         'lokasi_fisik' => '',
         'ringkasan' => '',
     ];
@@ -121,6 +125,7 @@ class SuratForm extends Component
                 'kepada' => (string) $m->kepada,
                 'tembusan' => (string) $m->tembusan,
                 'status' => $m->status,
+                'penanggung_jawab_id' => (string) ($m->penanggung_jawab_id ?? ''),
                 'lokasi_fisik' => (string) $m->lokasi_fisik,
                 'ringkasan' => (string) $m->ringkasan,
             ];
@@ -228,6 +233,131 @@ class SuratForm extends Component
         );
     }
 
+    /* ----------------------------- PENANGGUNG JAWAB ----------------------------- */
+
+    /**
+     * Pilih karyawan yang menangani surat ini.
+     *
+     * Dipanggil dari jendela pilih (SweetAlert) di peramban, jadi nilainya
+     * datang sebagai TEKS. Divalidasi di sini — bukan dipercaya — karena
+     * jendela itu hidup di sisi pengguna dan id apa pun bisa dikirim.
+     */
+    public function pilihPenanggungJawab($id = null): void
+    {
+        $id = (int) $id;
+
+        $this->f['penanggung_jawab_id'] = $this->daftarKaryawan()->contains('id', $id)
+            ? (string) $id
+            : '';
+
+        $this->resetValidation('f.penanggung_jawab_id');
+    }
+
+    public function kosongkanPenanggungJawab(): void
+    {
+        $this->f['penanggung_jawab_id'] = '';
+        $this->resetValidation('f.penanggung_jawab_id');
+    }
+
+    /**
+     * Karyawan lemon, bukan seluruh akun.
+     *
+     * Disaring ke yang punya data karyawan (EmployeeDetail): akun layanan
+     * dan akun yang belum dilengkapi datanya bukan orang yang bisa ditunjuk
+     * memegang surat, dan daftarnya tetap pendek supaya bisa dicari.
+     */
+    public function daftarKaryawan()
+    {
+        return \App\Models\User::whereHas('detail')
+            ->with('detail:user_id,jabatan')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($u) => [
+                'id' => (int) $u->id,
+                'nama' => (string) $u->name,
+                'jabatan' => (string) ($u->detail?->jabatan ?: ''),
+            ]);
+    }
+
+    /** Nama yang sedang terpilih, untuk ditampilkan di borang. */
+    public function karyawanTerpilih(): ?array
+    {
+        $id = (int) ($this->f['penanggung_jawab_id'] ?: 0);
+
+        return $id ? $this->daftarKaryawan()->firstWhere('id', $id) : null;
+    }
+
+    /* ----------------------------- TEMBUSAN ----------------------------- */
+
+    /**
+     * Tembusan disimpan sebagai SATU teks dipisah titik koma, tetapi
+     * ditampilkan sebagai keping-keping.
+     *
+     * Satu kolom teks, bukan tabel sendiri: tembusan tidak pernah ditanya
+     * "siapa saja yang pernah ditembusi" — ia hanya ikut tercetak di kaki
+     * surat dan ikut terbaca saat suratnya dibuka. Tabel terpisah membayar
+     * biaya relasi untuk pertanyaan yang tidak pernah muncul.
+     *
+     * Yang dipecah di layar justru membantu hal lain: nama yang salah ketik
+     * bisa dibuang satu, tanpa menyunting ulang seluruh barisnya.
+     */
+    public function daftarTembusan(): array
+    {
+        return collect(preg_split('/[;\n]+/', (string) ($this->f['tembusan'] ?? '')))
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => $t !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Tambahkan satu atau beberapa pihak sekaligus.
+     *
+     * Pemisahnya titik koma DAN baris baru, karena daftar tembusan sering
+     * disalin dari surat aslinya yang menulisnya menurun satu per baris.
+     */
+    public function tambahTembusan(?string $teks = null): void
+    {
+        $calon = collect(preg_split('/[;\n]+/', (string) $teks))
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => $t !== '');
+
+        if ($calon->isEmpty()) {
+            return;
+        }
+
+        $daftar = $this->daftarTembusan();
+
+        foreach ($calon as $pihak) {
+            // Kembaran dibuang diam-diam: menolak dengan pesan galat untuk
+            // nama yang MEMANG sudah ada di daftar hanya menghalangi.
+            if (in_array($pihak, $daftar, true)) {
+                continue;
+            }
+
+            if (count($daftar) >= self::BATAS_TEMBUSAN) {
+                $this->addError('f.tembusan', 'Tembusan maksimal '.self::BATAS_TEMBUSAN.' pihak.');
+                break;
+            }
+
+            $daftar[] = mb_substr($pihak, 0, 120);
+        }
+
+        $this->f['tembusan'] = implode('; ', $daftar);
+    }
+
+    public function hapusTembusan(int $urutan): void
+    {
+        $daftar = $this->daftarTembusan();
+
+        unset($daftar[$urutan]);
+
+        // Disusun ulang nomornya: celah di tengah larik membuat tombol hapus
+        // berikutnya menunjuk pihak yang salah.
+        $this->f['tembusan'] = implode('; ', array_values($daftar));
+        $this->resetValidation('f.tembusan');
+    }
+
     /** Tombol "Hitung ulang" saat nomornya sedang diketik manual. */
     public function pakaiNomorUsulan(): void
     {
@@ -254,6 +384,7 @@ class SuratForm extends Component
             'f.kepada' => 'nullable|string|max:180',
             'f.tembusan' => 'nullable|string|max:500',
             'f.induk_id' => 'nullable|exists:surat,id',
+            'f.penanggung_jawab_id' => 'nullable|exists:users,id',
             'f.lokasi_fisik' => 'nullable|string|max:180',
             'f.ringkasan' => 'nullable|string|max:5000',
             /*
@@ -293,6 +424,7 @@ class SuratForm extends Component
             'f.lokasi_fisik' => 'tempat berkas',
             'f.tembusan' => 'tembusan',
             'f.induk_id' => 'surat yang ditanggapi',
+            'f.penanggung_jawab_id' => 'karyawan yang menangani',
         ];
     }
 
@@ -381,6 +513,7 @@ class SuratForm extends Component
             'kepada' => trim((string) $this->f['kepada']) ?: null,
             'tembusan' => trim((string) $this->f['tembusan']) ?: null,
             'induk_id' => $this->f['induk_id'] ?: null,
+            'penanggung_jawab_id' => $this->f['penanggung_jawab_id'] ?: null,
             'status' => $this->f['status'],
             'lokasi_fisik' => trim((string) $this->f['lokasi_fisik']) ?: null,
             'ringkasan' => trim((string) $this->f['ringkasan']) ?: null,
@@ -454,6 +587,8 @@ class SuratForm extends Component
     {
         return view('livewire.pages.admin.surat.borang', [
             'daftarKlasifikasi' => SuratKlasifikasi::aktif()->tersusun()->get(),
+            'daftarKaryawan' => $this->daftarKaryawan(),
+            'karyawan' => $this->karyawanTerpilih(),
             /*
              | Kotak "menanggapi surat" diisi surat ber-ARAH SEBALIKNYA saja.
              |
