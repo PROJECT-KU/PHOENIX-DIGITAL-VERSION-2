@@ -5538,3 +5538,96 @@ test('nama yang belum ada di mana pun bisa ditambahkan sebagai kegiatan', functi
     Http::assertSent(fn (Request $r) => str_ends_with((string) parse_url($r->url(), PHP_URL_PATH), '/rab/3/itinerary')
         && collect($r->data()['itinerary'] ?? [])->pluck('nama')->contains('Mampir oleh-oleh'));
 });
+
+/* --------- TIKET DARI MASTER HARGA IKUT KE ITINERARY --------- */
+
+test('menarik tiket dari pemilih master harga menaruh TEMPATNYA di jadwal', function () {
+    palsukanRab();
+
+    /*
+     | Kasus yang dilaporkan 20 Nov 2026: admin menarik "Tiket Masuk
+     | Snorkling Menjangan & Tabuhan" dari pemilih master harga; biayanya
+     | masuk RAB, tetapi jadwalnya tetap kosong. Beberapa destinasi lain
+     | bernasib sama — semuanya berkategori tiket.
+     |
+     | Sebabnya: tiket tidak terhitung "kegiatan berwaktu", padahal tiket
+     | masuk adalah contoh paling jelas dari tempat yang memakan jam.
+     */
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 103);
+
+    $jadwal = collect(itineraryTerkirim());
+
+    // Tiket terusan: satu harga, dua tempat — keduanya berdiri sendiri di
+    // jadwal, karena keduanya memang dikunjungi.
+    expect($jadwal->pluck('nama'))->toContain('Candi Arjuna')
+        ->toContain('Kawah Sikidang')
+        /*
+         | Yang tertulis di jadwal adalah nama TEMPATNYA, bukan nama baris
+         | harganya. "Tiket Candi Arjuna" ditulis untuk dibaca di rincian
+         | biaya; di jadwal ia terbaca seperti kuitansi yang nyasar.
+         */
+        ->not->toContain('Tiket Candi Arjuna');
+
+    // Membawa nama tempat di kolom destinasi — dari situlah layar tahu
+    // tiketnya sudah terhitung.
+    expect($jadwal->firstWhere('nama', 'Candi Arjuna')['destinasi'])->toBe('Candi Arjuna');
+});
+
+test('tempat yang sudah ada di jadwal tidak digandakan saat tiketnya ditarik', function () {
+    palsukanRab();
+
+    /*
+     | Menarik tiket terusan dua kali, atau menarik tiket untuk tempat yang
+     | sudah dimasukkan lewat chip destinasi, tidak boleh membuat
+     | perhentiannya berdiri dua kali. Biayanya sendiri boleh ditarik lagi —
+     | yang tidak boleh ganda adalah tempatnya.
+     */
+    $komponen = Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3]);
+
+    $komponen->call('pakaiBiayaPemilih', 103);
+    $sesudahSekali = collect(itineraryTerkirim())->pluck('nama')
+        ->filter(fn ($n) => $n === 'Candi Arjuna')->count();
+
+    // Ditarik lagi dengan jadwal yang SUDAH memuat tempatnya.
+    $komponen->set('itinerary', [[
+        'hari_ke' => 1, 'jam' => '08:00', 'jam_selesai' => '10:00',
+        'nama' => 'Candi Arjuna', 'keterangan' => '', 'destinasi' => 'Candi Arjuna',
+        'jenis' => 'destinasi',
+    ]])->call('pakaiBiayaPemilih', 103);
+
+    $nama = collect(itineraryTerkirim())->pluck('nama');
+
+    expect($sesudahSekali)->toBe(1)
+        ->and($nama->filter(fn ($n) => $n === 'Candi Arjuna'))->toHaveCount(1)
+        // Yang belum ada tetap ditambahkan.
+        ->and($nama->filter(fn ($n) => $n === 'Kawah Sikidang'))->toHaveCount(1);
+});
+
+test('biaya tanpa destinasi tetap memakai nama barisnya sebagai kegiatan', function () {
+    palsukanRab();
+
+    // Makan siang tidak punya destinasi, jadi namanya sendiri yang dipakai —
+    // jalur lama ini tidak boleh ikut berubah.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 102);
+
+    expect(collect(itineraryTerkirim())->pluck('nama'))
+        ->toContain('Makan di Warung Ndeso');
+});
+
+test('armada tidak pernah jadi kegiatan di jadwal', function () {
+    palsukanRab();
+
+    // Mengetik "hiace" wajar dilakukan; menjadikannya perhentian di itinerary
+    // adalah kesalahan yang terlihat benar.
+    Livewire::actingAs(adminRab())
+        ->test(OrchaRabSusun::class, ['rab' => 3])
+        ->call('pakaiBiayaPemilih', 101);
+
+    // Tidak ada penyimpanan jadwal sama sekali: tidak ada yang perlu disimpan.
+    expect(itineraryTerkirim())->toBe([]);
+});

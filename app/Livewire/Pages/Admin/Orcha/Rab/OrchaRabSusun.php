@@ -140,23 +140,108 @@ class OrchaRabSusun extends Component
     {
         $m = collect($this->katalog['master_cari'] ?? [])->firstWhere('id', $id);
 
-        $this->pakaiBiaya($id, (bool) ($m['bisa_jadi_kegiatan'] ?? false), (string) ($m['nama'] ?? ''));
+        /*
+         | Destinasi yang tercakup harga ini — bisa lebih dari satu, karena
+         | tiket terusan memang satu harga untuk beberapa tempat.
+         |
+         | Dipakai menggantikan nama baris harganya: yang pantas tertulis di
+         | jadwal adalah "Kawah Ijen", bukan "Tiket Masuk Kawah Ijen |
+         | Banyuwangi". Nama baris harga ditulis untuk dibaca di rincian
+         | biaya, dan di jadwal ia terbaca seperti kuitansi yang nyasar.
+         */
+        $destinasi = collect([$m['destinasi'] ?? null])
+            ->merge($m['destinasi_lain'] ?? [])
+            ->map(fn ($d) => trim((string) $d))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->pakaiBiaya(
+            $id,
+            (bool) ($m['bisa_jadi_kegiatan'] ?? false),
+            (string) ($m['nama'] ?? ''),
+            $destinasi,
+        );
     }
 
-    /** Dipakai dua jalur di atas; bentuknya satu supaya keduanya tidak berbeda. */
-    private function pakaiBiaya(int $id, bool $jugaKegiatan, string $nama): void
+    /**
+     * Dipakai dua jalur di atas; bentuknya satu supaya keduanya tidak berbeda.
+     *
+     * @param  array<int, string>  $destinasi  tempat yang tercakup harga ini
+     */
+    private function pakaiBiaya(int $id, bool $jugaKegiatan, string $nama, array $destinasi = []): void
     {
-        $pesan = $jugaKegiatan
-            ? 'Masuk rincian biaya, dan ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.'
-            : 'Biaya ditambahkan.';
+        /*
+         | Yang BELUM ada di jadwal saja.
+         |
+         | Menarik tiket terusan dua kali — atau menarik tiket untuk tempat
+         | yang sudah dimasukkan lewat chip destinasi — tidak boleh membuat
+         | tempatnya berdiri dua kali di hari yang sama. Biayanya sendiri
+         | memang boleh ditarik lagi; yang tidak boleh ganda adalah
+         | perhentiannya.
+         */
+        $baru = array_values(array_filter(
+            $destinasi,
+            fn (string $d) => ! $this->adaDiItinerary($d),
+        ));
+
+        $pesan = match (true) {
+            $baru !== [] => 'Masuk rincian biaya, dan '.(count($baru) > 1 ? count($baru).' tempatnya' : 'tempatnya')
+                .' ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.',
+            $jugaKegiatan => 'Masuk rincian biaya, dan ikut ditambahkan ke jadwal hari '.$this->hariAktif.'.',
+            default => 'Biaya ditambahkan.',
+        };
 
         if (! $this->kirimKe('kirim', "/rab/{$this->rabId}/biaya", ['master_harga_id' => $id], $pesan)) {
+            return;
+        }
+
+        /*
+         | Punya destinasi = masuk jadwal sebagai TEMPAT, bukan kegiatan
+         | bernama. Bedanya bukan kosmetik: kegiatan ber-jenis 'destinasi'
+         | membawa nama tempatnya di kolom destinasi, dan dari situlah layar
+         | tahu tiketnya sudah terhitung.
+         */
+        if ($baru !== []) {
+            /*
+             | SEKALI simpan untuk semuanya, bukan sekali per tempat.
+             |
+             | Tiket terusan membawa beberapa tempat sekaligus; menyimpannya
+             | satu per satu berarti tiga bolak-balik ke peladen untuk satu
+             | tekanan tombol, dan tiap jawaban menggambar ulang jadwal di
+             | tengah jalan — tempat kedua disisipkan ke daftar yang baru saja
+             | ditimpa jawaban penyimpanan pertama.
+             */
+            foreach ($baru as $satu) {
+                $this->taruhDestinasi($satu);
+            }
+
+            $this->simpanItinerary();
+
+            return;
+        }
+
+        // Tempatnya sudah ada di jadwal: biayanya saja yang ditambahkan, dan
+        // tidak ada kegiatan baru yang perlu dibuat.
+        if ($destinasi !== []) {
             return;
         }
 
         if ($jugaKegiatan && trim($nama) !== '') {
             $this->tambahKegiatanBernama(trim($nama));
         }
+    }
+
+    /** Tempat ini sudah berdiri di jadwal, hari mana pun? */
+    private function adaDiItinerary(string $nama): bool
+    {
+        $cari = mb_strtolower(trim($nama));
+
+        return collect($this->itinerary)->contains(
+            fn ($k) => mb_strtolower(trim((string) ($k['destinasi'] ?? ''))) === $cari
+                || mb_strtolower(trim((string) ($k['nama'] ?? ''))) === $cari,
+        );
     }
 
     /**
@@ -501,18 +586,7 @@ class OrchaRabSusun extends Component
 
     public function tambahDestinasi(string $nama): void
     {
-        $mulai = $this->jamBerikutnya($this->hariAktif);
-
-        $this->sisipkan([
-            'hari_ke' => $this->hariAktif,
-            'jam' => $mulai,
-            'jam_selesai' => $this->tambahJam($mulai, 120),
-            'nama' => $nama,
-            'keterangan' => '',
-            'destinasi' => $nama,
-            // Sementara, sampai jawaban penyimpanan membawa jenis dari Orcha.
-            'jenis' => 'destinasi',
-        ]);
+        $this->sisipkanDestinasi($nama);
 
         /*
          | Biayanya ditarik sekalian.
@@ -528,6 +602,42 @@ class OrchaRabSusun extends Component
         $this->tarikBiaya(diam: true);
 
         $this->isiDaerahDari($nama);
+    }
+
+    /**
+     * Menaruh satu tempat di jadwal hari yang sedang dibuka.
+     *
+     * Dipisah dari tambahDestinasi() supaya jalur "tarik tiket dari master
+     * harga" bisa memakainya TANPA ikut menarik biaya lagi — biayanya sudah
+     * ditambahkan tepat sebelum ini, dan menariknya sekali lagi adalah
+     * pekerjaan sia-sia yang suatu saat akan menggandakan sesuatu.
+     */
+    private function sisipkanDestinasi(string $nama): void
+    {
+        $this->taruhDestinasi($nama);
+        $this->simpanItinerary();
+    }
+
+    /**
+     * Menaruh satu tempat di daftar, TANPA menyimpannya.
+     *
+     * Dipisah supaya beberapa tempat sekaligus — tiket terusan — bisa
+     * disimpan dalam satu kiriman.
+     */
+    private function taruhDestinasi(string $nama): void
+    {
+        $mulai = $this->jamBerikutnya($this->hariAktif);
+
+        $this->taruh([
+            'hari_ke' => $this->hariAktif,
+            'jam' => $mulai,
+            'jam_selesai' => $this->tambahJam($mulai, 120),
+            'nama' => $nama,
+            'keterangan' => '',
+            'destinasi' => $nama,
+            // Sementara, sampai jawaban penyimpanan membawa jenis dari Orcha.
+            'jenis' => 'destinasi',
+        ]);
     }
 
     /**
@@ -683,6 +793,13 @@ class OrchaRabSusun extends Component
     /** Disisipkan di akhir harinya, bukan di akhir seluruh daftar. */
     private function sisipkan(array $kegiatan): void
     {
+        $this->taruh($kegiatan);
+        $this->simpanItinerary();
+    }
+
+    /** Menaruh saja, tanpa menyimpan — lihat taruhDestinasi(). */
+    private function taruh(array $kegiatan): void
+    {
         $posisi = count($this->itinerary);
         foreach ($this->itinerary as $i => $k) {
             if ($k['hari_ke'] <= $kegiatan['hari_ke']) {
@@ -691,7 +808,6 @@ class OrchaRabSusun extends Component
         }
 
         array_splice($this->itinerary, $posisi, 0, [$kegiatan]);
-        $this->simpanItinerary();
     }
 
     public function hapusKegiatan(int $i): void
