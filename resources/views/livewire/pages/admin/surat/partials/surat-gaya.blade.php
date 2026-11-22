@@ -535,6 +535,43 @@
     .sr-antrean-teks b { font-size: .8rem; word-break: break-all; }
     .sr-antrean-teks span { font-size: .7rem; color: #64748b; }
 
+    /* ---------- Ubin fakta cepat (halaman surat) ---------- */
+    .sr-fakta { display: flex; align-items: flex-start; gap: .6rem; }
+    .sr-fakta-teks { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+    .sr-fakta-teks b { font-size: .95rem; color: #1f2937; overflow-wrap: anywhere; }
+    .sr-fakta-teks .dsb-kartu-sub { font-size: .7rem; }
+
+    /* ---------- Kartu pindaian ----------
+       Kotak unggah di kiri, daftar berkasnya di kanan. Bertumpuk, kartu ini
+       memanjang ke bawah persis seperti waktu ia masih menumpang di kartu
+       kanan — yang berpindah cuma letak lubangnya. */
+    /* Kotak unggah selebar penuh di atas, daftar berkasnya DUA LAJUR di
+       bawahnya. Berdampingan, kotak unggah yang pendek menyisakan lubang
+       sepanjang daftar; bertumpuk satu lajur, daftar lima berkas membuat
+       kartunya memanjang tanpa perlu. */
+    .sr-pindaian-unggah { margin-bottom: .9rem; }
+
+    .sr-pindaian-daftar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+        gap: .45rem .8rem;
+        align-content: start;
+    }
+
+    .sr-pindaian-daftar .sr-lampiran-baris {
+        border: 1px solid #eef2f7;
+        border-radius: 11px;
+        background: #fcfdff;
+    }
+
+    .sr-pindaian-daftar .dsb-kosong { grid-column: 1 / -1; padding: 1.4rem 1rem; }
+
+    /* Keadaan kosong yang RINGKAS: di bawah borang yang sudah tinggi,
+       kotak kosong setinggi 200px terbaca seperti bagian yang gagal dimuat. */
+    .sr-kosong-ringkas { padding: 1.1rem 1rem; min-height: 0; }
+    .sr-kosong-ringkas .dsb-kosong-ikon { width: 38px; height: 38px; font-size: 1rem; margin-bottom: .5rem; }
+    .sr-kosong-ringkas .dsb-kosong-judul { font-size: .9rem; }
+
     /* ---------- Kaitan antar surat & riwayat ---------- */
     /* Tombol ekspor duduk di kepala kartu daftar, bukan di kepala halaman:
        di kepala halaman ia akan berdesakan dengan tombol catat surat, dan
@@ -664,6 +701,10 @@
         /* Satu lajur di ponsel: dua lajur selebar 170px membuat kotak
            tanggal dan kotak pilih terpotong isinya. */
         .sr-borang-duo { grid-template-columns: minmax(0, 1fr); }
+
+        /* Satu lajur di ponsel: kotak unggah dan daftarnya berdampingan
+           selebar 170px membuat nama berkas terpenggal tiap dua huruf. */
+        .sr-pindaian-daftar { grid-template-columns: minmax(0, 1fr); }
 
         .sr-musnah-baris { flex-wrap: wrap; }
         .sr-musnah-tgl { flex: 1 1 100%; text-align: left; padding-left: 2.2rem; }

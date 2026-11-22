@@ -78,6 +78,33 @@
             </div>
         </header>
 
+        {{-- ================== FAKTA CEPAT ==================
+             Empat hal yang paling sering ditanya tentang sebuah surat,
+             dijawab sebelum orang perlu membaca kartu mana pun. Bentuknya
+             sama dengan deret angka di Pesanan Toko: yang penting dulu,
+             rinciannya menyusul. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                @foreach ([
+                    ['Status', $surat->status_label, 'bi-flag-fill', $warnaStatus[$surat->status] ?? '#64748b', 'Tahap pengerjaannya'],
+                    ['Sifat', $surat->sifat_label, 'bi-bookmark-star-fill', $warnaSifat[$surat->sifat] ?? '#64748b', 'Seberapa perlu didahulukan'],
+                    ['Tanggal surat', $surat->tanggal_surat_teks, 'bi-calendar3', '#0284c7', 'Yang tertulis di suratnya'],
+                    ['Ditangani oleh', $surat->penanggungJawab?->name ?: 'Belum ditunjuk', 'bi-person-badge', '#7c3aed', 'Yang memegang urusannya'],
+                ] as [$labelFakta, $isiFakta, $ikonFakta, $warnaFakta, $ketFakta])
+                    <div class="dsb-kartu k-3">
+                        <div class="dsb-kartu-isi sr-fakta">
+                            <span class="dsb-ikon is-kecil" style="--c: {{ $warnaFakta }}"><i class="bi {{ $ikonFakta }}"></i></span>
+                            <span class="sr-fakta-teks">
+                                <span class="dsb-kartu-sub">{{ $labelFakta }}</span>
+                                <b>{{ $isiFakta }}</b>
+                                <span class="dsb-kartu-sub">{{ $ketFakta }}</span>
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
         {{-- sr-rak-puncak: tiap kartu berhenti di akhir isinya. Diregangkan
              sama tinggi, kartu rincian menyisakan lubang putih sebesar selisih
              dengan kartu di sebelahnya — dan selisih itu berubah-ubah menurut
@@ -134,16 +161,8 @@
                                 <dd>{{ $surat->lokasi_fisik ?: 'Belum dicatat' }}</dd>
                             </div>
                             <div>
-                                <dt>Ditangani oleh</dt>
-                                <dd>{{ $surat->penanggungJawab?->name ?: 'Belum ditunjuk' }}</dd>
-                            </div>
-                            <div>
                                 <dt>Tembusan</dt>
                                 <dd>{{ $surat->tembusan ?: 'Tidak ada' }}</dd>
-                            </div>
-                            <div>
-                                <dt>Dicatat oleh</dt>
-                                <dd>{{ $surat->pencatat?->name ?: 'Tidak diketahui' }}</dd>
                             </div>
                         </dl>
 
@@ -184,8 +203,8 @@
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-flag-fill"></i></span>
                             <div>
-                                <h3 class="dsb-kartu-judul">Status & pindaian</h3>
-                                <span class="dsb-kartu-sub">Tahap pengerjaan dan berkasnya</span>
+                                <h3 class="dsb-kartu-judul">Status &amp; penanganan</h3>
+                                <span class="dsb-kartu-sub">Sudah sampai mana, dan siapa yang memegangnya</span>
                             </div>
                         </div>
                     </div>
@@ -215,88 +234,132 @@
                             </div>
                         @endif
 
-                        @if ($bolehUbah)
-                            <div class="dsb-medan">
-                                <label class="dsb-label" for="sr-berkas-baru">Tambah pindaian</label>
-                                <label class="sr-unggah @error('unggahan.*') is-galat @enderror">
-                                    <input id="sr-berkas-baru" type="file" multiple class="sr-unggah-asli"
-                                        wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
-                                    <span class="sr-unggah-ikon"><i class="bi bi-cloud-arrow-up"></i></span>
-                                    <span class="sr-unggah-teks">
-                                        <b>Pilih berkas pindaian</b>
-                                        <span>PDF, foto, atau Word &middot; maksimal 20 MB per lembar</span>
-                                    </span>
-                                </label>
-                                @error('unggahan')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                @error('unggahan.*')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                @error('berkasBaru.*')<div class="dsb-galat">{{ $message }}</div>@enderror
-                                <div wire:loading wire:target="unggahan" class="dsb-kartu-sub">
-                                    <span class="dsb-putar is-kecil"></span> Mengunggah…
-                                </div>
-
-                                @if ($adaBerkasBaru)
-                                    <div class="sr-antrean">
-                                        @foreach ($berkasBaru as $urutan => $b)
-                                            <div class="sr-antrean-baris" wire:key="antrean-{{ $urutan }}-{{ $b->getFilename() }}">
-                                                <i class="bi bi-paperclip"></i>
-                                                <span class="sr-antrean-teks">
-                                                    <b>{{ $b->getClientOriginalName() }}</b>
-                                                    <span>{{ \App\Models\Surat\SuratLampiran::ukuranTeks($b->getSize()) }}</span>
-                                                </span>
-                                                <button type="button" class="dsb-tabel-btn" title="Keluarkan berkas ini"
-                                                    wire:click="hapusAntrean({{ $urutan }})">
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    <button type="button" wire:click="unggahBerkas" wire:target="unggahBerkas"
-                                        class="dsb-tombol is-utama is-mungil" style="margin-top:.4rem">
-                                        <i class="bi bi-upload"></i><span>Simpan {{ count($berkasBaru) }} berkas</span>
-                                    </button>
-                                @endif
-
-                                <span class="dsb-kartu-sub">
-                                    Boleh pilih beberapa lembar sekaligus, dan boleh memilih lagi —
-                                    yang sudah dipilih tidak hilang.
-                                </span>
+                        {{-- Dua nama yang berbeda artinya, dan sering tertukar:
+                             yang MENCATAT suratnya ke buku agenda, dan yang
+                             MEMEGANG urusannya. --}}
+                        <dl class="sr-rincian" style="margin-top: .2rem;">
+                            <div>
+                                <dt>Ditangani oleh</dt>
+                                <dd>{{ $surat->penanggungJawab?->name ?: 'Belum ditunjuk' }}</dd>
                             </div>
+                            <div>
+                                <dt>Dicatat oleh</dt>
+                                <dd>{{ $surat->pencatat?->name ?: 'Tidak diketahui' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                {{-- ---------- PINDAIAN ----------
+                     Kartunya SENDIRI, selebar penuh.
+
+                     Sebelumnya daftar pindaian menumpang di kartu kanan. Satu
+                     surat berisi lima lembar membuat kartu itu memanjang jauh
+                     melewati kartu rincian di sebelahnya, dan separuh kiri
+                     layar menganga kosong sepanjang daftar itu — makin banyak
+                     berkasnya, makin lebar lubangnya. --}}
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-paperclip"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Pindaian surat</h3>
+                                <span class="dsb-kartu-sub">Hasil pindai berkas fisiknya &mdash; tersimpan tertutup</span>
+                            </div>
+                        </div>
+                        @if ($adaLampiran)
+                            <span class="dsb-chip"><i class="bi bi-paperclip"></i>{{ $lampiran->count() }} berkas</span>
                         @endif
                     </div>
+                    <div class="dsb-kartu-isi">
+                        <div class="sr-pindaian-unggah">
+                        @if ($bolehUbah)
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="sr-berkas-baru">Tambah pindaian</label>
+                                    <label class="sr-unggah @error('unggahan.*') is-galat @enderror">
+                                        <input id="sr-berkas-baru" type="file" multiple class="sr-unggah-asli"
+                                            wire:model="unggahan" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx">
+                                        <span class="sr-unggah-ikon"><i class="bi bi-cloud-arrow-up"></i></span>
+                                        <span class="sr-unggah-teks">
+                                            <b>Pilih berkas pindaian</b>
+                                            <span>PDF, foto, atau Word &middot; maksimal 20 MB per lembar</span>
+                                        </span>
+                                    </label>
+                                    @error('unggahan')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    @error('unggahan.*')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    @error('berkasBaru.*')<div class="dsb-galat">{{ $message }}</div>@enderror
+                                    <div wire:loading wire:target="unggahan" class="dsb-kartu-sub">
+                                        <span class="dsb-putar is-kecil"></span> Mengunggah…
+                                    </div>
 
-                    @if ($adaLampiran)
-                        @foreach ($lampiran as $l)
-                            <div class="sr-lampiran-baris">
-                                <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi {{ $l->ikon }}"></i></span>
-                                <span class="sr-lampiran-teks">
-                                    <b>{{ $l->nama }}</b>
-                                    <span>{{ $l->ukuran_teks }} · {{ $l->pengunggah?->name ?: 'tidak diketahui' }}</span>
-                                </span>
-                                <a href="{{ route('admin.surat.lampiran', [$surat, $l]) }}" target="_blank" rel="noopener"
-                                    class="dsb-tabel-btn" title="Buka pindaian">
-                                    <i class="bi bi-box-arrow-up-right"></i>
-                                </a>
-                                @if ($bolehHapus)
-                                    <button type="button" class="dsb-tabel-btn pcek-konfirmasi" title="Hapus pindaian"
-                                        data-action="hapusLampiran" data-arg="{{ $l->id }}"
-                                        data-title="Hapus pindaian ini?"
-                                        data-text="{{ $l->nama }} dihapus dari server dan tidak bisa dikembalikan."
-                                        data-confirm="Ya, hapus" data-icon="warning">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="dsb-kosong">
-                            <span class="dsb-kosong-ikon"><i class="bi bi-file-earmark"></i></span>
-                            <p class="dsb-kosong-judul">Belum ada pindaian</p>
-                            <p class="dsb-kosong-ket">
-                                Arsip tetap sah tanpa pindaian — tempat berkas fisiknya yang penting.
-                                Pindaian menolong kalau kertasnya sedang dipinjam orang.
-                            </p>
+                                    @if ($adaBerkasBaru)
+                                        <div class="sr-antrean">
+                                            @foreach ($berkasBaru as $urutan => $b)
+                                                <div class="sr-antrean-baris" wire:key="antrean-{{ $urutan }}-{{ $b->getFilename() }}">
+                                                    <i class="bi bi-paperclip"></i>
+                                                    <span class="sr-antrean-teks">
+                                                        <b>{{ $b->getClientOriginalName() }}</b>
+                                                        <span>{{ \App\Models\Surat\SuratLampiran::ukuranTeks($b->getSize()) }}</span>
+                                                    </span>
+                                                    <button type="button" class="dsb-tabel-btn" title="Keluarkan berkas ini"
+                                                        wire:click="hapusAntrean({{ $urutan }})">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <button type="button" wire:click="unggahBerkas" wire:target="unggahBerkas"
+                                            class="dsb-tombol is-utama is-mungil" style="margin-top:.4rem">
+                                            <i class="bi bi-upload"></i><span>Simpan {{ count($berkasBaru) }} berkas</span>
+                                        </button>
+                                    @endif
+
+                                    <span class="dsb-kartu-sub">
+                                        Boleh pilih beberapa lembar sekaligus, dan boleh memilih lagi —
+                                        yang sudah dipilih tidak hilang.
+                                    </span>
+                                </div>
+                            @endif
+
                         </div>
-                    @endif
+
+                        <div class="sr-pindaian-daftar">
+                    @if ($adaLampiran)
+                                    @foreach ($lampiran as $l)
+                                        <div class="sr-lampiran-baris">
+                                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi {{ $l->ikon }}"></i></span>
+                                            <span class="sr-lampiran-teks">
+                                                <b>{{ $l->nama }}</b>
+                                                <span>{{ $l->ukuran_teks }} · {{ $l->pengunggah?->name ?: 'tidak diketahui' }}</span>
+                                            </span>
+                                            <a href="{{ route('admin.surat.lampiran', [$surat, $l]) }}" target="_blank" rel="noopener"
+                                                class="dsb-tabel-btn" title="Buka pindaian">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                            @if ($bolehHapus)
+                                                <button type="button" class="dsb-tabel-btn pcek-konfirmasi" title="Hapus pindaian"
+                                                    data-action="hapusLampiran" data-arg="{{ $l->id }}"
+                                                    data-title="Hapus pindaian ini?"
+                                                    data-text="{{ $l->nama }} dihapus dari server dan tidak bisa dikembalikan."
+                                                    data-confirm="Ya, hapus" data-icon="warning">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="dsb-kosong">
+                                        <span class="dsb-kosong-ikon"><i class="bi bi-file-earmark"></i></span>
+                                        <p class="dsb-kosong-judul">Belum ada pindaian</p>
+                                        <p class="dsb-kosong-ket">
+                                            Arsip tetap sah tanpa pindaian — tempat berkas fisiknya yang penting.
+                                            Pindaian menolong kalau kertasnya sedang dipinjam orang.
+                                        </p>
+                                    </div>
+                                @endif
+
+                        </div>
+                    </div>
                 </div>
 
                 {{-- ---------- DISPOSISI ---------- --}}
@@ -410,7 +473,10 @@
                             </div>
                         @endforeach
                     @else
-                        <div class="dsb-kosong">
+                        {{-- Ringkas: di bawah borang yang sudah tinggi, kotak kosong
+                             setinggi dua ratus piksel terbaca seperti bagian yang
+                             gagal dimuat, bukan seperti "memang belum ada". --}}
+                        <div class="dsb-kosong sr-kosong-ringkas">
                             <span class="dsb-kosong-ikon"><i class="bi bi-person-check"></i></span>
                             <p class="dsb-kosong-judul">Belum ada disposisi</p>
                             <p class="dsb-kosong-ket">
