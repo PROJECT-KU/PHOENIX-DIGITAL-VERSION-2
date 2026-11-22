@@ -551,12 +551,23 @@
        kartunya memanjang tanpa perlu. */
     .sr-pindaian-unggah { margin-bottom: .9rem; }
 
+    /*
+       FLEX, bukan kisi.
+
+       Kisi menyisakan sel kosong di baris terakhir setiap kali jumlah
+       berkasnya bukan kelipatan lajur — lima berkas di tiga lajur
+       meninggalkan satu lubang selebar sepertiga kartu. Dengan flex, baris
+       terakhir MELAR memenuhi lebarnya, jadi berapa pun jumlah berkasnya
+       tidak pernah ada sel yang menganga.
+    */
     .sr-pindaian-daftar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+        display: flex;
+        flex-wrap: wrap;
         gap: .45rem .8rem;
         align-content: start;
     }
+
+    .sr-pindaian-daftar > * { flex: 1 1 22rem; min-width: 0; }
 
     .sr-pindaian-daftar .sr-lampiran-baris {
         border: 1px solid #eef2f7;
@@ -564,7 +575,7 @@
         background: #fcfdff;
     }
 
-    .sr-pindaian-daftar .dsb-kosong { grid-column: 1 / -1; padding: 1.4rem 1rem; }
+    .sr-pindaian-daftar .dsb-kosong { flex: 1 1 100%; padding: 1.4rem 1rem; }
 
     /* Keadaan kosong yang RINGKAS: di bawah borang yang sudah tinggi,
        kotak kosong setinggi 200px terbaca seperti bagian yang gagal dimuat. */
@@ -704,7 +715,7 @@
 
         /* Satu lajur di ponsel: kotak unggah dan daftarnya berdampingan
            selebar 170px membuat nama berkas terpenggal tiap dua huruf. */
-        .sr-pindaian-daftar { grid-template-columns: minmax(0, 1fr); }
+        .sr-pindaian-daftar > * { flex: 1 1 100%; }
 
         .sr-musnah-baris { flex-wrap: wrap; }
         .sr-musnah-tgl { flex: 1 1 100%; text-align: left; padding-left: 2.2rem; }

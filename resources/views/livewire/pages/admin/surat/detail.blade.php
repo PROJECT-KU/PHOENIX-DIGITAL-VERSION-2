@@ -472,10 +472,14 @@
                                 @endif
                             </div>
                         @endforeach
-                    @else
-                        {{-- Ringkas: di bawah borang yang sudah tinggi, kotak kosong
-                             setinggi dua ratus piksel terbaca seperti bagian yang
-                             gagal dimuat, bukan seperti "memang belum ada". --}}
+                    @elseif (! $bolehUbah)
+                        {{-- Keadaan kosong HANYA untuk yang tidak bisa menambah.
+                             Di atas borang yang sudah mengajak mengisi, kotak
+                             "belum ada" cuma mengulang ajakan yang sama dengan
+                             huruf lebih besar — dan meninggalkan pita kosong
+                             selebar kartu di antara keduanya. Bagi yang memang
+                             tidak boleh menambah, kalimat ini yang menjelaskan
+                             kenapa daftarnya kosong. --}}
                         <div class="dsb-kosong sr-kosong-ringkas">
                             <span class="dsb-kosong-ikon"><i class="bi bi-person-check"></i></span>
                             <p class="dsb-kosong-judul">Belum ada disposisi</p>
