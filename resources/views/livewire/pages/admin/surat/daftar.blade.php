@@ -290,7 +290,14 @@ Arsip Surat || lemon
                                                         </span>
                                                     </span>
                                                 </td>
-                                                <td class="dsb-tabel-aksi">
+                                                {{-- Kelas dsb-tabel-aksi itu untuk PEMBUNGKUS di dalam sel, bukan
+                                                     untuk <td>-nya. Dipasang di sel, display:inline-flex mencopot
+                                                     sel itu dari tata letak tabel: garis bawahnya digambar
+                                                     mengelilingi kotak tombol, bukan setinggi barisnya — jadi garis
+                                                     di kolom Aksi berhenti di ketinggian yang berbeda dari garis di
+                                                     sebelahnya. --}}
+                                                <td style="text-align: right;">
+                                                    <span class="dsb-tabel-aksi">
                                                     @if ($tabTerhapus)
                                                         {{-- Surat terhapus tidak punya halaman detail: rutenya
                                                              menolak baris terhapus. Yang ditawarkan hanya dua
@@ -318,6 +325,7 @@ Arsip Surat || lemon
                                                             <i class="bi bi-eye"></i>
                                                         </a>
                                                     @endif
+                                                    </span>
                                                 </td>
                                             </tr>
                                         @endforeach

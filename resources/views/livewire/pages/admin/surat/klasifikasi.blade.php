@@ -211,8 +211,16 @@ Klasifikasi Surat || lemon
                                                 @else
                                                     <span class="dsb-lencana" style="--c: #64748b">Nonaktif</span>
                                                 @endif
+                                                </span>
                                             </td>
-                                            <td class="dsb-tabel-aksi">
+                                            {{-- Kelas dsb-tabel-aksi itu untuk PEMBUNGKUS di dalam sel, bukan
+                                                 untuk <td>-nya. Dipasang di sel, display:inline-flex mencopot
+                                                 sel itu dari tata letak tabel: garis bawahnya digambar
+                                                 mengelilingi kotak tombol, bukan setinggi barisnya — jadi garis
+                                                 di kolom Aksi berhenti di ketinggian yang berbeda dari garis di
+                                                 sebelahnya. --}}
+                                            <td style="text-align: right;">
+                                                <span class="dsb-tabel-aksi">
                                                 @if ($bolehKelola)
                                                     <button type="button" wire:click="mulaiSunting({{ $k->id }})"
                                                         class="dsb-tabel-btn" title="Ubah" @disabled($iniDisunting)>
