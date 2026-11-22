@@ -642,6 +642,30 @@
     .sr-kosong-ringkas .dsb-kosong-ikon { width: 38px; height: 38px; font-size: 1rem; margin-bottom: .5rem; }
     .sr-kosong-ringkas .dsb-kosong-judul { font-size: .9rem; }
 
+    /* ---------- Jendela pratinjau pindaian ---------- */
+    .sr-pratinjau-judul { font-size: 1rem !important; font-weight: 700 !important; color: #0f172a; word-break: break-word; }
+
+    .sr-pratinjau-bingkai {
+        width: 100%;
+        height: min(70vh, 660px);
+        min-height: 300px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+    }
+
+    .sr-pratinjau-gambar {
+        max-width: 100%;
+        max-height: min(70vh, 660px);
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+    }
+
+    .sr-pratinjau-pesan { padding: 1.2rem .5rem .4rem; color: #475569; font-size: .9rem; line-height: 1.55; }
+    .sr-pratinjau-pesan i { display: block; margin-bottom: .55rem; font-size: 2rem; color: #94a3b8; }
+    .sr-pratinjau-pesan p { margin: 0 0 .35rem; }
+    .sr-pratinjau-pesan b { color: #0f172a; }
+
     /* ---------- Kaitan antar surat & riwayat ---------- */
     /* Tombol ekspor duduk di kepala kartu daftar, bukan di kepala halaman:
        di kepala halaman ia akan berdesakan dengan tombol catat surat, dan

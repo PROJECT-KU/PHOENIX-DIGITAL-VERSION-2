@@ -258,6 +258,33 @@ it('menolak mengunduh pindaian surat rahasia', function () {
         ->assertForbidden();
 });
 
+it('menolak melihat maupun mengunduh pindaian surat rahasia', function () {
+    $surat = suratRahasia();
+
+    $lampiran = \App\Models\Surat\SuratLampiran::create([
+        'surat_id' => $surat->id,
+        'nama' => 'audit.pdf',
+        'jalur' => 'surat/audit.pdf',
+        'ukuran' => 1024,
+        'jenis' => 'application/pdf',
+    ]);
+
+    /*
+     | Jendela pratinjau memanggil alamat yang sama, hanya tanpa ?unduh=1.
+     | Penanda itu tidak boleh jadi jalan tembus: melihat isinya di layar sama
+     | saja dengan membacanya.
+     */
+    $pengguna = orangIzin(peranIzin(['akses_arsip_surat', 'view_surat']));
+
+    $this->actingAs($pengguna)
+        ->get(route('admin.surat.lampiran', [$surat, $lampiran]))
+        ->assertForbidden();
+
+    $this->actingAs($pengguna)
+        ->get(route('admin.surat.lampiran', [$surat, $lampiran, 'unduh' => 1]))
+        ->assertForbidden();
+});
+
 it('menyembunyikan disposisi surat rahasia dari angka yang perlu ditindak', function () {
     $surat = suratRahasia();
 

@@ -57,7 +57,16 @@ class BerkasPrivatController extends Controller
 
         $nama = 'surat-'.$surat->nomor_agenda.'-'.$berkas->id.($ekstensi ? '.'.$ekstensi : '');
 
-        return $this->sajikan($berkas->jalur, $nama);
+        /*
+         | ?unduh=1 memaksa berkasnya TERSIMPAN, bukan tergambar.
+         |
+         | Tanpa penanda itu berkasnya disajikan apa adanya: PDF dan gambar
+         | digambar peramban (itulah yang dipakai jendela pratinjau), sedangkan
+         | Word tetap turun jadi unduhan karena peramban memang tidak bisa
+         | menggambarnya. Tombol "Unduh" perlu jalur yang pasti menyimpan,
+         | supaya PDF yang sedang dilihat bisa ikut disimpan tanpa akal-akalan.
+         */
+        return $this->sajikan($berkas->jalur, $nama, request()->boolean('unduh'));
     }
 
     /** CV pelamar kerja. */
@@ -148,7 +157,7 @@ class BerkasPrivatController extends Controller
      * Berkas lama masih ada di disk 'public'; keduanya dicoba supaya data
      * yang belum sempat dipindah tetap terbuka bagi admin.
      */
-    private function sajikan(?string $path, string $namaUnduh)
+    private function sajikan(?string $path, string $namaUnduh, bool $paksaUnduh = false)
     {
         abort_if(! $path, 404);
 
@@ -161,7 +170,9 @@ class BerkasPrivatController extends Controller
         try {
             foreach (['local', 'public'] as $disk) {
                 if (Storage::disk($disk)->exists($path)) {
-                    return Storage::disk($disk)->response($path, $namaUnduh);
+                    return $paksaUnduh
+                        ? Storage::disk($disk)->download($path, $namaUnduh)
+                        : Storage::disk($disk)->response($path, $namaUnduh);
                 }
             }
         } catch (\Throwable $e) {

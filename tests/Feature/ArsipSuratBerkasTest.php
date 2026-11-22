@@ -199,3 +199,57 @@ it('menyimpan ukuran tiap lampiran, bukan hanya namanya', function () {
 
     expect((int) $surat->lampiran()->value('ukuran'))->toBeGreaterThan(0);
 });
+
+/* ====================== LIHAT DULU, BARU UNDUH ====================== */
+
+it('tahu berkas mana yang bisa ditampilkan di layar dan mana yang tidak', function () {
+    $pdf = new \App\Models\Surat\SuratLampiran(['nama' => 'kontrak.pdf', 'jenis' => 'application/pdf']);
+    $foto = new \App\Models\Surat\SuratLampiran(['nama' => 'lembar1.JPG', 'jenis' => 'image/jpeg']);
+    $word = new \App\Models\Surat\SuratLampiran(['nama' => 'kontrak.docx', 'jenis' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+
+    // Baris lama bisa saja tersimpan tanpa jenis; namanya masih cukup.
+    $lama = new \App\Models\Surat\SuratLampiran(['nama' => 'scan_0001.pdf', 'jenis' => null]);
+
+    expect($pdf->jenis_ringkas)->toBe('pdf')
+        ->and($foto->jenis_ringkas)->toBe('gambar')
+        ->and($word->jenis_ringkas)->toBe('lain')
+        ->and($lama->jenis_ringkas)->toBe('pdf')
+        ->and($pdf->bisa_pratinjau)->toBeTrue()
+        ->and($word->bisa_pratinjau)->toBeFalse();
+});
+
+it('menyajikan pindaian apa adanya supaya bisa dilihat dulu', function () {
+    $surat = suratBerkasUji();
+    Storage::disk('local')->put('surat/kontrak.pdf', 'isi pindaian');
+
+    $lampiran = \App\Models\Surat\SuratLampiran::create([
+        'surat_id' => $surat->id,
+        'nama' => 'kontrak.pdf',
+        'jalur' => 'surat/kontrak.pdf',
+        'ukuran' => 12,
+        'jenis' => 'application/pdf',
+    ]);
+
+    // inline = digambar peramban. Itulah yang dipakai jendela pratinjau:
+    // attachment akan langsung menurunkan berkasnya ke komputer.
+    $this->get(route('admin.surat.lampiran', [$surat, $lampiran]))
+        ->assertOk()
+        ->assertHeader('content-disposition', 'inline; filename=surat-'.$surat->nomor_agenda.'-'.$lampiran->id.'.pdf');
+});
+
+it('memaksa berkasnya tersimpan saat tombol unduh yang ditekan', function () {
+    $surat = suratBerkasUji();
+    Storage::disk('local')->put('surat/kontrak.pdf', 'isi pindaian');
+
+    $lampiran = \App\Models\Surat\SuratLampiran::create([
+        'surat_id' => $surat->id,
+        'nama' => 'kontrak.pdf',
+        'jalur' => 'surat/kontrak.pdf',
+        'ukuran' => 12,
+        'jenis' => 'application/pdf',
+    ]);
+
+    $balasan = $this->get(route('admin.surat.lampiran', [$surat, $lampiran, 'unduh' => 1]))->assertOk();
+
+    expect($balasan->headers->get('content-disposition'))->toStartWith('attachment;');
+});

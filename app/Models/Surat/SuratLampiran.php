@@ -69,6 +69,40 @@ class SuratLampiran extends Model
         return number_format($b / 1048576, 1, ',', '.').' MB';
     }
 
+    /**
+     * Berkas yang bisa DITAMPILKAN langsung di peramban.
+     *
+     * Peramban hanya tahu menggambar PDF dan gambar. Word, Excel, dan kawannya
+     * harus diunduh dulu — dan di hosting ini tidak ada jalan mengubahnya jadi
+     * PDF lebih dulu (proc_open dimatikan, jadi LibreOffice tidak bisa
+     * dipanggil). Lebih baik dikatakan apa adanya daripada memberi tombol
+     * pratinjau yang berujung layar kosong.
+     */
+    public function getBisaPratinjauAttribute(): bool
+    {
+        return $this->jenis_ringkas !== 'lain';
+    }
+
+    /** 'pdf' | 'gambar' | 'lain' — dipakai jendela pratinjau untuk memilih bentuk. */
+    public function getJenisRingkasAttribute(): string
+    {
+        $jenis = strtolower((string) $this->jenis);
+
+        // Baris lama bisa saja tidak menyimpan jenisnya; namanya masih menyimpan
+        // ekstensi, dan itu cukup untuk memutuskan.
+        $ekstensi = strtolower(pathinfo((string) $this->nama, PATHINFO_EXTENSION));
+
+        if (str_contains($jenis, 'pdf') || $ekstensi === 'pdf') {
+            return 'pdf';
+        }
+
+        if (str_starts_with($jenis, 'image/') || in_array($ekstensi, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'], true)) {
+            return 'gambar';
+        }
+
+        return 'lain';
+    }
+
     /** Ikon menurut jenis berkasnya, supaya daftar lampiran bisa dipindai mata. */
     public function getIkonAttribute(): string
     {

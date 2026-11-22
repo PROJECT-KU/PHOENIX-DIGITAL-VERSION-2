@@ -360,9 +360,22 @@
                                                 <b>{{ $l->nama }}</b>
                                                 <span>{{ $l->ukuran_teks }} · {{ $l->pengunggah?->name ?: 'tidak diketahui' }}</span>
                                             </span>
-                                            <a href="{{ route('admin.surat.lampiran', [$surat, $l]) }}" target="_blank" rel="noopener"
-                                                class="dsb-tabel-btn" title="Buka pindaian">
-                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            {{-- Lihat dulu, baru unduh.
+
+                                                 Dua jalur yang sengaja dipisah: mata membuka jendela
+                                                 pratinjau tanpa meninggalkan halaman ini, panah ke bawah
+                                                 menyimpan berkasnya. Satu tombol yang mengerjakan keduanya
+                                                 memaksa orang mengunduh lima lembar hanya untuk tahu
+                                                 lembar mana yang dicarinya. --}}
+                                            <button type="button" class="dsb-tabel-btn" title="Lihat isinya dulu"
+                                                data-pratinjau="{{ $l->jenis_ringkas }}"
+                                                data-nama="{{ $l->nama }}"
+                                                data-alamat="{{ route('admin.surat.lampiran', [$surat, $l]) }}">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <a href="{{ route('admin.surat.lampiran', [$surat, $l, 'unduh' => 1]) }}"
+                                                class="dsb-tabel-btn" title="Unduh pindaian">
+                                                <i class="bi bi-download"></i>
                                             </a>
                                             @if ($bolehHapus)
                                                 <button type="button" class="dsb-tabel-btn pcek-konfirmasi" title="Hapus pindaian"
@@ -568,5 +581,89 @@
         Penangan tombol .pcek-konfirmasi tidak perlu dimuat di sini — sudah
         terpasang global di layout templateindex.
     --}}
+    {{--
+        Jendela pratinjau pindaian.
+
+        Penangannya dipasang sekali pada document, bukan pada tiap tombol:
+        daftar pindaian ikut digambar ulang Livewire tiap kali satu berkas
+        ditambah atau dihapus, dan penangan yang menempel di tombol ikut hilang
+        bersama tombolnya. Penjaga srPratinjauSiap menahan pemasangan kedua
+        saat halaman ini dibuka lagi lewat wire:navigate.
+
+        Tiap tanda tutup tag di dalam teks JavaScript ditulis dengan garis
+        miring terbalik lebih dulu. Tanda tutup yang ditulis apa adanya
+        menutup blok skrip ini lebih awal, dan sisa skripnya tercetak sebagai
+        isi halaman.
+    --}}
+    <script>
+        (function () {
+            if (window.srPratinjauSiap) { return; }
+            window.srPratinjauSiap = true;
+
+            function aman(teks) {
+                var kotak = document.createElement('div');
+                kotak.textContent = teks == null ? '' : String(teks);
+                return kotak.innerHTML;
+            }
+
+            document.addEventListener('click', function (e) {
+                var tombol = e.target && e.target.closest ? e.target.closest('[data-pratinjau]') : null;
+                if (! tombol) { return; }
+                e.preventDefault();
+
+                var jenis = tombol.getAttribute('data-pratinjau');
+                var nama = tombol.getAttribute('data-nama') || 'Pindaian surat';
+                var alamat = tombol.getAttribute('data-alamat');
+                var alamatUnduh = alamat + (alamat.indexOf('?') === -1 ? '?' : '&') + 'unduh=1';
+                var isi;
+
+                if (jenis === 'pdf') {
+                    isi = '<iframe src="' + aman(alamat) + '" class="sr-pratinjau-bingkai" title="' + aman(nama) + '"><\/iframe>';
+                } else if (jenis === 'gambar') {
+                    isi = '<img src="' + aman(alamat) + '" alt="' + aman(nama) + '" class="sr-pratinjau-gambar">';
+                } else {
+                    isi = '<div class="sr-pratinjau-pesan">'
+                        + '<i class="bi bi-file-earmark-arrow-down"><\/i>'
+                        + '<p><b>Berkas ini tidak bisa ditampilkan di layar.<\/b><\/p>'
+                        + '<p>Word dan sejenisnya baru terbaca setelah diunduh dan dibuka di komputer. PDF dan foto bisa dilihat langsung di sini.<\/p>'
+                        + '<\/div>';
+                }
+
+                /* Tanpa SweetAlert (mis. skripnya gagal dimuat) tetap ada jalan
+                   melihat berkasnya, bukan tombol yang diam saja. */
+                if (typeof Swal === 'undefined') {
+                    window.open(alamat, '_blank', 'noopener');
+                    return;
+                }
+
+                Swal.fire({
+                    title: nama,
+                    html: isi,
+                    width: 'min(1040px, 94vw)',
+                    showCloseButton: true,
+                    showCancelButton: true,
+                    showDenyButton: true,
+                    confirmButtonText: 'Unduh',
+                    denyButtonText: 'Buka di tab baru',
+                    cancelButtonText: 'Tutup',
+                    reverseButtons: true,
+                    customClass: {
+                        popup: 'sr-pratinjau-kotak',
+                        title: 'sr-pratinjau-judul',
+                        confirmButton: 'btn-glossy-confirm',
+                        denyButton: 'btn-glossy-cancel',
+                        cancelButton: 'btn-glossy-cancel'
+                    }
+                }).then(function (hasil) {
+                    if (hasil.isConfirmed) {
+                        window.location.href = alamatUnduh;
+                    } else if (hasil.isDenied) {
+                        window.open(alamat, '_blank', 'noopener');
+                    }
+                });
+            });
+        })();
+    </script>
+
     @include('livewire.layout.sweetalert')
 </div>
