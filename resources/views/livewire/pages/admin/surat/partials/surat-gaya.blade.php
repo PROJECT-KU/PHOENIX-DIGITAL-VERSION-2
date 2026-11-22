@@ -483,17 +483,76 @@
     .sr-nomor-arti i { font-size: .66rem; font-style: normal; color: #8a7c5e; }
 
     /* ---------- Rincian (halaman detail) ---------- */
-    /* Dua kolom rapat: label kecil di atas, isinya di bawah. Tabel dua kolom
-       akan menyisakan lajur kosong panjang pada nilai yang pendek. */
+    /*
+       Bentuknya meniru kartu rincian Pesanan Toko: nama medan di kiri,
+       isinya di kanan, dipisah garis putus halus.
+
+       Dua lajur, bukan empat. Empat lajur membuat nilai sepanjang nama orang
+       patah jadi dua baris, dan tinggi tiap sel jadi tidak sama — daftarnya
+       terbaca bergerigi. Dua lajur juga membagi sepuluh medan dengan rata
+       (5 + 5), jadi baris terakhirnya tidak pernah menyisakan sel menganga.
+    */
     .sr-rincian {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-        gap: .7rem .9rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1.7rem;
     }
 
-    .sr-rincian > div { display: flex; flex-direction: column; gap: .12rem; min-width: 0; }
-    .sr-rincian dt { font-size: .7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
-    .sr-rincian dd { margin: 0; font-size: .88rem; color: #0f172a; word-break: break-word; }
+    .sr-rincian > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: .9rem;
+        min-width: 0;
+        padding: .5rem 0;
+        border-bottom: 1px dashed #e6ebf3;
+    }
+
+    /* Dua medan terakhir menutup daftarnya — satu di tiap lajur. */
+    .sr-rincian > div:nth-last-child(-n+2) { border-bottom: 0; padding-bottom: 0; }
+
+    .sr-rincian dt { flex: 0 0 auto; font-size: .8rem; font-weight: 500; color: #64748b; }
+
+    .sr-rincian dd {
+        margin: 0;
+        min-width: 0;
+        text-align: right;
+        font-size: .86rem;
+        font-weight: 600;
+        color: #0f172a;
+        word-break: break-word;
+    }
+
+    /* Medan yang belum terisi: tetap terbaca, tetapi tidak ikut menarik mata. */
+    .sr-rincian dd.is-kosong { font-weight: 500; color: #94a3b8; }
+    .sr-rincian dd.sr-kode { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+    .sr-rincian-keping { display: inline-flex; flex-wrap: wrap; gap: .25rem; justify-content: flex-end; max-width: 100%; }
+
+    /* Satu lajur di layar sempit: di sana dua lajur membuat nilainya
+       tertekan jadi beberapa baris. */
+    @media (max-width: 767.98px) {
+        .sr-rincian { grid-template-columns: minmax(0, 1fr); }
+        .sr-rincian > div:nth-last-child(-n+2) { border-bottom: 1px dashed #e6ebf3; padding-bottom: .5rem; }
+        .sr-rincian > div:last-child { border-bottom: 0; padding-bottom: 0; }
+    }
+
+    .sr-ringkasan {
+        margin-top: .95rem;
+        padding: .7rem .85rem .75rem;
+        border: 1px solid #eef2f7;
+        border-left: 3px solid #cbd5e1;
+        border-radius: .55rem;
+        background: #f8fafc;
+    }
+
+    .sr-ringkasan p {
+        margin: .2rem 0 0;
+        font-size: .86rem;
+        line-height: 1.55;
+        color: #334155;
+        white-space: pre-line;
+        word-break: break-word;
+    }
 
     /* ---------- Lampiran & disposisi ---------- */
     .sr-lampiran-baris {

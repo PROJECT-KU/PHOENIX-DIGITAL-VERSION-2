@@ -123,14 +123,28 @@
                         </div>
                     </div>
                     <div class="dsb-kartu-isi">
+                        {{-- Bentuk barisnya mengikuti kartu rincian Pesanan Toko:
+                             nama medannya di kiri, isinya di kanan, dipisah garis
+                             putus yang halus. Medan yang BELUM terisi sengaja
+                             ditulis abu-abu supaya yang sudah terisi menonjol. --}}
+                        @php
+                            // Tembusan disimpan sebagai satu teks dipisah titik koma
+                            // (itu yang diketik di borang). Di sini dipecah lagi agar
+                            // tiap nama terbaca sebagai satu keping, bukan satu kalimat
+                            // panjang yang patah di tengah nama orang.
+                            $daftarTembusan = array_values(array_filter(array_map(
+                                'trim',
+                                preg_split('/[;\n]+/', (string) $surat->tembusan)
+                            ), fn ($satu) => $satu !== ''));
+                        @endphp
                         <dl class="sr-rincian">
                             <div>
                                 <dt>Nomor agenda</dt>
-                                <dd class="sr-agenda">{{ $surat->nomor_agenda }}</dd>
+                                <dd class="sr-kode">{{ $surat->nomor_agenda }}</dd>
                             </div>
                             <div>
                                 <dt>Nomor surat</dt>
-                                <dd>{{ $surat->nomor_surat ?: 'Tidak dicatat' }}</dd>
+                                <dd class="{{ $surat->nomor_surat ? 'sr-kode' : 'is-kosong' }}">{{ $surat->nomor_surat ?: 'Tidak dicatat' }}</dd>
                             </div>
                             <div>
                                 <dt>{{ $surat->pihak_label }}</dt>
@@ -142,27 +156,37 @@
                             </div>
                             <div>
                                 <dt>Tanggal {{ $masuk ? 'diterima' : 'dikirim' }}</dt>
-                                <dd>{{ $surat->tanggal_catat_teks }}</dd>
+                                <dd class="{{ $surat->tanggal_catat ? '' : 'is-kosong' }}">{{ $surat->tanggal_catat ? $surat->tanggal_catat_teks : 'Belum dicatat' }}</dd>
                             </div>
                             <div>
                                 <dt>Klasifikasi</dt>
-                                <dd>{{ $surat->klasifikasi?->label ?: 'Belum diklasifikasi' }}</dd>
+                                <dd class="{{ $surat->klasifikasi ? '' : 'is-kosong' }}">{{ $surat->klasifikasi?->label ?: 'Belum diklasifikasi' }}</dd>
                             </div>
                             <div>
                                 <dt>Masa simpan</dt>
-                                <dd>{{ $surat->klasifikasi?->retensi_teks ?: 'Belum ditentukan' }}</dd>
+                                <dd class="{{ $surat->klasifikasi?->retensi_teks ? '' : 'is-kosong' }}">{{ $surat->klasifikasi?->retensi_teks ?: 'Belum ditentukan' }}</dd>
                             </div>
                             <div>
                                 <dt>Boleh dimusnahkan</dt>
-                                <dd>{{ $surat->musnah_pada_teks }}</dd>
+                                <dd class="{{ $surat->musnah_pada ? '' : 'is-kosong' }}">{{ $surat->musnah_pada_teks }}</dd>
                             </div>
                             <div>
                                 <dt>Tempat berkas</dt>
-                                <dd>{{ $surat->lokasi_fisik ?: 'Belum dicatat' }}</dd>
+                                <dd class="{{ $surat->lokasi_fisik ? '' : 'is-kosong' }}">{{ $surat->lokasi_fisik ?: 'Belum dicatat' }}</dd>
                             </div>
                             <div>
                                 <dt>Tembusan</dt>
-                                <dd>{{ $surat->tembusan ?: 'Tidak ada' }}</dd>
+                                @if ($daftarTembusan)
+                                    <dd>
+                                        <span class="sr-rincian-keping">
+                                            @foreach ($daftarTembusan as $satuTembusan)
+                                                <span class="sr-keping"><span>{{ $satuTembusan }}</span></span>
+                                            @endforeach
+                                        </span>
+                                    </dd>
+                                @else
+                                    <dd class="is-kosong">Tidak ada</dd>
+                                @endif
                             </div>
                         </dl>
 
@@ -189,9 +213,13 @@
                         @endif
 
                         @if ($adaRingkasan)
-                            <div class="dsb-medan" style="margin-top: .85rem;">
+                            {{-- Ringkasan isi dipisahkan ke kotaknya sendiri: ia kalimat
+                                 bebas, bukan medan berpasangan seperti daftar di atas,
+                                 jadi kalau ikut barisan garis putus ia terbaca seperti
+                                 nilai yang meluber. --}}
+                            <div class="sr-ringkasan">
                                 <span class="dsb-label">Ringkasan isi</span>
-                                <p class="sr-dis-instruksi" style="margin: 0;">{{ $surat->ringkasan }}</p>
+                                <p>{{ $surat->ringkasan }}</p>
                             </div>
                         @endif
                     </div>
