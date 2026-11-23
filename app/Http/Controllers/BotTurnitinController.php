@@ -30,7 +30,7 @@ class BotTurnitinController extends Controller
         BotTurnitin::catatDetak($data['masalah'] ?? null);
 
         if (! empty($data['kuota_habis'])) {
-            BotTurnitin::tandaiKuotaHabis($data['masalah'] ?? 'Kuota paket Standard di submitin.id habis.');
+            BotTurnitin::tandaiKuotaHabis($data['masalah'] ?? 'Paket dan saldo submitin.id sama-sama habis.');
         }
 
         if (! empty($data['tugas']) && $up = OrderUpload::find($data['tugas'])) {

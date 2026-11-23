@@ -10,10 +10,11 @@
  *   1. tanya antrean ke Phoenix,
  *   2. unduh berkas customer dari Phoenix (nama berkas sudah diganti penanda
  *      PD-xxxxxxxx-INV-…; nama asli customer tidak pernah sampai ke submitin),
- *   3. isi form submitin: Turnitin V1 + filter pilihan customer,
- *   4. PERIKSA metode bayar = paket Standard. Bukan paket → BERHENTI.
- *      Bot tidak pernah memilih QRIS maupun Saldo.
- *   5. klik "Bayar dengan Saldo", catat kode SC-… ke Phoenix,
+ *   3. isi form submitin: Turnitin V1 (V2 hanya bila V1 dicabut) + filter
+ *      pilihan customer,
+ *   4. PERIKSA metode bayar: paket ("Max") lebih dulu, kalau habis baru
+ *      "Gunakan Saldo". Bot tidak pernah memilih QRIS.
+ *   5. tekan tombol bayarnya, catat kode SC-… ke Phoenix,
  *   6. tunggu di halaman status sampai "Unduh Plagiasi" muncul,
  *   7. cocokkan penanda, unduh PDF, kirim ke Phoenix.
  *
@@ -27,6 +28,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import * as cekplagiat from './cekplagiat.mjs';
+import { bacaBayarDiHalaman } from './baca-bayar.mjs';
 
 const AKAR = path.dirname(new URL(import.meta.url).pathname);
 
@@ -56,8 +58,9 @@ const CFG = {
     token: env.PHOENIX_TOKEN || '',
     email: env.SUBMITIN_EMAIL || '',
     sandi: env.SUBMITIN_PASSWORD || '',
-    // 'aman' = berhenti tepat sebelum menekan "Bayar dengan Saldo" lalu menyimpan
-    // tangkapan layar. Dipakai untuk uji pertama supaya kuota tidak terpakai.
+    // 'aman' = berhenti tepat sebelum menekan tombol bayarnya ("Gunakan Paket"
+    // / "Bayar dengan Saldo") lalu menyimpan tangkapan layar. Dipakai untuk uji
+    // pertama supaya kuota tidak terpakai.
     mode: (env.MODE || 'aman').toLowerCase(),
     jeda: Math.max(15, parseInt(env.JEDA_DETIK || '60', 10)) * 1000,
     // Batas submitin 50 MB per berkas; diberi jarak aman sedikit.
@@ -268,7 +271,7 @@ async function lapor() {
     const isi = {
         mode: KEADAAN.dijedaLokal ? 'jeda' : CFG.mode,
         kuota: KEADAAN.kuota,
-        kuota_teks: KEADAAN.kuotaTeks,
+        kuota_teks: KEADAAN.kuotaTeks ? KEADAAN.kuotaTeks.slice(0, 120) : null,
         pekerjaan: KEADAAN.pekerjaan,
         selesai_hari_ini: KEADAAN.selesaiHariIni,
         gagal_hari_ini: KEADAAN.gagalHariIni,
@@ -486,7 +489,7 @@ async function pastikanLogin(hal) {
 /**
  * Tutup pop-up promo submitin.
  *
- * Modal promo menutupi form dan bisa menelan klik "Bayar dengan Saldo" — satu-satunya
+ * Modal promo menutupi form dan bisa menelan klik tombol bayar — satu-satunya
  * klik yang benar-benar memakai kuota. Kotak "Jangan tampilkan lagi" ikut
  * dicentang supaya tidak muncul lagi di profil browser ini.
  */
@@ -534,50 +537,22 @@ async function keForm(hal) {
 }
 
 /* ================================================================
- | Paket Standard
+ | Metode bayar: paket dulu, saldo belakangan
  * ================================================================ */
 
+/** Nama tombol submitin untuk tiap metode bayar yang boleh dipakai bot. */
+const NAMA_BAYAR = { package: 'Gunakan Paket', wallet: 'Bayar dengan Saldo' };
+
 /**
- * Baca label paket Standard beserta sisa kuotanya.
+ * Baca metode bayar yang boleh dipakai bot beserta sisanya.
  *
- * Angka "Total Bayar" SENGAJA tidak dipakai sebagai pengaman: submitin tetap
- * menampilkan harga per dokumen (Rp 5.000) walau dibayar dengan paket.
+ * Isi pembacanya ada di `baca-bayar.mjs` — fungsi itu dijalankan DI DALAM
+ * halaman submitin, dan dipisahkan supaya bisa diuji tanpa menjalankan bot
+ * (`node uji-bayar.mjs`). Ringkasnya: paket ("Max") dipakai lebih dulu, baru
+ * "Gunakan Saldo"; QRIS tidak pernah dipilih.
  */
-async function bacaSaldo(hal) {
-    return hal.evaluate(() => {
-        const label = document.querySelector('#payMethods [data-pm="wallet"]');
-
-        if (!label) return { ada: false, pesan: 'Metode "Gunakan Saldo" tidak ada di halaman submitin.id.' };
-
-        const angka = (t) => {
-            const m = String(t).replace(/\s+/g, ' ').match(/Rp\s*([\d.]+)/i);
-
-            return m ? parseInt(m[1].replace(/\./g, ''), 10) : null;
-        };
-
-        const saldo = angka(label.textContent);
-        const ringkas = document.querySelector('#orderForm')?.innerText.replace(/\s+/g, ' ') || '';
-        const hargaM = ringkas.match(/Harga per dokumen\s*Rp\s*([\d.]+)/i);
-        const harga = hargaM ? parseInt(hargaM[1].replace(/\./g, ''), 10) : null;
-        const mati = label.classList.contains('pm-disabled');
-        const cukup = saldo !== null && harga !== null && saldo >= harga;
-        const bisa = harga ? Math.floor((saldo ?? 0) / harga) : null;
-
-        return {
-            ada: true,
-            saldo,
-            harga,
-            mati,
-            habis: !cukup,
-            bisa,
-            pesan: saldo === null
-                ? 'Saldo submitin.id tidak terbaca.'
-                : (cukup
-                    ? 'Saldo Rp ' + saldo.toLocaleString('id-ID') + ' (±' + bisa + ' dokumen)'
-                    : 'Saldo submitin.id Rp ' + saldo.toLocaleString('id-ID')
-                        + ' kurang dari harga per dokumen' + (harga ? ' Rp ' + harga.toLocaleString('id-ID') : '') + '.'),
-        };
-    });
+async function bacaBayar(hal) {
+    return hal.evaluate(bacaBayarDiHalaman);
 }
 
 /** Syarat sebelum mengambil tugas: form muncul, nomor WA terisi, paket bersisa. */
@@ -606,16 +581,17 @@ async function periksaSiap(hal) {
         return { siap: false, masalah: 'submitin.id tidak menyediakan Turnitin V1 maupun V2.' };
     }
 
-    const saldo = await bacaSaldo(hal);
+    const bayar = await bacaBayar(hal);
 
-    // Disimpan untuk laporan ke Telegram: "kuota" kini = berapa dokumen lagi
-    // yang sanggup dibayar saldonya.
-    KEADAAN.kuota = saldo.ada ? (saldo.bisa ?? 0) : 0;
-    KEADAAN.kuotaTeks = saldo.pesan;
+    // Disimpan untuk laporan ke Telegram: "kuota" = berapa dokumen lagi yang
+    // terbayar — sisa paket bila paketnya dipakai, atau berapa dokumen yang
+    // sanggup dibayar saldonya.
+    KEADAAN.kuota = bayar.kuota ?? 0;
+    KEADAAN.kuotaTeks = bayar.pesan;
 
-    if (!saldo.ada || saldo.habis) return { siap: false, masalah: saldo.pesan, kuotaHabis: true };
+    if (!bayar.ada || bayar.habis) return { siap: false, masalah: bayar.pesan, kuotaHabis: true };
 
-    return { siap: true, paket: saldo };
+    return { siap: true, bayar };
 }
 
 /* ================================================================
@@ -734,33 +710,59 @@ async function isiForm(hal, tugas, berkasPath, namaBerkas) {
     }
 
     /*
-     * "Gunakan Saldo" — satu-satunya metode bayar yang boleh dipakai bot.
+     * Metode bayar: PAKET dulu, baru SALDO. QRIS tidak pernah dipilih.
      *
-     * 14 Okt 2026 submitin.id menghapus Paket Standard; yang tersisa QRIS dan
-     * Saldo. QRIS berarti menunggu pembayaran manual, jadi bot tidak pernah
-     * memilihnya: saldo dulu yang diisi admin, bot hanya memakainya.
+     * 14 Okt 2026 submitin menghapus paket Standard sehingga bot hanya memakai
+     * saldo; 23 Nov 2026 akunnya punya paket lagi ("Max", 25x s/d 07/12/2026).
+     * Paket itu sudah dibayar di muka, jadi ia yang dipakai lebih dulu dan
+     * saldo tinggal cadangannya (lihat bacaBayar).
      */
-    const saldo = await bacaSaldo(hal);
-    if (!saldo.ada || saldo.habis) {
-        // Saldo kurang: pesanan tidak digantung — dikerjakan lewat cadangan.
-        throw Object.assign(new Error(saldo.pesan), { kuotaHabis: true, alihkan: true });
+    const bayar = await bacaBayar(hal);
+    if (!bayar.ada || bayar.habis) {
+        // Tidak ada yang bisa membayar: pesanan tidak digantung — dikerjakan
+        // lewat penyedia cadangan.
+        throw Object.assign(new Error(bayar.pesan), { kuotaHabis: true, alihkan: true });
     }
-    if (saldo.mati) {
+
+    // Kartunya ditekan di tingkat DOM: radionya 0x0, klik ala Playwright
+    // menggantung sampai timeout.
+    const kartu = bayar.pilihan === 'package'
+        ? hal.locator('#payMethods [data-pm="package"]').nth(bayar.paketBisa.indeks)
+        : hal.locator('#payMethods [data-pm="wallet"]').first();
+
+    await kartu.evaluate((el) => el.click());
+    await tidur(800);
+
+    const metode = await hal.locator('#payMethodType').inputValue().catch(() => '');
+    if (metode !== bayar.pilihan) {
         throw Object.assign(
-            new Error('Metode "Gunakan Saldo" tidak bisa dipilih untuk pesanan ini'),
+            new Error(`Gagal memilih "${NAMA_BAYAR[bayar.pilihan]}" di submitin.id`
+                + (metode ? ` (metode yang terpasang: ${metode})` : '')),
             { alihkan: true },
         );
     }
 
-    await hal.locator('#payMethods [data-pm="wallet"]').first().evaluate((el) => el.click());
-    await tidur(800);
+    /*
+     * Paket punya satu pengaman tambahan: nomornya harus benar-benar terpasang
+     * di form. `payPackageId` yang kosong atau "0" berarti submitin menganggap
+     * pesanan ini tidak memakai paket, dan pesanan bisa berakhir sebagai
+     * tagihan — bukan dipotong dari kuota.
+     */
+    if (bayar.pilihan === 'package') {
+        const id = await hal.locator('#payPackageId').inputValue().catch(() => '');
 
-    const metode = await hal.locator('#payMethodType').inputValue().catch(() => '');
-    if (metode !== 'wallet') {
-        throw Object.assign(new Error('Gagal memilih "Gunakan Saldo" di submitin.id'), { alihkan: true });
+        if (!id || id === '0' || id !== bayar.paketBisa.id) {
+            throw Object.assign(
+                new Error(`Nomor paket submitin tidak terpasang di form (payPackageId "${id}", `
+                    + `seharusnya "${bayar.paketBisa.id}")`),
+                { alihkan: true },
+            );
+        }
     }
 
-    return { saldo, versi };
+    catat('Metode bayar:', NAMA_BAYAR[bayar.pilihan], '—', bayar.pesan);
+
+    return { bayar, versi };
 }
 
 /*
@@ -815,10 +817,12 @@ async function setNilai(hal, sel, nilai) {
 /**
  * Pemeriksaan terakhir sebelum menekan tombol.
  *
- * Pengaman uang: HANYA paket. Kalau ada satu saja yang janggal, tidak ada yang
- * dikirim ke submitin — lebih baik tugasnya tertunda daripada salah bayar.
+ * Pengaman uang. Kalau ada satu saja yang janggal, tidak ada yang dikirim ke
+ * submitin — lebih baik tugasnya tertunda daripada salah bayar.
+ *
+ * @param {{pilihan: 'package'|'wallet', paketBisa: object|null}} bayar hasil bacaBayar() saat form diisi
  */
-async function periksaSebelumKirim(hal, namaBerkas) {
+async function periksaSebelumKirim(hal, namaBerkas, bayar) {
     const salah = [];
 
     const versiTerpilih = await hal.locator('#plagiarismEngine').inputValue().catch(() => '');
@@ -827,21 +831,40 @@ async function periksaSebelumKirim(hal, namaBerkas) {
     // V1 wajib dipakai selama kartunya masih ada; V2 hanya boleh saat V1 dicabut.
     if (! ['v1', 'v2'].includes(versiTerpilih)) salah.push('versi Turnitin tidak dikenali');
     else if (adaV1 && versiTerpilih !== 'v1') salah.push('V1 tersedia tetapi yang terpilih V2');
-    if ((await hal.locator('#payMethodType').inputValue().catch(() => '')) !== 'wallet') salah.push('metode bayar bukan Saldo');
 
-    const saldo = await bacaSaldo(hal);
-    if (!saldo.ada || saldo.habis) salah.push(saldo.pesan);
+    const metode = await hal.locator('#payMethodType').inputValue().catch(() => '');
+    if (metode !== bayar.pilihan) {
+        salah.push(`metode bayar "${metode || '-'}" bukan "${NAMA_BAYAR[bayar.pilihan]}"`);
+    }
 
-    // Total yang akan dipotong harus masuk akal: ada angkanya, dan tidak
-    // melebihi saldo. Nol pun ditolak — berarti berkasnya belum terhitung.
+    /*
+     * Keadaan dibaca ULANG: paket bisa habis atau saldo bisa terpakai pesanan
+     * lain selama form diisi, jadi yang dipercaya adalah halaman saat ini —
+     * bukan bacaan waktu metodenya dipilih.
+     */
+    const kini = await bacaBayar(hal);
+    if (!kini.ada || kini.habis) salah.push(kini.pesan);
+
+    if (bayar.pilihan === 'package') {
+        const id = await hal.locator('#payPackageId').inputValue().catch(() => '');
+
+        if (!id || id === '0') salah.push('nomor paket tidak terpasang di form');
+        else if (id !== bayar.paketBisa.id) salah.push(`nomor paket berubah jadi "${id}"`);
+        else if (!kini.paketBisa || kini.paketBisa.id !== id) salah.push('paket yang dipilih tidak bisa dipakai lagi');
+    }
+
+    // Total yang akan dipotong harus masuk akal: ada angkanya, dan — khusus
+    // saldo — tidak melebihi saldonya. Nol pun ditolak: berarti berkasnya belum
+    // terhitung. Untuk paket angka ini SENGAJA tidak dibandingkan: submitin
+    // tetap menampilkan harga per dokumen walau yang dipotong kuota paket.
     const ringkas = (await hal.locator('#orderForm').innerText().catch(() => '')).replace(/\s+/g, ' ');
     const totalM = ringkas.match(/Total Bayar\s*Rp\s*([\d.]+)/i);
     const total = totalM ? parseInt(totalM[1].replace(/\./g, ''), 10) : null;
 
     if (total === null) salah.push('Total Bayar tidak terbaca');
     else if (total <= 0) salah.push('Total Bayar Rp 0 — berkasnya belum terhitung');
-    else if (saldo.saldo !== null && total > saldo.saldo) {
-        salah.push(`Total Bayar Rp ${total.toLocaleString('id-ID')} melebihi saldo Rp ${saldo.saldo.toLocaleString('id-ID')}`);
+    else if (bayar.pilihan === 'wallet' && kini.saldo.nilai !== null && total > kini.saldo.nilai) {
+        salah.push(`Total Bayar Rp ${total.toLocaleString('id-ID')} melebihi saldo Rp ${kini.saldo.nilai.toLocaleString('id-ID')}`);
     }
 
     const tombol = hal.locator('#payBtn');
@@ -849,8 +872,10 @@ async function periksaSebelumKirim(hal, namaBerkas) {
 
     // Tombolnya ikut berubah jadi "Bayar dengan QRIS" bila metodenya salah —
     // ini pengaman terakhir supaya bot tidak pernah membuat tagihan QRIS.
-    if (!/saldo/i.test(teksTombol) || /qris/i.test(teksTombol)) {
-        salah.push(`tombol berbunyi "${teksTombol.trim().slice(0, 40)}" (bot hanya boleh "Bayar dengan Saldo")`);
+    const bunyiBenar = bayar.pilihan === 'package' ? /paket/i : /saldo/i;
+
+    if (!bunyiBenar.test(teksTombol) || /qris/i.test(teksTombol)) {
+        salah.push(`tombol berbunyi "${teksTombol.trim().slice(0, 40)}" (seharusnya "${NAMA_BAYAR[bayar.pilihan]}")`);
     }
 
     const adaBerkas = await hal.evaluate((n) => document.body.innerText.includes(n), namaBerkas);
@@ -997,7 +1022,7 @@ async function kerjakan(ctx, hal, tugas) {
             if (!siap.siap) alasanAlih = siap.masalah;
 
             KEADAAN.submitinSiap = siap.siap;
-            KEADAAN.submitinPesan = siap.siap ? (siap.paket?.pesan ?? 'siap') : siap.masalah;
+            KEADAAN.submitinPesan = siap.siap ? (siap.bayar?.pesan ?? 'siap') : siap.masalah;
         } catch (e) {
             alasanAlih = e.message || String(e);
             KEADAAN.submitinSiap = false;
@@ -1016,7 +1041,7 @@ async function kerjakan(ctx, hal, tugas) {
             return await kerjakanCadangan(ctx, tugas, berkasPath, alasanAlih);
         }
 
-        const { versi } = await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
+        const { versi, bayar } = await isiForm(hal, tugas, dipakai, tugas.nama_berkas);
         await tidur(900);
 
         // Hasil V2 beda tampilan dengan V1 yang biasa dikirim ke pelanggan.
@@ -1024,7 +1049,7 @@ async function kerjakan(ctx, hal, tugas) {
             ? 'Dikerjakan dengan Turnitin V2 (tampilan baru) karena submitin.id sudah mencabut V1.'
             : null;
 
-        const tombol = await periksaSebelumKirim(hal, tugas.nama_berkas);
+        const tombol = await periksaSebelumKirim(hal, tugas.nama_berkas, bayar);
 
         // 3. Mode aman: berhenti di sini. Form terisi lengkap, tapi tidak ada
         //    yang dikirim dan kuota tidak terpakai.
@@ -1041,7 +1066,7 @@ async function kerjakan(ctx, hal, tugas) {
             return laporGagal(
                 tugas.id,
                 'Mode aman: form submitin sudah terisi lengkap dan lolos semua pemeriksaan, '
-                    + 'tetapi bot sengaja berhenti sebelum menekan "Bayar dengan Saldo". '
+                    + `tetapi bot sengaja berhenti sebelum menekan "${NAMA_BAYAR[bayar.pilihan]}". `
                     + 'Ubah MODE=penuh di server untuk menjalankannya sungguhan.',
                 false,
                 true,
@@ -1049,7 +1074,7 @@ async function kerjakan(ctx, hal, tugas) {
         }
 
         // 4. Kirim. Dicatat sebelum klik supaya tidak pernah terkirim dua kali.
-        catat('Klik "Bayar dengan Saldo" untuk', tugas.order_number);
+        catat(`Klik "${NAMA_BAYAR[bayar.pilihan]}" untuk`, tugas.order_number);
         await tutupPromo(hal);
 
         const pindah = hal.waitForURL(/\/status\?order=/i, { timeout: 10 * 60 * 1000 }).catch(() => null);
@@ -1073,7 +1098,7 @@ async function kerjakan(ctx, hal, tugas) {
         if (!kode) {
             return laporGagal(
                 tugas.id,
-                'Setelah "Bayar dengan Saldo", submitin.id membuka ' + hal.url().split('?')[0]
+                `Setelah "${NAMA_BAYAR[bayar.pilihan]}", submitin.id membuka ` + hal.url().split('?')[0]
                     + ' (bukan halaman status). Cek riwayat pesanan submitin untuk ' + tugas.penanda + '.',
             );
         }
@@ -1401,7 +1426,7 @@ async function submitinSiap(hal) {
         await keForm(hal);
         const hasil = await periksaSiap(hal);
         siap = hasil.siap;
-        pesan = hasil.siap ? (hasil.paket?.pesan ?? 'siap') : hasil.masalah;
+        pesan = hasil.siap ? (hasil.bayar?.pesan ?? 'siap') : hasil.masalah;
     } catch (e) {
         pesan = pesanManusia(e.message || e);
     }
@@ -1564,9 +1589,9 @@ async function jalan() {
             await keForm(hal);
             const siap = await periksaSiap(hal);
             KEADAAN.submitinSiap = siap.siap;
-            KEADAAN.submitinPesan = siap.siap ? siap.paket.pesan : siap.masalah;
+            KEADAAN.submitinPesan = siap.siap ? siap.bayar.pesan : siap.masalah;
             KEADAAN.submitinCekAt = Date.now();
-            catat('Keadaan awal:', siap.siap ? siap.paket.pesan : siap.masalah);
+            catat('Keadaan awal:', siap.siap ? siap.bayar.pesan : siap.masalah);
         } catch (e) {
             const pesan = String(e.message || e).split('\n')[0];
             KEADAAN.submitinSiap = false;

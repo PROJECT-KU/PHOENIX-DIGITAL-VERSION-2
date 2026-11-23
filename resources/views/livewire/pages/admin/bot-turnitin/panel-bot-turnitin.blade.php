@@ -517,13 +517,13 @@
                     </div>
                 </div>
 
-                {{-- Kuota paket Standard habis --}}
+                {{-- Kuota submitin habis: paket & saldo dua-duanya tidak bisa dipakai --}}
                 @if ($kuotaHabis)
                 <div class="bt-kartu merah">
-                    <h6><i class="bi bi-battery"></i> Kuota paket Standard di submitin.id habis</h6>
+                    <h6><i class="bi bi-battery"></i> Kuota submitin.id habis</h6>
                     <p>{{ $kuotaHabis['pesan'] }} Bot berhenti mengambil antrean sejak {{ \Illuminate\Support\Carbon::parse($kuotaHabis['at'])->locale('id')->diffForHumans() }} — {{ $antrean }} unggahan menunggu.</p>
                     <div class="bt-aksi">
-                        <a class="bt-btn" href="https://submitin.id/" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Buka submitin.id (Paket Hemat)</a>
+                        <a class="bt-btn" href="https://submitin.id/" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Buka submitin.id (isi paket / saldo)</a>
                         <button type="button" class="bt-btn hijau" wire:click="kuotaSudahDiisi"><i class="bi bi-check2-circle"></i> Kuota sudah diisi — lanjutkan bot</button>
                     </div>
                 </div>

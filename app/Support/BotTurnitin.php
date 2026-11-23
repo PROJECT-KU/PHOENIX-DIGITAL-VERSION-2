@@ -17,7 +17,8 @@ use Illuminate\Support\Str;
 
 /**
  * Bot Turnitin — pengecekan plagiasi dikerjakan skrip Tampermonkey di Chrome
- * admin (public/bot/phoenix-turnitin.user.js) lewat submitin.id, paket Standard.
+ * admin (public/bot/phoenix-turnitin.user.js) lewat submitin.id, dibayar dengan
+ * paket submitin (atau saldo bila paketnya habis).
  *
  * Kenapa di Chrome admin, bukan di server: hosting mematikan proc_open jadi
  * peramban tidak bisa dijalankan di sana, dan VPS / komputer yang menyala terus

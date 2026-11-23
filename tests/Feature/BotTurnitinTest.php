@@ -155,7 +155,7 @@ it('dijeda atau kuota habis: tidak ada tugas yang diambil', function () {
     $this->getJson('/api/bot-turnitin/tugas', $h)->assertJsonPath('tugas', null)->assertJsonPath('dijeda', true);
 
     BotTurnitin::setJeda(false);
-    BotTurnitin::tandaiKuotaHabis('Paket Standard habis.');
+    BotTurnitin::tandaiKuotaHabis('Paket Max habis.');
     $this->getJson('/api/bot-turnitin/tugas', $h)->assertJsonPath('tugas', null)->assertJsonPath('kuota_habis', true);
 
     expect($up->fresh()->status)->toBe('menunggu');
@@ -318,7 +318,7 @@ it('kuota habis saat mengisi form: unggahan kembali ke antrean apa adanya, kartu
     $h = tokenBot();
     $this->getJson('/api/bot-turnitin/tugas', $h);
 
-    $this->postJson('/api/bot-turnitin/tugas/'.$up->id.'/gagal', ['pesan' => 'Paket Standard habis.', 'kuota_habis' => true], $h);
+    $this->postJson('/api/bot-turnitin/tugas/'.$up->id.'/gagal', ['pesan' => 'Paket Max habis.', 'kuota_habis' => true], $h);
 
     expect($up->fresh())->status->toBe('menunggu')->bot_status->toBeNull();
     expect(BotTurnitin::kuotaHabis())->not->toBeNull()
@@ -369,15 +369,15 @@ it('panel dashboard menampilkan kartu kuota habis & perlu manual', function () {
     BotTurnitin::buatToken();
     BotTurnitin::ambilTugas();
     BotTurnitin::gagal($up, 'Form submitin tidak termuat');
-    BotTurnitin::tandaiKuotaHabis('Paket Standard habis (s/d 10/10/2026).');
+    BotTurnitin::tandaiKuotaHabis('Paket Max habis (s/d 10/10/2026).');
 
     Livewire\Livewire::actingAs($admin->fresh())
         ->test(PanelBotTurnitin::class)
         // Kartu pantau membuka pekerjaan hari ini; yang menunggu tindakan ada
         // di tabnya sendiri.
         ->call('pilihTab', 'perlu')
-        ->assertSee('Kuota paket Standard di submitin.id habis')
-        ->assertSee('Paket Standard habis (s/d 10/10/2026).')
+        ->assertSee('Kuota submitin.id habis')
+        ->assertSee('Paket Max habis (s/d 10/10/2026).')
         // Kartu pantau: nomor pesanan, status, dan sebab gagalnya.
         ->assertSee('Pengecekan Bot Turnitin')
         ->assertSee($up->order->order_number)
@@ -385,7 +385,7 @@ it('panel dashboard menampilkan kartu kuota habis & perlu manual', function () {
         ->assertSee('Form submitin tidak termuat')
         ->assertSee('Saya kerjakan manual')
         ->call('kuotaSudahDiisi')
-        ->assertDontSee('Kuota paket Standard di submitin.id habis');
+        ->assertDontSee('Kuota submitin.id habis');
 });
 
 it('skrip bot tersedia di public dan tidak memuat token atau rahasia', function () {

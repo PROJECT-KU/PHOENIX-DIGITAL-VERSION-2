@@ -33,7 +33,7 @@ it('menerima laporan VPS dan menyimpannya', function () {
     $this->postJson('/api/bot-turnitin/lapor', [
         'mode' => 'penuh',
         'kuota' => 19,
-        'kuota_teks' => 'Paket Standard: 19x tersisa',
+        'kuota_teks' => 'Paket Max sisa 19x (s/d 07/12/2026)',
         'memori_mb' => 520,
         'memori_total_mb' => 2241,
         'disk_persen' => 16,
@@ -80,7 +80,7 @@ it('hanya perintah yang terdaftar yang bisa dititipkan', function () {
 
 it('agen Telegram melaporkan VPS yang sehat', function () {
     LaporanVps::simpan([
-        'mode' => 'penuh', 'kuota' => 19, 'kuota_teks' => 'Paket Standard: 19x tersisa',
+        'mode' => 'penuh', 'kuota' => 19, 'kuota_teks' => 'Paket Max sisa 19x (s/d 07/12/2026)',
         'memori_mb' => 520, 'memori_total_mb' => 2241, 'disk_persen' => 16,
         'selesai_hari_ini' => 3, 'gagal_hari_ini' => 0,
     ]);
@@ -88,7 +88,7 @@ it('agen Telegram melaporkan VPS yang sehat', function () {
     $teks = AksiAgen::jalankan('vps');
 
     expect($teks)->toContain('Hidup')
-        ->and($teks)->toContain('19x tersisa')
+        ->and($teks)->toContain('Paket Max sisa 19x')
         ->and($teks)->toContain('3 selesai, 0 gagal')
         ->and($teks)->not->toContain('kemungkinan MATI');
 });
@@ -106,7 +106,7 @@ it('laporan basi dilaporkan sebagai kemungkinan mati, bukan sehat', function () 
 });
 
 it('kuota menipis diberi tanda peringatan', function () {
-    LaporanVps::simpan(['mode' => 'penuh', 'kuota' => 2, 'kuota_teks' => 'Paket Standard: 2x tersisa']);
+    LaporanVps::simpan(['mode' => 'penuh', 'kuota' => 2, 'kuota_teks' => 'Paket Max sisa 2x (s/d 07/12/2026)']);
 
     expect(AksiAgen::jalankan('vps'))->toContain('⚠️');
 });
@@ -229,7 +229,7 @@ it('menampilkan kuota submitin seperti biasa saat submitin sehat', function () {
         'mode' => 'penuh',
         'submitin_siap' => true,
         'kuota' => 19,
-        'kuota_teks' => 'Paket Standard: 19x tersisa',
+        'kuota_teks' => 'Paket Max sisa 19x (s/d 07/12/2026)',
         'cadangan_aktif' => true,
         'koin_cadangan' => 44,
         'penyedia' => 'submitin.id',
@@ -240,7 +240,7 @@ it('menampilkan kuota submitin seperti biasa saat submitin sehat', function () {
     $teks = $m->invoke(null);
 
     expect($teks)->toContain('submitin    : ✅')
-        ->and($teks)->toContain('19x tersisa')
+        ->and($teks)->toContain('Paket Max sisa 19x')
         ->and($teks)->toContain('cekplagiat  : ✅ koin 44')
         // Penyedia yang dipakai hanya disebut kalau BUKAN submitin.
         ->and($teks)->not->toContain('Sedang pakai');
