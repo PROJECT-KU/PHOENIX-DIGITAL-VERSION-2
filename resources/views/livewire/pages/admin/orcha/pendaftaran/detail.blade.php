@@ -230,6 +230,24 @@ Detail Pendaftaran || lemon
        tidak setiap hari memakai aplikasi, sepuluh pilihan setara berarti
        sepuluh hal yang harus dibaca sebelum menekan satu. Yang sering dipakai
        tinggal di luar; sisanya masuk ke dua laci berlabel. */
+    /* Kartu bilah perkakas TIDAK boleh memangkas isinya.
+
+       .dsb-kartu dipasangi overflow:hidden supaya isi seperti tabel dan foto
+       terpangkas rapi oleh sudut membulatnya. Tetapi laci di bilah ini
+       digambar sebagai kotak absolut DI DALAM kartu itu, jadi begitu ia turun
+       melewati tepi bawah kartu, ia terpotong — bukan tertutup kartu di
+       bawahnya, melainkan terpangkas induknya sendiri. z-index tidak menolong
+       sama sekali: overflow memangkas lebih dulu, berapa pun angkanya.
+
+       Dua kelas (0,2,0) jadi menang atas .dsb-kartu (0,1,0) tanpa perlu
+       !important. z-index di kartunya, bukan cuma di lacinya: kartu-kartu
+       sesudahnya juga position:relative, dan di antara sesama elemen
+       berposisi yang z-index-nya auto, yang BELAKANGAN digambar menang.
+
+       Aman dipakai di kartu ini saja: isinya cuma tombol dan satu pemilih,
+       tidak ada yang perlu dipangkas sudut membulat. */
+    .dsb-kartu.pd-kartu-laci { overflow: visible; z-index: 5; }
+
     .pd-laci { position: relative; }
     .pd-laci > summary {
         list-style: none; cursor: pointer;
@@ -431,7 +449,7 @@ Detail Pendaftaran || lemon
                  pendaftaran di kanan. Tombolnya menyebut APA yang didapat,
                  bukan nama berkasnya — "Manifes PDF" adalah kata kami. --}}
             <div class="dsb-rak dsb-bagian">
-                <div class="dsb-kartu k-12">
+                <div class="dsb-kartu k-12 pd-kartu-laci">
                     <div class="dsb-kartu-isi pd-perkakas">
                         <div class="pd-perkakas-kiri">
                             {{-- Dua tombol yang dipakai TIAP HARI tinggal di
