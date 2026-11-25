@@ -603,7 +603,11 @@ class KegiatanKalender extends Component
                     'rab' => 'orcha_deal',
                     // Jadwal yang sedang dijual: belum deal, belum ada yang
                     // bayar. Rencana, bukan komitmen.
-                    'katalog' => 'orcha_jual',
+                    //
+                    // 'rab_jual' ikut ke sini, BUKAN ke orcha_deal: RAB open
+                    // trip pelanggannya "Umum" dan tidak ada yang
+                    // berkomitmen — yang disetujui cuma hitungan harganya.
+                    'katalog', 'rab_jual' => 'orcha_jual',
                     default => 'orcha_trip',
                 };
 
@@ -666,6 +670,16 @@ class KegiatanKalender extends Component
          | trip sehari dengan satu peserta, padahal artinya tanggal itu masih
          | kosong dan ada satu orang yang menunggu dibayar.
          */
+        /*
+         | Rencana harga open trip: angkanya TARGET, bukan peserta.
+         |
+         | Dikirim terpisah sebagai target_peserta justru supaya tidak pernah
+         | tertulis "13 orang" di tanggal yang pendaftarnya nol.
+         */
+        if (($b['sumber'] ?? '') === 'rab_jual') {
+            return $judul.' — rencana '.($b['target_peserta'] ?? 0).' orang, belum ada tanggal dijual';
+        }
+
         if (($b['sumber'] ?? '') === 'katalog') {
             return $judul.' — '.(empty($b['jumlah_peserta'])
                 ? 'belum ada pendaftar'
@@ -701,7 +715,9 @@ class KegiatanKalender extends Component
             'pendaftaran' => route('admin.orcha.pendaftaran.detail', $b['id']),
             // Yang dibuka penyusunnya, bukan borang kepala: yang ingin
             // dilihat dari kalender adalah rencana perjalanannya.
-            'rab' => route('admin.orcha.rab.susun', $b['id']),
+            // Keduanya baris RAB, jadi yang dibuka penyusunnya — yang ingin
+            // dilihat dari kalender rencana perjalanannya.
+            'rab', 'rab_jual' => route('admin.orcha.rab.susun', $b['id']),
             /*
              | Dibuka borang PAKETNYA, dan lewat paket_id — bukan $b['id'],
              | yang pada sumber ini adalah id keberangkatan. Menautkannya

@@ -454,3 +454,69 @@ test('saringan memisahkan yang dijual dari yang sudah deal', function () {
         ->assertSee('Open Trip Banyuwangi')
         ->assertDontSee('Open Trip Dieng');
 });
+
+/*
+ | RAB open trip yang belum punya tanggal jualan: rencana, bukan deal.
+ |
+ | Sebelumnya ia digambar ungu "Sudah Deal — 13 orang" di tanggal yang
+ | pendaftarnya NOL, sementara tanggal lain yang keadaannya persis sama
+ | digambar abu "Dijual". Angka 13 itu TARGET di RAB, bukan orang yang ikut.
+ */
+test('rencana open trip tidak digambar sebagai deal, dan angkanya disebut target', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaBaris([
+        'sumber' => 'rab_jual',
+        'kode' => 'RAB-2612-UMUM',
+        'judul' => 'Open Trip Dieng',
+        'pemesan' => null,
+        'jumlah_peserta' => null,
+        'target_peserta' => 13,
+        'paket_id' => 10,
+        'status' => 'dijual',
+        'status_label' => 'Harga disetujui — belum ada tanggal keberangkatan yang dijual',
+    ])]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->assertSee('Open Trip Dieng — rencana 13 orang, belum ada tanggal dijual')
+        // Kalimat yang dulu menyesatkan.
+        ->assertDontSee('Open Trip Dieng — 13 orang');
+});
+
+test('rencana open trip ikut saringan Dijual, bukan saringan Sudah Deal', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([
+        kalOrchaBaris([
+            'sumber' => 'rab_jual', 'judul' => 'Open Trip Dieng', 'kode' => 'RAB-2612-UMUM',
+            'jumlah_peserta' => null, 'target_peserta' => 13, 'paket_id' => 10,
+        ]),
+        kalOrchaBaris(['sumber' => 'rab', 'judul' => 'Private Trip Bromo Sari', 'kode' => 'RAB-2612-SARI']),
+    ]);
+
+    $orang = kalOrchaOrang(['view_kegiatan', 'akses_orcha']);
+
+    Livewire::actingAs($orang)->test(KegiatanKalender::class)
+        ->set('saringJenis', 'orcha_jual')
+        ->assertSee('Open Trip Dieng')
+        ->assertDontSee('Private Trip Bromo Sari');
+
+    Livewire::actingAs($orang)->test(KegiatanKalender::class)
+        ->set('saringJenis', 'orcha_deal')
+        ->assertSee('Private Trip Bromo Sari')
+        ->assertDontSee('Open Trip Dieng');
+});
+
+test('rencana open trip menaut ke penyusun RAB, bukan ke borang paket', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaBaris([
+        'sumber' => 'rab_jual', 'id' => 55, 'paket_id' => 10,
+        'judul' => 'Open Trip Dieng', 'jumlah_peserta' => null, 'target_peserta' => 13,
+    ])]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->call('pilihTanggal', now()->startOfMonth()->addDays(9)->toDateString())
+        // Yang ingin dilihat rencana perjalanannya, bukan borang paketnya.
+        ->assertSee(route('admin.orcha.rab.susun', 55), escape: false)
+        ->assertDontSee(route('admin.orcha.paket.ubah', 10), escape: false);
+});
