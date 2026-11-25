@@ -51,4 +51,25 @@ class OrchaTidakTerjangkau extends Exception
     {
         return (bool) ($this->isi['butuh_paksa'] ?? false);
     }
+
+    /**
+     * Perpindahan paket yang menghasilkan KELEBIHAN BAYAR, dan nasibnya
+     * belum diputuskan.
+     *
+     * Dibedakan dari butuhPaksa() karena yang diminta bukan penegasan
+     * melainkan PILIHAN: uang lebihnya dikembalikan, atau disimpan sebagai
+     * saldo untuk trip berikutnya. Orcha membatalkan seluruh perpindahannya
+     * sampai pilihan itu dikirim — pendaftaran yang sudah pindah sementara
+     * selisihnya menggantung adalah keadaan yang paling mudah terlupakan.
+     */
+    public function butuhKeputusanKelebihan(): bool
+    {
+        return (bool) ($this->isi['butuh_keputusan_kelebihan'] ?? false);
+    }
+
+    /** Berapa lebihnya, untuk disebutkan kepada admin. */
+    public function kelebihan(): int
+    {
+        return (int) ($this->isi['kelebihan'] ?? 0);
+    }
 }

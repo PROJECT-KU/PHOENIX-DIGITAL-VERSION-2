@@ -517,6 +517,19 @@ Detail Pendaftaran || lemon
                                         </button>
                                     @endif
 
+                                    {{-- Pindah PAKET, bukan sekadar tanggal.
+
+                                         Dipisah dari "Pindah ke tanggal lain" di atas
+                                         walau keduanya memindahkan: yang itu menggeser
+                                         tanggal di dalam paket yang sama dan tidak pernah
+                                         mengubah tagihan, sedangkan yang ini mengubah
+                                         harga, batas pelunasan, dan bisa melahirkan
+                                         kelebihan bayar. --}}
+                                    <button type="button" wire:click="bukaFormulirPindahPaket">
+                                        <i class="bi bi-signpost-split" style="color:#7c3aed"></i>
+                                        Pindah paket (open ⇄ private)
+                                    </button>
+
                                     <button type="button" wire:click="bukaFormulirCatatan">
                                         <i class="bi {{ filled($pendaftaran['catatan_internal'] ?? null) ? 'bi-sticky-fill' : 'bi-sticky' }}"
                                             style="color:#7c3aed"></i>
@@ -838,6 +851,135 @@ Detail Pendaftaran || lemon
                                     <i class="bi bi-arrow-right-circle"></i><span>Lanjutkan, lebihi kuota</span>
                                 </button>
                             </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- ============ PANEL PINDAH PAKET ============ --}}
+            @if ($bukaPindahPaket)
+            <div class="dsb-rak dsb-bagian">
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-signpost-split"></i></span>
+                            <span>
+                                <h2 class="dsb-kartu-judul">Pindah Paket</h2>
+                                <span class="dsb-kartu-sub">
+                                    Kode pemesanannya TETAP, jadi pembayaran, angsuran, dan kwitansi
+                                    tidak perlu dipindahkan — hanya tagihan dan tanggalnya yang dihitung ulang
+                                </span>
+                            </span>
+                        </div>
+                        <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                            wire:click="tutupFormulirPindahPaket"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-6">
+                                <label class="dsb-label">Paket tujuan</label>
+                                {{-- @selected pada tiap <option>, dan dibaca lewat
+                                     $this->: alasannya sama dengan pemilih rombongan
+                                     di atas — wire:model tidak menulis `selected` ke
+                                     HTML, dan Blade membocorkan variabel @foreach ke
+                                     sisa berkasnya. Dijaga SelectCariOrchaTest. --}}
+                                <select wire:model.live="paketTujuan" class="dsb-isian">
+                                    <option value="" @selected($this->paketTujuan === '')>— pilih paket —</option>
+                                    @foreach ($this->pilihanPaket() as $satu)
+                                        <option value="{{ $satu['id'] }}"
+                                            @selected($this->paketTujuan === (string) $satu['id'])>
+                                            {{ $satu['nama'] }}
+                                            @if (! empty($satu['kategori']))
+                                                · {{ str_replace('_', ' ', $satu['kategori']) }}
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-lg-6">
+                                <label class="dsb-label">Tanggal keberangkatan</label>
+                                <select wire:model="keberangkatanTujuan" class="dsb-isian"
+                                    @disabled($this->paketTujuan === '')>
+                                    <option value="" @selected($this->keberangkatanTujuan === '')>— pilih tanggal —</option>
+                                    @foreach ($this->pilihanKeberangkatanTujuan() as $satu)
+                                        <option value="{{ $satu['id'] }}"
+                                            @selected($this->keberangkatanTujuan === (string) $satu['id'])>
+                                            {{ $satu['rentang_tanggal'] ?? $satu['tanggal_berangkat'] ?? ('#' . $satu['id']) }}
+                                            @if (array_key_exists('sisa_kursi', $satu) && $satu['sisa_kursi'] !== null)
+                                                · sisa {{ $satu['sisa_kursi'] }} kursi
+                                            @endif
+                                            @if (array_key_exists('aktif', $satu) && ! $satu['aktif'])
+                                                · DITUTUP
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-lg-6">
+                                <label class="dsb-label">
+                                    Harga jual per orang
+                                    <span class="text-muted fw-normal">(kosongkan = ikut harga paket tujuan)</span>
+                                </label>
+                                {{-- Boleh disebut sendiri: rombongan yang sudah telanjur
+                                     sepakat di angka lain lewat WhatsApp tidak boleh
+                                     dipaksa mengikuti daftar harga. --}}
+                                <input type="text" class="dsb-isian" wire:model="hargaJualBaru" placeholder="mis. 450000">
+                            </div>
+
+                            <div class="col-12 d-flex flex-wrap gap-2 justify-content-lg-end">
+                                <button type="button" class="dsb-tombol is-lembut" style="--ikon: #64748b"
+                                    wire:click="tutupFormulirPindahPaket">
+                                    <i class="bi bi-x-circle"></i><span>Batal</span>
+                                </button>
+                                <button type="button" class="dsb-tombol is-utama" wire:click="pindahPaket(false)">
+                                    <i class="bi bi-arrow-right-circle"></i><span>Pindahkan</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Penolakan yang MASIH BISA dilanjutkan tampil di sini,
+                             bersama angkanya — bukan sebagai toast merah yang
+                             hilang sendiri sebelum sempat dibaca. --}}
+                        @if ($peringatanPindahPaket !== '')
+                            <div class="pd-nota mt-3">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div class="flex-grow-1">
+                                    {{ $peringatanPindahPaket }}
+                                </div>
+                            </div>
+
+                            @if ($kelebihanBayar > 0)
+                                {{-- Dua pilihan, dan keduanya harus dipilih sadar.
+                                     Uang lebih yang tidak diputuskan nasibnya akan
+                                     diingat pelanggan dan dilupakan kantor. --}}
+                                <div class="d-flex flex-wrap gap-2 mt-2 justify-content-lg-end">
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #0f766e"
+                                        wire:click="$set('perlakuanKelebihan', 'saldo')"
+                                        @class(['is-utama' => $perlakuanKelebihan === 'saldo'])>
+                                        <i class="bi bi-wallet2"></i><span>Simpan jadi saldo</span>
+                                    </button>
+                                    <button type="button" class="dsb-tombol is-lembut" style="--ikon: #b45309"
+                                        wire:click="$set('perlakuanKelebihan', 'refund')"
+                                        @class(['is-utama' => $perlakuanKelebihan === 'refund'])>
+                                        <i class="bi bi-cash-stack"></i><span>Kembalikan ke pelanggan</span>
+                                    </button>
+                                    @if ($perlakuanKelebihan !== '')
+                                        <button type="button" class="dsb-tombol is-awas" wire:click="pindahPaket(false)">
+                                            <i class="bi bi-check-lg"></i><span>Lanjutkan pindah</span>
+                                        </button>
+                                    @endif
+                                </div>
+                            @else
+                                <div class="d-flex flex-wrap gap-2 mt-2 justify-content-lg-end">
+                                    <button type="button" class="dsb-tombol is-awas" wire:click="pindahPaket(true)">
+                                        <i class="bi bi-arrow-right-circle"></i><span>Lanjutkan, lebihi kuota</span>
+                                    </button>
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>

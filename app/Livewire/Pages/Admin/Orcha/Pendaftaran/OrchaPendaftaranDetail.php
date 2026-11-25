@@ -831,6 +831,141 @@ class OrchaPendaftaranDetail extends Component
      | berpeluang tercetak di dokumen yang diserahkan ke orangnya sendiri.
      */
 
+    /* ===================== PINDAH PAKET =====================
+     |
+     | Berbeda dari pindah ROMBONGAN di atas: yang ini berpindah paket —
+     | open trip jadi private trip, atau sebaliknya.
+     |
+     | Tidak digabung dengan borang itu walau keduanya "memindahkan". Pindah
+     | rombongan cuma menggeser tanggal di dalam paket yang sama dan tidak
+     | pernah mengubah tagihan; pindah paket mengubah harga, batas pelunasan,
+     | dan bisa melahirkan kelebihan bayar. Satu borang untuk dua hal dengan
+     | akibat sejauh itu membuat yang ringan terasa seberat yang berat, dan
+     | yang berat terlanjur dilakukan karena terasa ringan.
+     */
+    public bool $bukaPindahPaket = false;
+
+    public string $paketTujuan = '';
+
+    public string $keberangkatanTujuan = '';
+
+    public string $hargaJualBaru = '';
+
+    /** 'refund' atau 'saldo'; hanya terpakai bila tagihannya turun. */
+    public string $perlakuanKelebihan = '';
+
+    /** Terisi berarti Orcha menolak dan menunggu keputusan/penegasan. */
+    public string $peringatanPindahPaket = '';
+
+    public int $kelebihanBayar = 0;
+
+    public function bukaFormulirPindahPaket(): void
+    {
+        $this->paketTujuan = '';
+        $this->keberangkatanTujuan = '';
+        $this->hargaJualBaru = '';
+        $this->perlakuanKelebihan = '';
+        $this->peringatanPindahPaket = '';
+        $this->kelebihanBayar = 0;
+        $this->bukaPindahPaket = true;
+    }
+
+    public function tutupFormulirPindahPaket(): void
+    {
+        $this->bukaPindahPaket = false;
+    }
+
+    /** Seluruh paket yang bisa dituju, kecuali paket yang sedang dipakai. */
+    public function pilihanPaket(): array
+    {
+        $sekarang = (int) ($this->data['paket']['id'] ?? 0);
+
+        return collect($this->rujukan('paket_wisata'))
+            ->reject(fn ($p) => (int) $p['id'] === $sekarang)
+            ->values()
+            ->all();
+    }
+
+    /** Tanggal milik paket tujuan yang sedang dipilih. */
+    public function pilihanKeberangkatanTujuan(): array
+    {
+        if ($this->paketTujuan === '') {
+            return [];
+        }
+
+        $paket = collect($this->rujukan('paket_wisata'))
+            ->firstWhere('id', (int) $this->paketTujuan);
+
+        return collect($paket['keberangkatan'] ?? [])->values()->all();
+    }
+
+    /**
+     * Pilihan tanggal yang tertinggal dari paket sebelumnya DIBUANG.
+     *
+     * Tanpa ini, berganti paket meninggalkan id tanggal milik paket lama —
+     * dan Orcha menolaknya dengan "tanggal itu bukan milik paket ini", galat
+     * yang tidak ada hubungannya dengan apa yang baru saja dilakukan admin.
+     */
+    public function updatedPaketTujuan(): void
+    {
+        $daftar = $this->pilihanKeberangkatanTujuan();
+
+        // Terisi sendiri bila memang cuma satu: memilih dari daftar berisi
+        // satu pilihan adalah pekerjaan yang tidak menambah apa pun.
+        $this->keberangkatanTujuan = count($daftar) === 1 ? (string) $daftar[0]['id'] : '';
+        $this->peringatanPindahPaket = '';
+        $this->kelebihanBayar = 0;
+    }
+
+    public function pindahPaket(bool $paksa = false): void
+    {
+        if ($this->paketTujuan === '' || $this->keberangkatanTujuan === '') {
+            $this->dispatch('toast-error', message: 'Pilih dulu paket dan tanggalnya.');
+
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pindah-paket", array_filter([
+                'travel_package_id' => (int) $this->paketTujuan,
+                'keberangkatan_id' => (int) $this->keberangkatanTujuan,
+                'harga_jual' => $this->hargaJualBaru !== '' ? (int) preg_replace('/\D/', '', $this->hargaJualBaru) : null,
+                'kelebihan' => $this->perlakuanKelebihan ?: null,
+                'paksa' => $paksa ?: null,
+            ], fn ($nilai) => $nilai !== null));
+
+            \App\Support\HitunganOrcha::lupakanSemua();
+            cache()->forget('orcha.perlu-ditindak');
+
+            $this->tutupFormulirPindahPaket();
+            $this->dispatch('order-updated', message: $balasan['pesan'] ?? 'Pendaftarannya dipindahkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            /*
+             | Tiga keadaan berbeda, dan hanya satu yang benar-benar galat.
+             |
+             | Kuota kurang dan kelebihan bayar keduanya penolakan yang masih
+             | bisa dilanjutkan admin — yang pertama dengan penegasan, yang
+             | kedua dengan memilih nasib uangnya. Dibaca dari PENANDANYA,
+             | bukan dari kalimatnya: mencocokkan kata akan patah pada hari
+             | kalimatnya diperhalus.
+             */
+            if ($e->butuhKeputusanKelebihan()) {
+                $this->peringatanPindahPaket = $e->getMessage();
+                $this->kelebihanBayar = $e->kelebihan();
+
+                return;
+            }
+
+            if ($e->butuhPaksa()) {
+                $this->peringatanPindahPaket = $e->getMessage();
+
+                return;
+            }
+
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
     public bool $bukaCatatan = false;
 
     public string $catatanInternal = '';
