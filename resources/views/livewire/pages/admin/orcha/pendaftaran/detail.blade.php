@@ -372,6 +372,27 @@ Detail Pendaftaran || lemon
     @media (hover: hover) and (pointer: fine) {
         .dsb-tombol.is-mati:hover { transform: none; border-color: var(--dsb-tepi); color: #94a3b8; }
     }
+    /* ---- ringkasan angka RAB di formulir pindah paket ---- */
+    .orcha-rab-ringkas {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: .75rem 1.25rem;
+        padding: .9rem 1.1rem;
+        border: 1px solid #e3d9fb;
+        border-radius: .9rem;
+        background: #faf7ff;
+    }
+    .orcha-rab-ringkas > div { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+    .orcha-rab-ringkas strong { font-size: 1.02rem; color: #1f2937; }
+    .orcha-rab-ringkas .text-muted { font-size: .78rem; }
+    .orcha-rab-label {
+        font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+        text-transform: uppercase; color: #7c3aed;
+    }
+    /* Rugi diberi warna supaya terbaca sebagai keadaan, bukan sebagai
+       angka yang kebetulan bertanda minus. */
+    .orcha-rab-rugi { color: #b91c1c; }
+    .orcha-rab-catatan { margin: .6rem 0 0; font-size: .82rem; color: #92400e; }
     </style>
 
     <div class="dsb pd-detail" x-data="{ tab: 'uang' }">
@@ -877,7 +898,95 @@ Detail Pendaftaran || lemon
                     </div>
 
                     <div class="dsb-kartu-isi">
+                        {{-- Bentuk BLOK, bukan @php(...) sebaris: satu @php(...)
+                             sebaris membuat blok @php berikutnya di berkas ini
+                             tertelan sampai @endphp-nya, dan yang gagal adalah
+                             variabel lain yang jauh di bawah — galatnya menyebut
+                             nama yang tidak bersalah. --}}
+                        @php
+                            $daftarRab = $this->pilihanRab();
+                            $rabAktif = $this->rabDipilih();
+                        @endphp
+
                         <div class="row g-3">
+                            @if ($daftarRab !== [])
+                            <div class="col-12">
+                                <label class="dsb-label">
+                                    Ambil dari RAB
+                                    <span class="text-muted fw-normal">
+                                        (paket, tanggal, harga jual, dan MODAL-nya ikut RAB)
+                                    </span>
+                                </label>
+                                <select wire:model.live="rabTujuan" class="dsb-isian">
+                                    <option value="" @selected($this->rabTujuan === '')>
+                                        — tidak pakai RAB, isi sendiri di bawah —
+                                    </option>
+                                    @foreach ($daftarRab as $satu)
+                                        <option value="{{ $satu['id'] }}"
+                                            @selected($this->rabTujuan === (string) $satu['id'])
+                                            @disabled($satu['terpakai'] || ! $satu['peserta_cocok'])>
+                                            {{ $satu['kode'] }} · {{ $satu['judul'] }}
+                                            · {{ $satu['tanggal_teks'] }}
+                                            · {{ $satu['jumlah_peserta'] }} orang
+                                            · Rp {{ number_format($satu['harga_jual'], 0, ',', '.') }}/org
+                                            @if ($satu['terpakai'])
+                                                · sudah dipakai {{ $satu['terpakai'] }}
+                                            @elseif (! $satu['peserta_cocok'])
+                                                · jumlah pesertanya beda
+                                            @elseif (! $satu['punya_paket'])
+                                                · belum punya paket
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+
+                            @if ($rabAktif)
+                            {{-- Angkanya diperlihatkan SEBELUM ditekan. Yang
+                                 dipindahkan di sini adalah tagihan orang, dan
+                                 tombol yang hasilnya baru terlihat sesudah
+                                 ditekan adalah tombol yang ditekan ragu-ragu. --}}
+                            <div class="col-12">
+                                <div class="orcha-rab-ringkas">
+                                    <div>
+                                        <span class="orcha-rab-label">Harga jual</span>
+                                        <strong>Rp {{ number_format($rabAktif['harga_jual'], 0, ',', '.') }}</strong>
+                                        <span class="text-muted">/orang</span>
+                                    </div>
+                                    <div>
+                                        {{-- Modal TOTAL, bukan per orang. Pada rombongan kecil
+                                             hampir semua biaya dibayar per rombongan (kendaraan,
+                                             penginapan), sehingga modal per orang sering nol
+                                             dengan benar — dan "Modal Rp 0" terbaca sebagai trip
+                                             tanpa biaya. --}}
+                                        <span class="orcha-rab-label">Modal</span>
+                                        <strong>Rp {{ number_format($rabAktif['modal_total'] ?? 0, 0, ',', '.') }}</strong>
+                                        <span class="text-muted">seluruh rombongan</span>
+                                    </div>
+                                    <div>
+                                        <span class="orcha-rab-label">Tagihan baru</span>
+                                        <strong>
+                                            Rp {{ number_format($rabAktif['harga_jual'] * $rabAktif['jumlah_peserta'], 0, ',', '.') }}
+                                        </strong>
+                                        <span class="text-muted">{{ $rabAktif['jumlah_peserta'] }} orang</span>
+                                    </div>
+                                    <div>
+                                        <span class="orcha-rab-label">Untung RAB</span>
+                                        <strong @class(['orcha-rab-rugi' => $rabAktif['untung'] < 0])>
+                                            Rp {{ number_format($rabAktif['untung'], 0, ',', '.') }}
+                                        </strong>
+                                    </div>
+                                </div>
+                                @if (! $rabAktif['punya_paket'])
+                                    <p class="orcha-rab-catatan">
+                                        RAB ini belum tertaut ke paket wisata. Pilih paket tujuannya di bawah —
+                                        tanggal dan angkanya tetap diambil dari RAB.
+                                    </p>
+                                @endif
+                            </div>
+                            @endif
+
                             <div class="col-12 col-lg-6">
                                 <label class="dsb-label">Paket tujuan</label>
                                 {{-- @selected pada tiap <option>, dan dibaca lewat
@@ -885,8 +994,15 @@ Detail Pendaftaran || lemon
                                      di atas — wire:model tidak menulis `selected` ke
                                      HTML, dan Blade membocorkan variabel @foreach ke
                                      sisa berkasnya. Dijaga SelectCariOrchaTest. --}}
-                                <select wire:model.live="paketTujuan" class="dsb-isian">
-                                    <option value="" @selected($this->paketTujuan === '')>— pilih paket —</option>
+                                <select wire:model.live="paketTujuan" class="dsb-isian"
+                                    @disabled($rabAktif && $rabAktif['punya_paket'])>
+                                    <option value="" @selected($this->paketTujuan === '')>
+                                        @if ($rabAktif && $rabAktif['punya_paket'])
+                                            — ikut paket milik {{ $rabAktif['kode'] }} —
+                                        @else
+                                            — pilih paket —
+                                        @endif
+                                    </option>
                                     @foreach ($this->pilihanPaket() as $satu)
                                         <option value="{{ $satu['id'] }}"
                                             @selected($this->paketTujuan === (string) $satu['id'])>
@@ -902,8 +1018,14 @@ Detail Pendaftaran || lemon
                             <div class="col-12 col-lg-6">
                                 <label class="dsb-label">Tanggal keberangkatan</label>
                                 <select wire:model="keberangkatanTujuan" class="dsb-isian"
-                                    @disabled($this->paketTujuan === '')>
-                                    <option value="" @selected($this->keberangkatanTujuan === '')>— pilih tanggal —</option>
+                                    @disabled($rabAktif || $this->paketTujuan === '')>
+                                    <option value="" @selected($this->keberangkatanTujuan === '')>
+                                        @if ($rabAktif)
+                                            — {{ $rabAktif['tanggal_teks'] }}, dari {{ $rabAktif['kode'] }} —
+                                        @else
+                                            — pilih tanggal —
+                                        @endif
+                                    </option>
                                     @foreach ($this->pilihanKeberangkatanTujuan() as $satu)
                                         <option value="{{ $satu['id'] }}"
                                             @selected($this->keberangkatanTujuan === (string) $satu['id'])>
@@ -922,12 +1044,19 @@ Detail Pendaftaran || lemon
                             <div class="col-12 col-lg-6">
                                 <label class="dsb-label">
                                     Harga jual per orang
-                                    <span class="text-muted fw-normal">(kosongkan = ikut harga paket tujuan)</span>
+                                    <span class="text-muted fw-normal">
+                                        @if ($rabAktif)
+                                            (dikunci — angkanya dari {{ $rabAktif['kode'] }})
+                                        @else
+                                            (kosongkan = ikut harga paket tujuan)
+                                        @endif
+                                    </span>
                                 </label>
                                 {{-- Boleh disebut sendiri: rombongan yang sudah telanjur
                                      sepakat di angka lain lewat WhatsApp tidak boleh
                                      dipaksa mengikuti daftar harga. --}}
-                                <input type="text" class="dsb-isian" wire:model="hargaJualBaru" placeholder="mis. 450000">
+                                <input type="text" class="dsb-isian" wire:model="hargaJualBaru"
+                                    placeholder="mis. 450000" @disabled($rabAktif !== null)>
                             </div>
 
                             <div class="col-12 d-flex flex-wrap gap-2 justify-content-lg-end">

@@ -78,7 +78,7 @@ function evaPalsu(array $ubah = []): array
     ], $ubah);
 }
 
-function pindahPaketSetel(array $balasanPindah = null, int $status = 200): void
+function pindahPaketSetel(?array $balasanPindah = null, int $status = 200): void
 {
     // Alamat LENGKAP sampai /api/v1 — tanpa itu pola fake tidak pernah cocok.
     config()->set('orcha.url', 'https://orcha.test/api/v1');
@@ -103,6 +103,23 @@ function pindahPaketSetel(array $balasanPindah = null, int $status = 200): void
             'status_pendaftaran' => ['baru' => 'Baru', 'dp_masuk' => 'DP Masuk', 'lunas' => 'Lunas', 'batal' => 'Batal'],
             'jenis_pembayaran' => ['dp' => 'Uang Muka (DP)', 'pelunasan' => 'Pelunasan'],
             'pembayaran' => ['pelunasan_hari_sebelum' => 5],
+        ]], 200),
+
+        // Harus berdiri SEBELUM pola pendaftaran/11 yang longgar di bawah.
+        // Pola itu memulangkan satu baris pendaftaran (larik berkunci), dan
+        // pemilih RAB menelusurinya sebagai daftar — galatnya muncul jauh dari
+        // sini, di tengah <option>.
+        //
+        // Ditulis dengan // dan bukan komentar blok: polanya sendiri memuat
+        // bintang-garis-miring, yang menutup komentar blok lebih awal.
+        '*/api/v1/pendaftaran/11/rab-cocok*' => Http::response(['data' => [
+            [
+                'id' => 25, 'kode' => 'RAB-2611-MZBF', 'judul' => 'Private Trip Dieng 1 Hari',
+                'jenis' => 'private', 'tanggal_mulai' => '2026-12-04', 'tanggal_teks' => '4 Des 2026',
+                'jumlah_peserta' => 4, 'harga_jual' => 395000, 'harga_modal' => 0,
+                'biaya_tetap' => 1625000, 'modal_total' => 1625000,
+                'untung' => -45000, 'punya_paket' => true, 'terpakai' => null, 'peserta_cocok' => true,
+            ],
         ]], 200),
 
         '*/api/v1/pendaftaran/11/pindah-paket' => Http::response(
@@ -148,13 +165,85 @@ test('tanggal yang tertinggal dari paket sebelumnya dibuang', function () {
         ->assertSet('keberangkatanTujuan', '31');
 });
 
-test('paket yang sedang dipakai tidak ditawarkan sebagai tujuan', function () {
+/*
+ | Kebalikan dari aturan yang dulu dijaga di sini.
+ |
+ | Dulu paket yang sedang dipakai dibuang dari daftar. Itu menutup satu-satunya
+ | tujuan yang benar pada kasus nyata: Open Trip Dieng yang diubah menjadi
+ | Private Trip Dieng tetap paket yang SAMA, sementara pendaftar lamanya masih
+ | memegang harga lama yang dibekukan — dan di layar fiturnya terbaca rusak,
+ | karena paket yang dicari admin tidak pernah muncul.
+ |
+ | Perpindahan yang benar-benar tidak mengubah apa pun tetap ditolak Orcha.
+ */
+test('paket yang sedang dipakai tetap ditawarkan, karena paketnya bisa berubah', function () {
     pindahPaketSetel();
 
     $k = bukaDetailPindah()->call('bukaFormulirPindahPaket');
 
     expect(collect($k->instance()->pilihanPaket())->pluck('id')->all())
-        ->toBe([4, 5]);
+        ->toBe([3, 4, 5]);
+});
+
+test('RAB milik pelanggan yang sama ditawarkan beserta modalnya', function () {
+    pindahPaketSetel();
+
+    $k = bukaDetailPindah()->call('bukaFormulirPindahPaket');
+
+    $daftar = $k->instance()->pilihanRab();
+
+    expect($daftar)->toHaveCount(1)
+        ->and($daftar[0]['kode'])->toBe('RAB-2611-MZBF')
+        // Modal ikut RAB, bukan modal paket katalog — seluruh alasan jalur ini ada.
+        ->and($daftar[0]['modal_total'])->toBe(1625000);
+});
+
+test('memilih RAB mengosongkan isian manual, supaya layar tidak menampilkan angka lain daripada yang terkirim', function () {
+    pindahPaketSetel();
+
+    bukaDetailPindah()
+        ->call('bukaFormulirPindahPaket')
+        ->set('paketTujuan', '4')
+        ->set('keberangkatanTujuan', '21')
+        ->set('hargaJualBaru', '450000')
+        ->set('rabTujuan', '25')
+        ->assertSet('paketTujuan', '')
+        ->assertSet('keberangkatanTujuan', '')
+        ->assertSet('hargaJualBaru', '');
+});
+
+test('rab_id ikut terkirim, dan paket serta tanggalnya tidak lagi wajib', function () {
+    pindahPaketSetel();
+
+    bukaDetailPindah()
+        ->call('bukaFormulirPindahPaket')
+        ->set('rabTujuan', '25')
+        ->call('pindahPaket', false)
+        ->assertDispatched('order-updated');
+
+    Http::assertSent(function ($permintaan) {
+        if (! str_contains($permintaan->url(), '/pindah-paket')) {
+            return false;
+        }
+
+        $muatan = $permintaan->data();
+
+        // Yang dikirim HANYA rab_id: paket dan tanggalnya disusun Orcha dari
+        // RAB, dan mengirim tebakan dari sini berarti dua sumber untuk satu
+        // angka yang sama.
+        return ($muatan['rab_id'] ?? null) === 25
+            && ! array_key_exists('travel_package_id', $muatan)
+            && ! array_key_exists('keberangkatan_id', $muatan);
+    });
+});
+
+test('tanpa RAB maupun paket, perpindahan ditahan di layar', function () {
+    pindahPaketSetel();
+
+    bukaDetailPindah()
+        ->call('bukaFormulirPindahPaket')
+        ->call('pindahPaket', false)
+        ->assertDispatched('toast-error');
 });
 
 test('kelebihan bayar ditahan, dan pilihannya ditawarkan beserta angkanya', function () {

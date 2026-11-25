@@ -859,8 +859,15 @@ class OrchaPendaftaranDetail extends Component
 
     public int $kelebihanBayar = 0;
 
+    /** RAB yang dijadikan sumber angka. Kosong = isi paket & tanggalnya sendiri. */
+    public string $rabTujuan = '';
+
+    /** @var array<int, array<string, mixed>>|null Memo sepanjang satu permintaan. */
+    private ?array $memoRab = null;
+
     public function bukaFormulirPindahPaket(): void
     {
+        $this->rabTujuan = '';
         $this->paketTujuan = '';
         $this->keberangkatanTujuan = '';
         $this->hargaJualBaru = '';
@@ -875,15 +882,91 @@ class OrchaPendaftaranDetail extends Component
         $this->bukaPindahPaket = false;
     }
 
-    /** Seluruh paket yang bisa dituju, kecuali paket yang sedang dipakai. */
+    /**
+     * Seluruh paket yang bisa dituju — TERMASUK yang sedang dipakai.
+     *
+     * Dulu paket yang sedang dipakai dibuang dari daftar, dengan alasan
+     * "memindahkan ke tempat yang sama bukan perpindahan". Itu keliru: satu
+     * paket bisa dijual untuk beberapa tanggal, dan paket yang sama bisa
+     * BERUBAH — Open Trip Dieng 350rb yang diubah menjadi Private Trip Dieng
+     * 395rb tetap paket yang sama, sementara pendaftar lamanya masih memegang
+     * harga lama yang dibekukan saat ia mendaftar.
+     *
+     * Dengan saringan itu, satu-satunya tujuan yang benar justru tidak pernah
+     * muncul di daftar, dan layarnya terbaca seperti fiturnya rusak.
+     * Perpindahan yang benar-benar tidak mengubah apa pun tetap ditolak
+     * Orcha, dengan kalimatnya sendiri.
+     */
     public function pilihanPaket(): array
     {
-        $sekarang = (int) ($this->data['paket']['id'] ?? 0);
+        return collect($this->rujukan('paket_wisata'))->values()->all();
+    }
 
-        return collect($this->rujukan('paket_wisata'))
-            ->reject(fn ($p) => (int) $p['id'] === $sekarang)
-            ->values()
-            ->all();
+    /**
+     * RAB disetujui milik pelanggan yang sama.
+     *
+     * Disaring di Orcha, bukan di sini: daftar RAB berisi nama dan nomor
+     * seluruh pelanggan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function pilihanRab(): array
+    {
+        if ($this->memoRab !== null) {
+            return $this->memoRab;
+        }
+
+        try {
+            $balasan = $this->orcha()->ambil("/pendaftaran/{$this->pendaftaranId}/rab-cocok")['data'] ?? [];
+
+            /*
+             | Isi yang bentuknya lain DIBUANG, bukan diteruskan ke layar.
+             |
+             | Ini pemilih tambahan di halaman yang sudah penuh: satu baris
+             | yang bukan larik membuat seluruh halaman detail 500 — pembayaran,
+             | peserta, angsuran, semuanya — padahal yang rusak cuma satu
+             | pilihan yang bisa saja tidak ada.
+             */
+            $this->memoRab = collect($balasan)
+                ->filter(fn ($b) => is_array($b) && isset($b['id'], $b['kode']))
+                ->values()
+                ->all();
+        } catch (OrchaTidakTerjangkau) {
+            // Orcha mati bukan alasan menutup jalur manual: paket dan
+            // tanggalnya tetap bisa dipilih sendiri di bawah.
+            $this->memoRab = [];
+        }
+
+        return $this->memoRab;
+    }
+
+    /** RAB yang sedang dipilih, untuk menampilkan angkanya sebelum ditekan. */
+    public function rabDipilih(): ?array
+    {
+        if ($this->rabTujuan === '') {
+            return null;
+        }
+
+        return collect($this->pilihanRab())->firstWhere('id', (int) $this->rabTujuan) ?: null;
+    }
+
+    /**
+     * Memilih RAB mengosongkan isian manual.
+     *
+     * Paket, tanggal, dan harga semuanya datang dari RAB. Membiarkan isian
+     * lama tetap terisi berarti layar menampilkan satu angka sementara yang
+     * terkirim angka lain.
+     */
+    public function updatedRabTujuan(): void
+    {
+        if ($this->rabTujuan !== '') {
+            $this->paketTujuan = '';
+            $this->keberangkatanTujuan = '';
+            $this->hargaJualBaru = '';
+        }
+
+        $this->peringatanPindahPaket = '';
+        $this->kelebihanBayar = 0;
     }
 
     /** Tanggal milik paket tujuan yang sedang dipilih. */
@@ -919,16 +1002,19 @@ class OrchaPendaftaranDetail extends Component
 
     public function pindahPaket(bool $paksa = false): void
     {
-        if ($this->paketTujuan === '' || $this->keberangkatanTujuan === '') {
-            $this->dispatch('toast-error', message: 'Pilih dulu paket dan tanggalnya.');
+        $lewatRab = $this->rabTujuan !== '';
+
+        if (! $lewatRab && ($this->paketTujuan === '' || $this->keberangkatanTujuan === '')) {
+            $this->dispatch('toast-error', message: 'Pilih dulu RAB-nya, atau paket dan tanggalnya.');
 
             return;
         }
 
         try {
             $balasan = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pindah-paket", array_filter([
-                'travel_package_id' => (int) $this->paketTujuan,
-                'keberangkatan_id' => (int) $this->keberangkatanTujuan,
+                'rab_id' => $lewatRab ? (int) $this->rabTujuan : null,
+                'travel_package_id' => $this->paketTujuan !== '' ? (int) $this->paketTujuan : null,
+                'keberangkatan_id' => $this->keberangkatanTujuan !== '' ? (int) $this->keberangkatanTujuan : null,
                 'harga_jual' => $this->hargaJualBaru !== '' ? (int) preg_replace('/\D/', '', $this->hargaJualBaru) : null,
                 'kelebihan' => $this->perlakuanKelebihan ?: null,
                 'paksa' => $paksa ?: null,
