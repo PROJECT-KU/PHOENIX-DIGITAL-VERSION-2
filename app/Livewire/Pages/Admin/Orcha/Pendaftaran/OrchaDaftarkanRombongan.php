@@ -98,9 +98,59 @@ class OrchaDaftarkanRombongan extends Component
     /** Hasil pendaftaran; terisi berarti layarnya sudah berpindah ke serah terima. */
     public array $hasil = [];
 
+    /**
+     * Tanggal yang diklik di Kalender Kegiatan, lewat ?tanggal=YYYY-MM-DD.
+     *
+     * Bukan isian borang — tidak pernah ditampilkan, dan tidak ikut disimpan.
+     * Tugasnya cuma satu: memilihkan rombongan yang berangkat di tanggal itu.
+     */
+    #[\Livewire\Attributes\Url(as: 'tanggal', except: '')]
+    public string $tanggalDiklik = '';
+
     public function mount(): void
     {
         $this->peserta = [['nama' => '', 'titik_jemput' => '']];
+
+        $this->pilihkanDariTanggal();
+    }
+
+    /**
+     * Memilihkan paket dan rombongan dari tanggal yang diklik di kalender.
+     *
+     * Hanya bila TEPAT SATU rombongan aktif berangkat di tanggal itu.
+     *
+     * Dua rombongan di tanggal yang sama bukan hal aneh — satu bus ke Bromo
+     * dan satu ke Dieng berangkat Sabtu yang sama. Menebak salah satunya
+     * berarti rombongan baru tercatat di perjalanan yang salah, dan tanggal
+     * yang salah itu mengalir ke kuota, batas pelunasan, serta surat
+     * konfirmasinya tanpa satu pun galat. Lebih baik admin memilih sendiri.
+     *
+     * Yang sudah TIDAK AKTIF tidak ikut dipilihkan: kalau tanggalnya sudah
+     * ditutup, keputusan membukanya kembali harus disengaja, bukan efek
+     * samping dari mengklik kotak di kalender.
+     */
+    private function pilihkanDariTanggal(): void
+    {
+        if ($this->tanggalDiklik === '') {
+            return;
+        }
+
+        $cocok = [];
+
+        foreach ($this->rujukan('paket_wisata') as $paket) {
+            foreach ($paket['keberangkatan'] ?? [] as $k) {
+                if (($k['tanggal_berangkat'] ?? null) === $this->tanggalDiklik && ($k['aktif'] ?? false)) {
+                    $cocok[] = ['paket' => (string) $paket['id'], 'keberangkatan' => (string) $k['id']];
+                }
+            }
+        }
+
+        if (count($cocok) !== 1) {
+            return;
+        }
+
+        $this->paketId = $cocok[0]['paket'];
+        $this->keberangkatanId = $cocok[0]['keberangkatan'];
     }
 
     /*

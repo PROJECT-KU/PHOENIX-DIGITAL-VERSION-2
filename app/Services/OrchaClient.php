@@ -434,6 +434,66 @@ class OrchaClient
         });
     }
 
+    /**
+     * Agenda Orcha untuk Kalender Kegiatan — keberangkatan rombongan dan
+     * penyewaan kendaraan dalam satu rentang tanggal.
+     *
+     * Dibungkus rescue dan memulangkan larik KOSONG saat gagal, bukan
+     * melempar. Kalender itu halaman milik lemon sendiri yang isinya tetap
+     * berguna tanpa Orcha; menjatuhkannya hanya karena sambungan ke aplikasi
+     * lain sedang putus berarti menghukum admin yang cuma ingin melihat
+     * jadwal rapatnya.
+     *
+     * Pemanggil membedakan "kosong" dari "gagal" lewat $galat yang diisi di
+     * sini — tanpa itu, Orcha mati akan terbaca sebagai bulan tanpa
+     * keberangkatan, dan itu kabar yang jauh lebih berbahaya daripada
+     * pemberitahuan galat.
+     *
+     * Disimpan semenit: kalender digambar ulang tiap kali admin menekan panah
+     * bulan atau mengetuk tombol saring, dan tiap gambar ulang akan jadi satu
+     * permintaan HTTP ke server lain.
+     *
+     * @param  string|null  $galat  diisi pesan kegagalan bila ada
+     * @return array<int, array<string, mixed>>
+     */
+    public function kalender(string $dari, string $sampai, ?string &$galat = null): array
+    {
+        $galat = null;
+
+        if (! $this->siap()) {
+            return [];
+        }
+
+        $kunci = 'orcha.kalender.'.$dari.'.'.$sampai;
+        $pesan = null;
+
+        $hasil = Cache::remember($kunci, now()->addMinute(), function () use ($dari, $sampai, &$pesan) {
+            return rescue(function () use ($dari, $sampai) {
+                return $this->ambil('/kalender', ['dari' => $dari, 'sampai' => $sampai])['data'] ?? [];
+            }, function (\Throwable $e) use (&$pesan) {
+                $pesan = $e->getMessage();
+
+                /*
+                 | null, BUKAN [].
+                 |
+                 | Keduanya sama-sama "tidak ada isi" bagi pemanggil, tetapi
+                 | tidak bagi cache: Cache::remember menganggap nilai null yang
+                 | tersimpan sebagai TIDAK ADA, jadi panggilan berikutnya
+                 | mencoba lagi. Larik kosong justru tersimpan utuh — dan itu
+                 | berarti kegagalan sesaat ikut dibekukan semenit penuh. Admin
+                 | yang menyegarkan halaman setelah Orcha hidup kembali akan
+                 | tetap melihat kalender tanpa keberangkatan, tanpa tahu
+                 | kenapa.
+                 */
+                return null;
+            }, false);
+        });
+
+        $galat = $pesan;
+
+        return $hasil ?? [];
+    }
+
     private function pesanGagal(\Illuminate\Http\Client\Response $balasan): string
     {
         $kode = $balasan->status();

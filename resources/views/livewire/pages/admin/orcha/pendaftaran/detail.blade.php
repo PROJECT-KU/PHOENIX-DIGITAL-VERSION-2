@@ -248,6 +248,26 @@ Detail Pendaftaran || lemon
        tidak ada yang perlu dipangkas sudut membulat. */
     .dsb-kartu.pd-kartu-laci { overflow: visible; z-index: 5; }
 
+    /* Dan z-index 5 itulah yang MENJEBAK lacinya.
+
+       Perbaikan 23 Nov menyelesaikan masalah pangkas, tetapi menyisakan yang
+       kedua: .dsb-kartu berposisi relative, dan begitu ia diberi z-index
+       selain auto ia membentuk KONTEKS PENUMPUKAN sendiri. Seluruh isinya —
+       termasuk .pd-laci-isi yang ber-z-index 40 — ikut terkurung di tingkat
+       5. Angka 40 itu cuma mengatur urutan DI DALAM kartu; melawan dunia luar
+       yang dipakai tetap 5.
+
+       Lawannya .pd-tab-bilah: bilah tab "Uang / Peserta / Pemesan & Catatan"
+       yang position:sticky dengan z-index 25. Dua puluh lima lebih besar
+       daripada lima, jadi bilah itu digambar MENUTUPI lacinya — persis pita
+       pudar yang memotong kedua laci secara mendatar.
+
+       Dinaikkan HANYA saat ada laci yang terbuka, bukan selamanya. Kalau
+       selamanya, kartu ini akan menutupi bilah tab yang menempel setiap kali
+       halaman digulir — menukar satu cacat dengan cacat lain yang muncul
+       jauh lebih sering. */
+    .dsb-kartu.pd-kartu-laci:has(.pd-laci[open]) { z-index: 30; }
+
     .pd-laci { position: relative; }
     .pd-laci > summary {
         list-style: none; cursor: pointer;

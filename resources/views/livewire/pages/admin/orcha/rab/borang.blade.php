@@ -25,6 +25,17 @@
            menentukan isian berikutnya, jadi ia pantas terlihat sebagai
            persimpangan — bukan sebagai satu baris di antara baris lain. */
         .rb-jenis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        /* Peringatan pergantian jenis. Kuning, bukan merah: ini bukan
+           kesalahan — ini akibat yang harus dibaca sebelum Simpan ditekan. */
+        .rb-jenis-ingat {
+            display: flex; gap: 10px; align-items: flex-start;
+            margin-top: 14px; padding: 12px 14px;
+            background: #fffbeb; border: 1px solid #fde68a; border-radius: 14px;
+            font-size: .86rem; line-height: 1.5; color: #713f12;
+        }
+        .rb-jenis-ingat i.bi { color: #d97706; flex: 0 0 auto; margin-top: 2px; }
+        .rb-jenis-ingat strong { display: block; }
+
         .rb-jenis-pilih {
             display: flex; align-items: flex-start; gap: 11px; text-align: left; cursor: pointer;
             padding: 12px 14px; border-radius: 13px; background: #fff;
@@ -159,11 +170,19 @@
                             <div class="rb-bagian-teks">
                                 <strong>Jenis perjalanan</strong>
                                 <span class="dsb-kartu-sub">
-                                    @if ($ubah)
-                                        Tidak bisa diganti di sini — harga, modal, dan titik impas sudah dihitung atas dasarnya.
-                                    @else
-                                        Menentukan atas dasar jumlah berapa harganya nanti dihitung.
-                                    @endif
+                                    {{-- Dulu berbunyi "Tidak bisa diganti di sini", dan tombolnya
+                                         memang dimatikan di mode ubah.
+
+                                         Padahal Orcha menerimanya: periksaKepala() mengizinkan
+                                         'jenis' pada jalur ubah, dan borang ini sudah mengirim
+                                         seluruh isiannya. Yang terkunci cuma tampilannya — dan
+                                         akibatnya RAB yang salah pilih jenis sejak awal harus
+                                         disusun ulang dari nol, lengkap dengan destinasi dan
+                                         seluruh biayanya.
+
+                                         Sekarang boleh diganti, tetapi akibatnya dikatakan
+                                         lebih dulu; lihat peringatan di bawah. --}}
+                                    Menentukan atas dasar jumlah berapa harganya dihitung.
                                 </span>
                             </div>
                         </div>
@@ -173,7 +192,7 @@
                                 'private' => ['Private Trip', 'Rombongan sudah pasti — kursi kosong bukan risiko kantor', 'bi-people-fill'],
                                 'open' => ['Open Trip', 'Harga diumumkan dulu, pesertanya menyusul', 'bi-megaphone-fill'],
                             ] as $kunci => [$label, $ket, $ikon])
-                                <button type="button" @disabled($ubah)
+                                <button type="button"
                                     wire:click="$set('isian.jenis', '{{ $kunci }}')"
                                     class="rb-jenis-pilih {{ ($isian['jenis'] ?? 'private') === $kunci ? 'is-aktif' : '' }}">
                                     <span class="dsb-ikon is-kecil" style="--c: {{ $kunci === 'open' ? 'var(--dsb-tunggu)' : 'var(--dsb-utama)' }}">
@@ -186,6 +205,36 @@
                                 </button>
                             @endforeach
                         </div>
+
+                        {{-- Akibat pergantian jenis, dikatakan SEBELUM disimpan.
+
+                             Harga per orang tidak pernah disimpan sebagai angka;
+                             ia dihitung dari pesertaDasar(), dan pembaginya
+                             berpindah begitu jenisnya berganti. Jadi menyimpan
+                             borang ini mengubah harga tanpa satu pun kolom harga
+                             disentuh — dan harga yang berubah tanpa diberitahukan
+                             baru ketahuan saat pelanggan yang menanyakannya. --}}
+                        @if ($this->jenisDiganti())
+                            <div class="rb-jenis-ingat">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div>
+                                    <strong>Harga per orang akan dihitung ulang.</strong>
+                                    @if ($this->openTrip())
+                                        Sebagai open trip, harganya dibagi <b>peserta minimum</b> —
+                                        bukan target peserta. Isi peserta minimumnya di bawah.
+                                    @else
+                                        Sebagai private trip, harganya dibagi <b>jumlah peserta</b> —
+                                        bukan peserta minimum, dan nama pelanggan jadi wajib diisi.
+                                    @endif
+
+                                    @if ($statusTersimpan === 'dikirim')
+                                        <br>
+                                        <b>Penawaran ini sudah dikirim ke pelanggan.</b>
+                                        Angka yang ia pegang adalah angka yang lama.
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

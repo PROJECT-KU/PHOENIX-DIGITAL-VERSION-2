@@ -147,8 +147,18 @@ Sewa Kendaraan Masuk || lemon
                 <span class="dsb-kicker"><i class="bi bi-compass"></i> Mode Orcha Journey</span>
                 <h1 class="dsb-salam">Sewa Kendaraan</h1>
                 <p class="dsb-hero-ket">
-                    Pemesanan sewa yang dikirim lewat formulir di website Orcha.
+                    {{-- Kalimatnya diperbarui: sejak ada tombol "Catat sewa",
+                         daftar ini tidak lagi hanya berisi pesanan dari
+                         website. Keterangan yang bertahan padahal isinya sudah
+                         berubah membuat admin mengira pesanan teleponnya
+                         hilang. --}}
+                    Pemesanan sewa dari website Orcha, dan yang dicatat sendiri dari telepon atau WhatsApp.
                 </p>
+
+                <a href="{{ route('admin.orcha.penyewaan.baru') }}" wire:navigate
+                    class="dsb-tombol mt-3" style="--ikon:#b45309;">
+                    <i class="bi bi-plus-lg"></i> Catat sewa
+                </a>
 
                 {{-- Cip jumlah & telat DIBUANG dari sini.
 

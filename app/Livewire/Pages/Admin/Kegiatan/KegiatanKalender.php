@@ -143,6 +143,19 @@ class KegiatanKalender extends Component
         return $this->boleh('delete_kegiatan');
     }
 
+    /**
+     * Agenda Orcha hanya untuk yang memang berwenang melihatnya.
+     *
+     * Izin yang sama dengan seluruh halaman /admin/orcha/*. Tanpa pagar ini,
+     * karyawan yang cuma boleh melihat jadwal rapat akan ikut tahu siapa
+     * memesan apa, berapa orang, dan dijemput di mana — data pelanggan yang
+     * tidak ada urusannya dengan pekerjaannya.
+     */
+    public function getBolehLihatOrchaProperty(): bool
+    {
+        return $this->boleh('akses_orcha');
+    }
+
     // ===== Form =====
 
     public function buatBaru(?string $tanggal = null): void
@@ -564,6 +577,118 @@ class KegiatanKalender extends Component
     // ===== Tampilan =====
 
     #[Layout('livewire.layout.templateindex')]
+    /**
+     * Agenda Orcha, diubah jadi objek Kegiatan yang TIDAK disimpan.
+     *
+     * Dibuat sebagai Kegiatan, bukan larik biasa, karena seluruh mesin
+     * kalender di bawah — susunBalok(), tepiHari(), padaTanggal() — bekerja
+     * dengan objek itu dan memanggil mulai, akhirEfektif(), warnaBalok().
+     * Merakitnya sebagai bentuk lain berarti menulis ulang semuanya dalam dua
+     * versi sejajar yang suatu saat akan berbeda jawabannya.
+     *
+     * @return \Illuminate\Support\Collection<int, Kegiatan>
+     */
+    private function agendaOrcha(Carbon $awal, Carbon $akhir, ?string &$galat): \Illuminate\Support\Collection
+    {
+        $baris = app(\App\Services\OrchaClient::class)
+            ->kalender($awal->toDateString(), $akhir->toDateString(), $galat);
+
+        return collect($baris)
+            ->map(function (array $b) {
+                $jenis = match ($b['sumber'] ?? '') {
+                    'penyewaan' => 'orcha_sewa',
+                    // RAB yang sudah disetujui: tanggalnya terpakai, tetapi
+                    // pendaftarannya belum ada. Dibedakan warnanya supaya
+                    // "sudah deal" dan "sudah bayar" tidak terbaca sama.
+                    'rab' => 'orcha_deal',
+                    default => 'orcha_trip',
+                };
+
+                $k = new Kegiatan([
+                    'judul' => $this->judulOrcha($b),
+                    'deskripsi' => $this->rincianOrcha($b),
+                    'jenis' => $jenis,
+                    // ?? bukan ?: — kuncinya bisa TIDAK ADA, bukan sekadar
+                    // kosong, kalau suatu saat Orcha menambah sumber baru yang
+                    // tidak punya titik jemput. ?: pada kunci yang hilang
+                    // melempar peringatan dan menjatuhkan seluruh kalender.
+                    'lokasi' => $b['titik_jemput'] ?? null,
+                    'mulai' => Carbon::parse($b['mulai'])->startOfDay(),
+                    'selesai' => isset($b['selesai']) && $b['selesai']
+                        ? Carbon::parse($b['selesai'])->endOfDay()
+                        : null,
+                    'seharian' => true,
+                ]);
+
+                /*
+                 | id diisi sendiri walau barisnya tidak pernah disimpan.
+                 |
+                 | Dua tempat membutuhkannya: wire:key tiap balok, dan nada()
+                 | yang memilih variasi warna dari crc32 id. Dengan id null,
+                 | seluruh baris Orcha berbagi satu kunci — Livewire lalu
+                 | menggambar ulang balok yang salah — dan semuanya bernada
+                 | sama persis sehingga dua trip bersebelahan terbaca sebagai
+                 | satu batang panjang.
+                 |
+                 | Berawalan 'orcha-' supaya tidak pernah tertukar dengan UUID
+                 | milik baris sungguhan di tabel kegiatan.
+                 */
+                $k->id = 'orcha-'.$b['sumber'].'-'.$b['id'];
+                $k->exists = false;
+
+                // Relasi diisi kosong, bukan dibiarkan dimuat sendiri: tanpa
+                // ini setiap pembacaan $k->peserta menembak satu kueri ke
+                // kegiatan_peserta dengan kunci yang tidak ada.
+                $k->setRelation('peserta', collect());
+
+                // Dipakai tampilan untuk menautkan ke halaman aslinya di lemon
+                // dan untuk menyembunyikan tombol Ubah/Hapus.
+                $k->orchaTautan = $this->tautanOrcha($b);
+
+                return $k;
+            })
+            ->filter(fn (Kegiatan $k) => ! $this->saringJenis || $k->jenis === $this->saringJenis)
+            ->values();
+    }
+
+    private function judulOrcha(array $b): string
+    {
+        $judul = $b['judul'] ?: 'Agenda Orcha';
+
+        // Jumlah peserta ikut di JUDUL, bukan hanya di rinciannya: balok di
+        // kisi cuma menampilkan judul, dan "berapa orang" justru pertanyaan
+        // pertama saat melihat ada rombongan berangkat hari itu.
+        if (! empty($b['jumlah_peserta'])) {
+            $judul .= ' — '.$b['jumlah_peserta'].' orang';
+        }
+
+        return $judul;
+    }
+
+    private function rincianOrcha(array $b): string
+    {
+        $bagian = array_filter([
+            $b['kode'] ?? null,
+            isset($b['pemesan']) ? 'Pemesan: '.$b['pemesan'] : null,
+            ! empty($b['tujuan']) ? 'Tujuan: '.$b['tujuan'] : null,
+            ! empty($b['titik_jemput']) ? 'Jemput: '.$b['titik_jemput'] : null,
+            $b['status_label'] ?? null,
+        ]);
+
+        return implode(' · ', $bagian);
+    }
+
+    private function tautanOrcha(array $b): ?string
+    {
+        return match ($b['sumber'] ?? '') {
+            'pendaftaran' => route('admin.orcha.pendaftaran.detail', $b['id']),
+            // Yang dibuka penyusunnya, bukan borang kepala: yang ingin
+            // dilihat dari kalender adalah rencana perjalanannya.
+            'rab' => route('admin.orcha.rab.susun', $b['id']),
+            default => route('admin.orcha.penyewaan.detail', $b['id']),
+        };
+    }
+
     public function render()
     {
         $awalBulan = $this->acuan();
@@ -580,6 +705,26 @@ class KegiatanKalender extends Component
             ->when($this->saringJenis, fn ($q) => $q->where('jenis', $this->saringJenis))
             ->when($this->hanyaSaya, fn ($q) => $q->milik($idSaya))
             ->get();
+
+        /*
+         | Agenda Orcha ditumpangkan, bukan disalin ke tabel ini.
+         |
+         | Menyalinnya butuh penjadwal yang berjalan berkala — dan penjadwal
+         | Phoenix mati karena proc_open dimatikan hosting, jadi salinannya
+         | tidak akan pernah diperbarui. Lebih dari itu, pendaftaran yang
+         | dibatalkan di Orcha akan meninggalkan baris basi di kalender yang
+         | tidak ada yang menghapusnya.
+         |
+         | Diambil sesudah kegiatan lemon, dan digabung ke koleksi yang sama,
+         | supaya seluruh logika balok lintas-hari di bawah berlaku apa adanya.
+         */
+        $galatOrcha = null;
+
+        if ($this->bolehLihatOrcha && ! $this->hanyaSaya) {
+            $kegiatan = $kegiatan->concat(
+                $this->agendaOrcha($awalGrid, $akhirGrid, $galatOrcha)
+            );
+        }
 
         // Hari libur & peringatan nasional. Diambil sekali untuk seluruh kisi,
         // bukan per sel: 42 pemanggilan untuk satu bulan yang sama itu sia-sia.
@@ -627,6 +772,11 @@ class KegiatanKalender extends Component
             // Dipakai kepala halaman untuk berterus terang bahwa libur yang
             // tanggalnya berpindah belum diisi untuk tahun ini.
             'bergerakTerisi' => \App\Support\HariLibur::bergerakTerisi($this->tahun),
+            // Kosong berarti aman. Diisi berarti Orcha tidak terjangkau, dan
+            // kalender yang diam soal itu akan terbaca sebagai bulan tanpa
+            // keberangkatan — kabar yang jauh lebih berbahaya daripada
+            // pemberitahuan galat.
+            'galatOrcha' => $galatOrcha,
         ]);
     }
 }

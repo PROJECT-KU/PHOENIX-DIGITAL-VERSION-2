@@ -28,6 +28,18 @@ class OrchaRabForm extends Component
 
     public array $isian = [];
 
+    /**
+     * Jenis yang TERSIMPAN di Orcha, bukan yang sedang dipilih di layar.
+     *
+     * Dipakai untuk mengenali bahwa admin sedang menggantinya — dan harga
+     * per orang dihitung dari dasar yang berbeda di tiap jenis, jadi
+     * pergantian itu harus dikatakan, bukan terjadi diam-diam.
+     */
+    public string $jenisTersimpan = '';
+
+    /** Status RAB yang tersimpan; 'dikirim' berarti pelanggan sudah melihat angkanya. */
+    public string $statusTersimpan = '';
+
     /** Kode RAB yang sedang diubah, untuk disebut di kepala halaman. */
     public string $kode = '';
 
@@ -124,6 +136,8 @@ class OrchaRabForm extends Component
         $this->isian['jumlah_malam'] = (int) ($data['jumlah_malam'] ?? 0);
         $this->isian['jumlah_peserta'] = (int) ($data['jumlah_peserta'] ?? 1);
         $this->isian['jenis'] = (string) ($data['jenis'] ?? 'private');
+        $this->jenisTersimpan = $this->isian['jenis'];
+        $this->statusTersimpan = (string) ($data['status'] ?? '');
         $this->isian['peserta_minimum'] = $data['peserta_minimum'] ?? null;
         /*
          | harga_dasar SENGAJA tidak disalin lagi di sini: perulangan di atas
@@ -131,6 +145,22 @@ class OrchaRabForm extends Component
          | Menyalinnya sekali lagi hanya membuat dua tempat mengerjakan hal
          | yang sama — dan yang satu pasti tertinggal saat yang lain diubah.
          */
+    }
+
+    /**
+     * Jenisnya sedang diganti dari yang tersimpan?
+     *
+     * Bukan sekadar hiasan peringatan: inilah satu-satunya keadaan ketika
+     * menyimpan borang ini MENGUBAH HARGA tanpa ada angka harga yang
+     * disentuh admin. Harga per orang dibagi oleh pesertaDasar(), dan
+     * pembaginya berpindah dari peserta minimum ke jumlah peserta — atau
+     * sebaliknya — begitu jenisnya berganti.
+     */
+    public function jenisDiganti(): bool
+    {
+        return $this->ubah
+            && $this->jenisTersimpan !== ''
+            && $this->jenisTersimpan !== ($this->isian['jenis'] ?? '');
     }
 
     /** Open trip menuntut isian yang tidak dipakai private trip. */

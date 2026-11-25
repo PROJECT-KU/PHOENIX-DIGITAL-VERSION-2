@@ -712,6 +712,15 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/pdf', [OrchaEksporController::class, 'pdf'])->name('admin.orcha.pendaftaran.pdf');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/kwitansi', [OrchaEksporController::class, 'kwitansi'])->name('admin.orcha.pendaftaran.kwitansi');
     Route::get('/admin/orcha/penyewaan', OrchaPenyewaanList::class)->name('admin.orcha.penyewaan');
+    /*
+     | Mencatat sewa yang masuk lewat telepon atau WhatsApp.
+     |
+     | Didaftarkan SEBELUM rute /penyewaan/{penyewaan} di bawahnya — kalau
+     | tidak, "baru" akan tertangkap sebagai nomor penyewaan dan halamannya
+     | tidak pernah terbuka.
+     */
+    Route::get('/admin/orcha/penyewaan/baru', \App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaSewaBaru::class)
+        ->name('admin.orcha.penyewaan.baru');
     Route::get('/admin/orcha/penyewaan/{penyewaan}', OrchaPenyewaanDetail::class)->name('admin.orcha.penyewaan.detail');
     Route::get('/admin/orcha/penyewaan/{penyewaan}/serah-terima', OrchaSerahTerimaForm::class)->name('admin.orcha.penyewaan.serah-terima');
     Route::get('/admin/orcha/penyewaan/{penyewaan}/kwitansi', [OrchaEksporController::class, 'kwitansiSewa'])->name('admin.orcha.penyewaan.kwitansi');

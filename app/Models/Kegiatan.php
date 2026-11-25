@@ -35,6 +35,54 @@ class Kegiatan extends Model
         'lainnya' => ['label' => 'Lainnya', 'warna' => '#94a3b8', 'lembut' => '#f1f5f9', 'ikon' => 'three-dots'],
     ];
 
+    /**
+     * Jenis yang datang dari ORCHA, bukan dari tabel ini.
+     *
+     * Sengaja terpisah dari JENIS di atas, bukan digabung: JENIS dipakai dua
+     * kali — untuk tombol saring DAN untuk pemilih jenis di borang tambah.
+     * Menggabungkannya berarti admin bisa membuat "kegiatan" berjenis
+     * keberangkatan Orcha di tabel lemon, yaitu baris palsu yang tidak pernah
+     * berubah saat pendaftaran aslinya dibatalkan.
+     *
+     * Baris berjenis ini tidak pernah disimpan. Ia dirakit saat halaman
+     * digambar, dari API Orcha, lalu dibuang.
+     */
+    public const JENIS_ORCHA = [
+        /*
+         | Tiga sumber, tiga warna — dan urutannya bukan kebetulan.
+         |
+         | 'orcha_deal' lebih dulu karena itulah inti kalender ini: tanggal
+         | yang sudah disepakati tetapi belum punya pendaftaran. Perjalanan
+         | bergerak dari RAB disetujui -> pendaftaran -> berangkat, jadi satu
+         | perjalanan hanya pernah muncul di SATU pita, tidak pernah dua.
+         */
+        'orcha_deal' => ['label' => 'Sudah Deal', 'warna' => '#7c3aed', 'lembut' => '#f2ecfd', 'ikon' => 'patch-check-fill'],
+        'orcha_trip' => ['label' => 'Keberangkatan', 'warna' => '#0f766e', 'lembut' => '#e6f4f2', 'ikon' => 'send-fill'],
+        'orcha_sewa' => ['label' => 'Sewa Kendaraan', 'warna' => '#b45309', 'lembut' => '#fdf4e7', 'ikon' => 'truck'],
+    ];
+
+    /**
+     * JENIS dan JENIS_ORCHA sebagai satu peta, untuk pencarian warna/label.
+     *
+     * Dipakai label(), warna(), lembut(), dan ikon() — keempatnya harus bisa
+     * menjawab untuk baris Orcha juga, kalau tidak balok di kisi digambar abu
+     * tanpa nama.
+     */
+    public static function petaJenis(): array
+    {
+        return self::JENIS + self::JENIS_ORCHA;
+    }
+
+    /**
+     * Baris ini datang dari Orcha, jadi tidak boleh disunting atau dihapus
+     * dari kalender — yang berwenang mengubahnya halaman pendaftaran atau
+     * penyewaannya sendiri.
+     */
+    public function dariOrcha(): bool
+    {
+        return array_key_exists($this->jenis, self::JENIS_ORCHA);
+    }
+
     protected $fillable = [
         'judul',
         'deskripsi',
@@ -127,17 +175,17 @@ class Kegiatan extends Model
 
     public function label(): string
     {
-        return self::JENIS[$this->jenis]['label'] ?? 'Lainnya';
+        return self::petaJenis()[$this->jenis]['label'] ?? 'Lainnya';
     }
 
     public function warna(): string
     {
-        return self::JENIS[$this->jenis]['warna'] ?? '#94a3b8';
+        return self::petaJenis()[$this->jenis]['warna'] ?? '#94a3b8';
     }
 
     public function lembut(): string
     {
-        return self::JENIS[$this->jenis]['lembut'] ?? '#f1f5f9';
+        return self::petaJenis()[$this->jenis]['lembut'] ?? '#f1f5f9';
     }
 
     /**
@@ -292,7 +340,7 @@ class Kegiatan extends Model
 
     public function ikon(): string
     {
-        return self::JENIS[$this->jenis]['ikon'] ?? 'three-dots';
+        return self::petaJenis()[$this->jenis]['ikon'] ?? 'three-dots';
     }
 
     /**

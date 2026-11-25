@@ -467,6 +467,14 @@ Kalender Kegiatan || lemon
                         </div>
 
                         @if ($this->bolehTambah)
+                        {{-- Satu tombol, satu arti: menambah KEGIATAN LEMON.
+
+                             Sempat jadi laci berisi jalan pintas ke borang
+                             pendaftaran Orcha dan catat sewa. Dicabut atas
+                             keputusan pemilik — keduanya bukan urusan halaman
+                             ini. Kalender ini membaca perjalanan Orcha, bukan
+                             tempat membuatnya; borangnya masing-masing sudah
+                             punya halaman sendiri. --}}
                         <button type="button" class="btn btn-primary kg-btn" wire:click="buatBaru">
                             <i class="bi bi-plus-lg"></i> Tambah
                         </button>
@@ -520,6 +528,23 @@ Kalender Kegiatan || lemon
                             <i class="bi bi-person-check-fill"></i> Saya saja
                         </button>
 
+                        {{-- Saringan Orcha hanya muncul bagi yang berwenang
+                             melihatnya — izin yang sama dengan seluruh halaman
+                             /admin/orcha/*. Dipisah dari perulangan jenis di
+                             atas karena jenis ini TIDAK boleh ikut muncul di
+                             pemilih jenis pada borang tambah: baris Orcha
+                             datang dari sana, bukan dibuat di sini. --}}
+                        @if ($this->bolehLihatOrcha)
+                        @foreach (\App\Models\Kegiatan::JENIS_ORCHA as $kunci => $j)
+                        <button type="button"
+                            class="kg-chip {{ $saringJenis === $kunci ? 'aktif' : '' }}"
+                            style="--kg-warna:{{ $j['warna'] }}; --kg-lembut:{{ $j['lembut'] }};"
+                            wire:click="$set('saringJenis', '{{ $kunci }}')">
+                            <i class="bi bi-{{ $j['ikon'] }}"></i> {{ $j['label'] }}
+                        </button>
+                        @endforeach
+                        @endif
+
                         {{-- Keterangan, bukan saringan: tanggal merah bukan kegiatan
                              yang bisa disembunyikan. Dibuat tidak bisa diklik supaya
                              tidak ada yang mencoba menyaringnya. --}}
@@ -551,6 +576,43 @@ Kalender Kegiatan || lemon
                     </span>
                 </p>
                 @endunless
+
+                {{-- Orcha tidak terjangkau.
+
+                     Kalender tetap digambar dengan kegiatan lemon sendiri —
+                     menjatuhkan seluruh halaman hanya karena sambungan ke
+                     aplikasi lain putus berarti menghukum admin yang cuma
+                     ingin melihat jadwal rapatnya. Tetapi DIAM soal ini jauh
+                     lebih berbahaya: bulan tanpa keberangkatan dan bulan yang
+                     keberangkatannya gagal diambil tampak persis sama. --}}
+                {{-- Dikatakan di dekat tombol saringnya, bukan di tombol Tambah.
+
+                     Tanpa ini orang mengira perjalanan Orcha harus dimasukkan
+                     satu per satu ke kalender — lalu ia memasukkannya sebagai
+                     kegiatan lemon, dan tanggalnya terbaca terisi dua kali.
+                     Tempatnya di sini karena di sinilah pita Orcha itu
+                     terlihat dan disaring. --}}
+                @if ($this->bolehLihatOrcha && ! $galatOrcha)
+                <p class="kg-catatan-libur">
+                    <i class="bi bi-info-circle"></i>
+                    <span>
+                        Perjalanan Orcha <b>muncul sendiri</b> di kalender — dari RAB yang sudah
+                        disetujui, pendaftaran yang sudah DP, dan sewa yang sudah berjalan.
+                        Tidak perlu ditambahkan manual.
+                    </span>
+                </p>
+                @endif
+
+                @if ($galatOrcha)
+                <p class="kg-catatan-libur" style="color:#b45309;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>
+                        Agenda Orcha belum bisa ditampilkan — {{ $galatOrcha }}.
+                        Kegiatan lemon di bawah tetap lengkap; keberangkatan dan sewa kendaraan
+                        yang jatuh di bulan ini <b>tidak ikut terlihat</b> sampai sambungannya pulih.
+                    </span>
+                </p>
+                @endif
             </div>
         </div>
 
@@ -682,7 +744,18 @@ Kalender Kegiatan || lemon
                                 </div>
                                 @endif
 
-                                @if ($this->bolehUbah || $this->bolehHapus)
+                                @if ($k->dariOrcha())
+                                {{-- Tidak bisa disunting dari sini. Yang berwenang
+                                     mengubahnya halaman pendaftaran atau penyewaannya
+                                     sendiri — baris ini cuma bayangannya, dan menyunting
+                                     bayangan tidak mengubah apa pun. --}}
+                                <div class="mt-3">
+                                    <a href="{{ $k->orchaTautan }}" wire:navigate
+                                        class="btn btn-sm kg-btn kg-btn-kecil kg-ubah">
+                                        <i class="bi bi-box-arrow-up-right"></i> Buka di Orcha
+                                    </a>
+                                </div>
+                                @elseif ($this->bolehUbah || $this->bolehHapus)
                                 <div class="mt-3 d-flex gap-2">
                                     @if ($this->bolehUbah)
                                     <button type="button" class="btn btn-sm kg-btn kg-btn-kecil kg-ubah"
