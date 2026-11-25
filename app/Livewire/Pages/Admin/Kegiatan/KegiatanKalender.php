@@ -700,6 +700,11 @@ class KegiatanKalender extends Component
     {
         $bagian = array_filter([
             $b['kode'] ?? null,
+            // RAB yang melebarkan rentang tanggalnya — tanpa ini admin melihat
+            // pita 12-13 Des pada keberangkatan yang di borang paket tertulis
+            // 13 Des saja, dan tidak punya cara tahu dari mana malam itu
+            // datang.
+            ! empty($b['rab']) ? 'Rentang dari '.$b['rab'] : null,
             isset($b['pemesan']) ? 'Pemesan: '.$b['pemesan'] : null,
             ! empty($b['tujuan']) ? 'Tujuan: '.$b['tujuan'] : null,
             ! empty($b['titik_jemput']) ? 'Jemput: '.$b['titik_jemput'] : null,
