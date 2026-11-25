@@ -59,6 +59,17 @@ class Kegiatan extends Model
         'orcha_deal' => ['label' => 'Sudah Deal', 'warna' => '#7c3aed', 'lembut' => '#f2ecfd', 'ikon' => 'patch-check-fill'],
         'orcha_trip' => ['label' => 'Keberangkatan', 'warna' => '#0f766e', 'lembut' => '#e6f4f2', 'ikon' => 'send-fill'],
         'orcha_sewa' => ['label' => 'Sewa Kendaraan', 'warna' => '#b45309', 'lembut' => '#fdf4e7', 'ikon' => 'truck'],
+        /*
+         | Berdiri TERAKHIR karena ia satu-satunya yang bukan komitmen.
+         |
+         | Tiga di atas berarti uangnya sudah masuk atau pelanggan sudah
+         | setuju. Yang ini cuma tanggal yang sedang dibuka untuk dijual —
+         | berguna supaya private trip tidak ditawarkan di tanggal yang
+         | armadanya sudah dialokasikan, tetapi kalender yang menggambarnya
+         | sama tegas dengan yang sudah deal akan berhenti bisa dipakai
+         | memutuskan. Warnanya abu, dan baloknya digambar bergaris putus.
+         */
+        'orcha_jual' => ['label' => 'Dijual (belum deal)', 'warna' => '#64748b', 'lembut' => '#f1f5f9', 'ikon' => 'tag'],
     ];
 
     /**

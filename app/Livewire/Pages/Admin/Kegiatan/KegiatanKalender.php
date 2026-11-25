@@ -601,6 +601,9 @@ class KegiatanKalender extends Component
                     // pendaftarannya belum ada. Dibedakan warnanya supaya
                     // "sudah deal" dan "sudah bayar" tidak terbaca sama.
                     'rab' => 'orcha_deal',
+                    // Jadwal yang sedang dijual: belum deal, belum ada yang
+                    // bayar. Rencana, bukan komitmen.
+                    'katalog' => 'orcha_jual',
                     default => 'orcha_trip',
                 };
 
@@ -655,6 +658,20 @@ class KegiatanKalender extends Component
     {
         $judul = $b['judul'] ?: 'Agenda Orcha';
 
+        /*
+         | Jadwal jualan dibedakan kalimatnya.
+         |
+         | Angkanya di sini bukan rombongan yang berangkat, melainkan yang
+         | mendaftar tetapi belum bayar. "— 1 orang" akan terbaca sebagai
+         | trip sehari dengan satu peserta, padahal artinya tanggal itu masih
+         | kosong dan ada satu orang yang menunggu dibayar.
+         */
+        if (($b['sumber'] ?? '') === 'katalog') {
+            return $judul.' — '.(empty($b['jumlah_peserta'])
+                ? 'belum ada pendaftar'
+                : $b['jumlah_peserta'].' belum bayar');
+        }
+
         // Jumlah peserta ikut di JUDUL, bukan hanya di rinciannya: balok di
         // kisi cuma menampilkan judul, dan "berapa orang" justru pertanyaan
         // pertama saat melihat ada rombongan berangkat hari itu.
@@ -685,6 +702,18 @@ class KegiatanKalender extends Component
             // Yang dibuka penyusunnya, bukan borang kepala: yang ingin
             // dilihat dari kalender adalah rencana perjalanannya.
             'rab' => route('admin.orcha.rab.susun', $b['id']),
+            /*
+             | Dibuka borang PAKETNYA, dan lewat paket_id — bukan $b['id'],
+             | yang pada sumber ini adalah id keberangkatan. Menautkannya
+             | dengan id yang salah akan membuka paket milik rombongan lain,
+             | diam-diam dan tanpa galat.
+             |
+             | Tanpa paket_id (Orcha versi lama) jatuh ke daftar paket, bukan
+             | ke tautan yang salah.
+             */
+            'katalog' => empty($b['paket_id'])
+                ? route('admin.orcha.paket')
+                : route('admin.orcha.paket.ubah', $b['paket_id']),
             default => route('admin.orcha.penyewaan.detail', $b['id']),
         };
     }

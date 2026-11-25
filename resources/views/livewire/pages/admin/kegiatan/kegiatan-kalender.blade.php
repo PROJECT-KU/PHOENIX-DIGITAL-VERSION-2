@@ -245,6 +245,20 @@ Kalender Kegiatan || lemon
         .kg-balok:hover { filter: brightness(.96); box-shadow: 0 4px 10px -4px var(--kg-warna); }
         .kg-balok.kg-lewat { opacity: .5; }
 
+        /* Jadwal yang baru DIJUAL: rencana, bukan komitmen.
+
+           Dibedakan lewat bentuk, bukan cuma warna — garis putus terbaca
+           sebagai "belum pasti" bahkan oleh yang tidak hafal warnanya, dan
+           tetap terbaca di layar yang warnanya meleset atau oleh mata yang
+           sulit membedakan abu dari ungu. Latarnya dibuat transparan supaya
+           balok komitmen di sekitarnya tetap yang paling menonjol. */
+        .kg-balok.kg-jual {
+            background: transparent;
+            border: 1px dashed var(--kg-warna);
+            border-left: 3px dashed var(--kg-warna);
+            font-weight: 500;
+        }
+
         /* Terpotong batas minggu: ujungnya dibuat rata, bukan membulat. Ujung
            membulat berarti "selesai di sini", dan kegiatannya belum selesai. */
         .kg-balok.kg-sambung-kiri {
@@ -432,6 +446,19 @@ Kalender Kegiatan || lemon
                jadi pita warna saja, yang tetap memberi tahu ADA kegiatan, jenisnya,
                dan sampai tanggal berapa ia membentang. */
             .kg-balok { font-size: 0; padding: 0; border-radius: 999px; border-left: 0; background: var(--kg-warna); gap: 0; }
+            /* Harus ditulis ulang di sini.
+
+               Di layar lebar .kg-jual berlatar transparan; aturan .kg-balok di
+               atas berbobot (0,1,0) dan KALAH oleh .kg-balok.kg-jual (0,2,0),
+               sehingga pita "dijual" di ponsel akan hilang sama sekali —
+               tanpa galat, dan hanya terlihat kalau seseorang membuka
+               kalender di ponsel. Di sini ia dibuat pita berongga: tetap
+               terlihat, tetap jelas bukan komitmen. */
+            .kg-balok.kg-jual {
+                background: var(--kg-lembut);
+                border: 1px dashed var(--kg-warna);
+                border-left: 1px dashed var(--kg-warna);
+            }
             .kg-balok.kg-sambung-kiri { box-shadow: none; }
             .kg-lebih { display: none; }
             .kg-bulan { min-width: 0; flex: 1 1 auto; font-size: .95rem; }
@@ -674,6 +701,7 @@ Kalender Kegiatan || lemon
                     @php $k = $b['kegiatan']; @endphp
                     <button type="button"
                         class="kg-balok
+                               {{ $k->jenis === 'orcha_jual' ? 'kg-jual' : '' }}
                                {{ $k->sudahLewat() ? 'kg-lewat' : '' }}
                                {{ $b['sambungKiri'] ? 'kg-sambung-kiri' : '' }}
                                {{ $b['sambungKanan'] ? 'kg-sambung-kanan' : '' }}"

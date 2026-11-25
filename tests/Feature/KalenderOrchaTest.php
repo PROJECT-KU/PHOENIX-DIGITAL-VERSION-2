@@ -339,3 +339,118 @@ test('yang tanpa izin Orcha tidak dibingungkan kalimat itu', function () {
         ->test(KegiatanKalender::class)
         ->assertDontSee('muncul sendiri');
 });
+
+/* ------------------------------- Jadwal yang sedang dijual (belum deal) */
+
+/*
+ | Sumber keempat Orcha: tanggal yang sudah dibuka untuk dijual, belum ada
+ | deal, dan belum ada yang bayar.
+ |
+ | Yang dijaga di sini bahwa ia terbaca BERBEDA dari komitmen. Sebelum pita
+ | ini ada, tanggal yang open trip-nya sudah tayang terlihat kosong di
+ | kalender, dan private trip ditawarkan di tanggal yang armadanya sudah
+ | dialokasikan.
+ */
+function kalOrchaJual(array $ubah = []): array
+{
+    return array_merge(kalOrchaBaris(), [
+        'sumber' => 'katalog',
+        'kategori' => 'open_trip',
+        'kategori_label' => 'Open Trip',
+        'id' => 77,
+        'paket_id' => 12,
+        'kode' => null,
+        'judul' => 'Open Trip Banyuwangi',
+        'pemesan' => null,
+        'jumlah_peserta' => null,
+        'titik_jemput' => null,
+        'tujuan' => null,
+        'status' => 'dijual',
+        'status_label' => 'Dijual — belum ada pendaftar',
+    ], $ubah);
+}
+
+test('jadwal yang sedang dijual terbaca berbeda dari rombongan yang berangkat', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaJual()]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        /*
+         | BUKAN "— 0 orang" dan bukan "— 1 orang".
+         |
+         | Angka pada sumber ini bukan rombongan yang berangkat melainkan yang
+         | mendaftar tanpa membayar; dikalimatkan supaya tidak terbaca sebagai
+         | trip yang pesertanya sedikit.
+         */
+        ->assertSee('Open Trip Banyuwangi — belum ada pendaftar')
+        ->assertDontSee('Open Trip Banyuwangi — 0 orang');
+});
+
+test('pendaftar yang belum bayar disebut sebagai belum bayar, bukan sebagai peserta', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaJual([
+        'jumlah_peserta' => 3,
+        'status_label' => 'Dijual — 3 pendaftar belum bayar',
+    ])]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->assertSee('Open Trip Banyuwangi — 3 belum bayar')
+        ->assertDontSee('Open Trip Banyuwangi — 3 orang');
+});
+
+test('jadwal dijual menaut ke borang PAKETNYA, bukan ke id keberangkatannya', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaJual()]);
+
+    // Tautannya hanya tergambar di panel hari terpilih; balok di kisi cuma
+    // berisi judul.
+    $halaman = Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->call('pilihTanggal', now()->startOfMonth()->addDays(9)->toDateString());
+
+    // paket_id 12, bukan id 77: menaut dengan id keberangkatan akan membuka
+    // paket milik rombongan lain, diam-diam dan tanpa galat.
+    $halaman->assertSee(route('admin.orcha.paket.ubah', 12), escape: false)
+        ->assertDontSee(route('admin.orcha.paket.ubah', 77), escape: false);
+});
+
+test('Orcha versi lama tanpa paket_id jatuh ke daftar paket, bukan ke tautan yang salah', function () {
+    kalOrchaSetel();
+    $baris = kalOrchaJual();
+    unset($baris['paket_id']);
+    kalOrchaJawab([$baris]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->call('pilihTanggal', now()->startOfMonth()->addDays(9)->toDateString())
+        ->assertSee(route('admin.orcha.paket'), escape: false);
+});
+
+test('jadwal dijual tidak bisa disunting dari kalender', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([kalOrchaJual()]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha', 'edit_kegiatan']))
+        ->test(KegiatanKalender::class)
+        ->call('pilihTanggal', now()->startOfMonth()->addDays(9)->toDateString())
+        // Tombol Hapus TIDAK diperiksa lewat nama kelasnya: kelas itu juga
+        // hidup di blok skrip SweetAlert halaman ini, jadi ia selalu ada di
+        // HTML entah tombolnya tergambar atau tidak.
+        ->assertSee('Buka di Orcha');
+});
+
+test('saringan memisahkan yang dijual dari yang sudah deal', function () {
+    kalOrchaSetel();
+    kalOrchaJawab([
+        kalOrchaJual(),
+        kalOrchaBaris(['sumber' => 'rab', 'judul' => 'Open Trip Dieng', 'kode' => 'RAB-2612-ZZZ']),
+    ]);
+
+    Livewire::actingAs(kalOrchaOrang(['view_kegiatan', 'akses_orcha']))
+        ->test(KegiatanKalender::class)
+        ->set('saringJenis', 'orcha_jual')
+        ->assertSee('Open Trip Banyuwangi')
+        ->assertDontSee('Open Trip Dieng');
+});
