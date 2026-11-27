@@ -139,15 +139,29 @@ class ProductBundlingsForm extends Component
         }
     }
 
-    // Hanya simpan durasi untuk slot produk yang terisi
+    /**
+     * Hanya simpan durasi untuk slot produk yang terisi.
+     *
+     * Untuk produk JASA, satuannya DIPAKSA 'bulan'. Angkanya di sana bukan
+     * lama waktu melainkan jumlah pengecekan, dan satuannya tidak berpengaruh
+     * sama sekali terhadap kuota — Order::kuotaDasarPerJenis() hanya membaca
+     * duration_value. Yang dipengaruhinya cuma OrderItem::calculateEndDate():
+     * satuan 'tahun' yang tertinggal dari produk sebelumnya membuat baris jasa
+     * itu memajang "masa aktif" bertahun-tahun yang tidak berarti apa-apa —
+     * unggahannya sendiri tidak pernah dibatasi tanggal (lihat
+     * Order::bisaUploadJenis(), yang hanya melihat status pesanan dan sisa
+     * kuota).
+     */
     private function buildDurations(): array
     {
         $out = [];
         foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $f) {
             if (! empty($this->$f)) {
+                $jasa = (bool) Product::where('id', $this->$f)->value('butuh_file');
+
                 $out[$f] = [
                     'value' => (int) ($this->durations[$f]['value'] ?? 1),
-                    'type' => $this->durations[$f]['type'] ?? 'bulan',
+                    'type' => $jasa ? 'bulan' : ($this->durations[$f]['type'] ?? 'bulan'),
                 ];
             }
         }
@@ -273,7 +287,17 @@ class ProductBundlingsForm extends Component
 
     public function render()
     {
-        $products = Product::select('id', 'nama_akun')->orderBy('nama_akun')->get();
+        /*
+         | butuh_file ikut diambil karena tampilan memerlukannya: untuk produk
+         | JASA, kolom "Durasi" sebenarnya bukan durasi melainkan JUMLAH
+         | PENGECEKAN — Order::kuotaDasarPerJenis() menghitungnya sebagai
+         | duration_value x quantity. Tanpa kolom ini, tampilannya tidak punya
+         | cara membedakan keduanya dan admin yang menulis "1 Tahun" mengira
+         | memberi layanan setahun, padahal yang diberikan SATU kali cek.
+         */
+        $products = Product::select('id', 'nama_akun', 'butuh_file')
+            ->orderBy('nama_akun')
+            ->get();
 
         return view('livewire.pages.admin.ProductBundlings.ProductBundlings-form', [
             'product_bundlings' => $this->product_bundlings,

@@ -172,6 +172,9 @@
                 <p class="text-muted small mb-3">
                     <i class="bi bi-info-circle me-1"></i> Pilih produk dan tentukan <b>durasi tiap produk</b>. Durasi ini
                     otomatis terpakai saat admin membuat pesanan paket. Produk 3–5 opsional.
+                    <br>
+                    <i class="bi bi-upload me-1"></i> Untuk produk <b>jasa</b> (yang perlu kirim dokumen), kolom itu
+                    berubah jadi <b>Jumlah pengecekan</b> — isi <b>1</b> untuk satu kali cek, <b>3</b> untuk tiga kali.
                 </p>
 
                 @foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $field)
@@ -188,7 +191,18 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-7">
                             <label class="slot-label">Pilih Produk</label>
-                            @php $selBundleProd = $products->firstWhere('id', $$field); @endphp
+                            {{-- Produk JASA diperlakukan berbeda di dua kolom berikutnya.
+
+                                 Angka di sana bukan lama waktu melainkan JUMLAH PENGECEKAN:
+                                 Order::kuotaDasarPerJenis() menghitungnya sebagai
+                                 duration_value x quantity, dan satuannya tidak berpengaruh
+                                 sama sekali terhadap kuota. Dengan label "Durasi" dan satuan
+                                 "Bulan/Tahun", admin yang menulis "1 Tahun" mengira memberi
+                                 layanan setahun — padahal yang diberikan SATU kali cek. --}}
+                            @php
+                                $selBundleProd = $products->firstWhere('id', $$field);
+                                $slotJasa = (bool) ($selBundleProd->butuh_file ?? false);
+                            @endphp
                             <button type="button" onclick="bundlingProductPicker(this, '{{ $field }}')"
                                 class="form-select text-start of-picker-btn">
                                 @if ($selBundleProd)
@@ -199,16 +213,27 @@
                             </button>
                         </div>
                         <div class="col-7 col-md-3">
-                            <label class="slot-label">Durasi</label>
+                            <label class="slot-label">{{ $slotJasa ? 'Jumlah pengecekan' : 'Durasi' }}</label>
                             <input type="number" min="1" wire:model.defer="durations.{{ $field }}.value"
                                 class="form-control">
+                            @if ($slotJasa)
+                                <small class="text-muted">1 = satu kali kirim dokumen.</small>
+                            @endif
                         </div>
                         <div class="col-5 col-md-2">
                             <label class="slot-label">Satuan</label>
-                            <select wire:model.defer="durations.{{ $field }}.type" class="form-select">
-                                <option value="bulan">Bulan</option>
-                                <option value="tahun">Tahun</option>
-                            </select>
+                            @if ($slotJasa)
+                                {{-- Pemilih satuan DISEMBUNYIKAN, bukan sekadar diberi pilihan
+                                     baru: apa pun isinya tidak mengubah kuota, jadi pilihan
+                                     yang ada di layar hanya mengundang salah isi. Nilainya
+                                     dipaksa 'bulan' saat disimpan (buildDurations()). --}}
+                                <div class="form-control bg-light text-muted">pengecekan</div>
+                            @else
+                                <select wire:model.defer="durations.{{ $field }}.type" class="form-select">
+                                    <option value="bulan">Bulan</option>
+                                    <option value="tahun">Tahun</option>
+                                </select>
+                            @endif
                         </div>
                     </div>
                 </div>
