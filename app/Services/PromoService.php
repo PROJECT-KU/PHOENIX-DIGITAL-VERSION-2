@@ -547,13 +547,31 @@ class PromoService
         return Promo::active()
             ->automaticPromos() // Hanya ambil flash_sale + auto_promo
             ->where(function ($query) use ($productId) {
-                // Promo berlaku jika:
-                // 1. Tidak ada products attached (berlaku untuk semua)
-                // 2. Product ID ada di relation
-                $query->whereDoesntHave('products')
-                    ->orWhereHas('products', function ($q) use ($productId) {
-                        $q->where('product_id', $productId);
-                    });
+                /*
+                 | Promo berlaku untuk sebuah produk bila:
+                 |
+                 | 1. ia tidak menyasar apa pun secara khusus — daftar produk
+                 |    DAN daftar paketnya sama-sama kosong; atau
+                 | 2. produk itu memang ada di daftar produknya.
+                 |
+                 | Syarat whereDoesntHave('bundlings') itu yang dulu hilang, dan
+                 | tanpanya kartu produk BERBOHONG: promo yang admin lampirkan
+                 | ke SATU paket saja meninggalkan daftar produk kosong, lalu
+                 | aturan "kosong = semua" membuat seluruh produk di /shop
+                 | memakai lencana "s.d. 25%".
+                 |
+                 | Yang membuatnya lebih buruk daripada sekadar salah: keranjang
+                 | sudah memakai aturan yang benar (lihat $menyasarKhusus di
+                 | calculateDiscount), jadi potongannya NOL. Pembeli melihat
+                 | diskon di etalase, menaruhnya di keranjang, dan harganya
+                 | tidak berubah — dan tidak ada galat apa pun yang memberi tahu
+                 | bahwa itu terjadi.
+                 */
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('products')->whereDoesntHave('bundlings');
+                })->orWhereHas('products', function ($q) use ($productId) {
+                    $q->where('product_id', $productId);
+                });
             })
             ->orderBy('prioritas', 'desc')
             ->get()
